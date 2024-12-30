@@ -114,25 +114,65 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Preload critical resources */}
+        {/* High priority resource loading */}
         <link
           rel="preload"
           href="/hero-background.webp"
           as="image"
           type="image/webp"
+          fetchPriority="high"
+        />
+        <link
+          rel="preload"
+          as="style"
+          href="https://fonts.googleapis.com/css2?family=Geist:wght@400;700&display=swap"
+          crossOrigin="anonymous"
         />
         <link
           rel="preconnect"
           href="https://fonts.googleapis.com"
           crossOrigin="anonymous"
         />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
         <meta name="renderMode" content="critical" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              /* Critical rendering styles */
+              .critical-hero {
+                background: linear-gradient(to bottom right, #2563eb, #9333ea, #1e3a8a);
+                transform: translate3d(0,0,0);
+                backface-visibility: hidden;
+                -webkit-font-smoothing: antialiased;
+                content-visibility: auto;
+              }
+              .critical-overlay {
+                background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.5));
+                pointer-events: none;
+              }
+              /* Optimize paint containment */
+              .contain-paint {
+                contain: paint;
+                transform: translateZ(0);
+              }
+              /* Optimize layout containment */
+              .contain-layout {
+                contain: layout;
+                content-visibility: auto;
+              }
+            `
+          }}
+        />
       </head>
       <GoogleAnalytics />
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#663399] overscroll-none`}
-        style={{ contentVisibility: 'auto' }}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#663399] overscroll-none contain-layout`}
+        style={{ colorScheme: 'light' }}
       >
         <JsonLd
           organizationData={{
