@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 const HeroSection: React.FC = () => {
   return (
     <div className="relative w-full min-h-[800px] flex items-center justify-center bg-cover bg-center bg-fixed overflow-hidden">
-      {/* Background Video/Image with Gradient Fallback */}
+      {/* Optimized Background with GPU acceleration */}
       <div 
         className="absolute inset-0 w-full h-full bg-gradient-to-br from-blue-600 via-purple-600 to-blue-900"
         style={{
@@ -13,44 +13,28 @@ const HeroSection: React.FC = () => {
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          transform: "scale(1.1)",
+          transform: "translateZ(0)", // Force GPU acceleration
+          willChange: "transform",
+          contain: "paint",
         }}
       />
 
-      {/* Enhanced Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50"></div>
+      {/* Simplified Gradient Overlay */}
+      <div 
+        className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/50"
+        style={{ willChange: "opacity" }}
+      ></div>
 
-      {/* Animated Particles/Shapes with fixed positions */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Reduced and optimized animated elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
           className="absolute animate-float"
           style={{
             left: '20%',
             top: '30%',
-            animationDelay: '0s',
             opacity: 0.1,
-          }}
-        >
-          <div className="w-64 h-64 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-600/20 blur-3xl"></div>
-        </div>
-        <div
-          className="absolute animate-float"
-          style={{
-            left: '60%',
-            top: '50%',
-            animationDelay: '2s',
-            opacity: 0.1,
-          }}
-        >
-          <div className="w-64 h-64 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-600/20 blur-3xl"></div>
-        </div>
-        <div
-          className="absolute animate-float"
-          style={{
-            left: '80%',
-            top: '20%',
-            animationDelay: '4s',
-            opacity: 0.1,
+            transform: 'translateZ(0)',
+            willChange: 'transform',
           }}
         >
           <div className="w-64 h-64 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-600/20 blur-3xl"></div>

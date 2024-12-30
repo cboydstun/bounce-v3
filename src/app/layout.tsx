@@ -113,9 +113,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Preload critical resources */}
+        <link
+          rel="preload"
+          href="/hero-background.webp"
+          as="image"
+          type="image/webp"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+          crossOrigin="anonymous"
+        />
+        <meta name="renderMode" content="critical" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+      </head>
       <GoogleAnalytics />
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#663399]`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#663399] overscroll-none`}
+        style={{ contentVisibility: 'auto' }}
       >
         <JsonLd
           organizationData={{
