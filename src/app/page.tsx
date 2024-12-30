@@ -19,14 +19,14 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://satxbounce.com",
     images: [{
-      url: "https://media3.giphy.com/media/wZQ8RoZAfj82CQFQyW/giphy.gif",
+      url: "https://www.satxbounce.com/og-image.jpg",
     }],
   },
   twitter: {
     card: "summary_large_image",
     title: "SATX Bounce House Rentals | San Antonio Party Equipment Rental",
     description: "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required.",
-    images: ["https://media3.giphy.com/media/wZQ8RoZAfj82CQFQyW/giphy.gif"],
+    images: ["https://www.satxbounce.com/og-image.jpg"],
   },
   other: {
     "geo.region": "US-TX",
@@ -41,7 +41,7 @@ const localBusinessSchema = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
   name: "SATX Bounce House Rentals",
-  image: "https://media3.giphy.com/media/wZQ8RoZAfj82CQFQyW/giphy.gif",
+  image: "https://www.satxbounce.com/og-image.jpg",
   description:
     "San Antonio's premier bounce house and party rental service offering inflatable bounce houses, water slides, and party equipment with free delivery.",
   "@id": "https://satxbounce.com",
