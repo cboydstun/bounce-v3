@@ -31,14 +31,20 @@ src/
 │   ├── layout.tsx     # Root layout
 │   ├── page.tsx       # Home page
 │   ├── about/         # About page
+│   ├── admin/         # Admin interface
+│   │   ├── blogs/     # Blog management
+│   │   ├── contacts/  # Contact management
+│   │   └── products/  # Product management
 │   ├── blogs/         # Blog pages
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
 │   │   └── [slug]/    # Dynamic blog routes
 │   ├── contact/       # Contact page
 │   ├── faq/           # FAQ page
+│   ├── login/         # Authentication page
 │   └── products/      # Product pages
 │       ├── page.tsx
+│       ├── products-content.tsx
 │       └── [slug]/    # Dynamic product routes
 ├── components/        # React components
 │   ├── ui/           # Reusable UI components
@@ -61,14 +67,18 @@ src/
 ├── types/           # TypeScript type definitions
 │   ├── blog.ts
 │   ├── faq.ts
-│   └── product.ts
+│   ├── product.ts
+│   └── user.ts
 └── utils/           # Utility functions
     ├── api.ts
-    ├── env.ts
     └── generateSitemap.ts
 
 public/             # Public assets
+├── apple-touch-icon.png
+├── file.svg
+├── globe.svg
 ├── hero-background.gif
+├── hero-background.webp
 ├── logo.png
 ├── logo192.png
 ├── logo512.png
@@ -76,9 +86,12 @@ public/             # Public assets
 ├── next.svg
 ├── og-image.jpg
 ├── robots.txt
+├── satx-bounce-house-rental-san-antonio-dry-xl.png
+├── seobilityverify_6759146.html
 ├── sitemap.xml
 ├── twitter-image.jpg
-└── vercel.svg
+├── vercel.svg
+└── window.svg
 ```
 
 ## Development
@@ -123,3 +136,4 @@ This will generate optimized production files in the `.next` directory. After bu
 - `eslint.config.mjs`: ESLint configuration
 - `tailwind.config.ts`: TailwindCSS configuration
 - `postcss.config.mjs`: PostCSS configuration
+- `vercel.json`: Vercel deployment configuration
