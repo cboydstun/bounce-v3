@@ -9,7 +9,7 @@ const HeroSection: React.FC = () => {
       <div 
         className="absolute inset-0 w-full h-full bg-gradient-to-br from-blue-600 via-purple-600 to-blue-900"
         style={{
-          backgroundImage: 'url("/hero-background.gif")',
+          backgroundImage: 'url("/hero-background.webp")',
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
