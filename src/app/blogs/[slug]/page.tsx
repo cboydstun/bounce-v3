@@ -1,53 +1,59 @@
-import { API_BASE_URL, API_ROUTES } from '@/config/constants';
+import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { Blog } from '@/types/blog';
-import Image from 'next/image';
+import { Blog } from "@/types/blog";
+import Image from "next/image";
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const slug = params.slug;
-  try {
-    const response = await fetch(`${API_BASE_URL}${API_ROUTES.PRODUCTS}/${slug}`);
-    const blog: Blog = await response.json();
+async function getBlog(slug: string): Promise<Blog> {
+  const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}/${slug}`, {
+    next: { revalidate: 3600 }, // Revalidate every hour
+  });
 
-    return {
-      title: blog.seo?.metaTitle || `${blog.title} | Blog`,
-      description: blog.seo?.metaDescription || blog.excerpt || blog.introduction.substring(0, 160),
-      openGraph: {
-        title: blog.title,
-        description: blog.excerpt || blog.introduction.substring(0, 160),
-        images: blog.featuredImage ? [blog.featuredImage] : [],
-        type: 'article',
-        publishedTime: blog.publishDate,
-        modifiedTime: blog.lastModified,
-        tags: blog.tags,
-      },
-      keywords: blog.tags.join(', '),
-    };
-  } catch (error) {
-    return {
-      title: 'Blog Post Not Found',
-      description: error instanceof Error ? error.message : 'This blog post is not available',
-    };
-  }
-}
-
-type Props = {
-  params: { slug: string }
-  searchParams: { [key: string]: string | string[] | undefined }
-}
-
-export default async function BlogDetail({ params }: Props) {
-  const slug = params.slug;
-  
-  const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}/${slug}`);
-  
   if (!response.ok) {
-    throw new Error("Blog post not found");
+    notFound();
   }
-  
-  const blog: Blog = await response.json();
 
-  if (blog.status !== 'published') {
+  return response.json();
+}
+
+type Params = Promise<{ slug: string }>;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Params;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const blog = await getBlog(slug);
+
+  return {
+    title: blog.seo?.metaTitle || `${blog.title} | Blog`,
+    description:
+      blog.seo?.metaDescription ||
+      blog.excerpt ||
+      blog.introduction.substring(0, 160),
+    openGraph: {
+      title: blog.title,
+      description: blog.excerpt || blog.introduction.substring(0, 160),
+      images: blog.featuredImage ? [blog.featuredImage] : [],
+      type: "article",
+      publishedTime: blog.publishDate,
+      modifiedTime: blog.lastModified,
+      tags: blog.tags,
+    },
+    keywords: blog.tags.join(", "),
+  };
+}
+
+export default async function BlogDetail({
+  params,
+}: {
+  params: Params;
+}) {
+  const { slug } = await params;
+  const blog = await getBlog(slug);
+
+  if (blog.status !== "published") {
     throw new Error("This blog post is not available");
   }
 
@@ -67,7 +73,7 @@ export default async function BlogDetail({ params }: Props) {
               />
             </div>
           )}
-          
+
           <header className="mb-8">
             <div className="flex flex-wrap gap-2 mb-4">
               {blog.categories.map((category: string) => (
@@ -85,7 +91,8 @@ export default async function BlogDetail({ params }: Props) {
             <div className="flex items-center justify-between text-sm text-gray-500">
               <div className="flex items-center gap-4">
                 <span className="font-medium">
-                  {blog.publishDate && new Date(blog.publishDate).toLocaleDateString()}
+                  {blog.publishDate &&
+                    new Date(blog.publishDate).toLocaleDateString()}
                 </span>
                 {blog.readTime && (
                   <>
@@ -104,33 +111,35 @@ export default async function BlogDetail({ params }: Props) {
           </header>
 
           <div className="prose max-w-none text-gray-600 text-lg space-y-8">
-            <div className="mb-8">
-              {blog.introduction}
-            </div>
+            <div className="mb-8">{blog.introduction}</div>
 
             {blog.images.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
-                {blog.images.map((image: { public_id: string; url: string }, index: number) => (
-                  <div key={image.public_id} className="rounded-lg overflow-hidden">
-                    <Image
-                      src={image.url}
-                      alt={`${blog.title} image ${index + 1}`}
-                      width={600}
-                      height={400}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
+                {blog.images.map(
+                  (
+                    image: { public_id: string; url: string },
+                    index: number
+                  ) => (
+                    <div
+                      key={image.public_id}
+                      className="rounded-lg overflow-hidden"
+                    >
+                      <Image
+                        src={image.url}
+                        alt={`${blog.title} image ${index + 1}`}
+                        width={600}
+                        height={400}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )
+                )}
               </div>
             )}
 
-            <div className="mb-8">
-              {blog.body}
-            </div>
+            <div className="mb-8">{blog.body}</div>
 
-            <div className="mb-8">
-              {blog.conclusion}
-            </div>
+            <div className="mb-8">{blog.conclusion}</div>
 
             {blog.tags.length > 0 && (
               <div className="border-t pt-6 mt-8">

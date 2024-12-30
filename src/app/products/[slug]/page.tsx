@@ -1,6 +1,5 @@
-import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import React from 'react';
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { Product } from "../../../types/product";
 import { API_BASE_URL, API_ROUTES } from "../../../config/constants";
 import ContactForm from "../../../components/ContactForm";
@@ -8,23 +7,31 @@ import ImageGallery from "./ImageGallery";
 
 async function getProduct(slug: string): Promise<Product> {
   const res = await fetch(`${API_BASE_URL}${API_ROUTES.PRODUCTS}/${slug}`, {
-    next: { revalidate: 3600 } // Revalidate every hour
+    next: { revalidate: 3600 }, // Revalidate every hour
   });
-  
+
   if (!res.ok) {
     notFound();
   }
-  
+
   return res.json();
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+type Params = Promise<{ slug: string }>;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Params;
+}): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProduct(slug);
 
   const getSpecValue = (name: string) => {
-    const spec = product.specifications.find(s => s.name.toLowerCase() === name.toLowerCase());
-    return spec?.value || 'N/A';
+    const spec = product.specifications.find(
+      (s) => s.name.toLowerCase() === name.toLowerCase()
+    );
+    return spec?.value || "N/A";
   };
 
   return {
@@ -33,35 +40,43 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     openGraph: {
       title: product.name,
       description: product.description,
-      type: 'website',
+      type: "website",
       images: product.images[0]?.url ? [product.images[0].url] : [],
     },
     other: {
-      'product:price:amount': product.price.base.toString(),
-      keywords: `bounce house rental, ${product.name}, party rental, San Antonio, ${getSpecValue('capacity')}, ${getSpecValue('age range')}`
-    }
+      "product:price:amount": product.price.base.toString(),
+      keywords: `bounce house rental, ${product.name}, party rental, San Antonio, ${getSpecValue("capacity")}, ${getSpecValue("age range")}`,
+    },
   };
 }
 
-export default async function ProductDetail({ params }: { params: { slug: string } }): Promise<React.ReactElement> {
+export default async function ProductDetail({
+  params,
+}: {
+  params: Params;
+}) {
   const { slug } = await params;
   const product = await getProduct(slug);
 
   const getSpecValue = (name: string) => {
-    const spec = product.specifications.find(s => s.name.toLowerCase() === name.toLowerCase());
-    return spec?.value || 'N/A';
+    const spec = product.specifications.find(
+      (s) => s.name.toLowerCase() === name.toLowerCase()
+    );
+    return spec?.value || "N/A";
   };
 
   return (
     <>
-
       <div className="w-full bg-secondary-blue/5 py-12">
         <div className="container mx-auto px-4">
           {/* Product Details Section */}
           <div className="bg-white rounded-xl shadow-lg p-8 mb-12">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
               {/* Image Gallery */}
-              <ImageGallery images={product.images} productName={product.name} />
+              <ImageGallery
+                images={product.images}
+                productName={product.name}
+              />
 
               {/* Product Details */}
               <div className="space-y-8">
@@ -88,8 +103,9 @@ export default async function ProductDetail({ params }: { params: { slug: string
                           Dimensions
                         </dt>
                         <dd className="text-gray-600">
-                          {product.dimensions.length} x {product.dimensions.width}{" "}
-                          x {product.dimensions.height} {product.dimensions.unit}
+                          {product.dimensions.length} x{" "}
+                          {product.dimensions.width} x{" "}
+                          {product.dimensions.height} {product.dimensions.unit}
                         </dd>
                       </div>
                     )}
@@ -98,7 +114,7 @@ export default async function ProductDetail({ params }: { params: { slug: string
                         Capacity
                       </dt>
                       <dd className="text-gray-600">
-                        {getSpecValue('capacity')}
+                        {getSpecValue("capacity")}
                       </dd>
                     </div>
                     <div className="bg-secondary-blue/5 p-4 rounded-lg">
@@ -106,7 +122,7 @@ export default async function ProductDetail({ params }: { params: { slug: string
                         Age Range
                       </dt>
                       <dd className="text-gray-600">
-                        {getSpecValue('age range')}
+                        {getSpecValue("age range")}
                       </dd>
                     </div>
                     <div className="bg-secondary-blue/5 p-4 rounded-lg">

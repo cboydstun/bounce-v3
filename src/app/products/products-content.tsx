@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Product } from '../../types/product';
-import { API_BASE_URL, API_ROUTES } from '../../config/constants';
+import { API_ROUTES } from '../../config/constants';
+import api from '../../utils/api';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ProductFilters } from '../../components/ProductFilters';
 
@@ -23,7 +24,8 @@ function ProductGrid({ products }: { products: Product[] }) {
                 src={product.images[0].url}
                 alt={product.images[0].alt || product.name}
                 className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-                fill
+                width={400}
+                height={400}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 priority={false}
               />
@@ -57,15 +59,13 @@ function ProductGrid({ products }: { products: Product[] }) {
 }
 
 async function getProducts() {
-  const res = await fetch(`${API_BASE_URL}${API_ROUTES.PRODUCTS}`, {
-    next: { revalidate: 3600 } // Revalidate every hour
-  });
-  
-  if (!res.ok) {
+  try {
+    const response = await api.get(API_ROUTES.PRODUCTS);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products:', error);
     throw new Error('Failed to fetch products');
   }
-  
-  return res.json();
 }
 
 export function ProductsContent() {

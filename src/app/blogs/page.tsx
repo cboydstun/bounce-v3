@@ -72,6 +72,8 @@ export default function BlogList() {
                   <Image
                     src={blog.featuredImage}
                     alt={blog.title}
+                    width={800}
+                    height={450}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                   />
                 </div>
