@@ -20,22 +20,41 @@ const HeroSection: React.FC = () => {
       {/* Enhanced Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50"></div>
 
-      {/* Animated Particles/Shapes */}
+      {/* Animated Particles/Shapes with fixed positions */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(3)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${i * 2}s`,
-              opacity: 0.1,
-            }}
-          >
-            <div className="w-64 h-64 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-600/20 blur-3xl"></div>
-          </div>
-        ))}
+        <div
+          className="absolute animate-float"
+          style={{
+            left: '20%',
+            top: '30%',
+            animationDelay: '0s',
+            opacity: 0.1,
+          }}
+        >
+          <div className="w-64 h-64 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-600/20 blur-3xl"></div>
+        </div>
+        <div
+          className="absolute animate-float"
+          style={{
+            left: '60%',
+            top: '50%',
+            animationDelay: '2s',
+            opacity: 0.1,
+          }}
+        >
+          <div className="w-64 h-64 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-600/20 blur-3xl"></div>
+        </div>
+        <div
+          className="absolute animate-float"
+          style={{
+            left: '80%',
+            top: '20%',
+            animationDelay: '4s',
+            opacity: 0.1,
+          }}
+        >
+          <div className="w-64 h-64 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-600/20 blur-3xl"></div>
+        </div>
       </div>
 
       {/* Content Container */}

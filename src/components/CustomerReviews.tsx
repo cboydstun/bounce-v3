@@ -145,9 +145,7 @@ const CustomerReviews = () => {
                     <div className="flex items-center gap-2">
                       {renderStars(reviews[activeIndex].rating)}
                       <span className="text-gray-500 ml-2">
-                        {new Date(
-                          reviews[activeIndex].date
-                        ).toLocaleDateString()}
+                        {reviews[activeIndex].date.split('-').reverse().join('/')}
                       </span>
                     </div>
                   </div>
