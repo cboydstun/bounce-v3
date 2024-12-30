@@ -1,0 +1,23 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/contact/page": "app/contact/page.js",
+  "/login/page": "app/login/page.js",
+  "/products/[slug]/page": "app/products/[slug]/page.js",
+  "/about/page": "app/about/page.js",
+  "/faq/page": "app/faq/page.js",
+  "/products/page": "app/products/page.js",
+  "/page": "app/page.js",
+  "/admin/blogs/[id]/edit/page": "app/admin/blogs/[id]/edit/page.js",
+  "/admin/blogs/page": "app/admin/blogs/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/products/new/page": "app/admin/products/new/page.js",
+  "/admin/blogs/new/page": "app/admin/blogs/new/page.js",
+  "/admin/products/[id]/edit/page": "app/admin/products/[id]/edit/page.js",
+  "/admin/products/page": "app/admin/products/page.js",
+  "/blogs/[slug]/page": "app/blogs/[slug]/page.js",
+  "/blogs/page": "app/blogs/page.js",
+  "/admin/contacts/[id]/edit/page": "app/admin/contacts/[id]/edit/page.js",
+  "/admin/contacts/page": "app/admin/contacts/page.js",
+  "/admin/contacts/new/page": "app/admin/contacts/new/page.js"
+}

@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-blue: #2563eb;
+  --primary-purple: #663399;
+  --secondary-blue: #3b82f6;
+}
+
+body {
+  color: #171717;
+  background: #ffffff;
+}
+
+@layer utilities {
+  .bg-secondary-blue\/5 {
+    background-color: rgb(59 130 246 / 0.05);
+  }
+  .bg-secondary-blue\/10 {
+    background-color: rgb(59 130 246 / 0.1);
+  }
+  .text-primary-blue {
+    color: var(--primary-blue);
+  }
+  .text-primary-purple {
+    color: var(--primary-purple);
+  }
+  .hover\:text-primary-blue:hover {
+    color: var(--primary-blue);
+  }
+  .hover\:text-primary-purple:hover {
+    color: var(--primary-purple);
+  }
+}
