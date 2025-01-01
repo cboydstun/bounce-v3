@@ -45,11 +45,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function BlogDetail({
-  params,
-}: {
-  params: Params;
-}) {
+export default async function BlogDetail({ params }: { params: Params }) {
   const { slug } = await params;
   const blog = await getBlog(slug);
 
@@ -118,7 +114,7 @@ export default async function BlogDetail({
                 {blog.images.map(
                   (
                     image: { public_id: string; url: string },
-                    index: number
+                    index: number,
                   ) => (
                     <div
                       key={image.public_id}
@@ -132,7 +128,7 @@ export default async function BlogDetail({
                         className="w-full h-full object-cover"
                       />
                     </div>
-                  )
+                  ),
                 )}
               </div>
             )}

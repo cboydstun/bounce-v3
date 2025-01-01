@@ -13,19 +13,23 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "About Us | SATX Bounce House Rentals San Antonio",
-  description: "Learn about SATX Bounce House Rentals, San Antonio's trusted provider of bounce houses, water slides, and party equipment. Discover our story, values, and commitment to safety and customer satisfaction.",
-  keywords: "about SATX Bounce House, San Antonio party rentals, bounce house company, inflatable rentals history, party equipment provider, customer service, safety commitment",
+  description:
+    "Learn about SATX Bounce House Rentals, San Antonio's trusted provider of bounce houses, water slides, and party equipment. Discover our story, values, and commitment to safety and customer satisfaction.",
+  keywords:
+    "about SATX Bounce House, San Antonio party rentals, bounce house company, inflatable rentals history, party equipment provider, customer service, safety commitment",
   openGraph: {
-    title: "About SATX Bounce House Rentals | San Antonio's Premier Party Rental Service",
-    description: "Learn about SATX Bounce House Rentals, San Antonio's trusted provider of bounce houses, water slides, and party equipment. Discover our story, values, and commitment to safety and customer satisfaction.",
+    title:
+      "About SATX Bounce House Rentals | San Antonio's Premier Party Rental Service",
+    description:
+      "Learn about SATX Bounce House Rentals, San Antonio's trusted provider of bounce houses, water slides, and party equipment. Discover our story, values, and commitment to safety and customer satisfaction.",
     type: "website",
   },
   other: {
     "geo.region": "US-TX",
     "geo.placename": "San Antonio",
     "geo.position": "29.4241;-98.4936",
-    "ICBM": "29.4241, -98.4936",
-  }
+    ICBM: "29.4241, -98.4936",
+  },
 };
 
 // Organization structured data
@@ -79,10 +83,9 @@ export default function AboutPage() {
                 service and an expansive inventory.
               </p>
               <p>
-                From wet inflatables to dry slides, combo units, and even
-                unique party additions like popcorn makers and petting zoos,
-                SATX Bounce House Rentals always seeks to surpass
-                expectations.
+                From wet inflatables to dry slides, combo units, and even unique
+                party additions like popcorn makers and petting zoos, SATX
+                Bounce House Rentals always seeks to surpass expectations.
               </p>
             </div>
           </div>
@@ -173,9 +176,9 @@ export default function AboutPage() {
                 </h3>
                 <div className="space-y-4 text-primary-blue">
                   <p>
-                    Our customers are the essence of everything we do. We&apos;re
-                    unwavering in our mission to offer the peak of service,
-                    from initial booking to event day.
+                    Our customers are the essence of everything we do.
+                    We&apos;re unwavering in our mission to offer the peak of
+                    service, from initial booking to event day.
                   </p>
                 </div>
               </div>
@@ -211,8 +214,8 @@ export default function AboutPage() {
                 </h3>
                 <div className="space-y-4 text-primary-blue">
                   <p>
-                    We constantly update our inventory and improve our
-                    services based on customer feedback and industry trends.
+                    We constantly update our inventory and improve our services
+                    based on customer feedback and industry trends.
                   </p>
                 </div>
               </div>

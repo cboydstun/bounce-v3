@@ -1,39 +1,41 @@
-'use client';
+"use client";
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { login } from '@/utils/api';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { login } from "@/utils/api";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string>('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     // Basic validation
     if (!email) {
-      setError('Please provide an email');
+      setError("Please provide an email");
       setIsLoading(false);
       return;
     }
     if (!password) {
-      setError('Please provide a password');
+      setError("Please provide a password");
       setIsLoading(false);
       return;
     }
 
     try {
       await login({ email, password });
-      router.push('/admin'); // Redirect to admin dashboard after successful login
+      router.push("/admin"); // Redirect to admin dashboard after successful login
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during login');
+      setError(
+        err instanceof Error ? err.message : "An error occurred during login",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -101,11 +103,7 @@ export default function LoginPage() {
               disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {isLoading ? (
-                <LoadingSpinner className="w-5 h-5" />
-              ) : (
-                'Sign in'
-              )}
+              {isLoading ? <LoadingSpinner className="w-5 h-5" /> : "Sign in"}
             </button>
           </div>
         </form>

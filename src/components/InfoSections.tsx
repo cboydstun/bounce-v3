@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/card";
 
 interface Section {
   title: string;
@@ -28,7 +33,7 @@ const InfoSections: React.FC = () => {
             }
           });
         },
-        { threshold: 0.1 }
+        { threshold: 0.1 },
       );
 
       observer.observe(ref);
@@ -73,7 +78,9 @@ const InfoSections: React.FC = () => {
         {sections.map((section, index) => (
           <div
             key={index}
-            ref={el => { sectionRefs.current[index] = el; }}
+            ref={(el) => {
+              sectionRefs.current[index] = el;
+            }}
             className="transition-all duration-700"
             style={{
               opacity: 0,
@@ -82,7 +89,9 @@ const InfoSections: React.FC = () => {
           >
             <Card
               className={`h-full transition-all duration-300 hover:shadow-lg ${
-                section.variant === "secondary" ? "bg-[rgb(247,249,252)]" : "bg-white"
+                section.variant === "secondary"
+                  ? "bg-[rgb(247,249,252)]"
+                  : "bg-white"
               }`}
             >
               <CardHeader>

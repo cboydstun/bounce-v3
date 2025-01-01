@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import api from '@/utils/api';
-import { API_BASE_URL, API_ROUTES } from '../../config/constants';
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import api from "@/utils/api";
+import { API_BASE_URL, API_ROUTES } from "../../config/constants";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState([
-    { name: 'Total Blogs', stat: '...', href: '/admin/blogs' },
-    { name: 'Total Products', stat: '...', href: '/admin/products' },
-    { name: 'Contact Requests', stat: '...', href: '/admin/contacts' },
+    { name: "Total Blogs", stat: "...", href: "/admin/blogs" },
+    { name: "Total Products", stat: "...", href: "/admin/products" },
+    { name: "Contact Requests", stat: "...", href: "/admin/contacts" },
   ]);
 
   useEffect(() => {
@@ -22,12 +22,24 @@ export default function AdminDashboard() {
         ]);
 
         setStats([
-          { name: 'Total Blogs', stat: String(blogsRes.data.length), href: '/admin/blogs' },
-          { name: 'Total Products', stat: String(productsRes.data.length), href: '/admin/products' },
-          { name: 'Contact Requests', stat: String(contactsRes.data.length), href: '/admin/contacts' },
+          {
+            name: "Total Blogs",
+            stat: String(blogsRes.data.length),
+            href: "/admin/blogs",
+          },
+          {
+            name: "Total Products",
+            stat: String(productsRes.data.length),
+            href: "/admin/products",
+          },
+          {
+            name: "Contact Requests",
+            stat: String(contactsRes.data.length),
+            href: "/admin/contacts",
+          },
         ]);
       } catch (error) {
-        console.error('Failed to fetch stats:', error);
+        console.error("Failed to fetch stats:", error);
       }
     };
 
@@ -59,7 +71,9 @@ export default function AdminDashboard() {
 
       <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div className="rounded-lg bg-white shadow p-6">
-          <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Quick Actions</h3>
+          <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+            Quick Actions
+          </h3>
           <div className="space-y-3">
             <Link
               href="/admin/blogs/new"
@@ -77,7 +91,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className="rounded-lg bg-white shadow p-6">
-          <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Recent Activity</h3>
+          <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+            Recent Activity
+          </h3>
           <div className="space-y-3">
             <div className="text-sm text-gray-600">
               <p>New contact request received</p>
@@ -95,7 +111,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className="rounded-lg bg-white shadow p-6">
-          <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">System Status</h3>
+          <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+            System Status
+          </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">API Status</span>

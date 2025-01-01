@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function AdminLayout({
   children,
@@ -48,7 +48,7 @@ export default function AdminLayout({
             </div>
             <div className="flex items-center">
               <button
-                onClick={() => router.push('/')}
+                onClick={() => router.push("/")}
                 className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Exit Admin
@@ -57,9 +57,7 @@ export default function AdminLayout({
           </div>
         </div>
       </nav>
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {children}
-      </main>
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">{children}</main>
     </div>
   );
 }

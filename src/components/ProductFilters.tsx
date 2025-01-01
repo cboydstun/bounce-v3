@@ -1,19 +1,22 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { ArrowUpDown, Filter, X } from 'lucide-react';
-import type { Product } from '../types/product';
+import { useState, useEffect, useCallback } from "react";
+import { ArrowUpDown, Filter, X } from "lucide-react";
+import type { Product } from "../types/product";
 
-type FilterType = 'ALL' | 'DRY' | 'WET' | 'EXTRA';
+type FilterType = "ALL" | "DRY" | "WET" | "EXTRA";
 
 interface ProductFiltersProps {
   products: Product[];
   onFilteredProducts: (products: Product[]) => void;
 }
 
-export function ProductFilters({ products, onFilteredProducts }: ProductFiltersProps) {
+export function ProductFilters({
+  products,
+  onFilteredProducts,
+}: ProductFiltersProps) {
   const [sortAscending, setSortAscending] = useState(false);
-  const [selectedType, setSelectedType] = useState<FilterType>('ALL');
+  const [selectedType, setSelectedType] = useState<FilterType>("ALL");
   const [showFilters, setShowFilters] = useState(true);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
   const [minSize, setMinSize] = useState<number>(0);
@@ -21,15 +24,15 @@ export function ProductFilters({ products, onFilteredProducts }: ProductFiltersP
   const applyFilters = useCallback(() => {
     const filteredAndSortedProducts = [...products]
       .filter((product) => {
-        if (selectedType !== 'ALL') {
+        if (selectedType !== "ALL") {
           const typeSpec = product.specifications?.find(
-            (spec) => spec.name === 'Type'
+            (spec) => spec.name === "Type",
           );
           if (!typeSpec) return false;
           const typeValue = typeSpec.value;
           if (Array.isArray(typeValue)) {
-            if (selectedType === 'DRY') {
-              if (!typeValue.includes('DRY') || typeValue.includes('WET'))
+            if (selectedType === "DRY") {
+              if (!typeValue.includes("DRY") || typeValue.includes("WET"))
                 return false;
             } else if (!typeValue.includes(selectedType)) return false;
           } else if (typeValue !== selectedType) return false;
@@ -42,7 +45,8 @@ export function ProductFilters({ products, onFilteredProducts }: ProductFiltersP
           return false;
 
         if (product.dimensions) {
-          const floorArea = product.dimensions.length * product.dimensions.width;
+          const floorArea =
+            product.dimensions.length * product.dimensions.width;
           if (floorArea < minSize) return false;
         }
 
@@ -54,7 +58,14 @@ export function ProductFilters({ products, onFilteredProducts }: ProductFiltersP
       });
 
     onFilteredProducts(filteredAndSortedProducts);
-  }, [products, selectedType, priceRange, minSize, sortAscending, onFilteredProducts]);
+  }, [
+    products,
+    selectedType,
+    priceRange,
+    minSize,
+    sortAscending,
+    onFilteredProducts,
+  ]);
 
   // Apply filters whenever any filter value changes
   useEffect(() => {
@@ -80,7 +91,8 @@ export function ProductFilters({ products, onFilteredProducts }: ProductFiltersP
             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-400 to-purple-600 text-white rounded-xl hover:from-blue-500 hover:to-purple-700 transition-all duration-300 font-semibold shadow-md hover:shadow-lg"
           >
             <ArrowUpDown size={20} />
-            <span className="hidden md:inline">Price:</span> {sortAscending ? '↑' : '↓'}
+            <span className="hidden md:inline">Price:</span>{" "}
+            {sortAscending ? "↑" : "↓"}
           </button>
         </div>
       </div>
@@ -94,21 +106,19 @@ export function ProductFilters({ products, onFilteredProducts }: ProductFiltersP
               Type:
             </span>
             <div className="flex flex-wrap gap-2">
-              {(['ALL', 'DRY', 'WET', 'EXTRA'] as FilterType[]).map(
-                (type) => (
-                  <button
-                    key={type}
-                    onClick={() => setSelectedType(type)}
-                    className={`px-4 py-2 rounded-lg transition-all duration-300 font-semibold ${
-                      selectedType === type
-                        ? 'bg-gradient-to-r from-blue-400 to-purple-600 text-white shadow-md'
-                        : 'bg-secondary-blue/10 hover:bg-secondary-blue/20 text-primary-blue'
-                    }`}
-                  >
-                    {type}
-                  </button>
-                )
-              )}
+              {(["ALL", "DRY", "WET", "EXTRA"] as FilterType[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setSelectedType(type)}
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 font-semibold ${
+                    selectedType === type
+                      ? "bg-gradient-to-r from-blue-400 to-purple-600 text-white shadow-md"
+                      : "bg-secondary-blue/10 hover:bg-secondary-blue/20 text-primary-blue"
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
             </div>
           </div>
 

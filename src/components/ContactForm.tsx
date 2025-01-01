@@ -85,11 +85,13 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
       setIsLoading(true);
       setLoadError(null);
       try {
-        const response = await axios.get(`${API_BASE_URL}${API_ROUTES.PRODUCTS}`);
+        const response = await axios.get(
+          `${API_BASE_URL}${API_ROUTES.PRODUCTS}`,
+        );
 
         const filteredBouncers = response.data.filter((product: Bouncer) => {
           const typeSpec = product.specifications?.find(
-            (spec) => spec.name === "Type"
+            (spec) => spec.name === "Type",
           );
           if (!typeSpec) return false;
 
@@ -104,7 +106,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
         // Set selected bouncer image and name if initialBouncerId is provided
         if (initialBouncerId) {
           const selectedBouncer = filteredBouncers.find(
-            (b: Bouncer) => b._id === initialBouncerId
+            (b: Bouncer) => b._id === initialBouncerId,
           );
           if (selectedBouncer) {
             if (selectedBouncer.images[0]?.url) {
@@ -135,11 +137,11 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
     if (numbers.length >= 10) {
       return `(${numbers.slice(0, 3)})-${numbers.slice(3, 6)}-${numbers.slice(
         6,
-        10
+        10,
       )}`;
     } else if (numbers.length >= 6) {
       return `(${numbers.slice(0, 3)})-${numbers.slice(3, 6)}-${numbers.slice(
-        6
+        6,
       )}`;
     } else if (numbers.length >= 3) {
       return `(${numbers.slice(0, 3)})-${numbers.slice(3)}`;
@@ -212,7 +214,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -247,8 +249,8 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
       {/* Status Messages */}
       {submitStatus === "success" && (
         <div className="bg-green-100 text-green-700 p-4 rounded-xl text-center text-lg animate-fade-in">
-          🎊 Woohoo! Your message is on its way! We&apos;ll be in touch super soon!
-          🌟
+          🎊 Woohoo! Your message is on its way! We&apos;ll be in touch super
+          soon! 🌟
         </div>
       )}
 
@@ -285,7 +287,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
             <option value="">Choose a bouncer...</option>
             {bouncers.map((bouncer) => {
               const typeSpec = bouncer.specifications.find(
-                (spec) => spec.name === "Type"
+                (spec) => spec.name === "Type",
               );
               const type = Array.isArray(typeSpec?.value)
                 ? typeSpec.value.join("/")
@@ -374,7 +376,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
             value={formData.partyZipCode}
             onChange={handleChange}
             className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
-            placeholder="Where&apos;s the party at?"
+            placeholder="Where's the party at?"
             autoComplete="postal-code"
           />
           {errors.partyZipCode && (

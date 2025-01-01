@@ -1,15 +1,18 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Image as ProductImage } from '../../../types/product';
-import Image from 'next/image';
+import { useState } from "react";
+import { Image as ProductImage } from "../../../types/product";
+import Image from "next/image";
 
 interface ImageGalleryProps {
   images: ProductImage[];
   productName: string;
 }
 
-export default function ImageGallery({ images, productName }: ImageGalleryProps) {
+export default function ImageGallery({
+  images,
+  productName,
+}: ImageGalleryProps) {
   const [selectedImage, setSelectedImage] = useState(images[0]?.url || null);
 
   return (

@@ -11,28 +11,34 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "SATX Bounce House Rentals | San Antonio Party Equipment Rental",
-  description: "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required. Water slides, party equipment, and more!",
-  keywords: "bounce house rental, San Antonio party rentals, water slides, inflatable rentals, party equipment, event rentals, free delivery",
+  description:
+    "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required. Water slides, party equipment, and more!",
+  keywords:
+    "bounce house rental, San Antonio party rentals, water slides, inflatable rentals, party equipment, event rentals, free delivery",
   openGraph: {
     title: "SATX Bounce House Rentals | San Antonio Party Equipment Rental",
-    description: "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required.",
+    description:
+      "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required.",
     type: "website",
     url: "https://satxbounce.com",
-    images: [{
-      url: "https://www.satxbounce.com/og-image.jpg",
-    }],
+    images: [
+      {
+        url: "https://www.satxbounce.com/og-image.jpg",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "SATX Bounce House Rentals | San Antonio Party Equipment Rental",
-    description: "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required.",
+    description:
+      "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required.",
     images: ["https://www.satxbounce.com/og-image.jpg"],
   },
   other: {
     "geo.region": "US-TX",
     "geo.placename": "San Antonio",
     "geo.position": "29.4241;-98.4936",
-    "ICBM": "29.4241, -98.4936",
+    ICBM: "29.4241, -98.4936",
   },
 };
 
@@ -91,7 +97,9 @@ export default async function HomePage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(localBusinessSchema),
+        }}
       />
 
       {/* Hero Section */}

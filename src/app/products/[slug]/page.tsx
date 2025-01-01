@@ -29,7 +29,7 @@ export async function generateMetadata({
 
   const getSpecValue = (name: string) => {
     const spec = product.specifications.find(
-      (s) => s.name.toLowerCase() === name.toLowerCase()
+      (s) => s.name.toLowerCase() === name.toLowerCase(),
     );
     return spec?.value || "N/A";
   };
@@ -50,17 +50,13 @@ export async function generateMetadata({
   };
 }
 
-export default async function ProductDetail({
-  params,
-}: {
-  params: Params;
-}) {
+export default async function ProductDetail({ params }: { params: Params }) {
   const { slug } = await params;
   const product = await getProduct(slug);
 
   const getSpecValue = (name: string) => {
     const spec = product.specifications.find(
-      (s) => s.name.toLowerCase() === name.toLowerCase()
+      (s) => s.name.toLowerCase() === name.toLowerCase(),
     );
     return spec?.value || "N/A";
   };

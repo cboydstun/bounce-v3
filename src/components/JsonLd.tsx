@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 type Props = {
   organizationData: {
@@ -26,36 +26,36 @@ export default function JsonLd({ organizationData }: Props) {
       type="application/ld+json"
       dangerouslySetInnerHTML={{
         __html: JSON.stringify({
-          '@context': 'https://schema.org',
-          '@type': 'LocalBusiness',
-          '@id': organizationData.url,
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          "@id": organizationData.url,
           name: organizationData.name,
           url: organizationData.url,
           logo: organizationData.logo,
           description: organizationData.description,
           address: {
-            '@type': 'PostalAddress',
+            "@type": "PostalAddress",
             ...organizationData.address,
           },
           contactPoint: {
-            '@type': 'ContactPoint',
+            "@type": "ContactPoint",
             ...organizationData.contactPoint,
           },
           sameAs: [
-            'https://www.facebook.com/satxbounce',
-            'https://www.instagram.com/satxbounce',
+            "https://www.facebook.com/satxbounce",
+            "https://www.instagram.com/satxbounce",
           ],
-          openingHours: ['Mo-Su 08:00-20:00'],
-          priceRange: '$$',
-          paymentAccepted: ['Cash', 'Credit Card'],
+          openingHours: ["Mo-Su 08:00-20:00"],
+          priceRange: "$$",
+          paymentAccepted: ["Cash", "Credit Card"],
           areaServed: {
-            '@type': 'GeoCircle',
+            "@type": "GeoCircle",
             geoMidpoint: {
-              '@type': 'GeoCoordinates',
+              "@type": "GeoCoordinates",
               latitude: 29.4241,
               longitude: -98.4936,
             },
-            geoRadius: '50 mi',
+            geoRadius: "50 mi",
           },
         }),
       }}

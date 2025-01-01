@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { API_BASE_URL, API_ROUTES } from '@/config/constants';
+import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Blog } from "@/types/blog";
 
@@ -98,11 +98,13 @@ export default function BlogList() {
                       ))}
                     </div>
                   )}
-                  
+
                   <div className="flex items-center justify-between text-sm text-gray-500 border-t border-gray-100 pt-4">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">
-                        {blog.publishDate ? new Date(blog.publishDate).toLocaleDateString() : "Unknown date"}
+                        {blog.publishDate
+                          ? new Date(blog.publishDate).toLocaleDateString()
+                          : "Unknown date"}
                       </span>
                       {blog.readTime && (
                         <>

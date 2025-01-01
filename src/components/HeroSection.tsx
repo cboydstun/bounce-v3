@@ -6,7 +6,7 @@ const HeroSection: React.FC = () => {
   return (
     <div className="relative w-full min-h-[800px] flex items-center justify-center bg-cover bg-center bg-fixed overflow-hidden">
       {/* Optimized Background with GPU acceleration */}
-      <div 
+      <div
         className="absolute inset-0 w-full h-full bg-gradient-to-br from-blue-600 via-purple-600 to-blue-900"
         style={{
           backgroundImage: 'url("/hero-background.webp")',
@@ -20,7 +20,7 @@ const HeroSection: React.FC = () => {
       />
 
       {/* Simplified Gradient Overlay */}
-      <div 
+      <div
         className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/50"
         style={{ willChange: "opacity" }}
       ></div>
@@ -30,11 +30,11 @@ const HeroSection: React.FC = () => {
         <div
           className="absolute animate-float"
           style={{
-            left: '20%',
-            top: '30%',
+            left: "20%",
+            top: "30%",
             opacity: 0.1,
-            transform: 'translateZ(0)',
-            willChange: 'transform',
+            transform: "translateZ(0)",
+            willChange: "transform",
           }}
         >
           <div className="w-64 h-64 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-600/20 blur-3xl"></div>

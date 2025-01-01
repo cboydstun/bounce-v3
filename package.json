@@ -12,7 +12,9 @@
     "postbuild": "npm run generate-sitemap",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "format": "prettier --write .",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@next/third-parties": "^15.1.3",

@@ -1,5 +1,5 @@
-import React from 'react';
-import Script from 'next/script';
+import React from "react";
+import Script from "next/script";
 
 const GoogleAnalytics = () => {
   const measurementId = process.env.NEXT_GOOGLE_ANALYTICS_ID;
@@ -7,11 +7,11 @@ const GoogleAnalytics = () => {
   return (
     <>
       <Script
-        strategy='lazyOnload'
+        strategy="lazyOnload"
         src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
       />
 
-      <Script id='google-analytics' strategy='lazyOnload'>
+      <Script id="google-analytics" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}

@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import BlogForm, { BlogFormData } from '../../BlogForm';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import api from '@/utils/api';
-import { API_BASE_URL, API_ROUTES } from '@/config/constants';
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import BlogForm, { BlogFormData } from "../../BlogForm";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import api from "@/utils/api";
+import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 
 interface PageProps {
   params: Promise<{
@@ -17,13 +17,15 @@ export default function EditBlog({ params }: PageProps) {
   const router = useRouter();
   const [blog, setBlog] = useState<BlogFormData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const resolvedParams = React.use(params);
 
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const response = await api.get(`${API_BASE_URL}${API_ROUTES.BLOGS}/${resolvedParams.id}`);
+        const response = await api.get(
+          `${API_BASE_URL}${API_ROUTES.BLOGS}/${resolvedParams.id}`,
+        );
         // Ensure arrays are initialized even if null in response
         const formattedBlog: BlogFormData = {
           ...response.data,
@@ -33,7 +35,7 @@ export default function EditBlog({ params }: PageProps) {
           meta: response.data.meta || {
             views: 0,
             likes: 0,
-            shares: 0
+            shares: 0,
           },
           isFeature: response.data.isFeature || false,
           comments: response.data.comments || [],
@@ -42,14 +44,14 @@ export default function EditBlog({ params }: PageProps) {
           createdAt: response.data.createdAt,
           updatedAt: response.data.updatedAt,
           seo: response.data.seo || {
-            metaTitle: '',
-            metaDescription: '',
-            focusKeyword: ''
-          }
+            metaTitle: "",
+            metaDescription: "",
+            focusKeyword: "",
+          },
         };
         setBlog(formattedBlog);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
         setIsLoading(false);
       }
@@ -63,17 +65,22 @@ export default function EditBlog({ params }: PageProps) {
       // Convert arrays to comma-separated strings
       const formattedData = {
         ...data,
-        categories: Array.isArray(data.categories) ? data.categories.join(',') : data.categories,
-        tags: Array.isArray(data.tags) ? data.tags.join(',') : data.tags
+        categories: Array.isArray(data.categories)
+          ? data.categories.join(",")
+          : data.categories,
+        tags: Array.isArray(data.tags) ? data.tags.join(",") : data.tags,
       };
 
-      await api.put(`${API_BASE_URL}${API_ROUTES.BLOGS}/${resolvedParams.id}`, formattedData);
-      router.push('/admin/blogs');
+      await api.put(
+        `${API_BASE_URL}${API_ROUTES.BLOGS}/${resolvedParams.id}`,
+        formattedData,
+      );
+      router.push("/admin/blogs");
     } catch (error) {
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error('Failed to update blog post');
+      throw new Error("Failed to update blog post");
     }
   };
 
@@ -89,8 +96,8 @@ export default function EditBlog({ params }: PageProps) {
     return (
       <div className="text-center text-red-600 p-4">
         <p>Error: {error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
+        <button
+          onClick={() => window.location.reload()}
           className="mt-2 text-indigo-600 hover:text-indigo-900"
         >
           Try Again
@@ -103,7 +110,9 @@ export default function EditBlog({ params }: PageProps) {
     <div className="py-10 px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold leading-6 text-gray-900">Edit Blog Post</h1>
+          <h1 className="text-2xl font-semibold leading-6 text-gray-900">
+            Edit Blog Post
+          </h1>
           <p className="mt-2 text-sm text-gray-700">
             Make changes to the blog post below.
           </p>
@@ -111,11 +120,7 @@ export default function EditBlog({ params }: PageProps) {
       </div>
       <div className="mt-8">
         {blog && (
-          <BlogForm 
-            initialData={blog}
-            onSubmit={handleSubmit}
-            isEdit={true}
-          />
+          <BlogForm initialData={blog} onSubmit={handleSubmit} isEdit={true} />
         )}
       </div>
     </div>

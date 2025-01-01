@@ -1,19 +1,23 @@
-'use client';
+"use client";
 
-import { useEffect, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
-import ProductForm from '../../ProductForm';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import type { ProductFormData } from '../../ProductForm';
-import api from '@/utils/api';
-import { API_BASE_URL, API_ROUTES } from '@/config/constants';
+import { useEffect, useState, use } from "react";
+import { useRouter } from "next/navigation";
+import ProductForm from "../../ProductForm";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import type { ProductFormData } from "../../ProductForm";
+import api from "@/utils/api";
+import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 
 interface Product extends ProductFormData {
   slug: string;
   _id: string;
 }
 
-export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditProductPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const unwrappedParams = use(params);
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
@@ -24,20 +28,26 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     const fetchProduct = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('auth_token');
+        const token = localStorage.getItem("auth_token");
         if (!token) {
-          setError('Authentication required. Please log in.');
+          setError("Authentication required. Please log in.");
           return;
         }
 
-        const response = await api.get(`${API_BASE_URL}${API_ROUTES.PRODUCTS}/${unwrappedParams.id}`);
+        const response = await api.get(
+          `${API_BASE_URL}${API_ROUTES.PRODUCTS}/${unwrappedParams.id}`,
+        );
         setProduct(response.data);
       } catch (err) {
-        console.error('Fetch error:', err);
-        if (err instanceof Error && err.message.includes('401')) {
-          setError('Authentication failed. Please log in again.');
+        console.error("Fetch error:", err);
+        if (err instanceof Error && err.message.includes("401")) {
+          setError("Authentication failed. Please log in again.");
         } else {
-          setError(err instanceof Error ? err.message : 'An error occurred while fetching the product');
+          setError(
+            err instanceof Error
+              ? err.message
+              : "An error occurred while fetching the product",
+          );
         }
       } finally {
         setIsLoading(false);
@@ -51,10 +61,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     try {
       setIsLoading(true);
       setError(null);
-      
-      const token = localStorage.getItem('auth_token');
+
+      const token = localStorage.getItem("auth_token");
       if (!token) {
-        setError('Authentication required. Please log in.');
+        setError("Authentication required. Please log in.");
         return;
       }
 
@@ -63,13 +73,15 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         slug: product?.slug, // Preserve the slug from the original product
       });
 
-      router.push('/admin/products');
+      router.push("/admin/products");
     } catch (err) {
-      console.error('Submit error:', err);
-      if (err instanceof Error && err.message.includes('401')) {
-        setError('Authentication failed. Please log in again.');
+      console.error("Submit error:", err);
+      if (err instanceof Error && err.message.includes("401")) {
+        setError("Authentication failed. Please log in again.");
       } else {
-        setError(err instanceof Error ? err.message : 'Failed to update product');
+        setError(
+          err instanceof Error ? err.message : "Failed to update product",
+        );
       }
     } finally {
       setIsLoading(false);
@@ -82,10 +94,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         <div className="flex">
           <div className="ml-3">
             <h3 className="text-sm font-medium text-red-800">{error}</h3>
-            {error.toLowerCase().includes('log in') && (
+            {error.toLowerCase().includes("log in") && (
               <div className="mt-2">
                 <button
-                  onClick={() => router.push('/login')}
+                  onClick={() => router.push("/login")}
                   className="text-sm font-medium text-red-800 underline hover:text-red-600"
                 >
                   Go to Login
@@ -121,7 +133,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
       <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
         <div className="px-4 py-6 sm:p-8">
-          <ProductForm 
+          <ProductForm
             initialData={formData}
             onSubmit={handleSubmit}
             isEdit={true}

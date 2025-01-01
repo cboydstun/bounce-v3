@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { API_BASE_URL, API_ROUTES } from '@/config/constants';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 
 interface ContactFormData {
   bouncer: string;
@@ -27,12 +27,12 @@ interface ContactFormData {
 export default function NewContact() {
   const router = useRouter();
   const [formData, setFormData] = useState<ContactFormData>({
-    bouncer: '',
-    email: '',
-    phone: '',
-    partyDate: '',
-    partyZipCode: '',
-    message: '',
+    bouncer: "",
+    email: "",
+    phone: "",
+    partyDate: "",
+    partyZipCode: "",
+    message: "",
     confirmed: false,
     tablesChairs: false,
     generator: false,
@@ -42,7 +42,7 @@ export default function NewContact() {
     overnight: false,
     margaritaMachine: false,
     slushyMachine: false,
-    sourcePage: 'admin',
+    sourcePage: "admin",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,47 +51,54 @@ export default function NewContact() {
     e.preventDefault();
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('auth_token');
-      
+      const token = localStorage.getItem("auth_token");
+
       if (!token) {
-        router.push('/login');
+        router.push("/login");
         return;
       }
 
       const response = await fetch(`${API_BASE_URL}${API_ROUTES.CONTACTS}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       if (response.status === 401) {
-        localStorage.removeItem('auth_token');
-        router.push('/login');
+        localStorage.removeItem("auth_token");
+        router.push("/login");
         return;
       }
 
       if (!response.ok) {
-        throw new Error('Failed to create contact');
+        throw new Error("Failed to create contact");
       }
 
-      router.push('/admin/contacts');
+      router.push("/admin/contacts");
       router.refresh();
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to create contact');
-      console.error('Error creating contact:', error);
+      setError(
+        error instanceof Error ? error.message : "Failed to create contact",
+      );
+      console.error("Error creating contact:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
   };
 
@@ -106,7 +113,7 @@ export default function NewContact() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-6">New Contact Request</h1>
-      
+
       {error && (
         <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
           {error}
@@ -319,7 +326,11 @@ export default function NewContact() {
             disabled={isLoading}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            {isLoading ? <LoadingSpinner className="w-5 h-5" /> : 'Create Contact'}
+            {isLoading ? (
+              <LoadingSpinner className="w-5 h-5" />
+            ) : (
+              "Create Contact"
+            )}
           </button>
         </div>
       </form>

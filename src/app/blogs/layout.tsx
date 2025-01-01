@@ -1,5 +1,5 @@
-import { Metadata } from 'next';
-import Script from 'next/script';
+import { Metadata } from "next";
+import Script from "next/script";
 
 // Create blog listing structured data
 const createBlogListingSchema = () => {
@@ -13,19 +13,22 @@ const createBlogListingSchema = () => {
 };
 
 export const metadata: Metadata = {
-  title: 'Blog | Party Planning Tips & News | SATX Bounce House Rentals',
-  description: 'Read our latest blog posts about party planning tips, bounce house safety, event ideas, and more. Stay updated with SATX Bounce House Rentals in San Antonio.',
-  keywords: 'party planning blog, bounce house tips, event ideas, San Antonio parties, party safety tips, event planning guide',
+  title: "Blog | Party Planning Tips & News | SATX Bounce House Rentals",
+  description:
+    "Read our latest blog posts about party planning tips, bounce house safety, event ideas, and more. Stay updated with SATX Bounce House Rentals in San Antonio.",
+  keywords:
+    "party planning blog, bounce house tips, event ideas, San Antonio parties, party safety tips, event planning guide",
   openGraph: {
-    title: 'Blog | Party Planning Tips & News | SATX Bounce House Rentals',
-    description: 'Read our latest blog posts about party planning tips, bounce house safety, event ideas, and more. Stay updated with SATX Bounce House Rentals in San Antonio.',
-    type: 'website',
+    title: "Blog | Party Planning Tips & News | SATX Bounce House Rentals",
+    description:
+      "Read our latest blog posts about party planning tips, bounce house safety, event ideas, and more. Stay updated with SATX Bounce House Rentals in San Antonio.",
+    type: "website",
   },
   other: {
-    'geo.region': 'US-TX',
-    'geo.placename': 'San Antonio',
-    'geo.position': '29.4241;-98.4936',
-    'ICBM': '29.4241, -98.4936',
+    "geo.region": "US-TX",
+    "geo.placename": "San Antonio",
+    "geo.position": "29.4241;-98.4936",
+    ICBM: "29.4241, -98.4936",
   },
 };
 

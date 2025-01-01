@@ -20,8 +20,10 @@ const ProductCarousel = () => {
   useEffect(() => {
     // Update items per page based on window width
     const handleResize = () => {
-      if (window.innerWidth >= 1024) setItemsPerPage(3); // lg
-      else if (window.innerWidth >= 768) setItemsPerPage(2); // md
+      if (window.innerWidth >= 1024)
+        setItemsPerPage(3); // lg
+      else if (window.innerWidth >= 768)
+        setItemsPerPage(2); // md
       else setItemsPerPage(1); // mobile
       setCurrentPage(0); // Reset to first page on resize
     };
@@ -45,8 +47,8 @@ const ProductCarousel = () => {
           .filter((product: Product) =>
             product.specifications.some(
               (spec: Specification) =>
-                spec.name === "Type" && spec.value === "DRY"
-            )
+                spec.name === "Type" && spec.value === "DRY",
+            ),
           )
           .sort((a: Product, b: Product) => b.price.base - a.price.base);
 
@@ -81,7 +83,7 @@ const ProductCarousel = () => {
   const pageCount = Math.ceil(products.length / itemsPerPage);
   const visibleProducts = products.slice(
     currentPage * itemsPerPage,
-    currentPage * itemsPerPage + itemsPerPage
+    currentPage * itemsPerPage + itemsPerPage,
   );
 
   return (

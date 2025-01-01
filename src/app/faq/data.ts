@@ -14,8 +14,7 @@ export const faqs: FAQ[] = [
   {
     question:
       "What payment methods do you accept for bounce houses and water slide rentals?",
-    answer:
-      "We accept cash, CashApp, and credit card payments through PayPal.",
+    answer: "We accept cash, CashApp, and credit card payments through PayPal.",
   },
   {
     question: "Do I need a generator for the bounce houses?",
@@ -53,8 +52,7 @@ export const faqs: FAQ[] = [
       "We understand that plans can change. If you need to cancel, please notify us at least 48 hours before your scheduled delivery time for a full refund.",
   },
   {
-    question:
-      "Is there a minimum age requirement for using the bounce houses?",
+    question: "Is there a minimum age requirement for using the bounce houses?",
     answer:
       "While there is no strict minimum age requirement, we recommend that children using the bounce houses are supervised and of appropriate age for safe enjoyment.",
   },

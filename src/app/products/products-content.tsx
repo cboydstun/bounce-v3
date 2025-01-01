@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { Product } from '../../types/product';
-import { API_ROUTES } from '../../config/constants';
-import api from '../../utils/api';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { ProductFilters } from '../../components/ProductFilters';
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { Product } from "../../types/product";
+import { API_ROUTES } from "../../config/constants";
+import api from "../../utils/api";
+import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
+import { ProductFilters } from "../../components/ProductFilters";
 
 function ProductGrid({ products }: { products: Product[] }) {
   return (
@@ -41,7 +41,7 @@ function ProductGrid({ products }: { products: Product[] }) {
             </h2>
             {product.dimensions && (
               <p className="text-gray-600 mb-4">
-                {product.dimensions.length} W x {product.dimensions.width} L x{' '}
+                {product.dimensions.length} W x {product.dimensions.width} L x{" "}
                 {product.dimensions.height} H {product.dimensions.unit}
               </p>
             )}
@@ -63,8 +63,8 @@ async function getProducts() {
     const response = await api.get(API_ROUTES.PRODUCTS);
     return response.data;
   } catch (error) {
-    console.error('Error fetching products:', error);
-    throw new Error('Failed to fetch products');
+    console.error("Error fetching products:", error);
+    throw new Error("Failed to fetch products");
   }
 }
 
@@ -81,12 +81,12 @@ export function ProductsContent() {
         setInitialProducts(products);
         setFilteredProducts(products);
       } catch (error) {
-        console.error('Failed to fetch products:', error);
+        console.error("Failed to fetch products:", error);
       } finally {
         setLoading(false);
       }
     }
-    
+
     fetchProducts();
   }, []);
 
@@ -104,11 +104,13 @@ export function ProductsContent() {
         {/* Header Section */}
         <div className="flex flex-col gap-6 mb-12">
           <div className="flex flex-wrap justify-between items-center gap-4">
-            <h1 className="text-3xl font-bold text-primary-blue">Our Products</h1>
+            <h1 className="text-3xl font-bold text-primary-blue">
+              Our Products
+            </h1>
           </div>
-          <ProductFilters 
-            products={initialProducts} 
-            onFilteredProducts={setFilteredProducts} 
+          <ProductFilters
+            products={initialProducts}
+            onFilteredProducts={setFilteredProducts}
           />
         </div>
 

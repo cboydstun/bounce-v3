@@ -51,8 +51,8 @@ export interface Product {
   description: string;
   category: string;
   price: Price;
-  rentalDuration: 'hourly' | 'half-day' | 'full-day' | 'weekend';
-  availability: 'available' | 'rented' | 'maintenance' | 'retired';
+  rentalDuration: "hourly" | "half-day" | "full-day" | "weekend";
+  availability: "available" | "rented" | "maintenance" | "retired";
   images: Image[];
   specifications: Specification[];
   dimensions: Dimensions;

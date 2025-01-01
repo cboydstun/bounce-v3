@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, FormEvent } from 'react';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useState, FormEvent } from "react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 export interface BlogFormData {
   title: string;
@@ -24,7 +24,7 @@ export interface BlogFormData {
   featuredImage?: string;
   categories: string[];
   tags: string[];
-  status: 'draft' | 'published' | 'archived';
+  status: "draft" | "published" | "archived";
   publishDate?: Date;
   lastModified?: Date;
   comments?: Array<{
@@ -56,56 +56,62 @@ interface BlogFormProps {
   isEdit?: boolean;
 }
 
-export default function BlogForm({ initialData, onSubmit, isEdit = false }: BlogFormProps) {
+export default function BlogForm({
+  initialData,
+  onSubmit,
+  isEdit = false,
+}: BlogFormProps) {
   const [formData, setFormData] = useState<BlogFormData>(
     initialData || {
-      title: '',
-      slug: '',
+      title: "",
+      slug: "",
       author: {
-        _id: '',
-        email: ''
+        _id: "",
+        email: "",
       },
-      introduction: '',
-      body: '',
-      conclusion: '',
+      introduction: "",
+      body: "",
+      conclusion: "",
       images: [],
-      excerpt: '',
-      featuredImage: '',
+      excerpt: "",
+      featuredImage: "",
       categories: [],
       tags: [],
-      status: 'draft',
+      status: "draft",
       publishDate: undefined,
       lastModified: undefined,
       comments: [],
       meta: {
         views: 0,
         likes: 0,
-        shares: 0
+        shares: 0,
       },
       seo: {
-        metaTitle: '',
-        metaDescription: '',
-        focusKeyword: ''
+        metaTitle: "",
+        metaDescription: "",
+        focusKeyword: "",
       },
       readTime: 0,
       isFeature: false,
       relatedPosts: [],
       createdAt: undefined,
-      updatedAt: undefined
-    }
+      updatedAt: undefined,
+    },
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
       await onSubmit(formData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while saving');
+      setError(
+        err instanceof Error ? err.message : "An error occurred while saving",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +130,10 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
       )}
 
       <div>
-        <label htmlFor="title" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="title"
+          className="block text-sm font-medium leading-6 text-gray-900"
+        >
           Title
         </label>
         <div className="mt-2">
@@ -132,7 +141,9 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
             type="text"
             id="title"
             value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, title: e.target.value })
+            }
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
             required
           />
@@ -140,7 +151,10 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
       </div>
 
       <div>
-        <label htmlFor="slug" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="slug"
+          className="block text-sm font-medium leading-6 text-gray-900"
+        >
           Slug
         </label>
         <div className="mt-2">
@@ -156,14 +170,17 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
       </div>
 
       <div>
-        <label htmlFor="author" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="author"
+          className="block text-sm font-medium leading-6 text-gray-900"
+        >
           Author Email
         </label>
         <div className="mt-2">
           <input
             type="text"
             id="author"
-            value={formData.author?.email || 'No author assigned'}
+            value={formData.author?.email || "No author assigned"}
             disabled
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 bg-gray-100"
           />
@@ -171,7 +188,10 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
       </div>
 
       <div>
-        <label htmlFor="introduction" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="introduction"
+          className="block text-sm font-medium leading-6 text-gray-900"
+        >
           Introduction
         </label>
         <div className="mt-2">
@@ -179,7 +199,9 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
             id="introduction"
             rows={3}
             value={formData.introduction}
-            onChange={(e) => setFormData({ ...formData, introduction: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, introduction: e.target.value })
+            }
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
             required
           />
@@ -187,7 +209,10 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
       </div>
 
       <div>
-        <label htmlFor="body" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="body"
+          className="block text-sm font-medium leading-6 text-gray-900"
+        >
           Body
         </label>
         <div className="mt-2">
@@ -203,7 +228,10 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
       </div>
 
       <div>
-        <label htmlFor="conclusion" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="conclusion"
+          className="block text-sm font-medium leading-6 text-gray-900"
+        >
           Conclusion
         </label>
         <div className="mt-2">
@@ -211,7 +239,9 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
             id="conclusion"
             rows={3}
             value={formData.conclusion}
-            onChange={(e) => setFormData({ ...formData, conclusion: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, conclusion: e.target.value })
+            }
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
             required
           />
@@ -219,44 +249,68 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
       </div>
 
       <div>
-        <label htmlFor="categories" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="categories"
+          className="block text-sm font-medium leading-6 text-gray-900"
+        >
           Categories (comma-separated)
         </label>
         <div className="mt-2">
           <input
             type="text"
             id="categories"
-            value={formData.categories.join(', ')}
-            onChange={(e) => setFormData({ ...formData, categories: e.target.value.split(',').map(cat => cat.trim()) })}
+            value={formData.categories.join(", ")}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                categories: e.target.value.split(",").map((cat) => cat.trim()),
+              })
+            }
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="tags" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="tags"
+          className="block text-sm font-medium leading-6 text-gray-900"
+        >
           Tags (comma-separated)
         </label>
         <div className="mt-2">
           <input
             type="text"
             id="tags"
-            value={formData.tags.join(', ')}
-            onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(',').map(tag => tag.trim()) })}
+            value={formData.tags.join(", ")}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                tags: e.target.value.split(",").map((tag) => tag.trim()),
+              })
+            }
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="status" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="status"
+          className="block text-sm font-medium leading-6 text-gray-900"
+        >
           Status
         </label>
         <div className="mt-2">
           <select
             id="status"
             value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value as 'draft' | 'published' | 'archived' })}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                status: e.target.value as "draft" | "published" | "archived",
+              })
+            }
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
           >
             <option value="draft">Draft</option>
@@ -267,7 +321,10 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
       </div>
 
       <div>
-        <label htmlFor="isFeature" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="isFeature"
+          className="block text-sm font-medium leading-6 text-gray-900"
+        >
           Featured Post
         </label>
         <div className="mt-2">
@@ -275,7 +332,9 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
             type="checkbox"
             id="isFeature"
             checked={formData.isFeature}
-            onChange={(e) => setFormData({ ...formData, isFeature: e.target.checked })}
+            onChange={(e) =>
+              setFormData({ ...formData, isFeature: e.target.checked })
+            }
             className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
           />
         </div>
@@ -296,8 +355,10 @@ export default function BlogForm({ initialData, onSubmit, isEdit = false }: Blog
         >
           {isLoading ? (
             <LoadingSpinner className="w-5 h-5" />
+          ) : isEdit ? (
+            "Update Blog Post"
           ) : (
-            isEdit ? 'Update Blog Post' : 'Create Blog Post'
+            "Create Blog Post"
           )}
         </button>
       </div>

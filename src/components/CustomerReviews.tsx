@@ -62,7 +62,7 @@ const CustomerReviews = () => {
     return [...Array(5)].map((_, i) => (
       <Star
         key={`star-${i}`}
-        className={`w-5 h-5 ${i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+        className={`w-5 h-5 ${i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
       />
     ));
   };
@@ -145,7 +145,10 @@ const CustomerReviews = () => {
                     <div className="flex items-center gap-2">
                       {renderStars(reviews[activeIndex].rating)}
                       <span className="text-gray-500 ml-2">
-                        {reviews[activeIndex].date.split('-').reverse().join('/')}
+                        {reviews[activeIndex].date
+                          .split("-")
+                          .reverse()
+                          .join("/")}
                       </span>
                     </div>
                   </div>

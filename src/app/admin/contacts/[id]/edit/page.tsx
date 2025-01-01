@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { API_BASE_URL, API_ROUTES } from '@/config/constants';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 
 interface ContactFormData {
   bouncer: string;
@@ -33,12 +33,12 @@ export default function EditContact({ params }: PageProps) {
   const router = useRouter();
   const resolvedParams = React.use(params);
   const [formData, setFormData] = useState<ContactFormData>({
-    bouncer: '',
-    email: '',
-    phone: '',
-    partyDate: '',
-    partyZipCode: '',
-    message: '',
+    bouncer: "",
+    email: "",
+    phone: "",
+    partyDate: "",
+    partyZipCode: "",
+    message: "",
     confirmed: false,
     tablesChairs: false,
     generator: false,
@@ -56,27 +56,32 @@ export default function EditContact({ params }: PageProps) {
     const fetchContact = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('auth_token');
-        const response = await fetch(`${API_BASE_URL}${API_ROUTES.CONTACTS}/${resolvedParams.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const token = localStorage.getItem("auth_token");
+        const response = await fetch(
+          `${API_BASE_URL}${API_ROUTES.CONTACTS}/${resolvedParams.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch contact');
+          throw new Error("Failed to fetch contact");
         }
 
         const contact = await response.json();
         // Format the date to YYYY-MM-DD for the date input
-        const formattedDate = contact.partyDate ? new Date(contact.partyDate).toISOString().split('T')[0] : '';
+        const formattedDate = contact.partyDate
+          ? new Date(contact.partyDate).toISOString().split("T")[0]
+          : "";
         setFormData({
           bouncer: contact.bouncer,
           email: contact.email,
-          phone: contact.phone || '',
+          phone: contact.phone || "",
           partyDate: formattedDate,
           partyZipCode: contact.partyZipCode,
-          message: contact.message || '',
+          message: contact.message || "",
           confirmed: contact.confirmed,
           tablesChairs: contact.tablesChairs || false,
           generator: contact.generator || false,
@@ -88,8 +93,8 @@ export default function EditContact({ params }: PageProps) {
           slushyMachine: contact.slushyMachine || false,
         });
       } catch (error) {
-        setError(error instanceof Error ? error.message : 'An error occurred');
-        console.error('Error fetching contact:', error);
+        setError(error instanceof Error ? error.message : "An error occurred");
+        console.error("Error fetching contact:", error);
       } finally {
         setIsLoading(false);
       }
@@ -102,47 +107,57 @@ export default function EditContact({ params }: PageProps) {
     e.preventDefault();
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('auth_token');
-      
+      const token = localStorage.getItem("auth_token");
+
       if (!token) {
-        router.push('/login');
+        router.push("/login");
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}${API_ROUTES.CONTACTS}/${resolvedParams.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `${API_BASE_URL}${API_ROUTES.CONTACTS}/${resolvedParams.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
         },
-        body: JSON.stringify(formData)
-      });
+      );
 
       if (response.status === 401) {
-        localStorage.removeItem('auth_token');
-        router.push('/login');
+        localStorage.removeItem("auth_token");
+        router.push("/login");
         return;
       }
 
       if (!response.ok) {
-        throw new Error('Failed to update contact');
+        throw new Error("Failed to update contact");
       }
 
-      router.push('/admin/contacts');
+      router.push("/admin/contacts");
       router.refresh();
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to update contact');
-      console.error('Error updating contact:', error);
+      setError(
+        error instanceof Error ? error.message : "Failed to update contact",
+      );
+      console.error("Error updating contact:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
   };
 
@@ -157,7 +172,7 @@ export default function EditContact({ params }: PageProps) {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-6">Edit Contact Request</h1>
-      
+
       {error && (
         <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
           {error}
@@ -370,7 +385,11 @@ export default function EditContact({ params }: PageProps) {
             disabled={isLoading}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            {isLoading ? <LoadingSpinner className="w-5 h-5" /> : 'Save Changes'}
+            {isLoading ? (
+              <LoadingSpinner className="w-5 h-5" />
+            ) : (
+              "Save Changes"
+            )}
           </button>
         </div>
       </form>

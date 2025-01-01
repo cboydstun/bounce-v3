@@ -7,7 +7,8 @@ const contactPageSchema = {
   "@context": "https://schema.org",
   "@type": "ContactPage",
   name: "Contact SATX Bounce House Rentals",
-  description: "Contact us for bounce house rentals in San Antonio. Free delivery within Loop 1604!",
+  description:
+    "Contact us for bounce house rentals in San Antonio. Free delivery within Loop 1604!",
   mainEntity: {
     "@type": "LocalBusiness",
     name: "SATX Bounce House Rentals",
@@ -30,11 +31,15 @@ const contactPageSchema = {
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Contact Us | SATX Bounce House Rentals San Antonio",
-    description: "Contact SATX Bounce House Rentals for party equipment rentals in San Antonio. Free delivery within Loop 1604! Call us at 512-210-0194 or fill out our contact form.",
-    keywords: "contact SATX Bounce House, bounce house rental contact, San Antonio party rentals, rental inquiry, free delivery, party equipment contact",
+    description:
+      "Contact SATX Bounce House Rentals for party equipment rentals in San Antonio. Free delivery within Loop 1604! Call us at 512-210-0194 or fill out our contact form.",
+    keywords:
+      "contact SATX Bounce House, bounce house rental contact, San Antonio party rentals, rental inquiry, free delivery, party equipment contact",
     openGraph: {
-      title: "Contact SATX Bounce House Rentals | San Antonio Party Equipment Rental",
-      description: "Contact us for bounce house rentals in San Antonio. Free delivery within Loop 1604! Available 7 days a week from 8am to 8pm.",
+      title:
+        "Contact SATX Bounce House Rentals | San Antonio Party Equipment Rental",
+      description:
+        "Contact us for bounce house rentals in San Antonio. Free delivery within Loop 1604! Available 7 days a week from 8am to 8pm.",
       type: "website",
     },
     alternates: {
@@ -44,7 +49,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "geo.region": "US-TX",
       "geo.placename": "San Antonio",
       "geo.position": "29.4241;-98.4936",
-      "ICBM": "29.4241, -98.4936",
+      ICBM: "29.4241, -98.4936",
     },
   };
 }
@@ -67,10 +72,13 @@ export default function ContactPage() {
                 </span>
               </h1>
               <p className="text-xl text-white max-w-2xl mx-auto">
-                Ready to make your event unforgettable? Let&apos;s start planning
-                your perfect party!
+                Ready to make your event unforgettable? Let&apos;s start
+                planning your perfect party!
               </p>
-              <p className="text-lg text-gray-600">Don&apos;t hesitate to reach out to us! We&apos;re here to help make your event unforgettable.</p>
+              <p className="text-lg text-gray-600">
+                Don&apos;t hesitate to reach out to us! We&apos;re here to help
+                make your event unforgettable.
+              </p>
             </div>
 
             <div className="bg-white rounded-xl shadow-lg p-8 transform transition-all duration-300 hover:shadow-xl">

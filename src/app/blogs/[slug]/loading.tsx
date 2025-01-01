@@ -4,7 +4,7 @@ export default function Loading() {
       <div className="container mx-auto px-4">
         <article className="bg-white rounded-xl shadow-lg p-8 mb-12 animate-pulse">
           <div className="w-full h-[400px] bg-gray-200 rounded-xl mb-8" />
-          
+
           <div className="space-y-4 mb-8">
             <div className="flex gap-2">
               <div className="h-6 w-20 bg-gray-200 rounded-full" />
