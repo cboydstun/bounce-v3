@@ -18,31 +18,40 @@ const geistMono = Geist_Mono({
 });
 
 export const viewport: Viewport = {
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  colorScheme: 'light',
+  colorScheme: "light",
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#800080' },
-    { media: '(prefers-color-scheme: dark)', color: '#663399' },
+    { media: "(prefers-color-scheme: light)", color: "#800080" },
+    { media: "(prefers-color-scheme: dark)", color: "#663399" },
   ],
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://satxbounce.com'),
+  metadataBase: new URL("https://satxbounce.com"),
   title: "SATX Bounce | San Antonio Bounce House Rentals",
-  description: "Making your events memorable with safe and clean bounce house rentals in San Antonio. Professional, insured party equipment rentals for birthdays, corporate events, and special occasions.",
-  keywords: ["bounce house rentals", "San Antonio party rentals", "inflatable rentals", "party equipment", "SATX events", "kids party rentals", "bounce house San Antonio"],
-  authors: [{ name: 'SATX Bounce' }],
-  creator: 'SATX Bounce',
-  publisher: 'SATX Bounce',
+  description:
+    "Making your events memorable with safe and clean bounce house rentals in San Antonio. Professional, insured party equipment rentals for birthdays, corporate events, and special occasions.",
+  keywords: [
+    "bounce house rentals",
+    "San Antonio party rentals",
+    "inflatable rentals",
+    "party equipment",
+    "SATX events",
+    "kids party rentals",
+    "bounce house San Antonio",
+  ],
+  authors: [{ name: "SATX Bounce" }],
+  creator: "SATX Bounce",
+  publisher: "SATX Bounce",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   alternates: {
-    canonical: '/',
+    canonical: "/",
   },
   robots: {
     index: true,
@@ -50,58 +59,60 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   openGraph: {
-    title: 'SATX Bounce | San Antonio Bounce House Rentals',
-    description: 'Making your events memorable with safe and clean bounce house rentals in San Antonio. Professional, insured party equipment rentals.',
-    url: 'https://satxbounce.com',
-    siteName: 'SATX Bounce',
-    locale: 'en_US',
-    type: 'website',
+    title: "SATX Bounce | San Antonio Bounce House Rentals",
+    description:
+      "Making your events memorable with safe and clean bounce house rentals in San Antonio. Professional, insured party equipment rentals.",
+    url: "https://satxbounce.com",
+    siteName: "SATX Bounce",
+    locale: "en_US",
+    type: "website",
     images: [
       {
-        url: 'https://satxbounce.com/og-image.jpg',
+        url: "https://satxbounce.com/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: 'SATX Bounce House Rentals',
+        alt: "SATX Bounce House Rentals",
       },
     ],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'SATX Bounce | San Antonio Bounce House Rentals',
-    description: 'Professional bounce house and party equipment rentals in San Antonio.',
-    images: ['https://satxbounce.com/twitter-image.jpg'],
-    creator: '@satxbounce',
-    site: '@satxbounce',
+    card: "summary_large_image",
+    title: "SATX Bounce | San Antonio Bounce House Rentals",
+    description:
+      "Professional bounce house and party equipment rentals in San Antonio.",
+    images: ["https://satxbounce.com/twitter-image.jpg"],
+    creator: "@satxbounce",
+    site: "@satxbounce",
   },
   verification: {
-    google: 'your-google-verification-code' // You'll need to add your actual Google verification code
+    google: "your-google-verification-code", // You'll need to add your actual Google verification code
   },
   appleWebApp: {
-    title: 'SATX Bounce',
-    statusBarStyle: 'black-translucent',
+    title: "SATX Bounce",
+    statusBarStyle: "black-translucent",
     startupImage: [
       {
-        url: '/apple-touch-icon.png',
-        media: '(device-width: 768px) and (device-height: 1024px)',
+        url: "/apple-touch-icon.png",
+        media: "(device-width: 768px) and (device-height: 1024px)",
       },
     ],
   },
-  applicationName: 'SATX Bounce',
-  category: 'business',
-  manifest: '/manifest.json',
+  applicationName: "SATX Bounce",
+  category: "business",
+  manifest: "/manifest.json",
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
     other: {
-      rel: 'mask-icon',
-      url: '/favicon.ico',
+      rel: "mask-icon",
+      url: "/favicon.ico",
     },
   },
 };
@@ -121,22 +132,6 @@ export default function RootLayout({
           as="image"
           type="image/webp"
           fetchPriority="high"
-        />
-        <link
-          rel="preload"
-          as="style"
-          href="https://fonts.googleapis.com/css2?family=Geist:wght@400;700&display=swap"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://fonts.googleapis.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
         />
         <meta name="renderMode" content="critical" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -165,38 +160,37 @@ export default function RootLayout({
                 contain: layout;
                 content-visibility: auto;
               }
-            `
+            `,
           }}
         />
       </head>
       <GoogleAnalytics />
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#663399] overscroll-none contain-layout`}
-        style={{ colorScheme: 'light' }}
+        style={{ colorScheme: "light" }}
       >
         <JsonLd
           organizationData={{
             name: "SATX Bounce",
             url: "https://satxbounce.com",
             logo: "https://satxbounce.com/logo.png",
-            description: "Professional bounce house and party equipment rentals in San Antonio, TX. Making your events memorable with safe and clean bounce house rentals.",
+            description:
+              "Professional bounce house and party equipment rentals in San Antonio, TX. Making your events memorable with safe and clean bounce house rentals.",
             address: {
               streetAddress: "123 Main St",
               addressLocality: "San Antonio",
               addressRegion: "TX",
               postalCode: "78201",
-              addressCountry: "US"
+              addressCountry: "US",
             },
             contactPoint: {
               telephone: "+1-210-555-0123",
-              contactType: "customer service"
-            }
+              contactType: "customer service",
+            },
           }}
         />
         <Navigation />
-        <main className="flex-grow">
-          {children}
-        </main>
+        <main className="flex-grow">{children}</main>
         <Footer />
       </body>
       <GoogleTagManager gtmId={process.env.NEXT_GTM_ID!} />
