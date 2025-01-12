@@ -62,7 +62,7 @@ const OccasionsSection: React.FC = () => {
 
   return (
     <div className="py-4 mx-6">
-      <h2 className="text-3xl font-bold text-center mb-12 text-white">
+      <h2 className="text-3xl font-bold text-center mb-12 text-primary-purple">
         Perfect For Any Occasion
       </h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
