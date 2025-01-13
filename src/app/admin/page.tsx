@@ -14,7 +14,6 @@ interface ReviewStats {
 }
 
 export default function AdminDashboard() {
-  const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewStats, setReviewStats] = useState<ReviewStats>({
     averageRating: 0,
     recentReviews: 0,
@@ -31,15 +30,15 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [blogsRes, productsRes, contactsRes, reviewsRes] = await Promise.all([
-          api.get(`${API_BASE_URL}${API_ROUTES.BLOGS}`),
-          api.get(`${API_BASE_URL}${API_ROUTES.PRODUCTS}`),
-          api.get(`${API_BASE_URL}${API_ROUTES.CONTACTS}`),
-          api.get(`${API_BASE_URL}${API_ROUTES.REVIEWS}`),
-        ]);
+        const [blogsRes, productsRes, contactsRes, reviewsRes] =
+          await Promise.all([
+            api.get(`${API_BASE_URL}${API_ROUTES.BLOGS}`),
+            api.get(`${API_BASE_URL}${API_ROUTES.PRODUCTS}`),
+            api.get(`${API_BASE_URL}${API_ROUTES.CONTACTS}`),
+            api.get(`${API_BASE_URL}${API_ROUTES.REVIEWS}`),
+          ]);
 
         const reviews = reviewsRes.data as Review[];
-        setReviews(reviews);
 
         // Calculate review statistics
         const last24Hours = new Date();
@@ -50,7 +49,8 @@ export default function AdminDashboard() {
         ).length;
 
         const averageRating = reviews.length
-          ? reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length
+          ? reviews.reduce((acc, review) => acc + review.rating, 0) /
+            reviews.length
           : 0;
 
         // For this example, we'll consider reviews without a reviewId as pending
@@ -165,37 +165,37 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-          <div className="rounded-lg bg-white shadow p-6">
-            <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
-              Reviews Overview
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Average Rating</span>
-                <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                  {reviewStats.averageRating.toFixed(1)}/5.0
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Recent Reviews</span>
-                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                  Last 24h: {reviewStats.recentReviews}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Pending Reviews</span>
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                  {reviewStats.pendingReviews} to moderate
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Total Reviews</span>
-                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                  {reviewStats.totalReviews}
-                </span>
-              </div>
+        <div className="rounded-lg bg-white shadow p-6">
+          <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+            Reviews Overview
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Average Rating</span>
+              <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                {reviewStats.averageRating.toFixed(1)}/5.0
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Recent Reviews</span>
+              <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                Last 24h: {reviewStats.recentReviews}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Pending Reviews</span>
+              <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                {reviewStats.pendingReviews} to moderate
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Total Reviews</span>
+              <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                {reviewStats.totalReviews}
+              </span>
             </div>
           </div>
+        </div>
       </div>
     </div>
   );
