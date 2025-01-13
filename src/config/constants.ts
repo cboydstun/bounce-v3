@@ -6,4 +6,5 @@ export const API_ROUTES = {
   BLOGS: "/api/v1/blogs",
   USERS: "/api/v1/users",
   CONTACTS: "/api/v1/contacts",
+  REVIEWS: "/api/v1/reviews",
 } as const;
