@@ -58,12 +58,15 @@ export default function AdminReviews() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}${API_ROUTES.REVIEWS}/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${API_BASE_URL}${API_ROUTES.REVIEWS}/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       if (response.status === 401) {
         localStorage.removeItem("auth_token");
@@ -77,7 +80,9 @@ export default function AdminReviews() {
 
       setReviews(reviews.filter((review) => review._id !== id));
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to delete review");
+      setError(
+        error instanceof Error ? error.message : "Failed to delete review",
+      );
       console.error("Error deleting review:", error);
     } finally {
       setIsLoading(false);
@@ -111,7 +116,8 @@ export default function AdminReviews() {
             Customer Reviews
           </h1>
           <p className="mt-2 text-sm text-gray-700">
-            A list of all customer reviews including ratings, comments, and author details.
+            A list of all customer reviews including ratings, comments, and
+            author details.
           </p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0">
@@ -196,7 +202,9 @@ export default function AdminReviews() {
                         </div>
                       </td>
                       <td className="px-3 py-4 text-sm text-gray-500">
-                        <div>Time: {new Date(review.time).toLocaleDateString()}</div>
+                        <div>
+                          Time: {new Date(review.time).toLocaleDateString()}
+                        </div>
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                         <Link

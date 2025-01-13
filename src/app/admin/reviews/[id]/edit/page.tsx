@@ -7,7 +7,11 @@ import ReviewForm from "../../ReviewForm";
 import { Review } from "@/types/review";
 import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 
-export default function EditReview({ params }: { params: Promise<{ id: string }> }) {
+export default function EditReview({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
   const [review, setReview] = useState<Review | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,7 +33,7 @@ export default function EditReview({ params }: { params: Promise<{ id: string }>
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         if (response.status === 401) {
@@ -64,18 +68,12 @@ export default function EditReview({ params }: { params: Promise<{ id: string }>
   }
 
   if (error) {
-    return (
-      <div className="text-red-500 text-center py-12">
-        Error: {error}
-      </div>
-    );
+    return <div className="text-red-500 text-center py-12">Error: {error}</div>;
   }
 
   if (!review) {
     return (
-      <div className="text-gray-500 text-center py-12">
-        Review not found
-      </div>
+      <div className="text-gray-500 text-center py-12">Review not found</div>
     );
   }
 

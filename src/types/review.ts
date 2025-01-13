@@ -44,5 +44,6 @@ export interface UpdateReviewData extends BaseReview {
 // Type for form data that can be used for both create and update
 export type ReviewFormData = CreateReviewData;
 
-export const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+export const urlRegex =
+  /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
 export const languageRegex = /^[a-z]{2}(-[A-Z]{2})?$/;

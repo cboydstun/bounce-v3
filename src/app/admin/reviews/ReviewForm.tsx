@@ -5,14 +5,23 @@ import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
 import api from "@/utils/api";
 import { API_ROUTES } from "@/config/constants";
-import { ReviewFormData, CreateReviewData, UpdateReviewData, urlRegex, languageRegex } from "@/types/review";
+import {
+  ReviewFormData,
+  CreateReviewData,
+  UpdateReviewData,
+  urlRegex,
+  languageRegex,
+} from "@/types/review";
 
 interface ReviewFormProps {
   initialData?: ReviewFormData & { _id?: string };
   isEditing?: boolean;
 }
 
-export default function ReviewForm({ initialData, isEditing = false }: ReviewFormProps) {
+export default function ReviewForm({
+  initialData,
+  isEditing = false,
+}: ReviewFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -28,7 +37,7 @@ export default function ReviewForm({ initialData, isEditing = false }: ReviewFor
       profilePhotoUrl: "",
       language: "en",
       relativeTimeDescription: "",
-    }
+    },
   );
 
   const validateForm = (): boolean => {
@@ -52,7 +61,7 @@ export default function ReviewForm({ initialData, isEditing = false }: ReviewFor
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -64,14 +73,14 @@ export default function ReviewForm({ initialData, isEditing = false }: ReviewFor
         const updateData: UpdateReviewData = {
           ...formData,
           reviewId: initialData.reviewId || `review_${Date.now()}`,
-          likes: formData.likes || 0
+          likes: formData.likes || 0,
         };
         await api.put(`${API_ROUTES.REVIEWS}/${initialData._id}`, updateData);
       } else {
         const createData: CreateReviewData = {
           ...formData,
           reviewId: `review_${Date.now()}`,
-          likes: 0
+          likes: 0,
         };
         await api.post(API_ROUTES.REVIEWS, createData);
       }
@@ -86,12 +95,13 @@ export default function ReviewForm({ initialData, isEditing = false }: ReviewFor
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
     // Clear error when user starts typing
     if (errors[name]) {
@@ -179,7 +189,9 @@ export default function ReviewForm({ initialData, isEditing = false }: ReviewFor
             }`}
           />
           {errors.profilePhotoUrl && (
-            <p className="mt-1 text-sm text-red-600">{errors.profilePhotoUrl}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.profilePhotoUrl}
+            </p>
           )}
         </div>
 
@@ -208,7 +220,9 @@ export default function ReviewForm({ initialData, isEditing = false }: ReviewFor
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Rating</label>
+        <label className="block text-sm font-medium text-gray-700">
+          Rating
+        </label>
         <div className="mt-1 flex gap-1">{renderStars()}</div>
       </div>
 
@@ -260,7 +274,11 @@ export default function ReviewForm({ initialData, isEditing = false }: ReviewFor
           disabled={isSubmitting}
           className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
         >
-          {isSubmitting ? "Saving..." : isEditing ? "Update Review" : "Create Review"}
+          {isSubmitting
+            ? "Saving..."
+            : isEditing
+              ? "Update Review"
+              : "Create Review"}
         </button>
       </div>
     </form>
