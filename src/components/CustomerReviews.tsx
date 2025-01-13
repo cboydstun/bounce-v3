@@ -34,15 +34,18 @@ const CustomerReviews = () => {
   // Calculate review stats
   const stats = useMemo(() => {
     if (!reviews.length) return null;
-    
-    const averageRating = reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length;
-    const satisfactionRate = (reviews.filter(review => review.rating >= 4).length / reviews.length) * 100;
-    
+
+    const averageRating =
+      reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length;
+    const satisfactionRate =
+      (reviews.filter((review) => review.rating >= 4).length / reviews.length) *
+      100;
+
     return {
       averageRating: averageRating.toFixed(1),
       totalReviews: reviews.length,
       satisfactionRate: Math.round(satisfactionRate),
-      roundedRating: Math.round(averageRating)
+      roundedRating: Math.round(averageRating),
     };
   }, [reviews]);
 
@@ -62,16 +65,18 @@ const CustomerReviews = () => {
       try {
         const response = await api.get<Review[]>(API_ROUTES.REVIEWS);
         if (!response.data) {
-          throw new Error('No data received from server');
+          throw new Error("No data received from server");
         }
         const reviewsData = Array.isArray(response.data) ? response.data : [];
         if (reviewsData.length === 0) {
-          setError('No reviews available');
+          setError("No reviews available");
         } else {
           setReviews(reviewsData);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch reviews');
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch reviews"
+        );
       } finally {
         setIsLoading(false);
       }
@@ -84,7 +89,7 @@ const CustomerReviews = () => {
     <div className="w-full bg-[#663399] py-18">
       <div className="container mx-auto px-4">
         <div className="flex justify-center items-center min-h-[400px]">
-          <div className={`text-white ${isLoading ? 'animate-pulse' : ''}`}>
+          <div className={`text-white ${isLoading ? "animate-pulse" : ""}`}>
             {message}
           </div>
         </div>
@@ -93,7 +98,7 @@ const CustomerReviews = () => {
   );
 
   if (isLoading) {
-    return renderMessage('Loading reviews...', true);
+    return renderMessage("Loading reviews...", true);
   }
 
   if (error) {
@@ -101,7 +106,7 @@ const CustomerReviews = () => {
   }
 
   if (!reviews.length) {
-    return renderMessage('No reviews available yet.');
+    return renderMessage("No reviews available yet.");
   }
 
   // Event handlers
@@ -141,7 +146,9 @@ const CustomerReviews = () => {
           </div>
 
           <div className="bg-white/10 backdrop-blur p-8 rounded-2xl text-center transform hover:scale-105 transition-all duration-300">
-            <div className="text-5xl font-bold text-white mb-2">{stats?.totalReviews}</div>
+            <div className="text-5xl font-bold text-white mb-2">
+              {stats?.totalReviews}
+            </div>
             <div className="text-yellow-400 text-xl mb-3">★</div>
             <div className="text-white/90">Verified Reviews</div>
           </div>
@@ -200,9 +207,9 @@ const CustomerReviews = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {renderStars(reviews[activeIndex].rating)}
-                      <span className="text-gray-500 ml-2">
+                      {/* <span className="text-gray-500 ml-2">
                         {new Date(reviews[activeIndex].time).toLocaleDateString()}
-                      </span>
+                      </span> */}
                     </div>
                   </div>
                 </div>
