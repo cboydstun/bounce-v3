@@ -115,7 +115,7 @@ export default async function HomePage() {
 
       {/* Occasions Section */}
       <div className="flex justify-center items-center py-4 my-4">
-        <div className="w-full max-w-[80%] bg-[#efe8f4] rounded-xl px-8 py-8 text-center">
+        <div className="w-full max-w-[80%] bg-[#f8f5fa] rounded-xl px-8 py-8 text-center">
           <OccasionsSection />
         </div>
       </div>
@@ -135,7 +135,7 @@ export default async function HomePage() {
 
       {/* CTA Section */}
       <div className="flex justify-center items-center py-4 my-4">
-        <div className="w-full max-w-[80%] bg-[#efe8f4] rounded-xl px-8 py-8 text-center">
+        <div className="w-full max-w-[80%] bg-[#f8f5fa] rounded-xl px-8 py-8 text-center">
           <h2 className="text-3xl font-bold mb-6 text-primary-purple">
             Ready to Make Your Event Unforgettable?
           </h2>
@@ -144,7 +144,7 @@ export default async function HomePage() {
           </p>
           <Link
             href="/contact"
-            className="bg-white text-primary-purple px-8 py-3 rounded-lg font-semibold hover:bg-primary-blue hover:text-white transition inline-flex items-center gap-2"
+            className="bg-primary-blue text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary-purple hover:text-white transition inline-flex items-center gap-2"
           >
             Contact Now
             <ArrowRight className="w-5 h-5" />

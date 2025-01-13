@@ -9,8 +9,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        "primary-purple": "#6366f1",
+        "secondary-purple": "#4f46e5",
         "primary-blue": "#1e40af",
         "secondary-blue": "#93c5fd",
+        "primary-gray": "#6b7280",
+        "secondary-gray": "#9ca3af",
       },
       animation: {
         "fade-in-up": "fadeInUp 0.5s ease-out",
