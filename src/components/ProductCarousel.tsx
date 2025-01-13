@@ -45,10 +45,12 @@ const ProductCarousel = () => {
 
         const filteredAndSortedProducts = [...data]
           .filter((product: Product) =>
-            product.specifications.some(
-              (spec: Specification) =>
-                spec.name === "Type" && spec.value === "DRY",
-            ),
+            product.specifications.some((spec: Specification) => {
+              if (spec.name !== "Type") return false;
+              return Array.isArray(spec.value)
+                ? spec.value.includes("DRY")
+                : spec.value === "DRY";
+            })
           )
           .sort((a: Product, b: Product) => b.price.base - a.price.base);
 
@@ -83,7 +85,7 @@ const ProductCarousel = () => {
   const pageCount = Math.ceil(products.length / itemsPerPage);
   const visibleProducts = products.slice(
     currentPage * itemsPerPage,
-    currentPage * itemsPerPage + itemsPerPage,
+    currentPage * itemsPerPage + itemsPerPage
   );
 
   return (

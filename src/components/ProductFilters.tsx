@@ -26,15 +26,12 @@ export function ProductFilters({
       .filter((product) => {
         if (selectedType !== "ALL") {
           const typeSpec = product.specifications?.find(
-            (spec) => spec.name === "Type",
+            (spec) => spec.name === "Type"
           );
           if (!typeSpec) return false;
           const typeValue = typeSpec.value;
           if (Array.isArray(typeValue)) {
-            if (selectedType === "DRY") {
-              if (!typeValue.includes("DRY") || typeValue.includes("WET"))
-                return false;
-            } else if (!typeValue.includes(selectedType)) return false;
+            if (!typeValue.includes(selectedType)) return false;
           } else if (typeValue !== selectedType) return false;
         }
 
