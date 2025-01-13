@@ -5,6 +5,8 @@ import { Star, Quote, ChevronRight, ChevronLeft } from "lucide-react";
 
 import api from "@/utils/api";
 import { API_ROUTES } from "@/config/constants";
+import { Stats } from "fs";
+import StatsSection from "./StatsSection";
 
 interface Review {
   _id: string;
@@ -42,7 +44,7 @@ const CustomerReviews = () => {
       100;
 
     return {
-      averageRating: averageRating.toFixed(1),
+      averageRating: parseFloat(averageRating.toFixed(1)),
       totalReviews: reviews.length,
       satisfactionRate: Math.round(satisfactionRate),
       roundedRating: Math.round(averageRating),
@@ -134,33 +136,7 @@ const CustomerReviews = () => {
     <div className="w-full bg-[#663399] py-18">
       <div className="container mx-auto px-4">
         {/* Main Stats Section */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
-          <div className="bg-white/10 backdrop-blur p-8 rounded-2xl text-center transform hover:scale-105 transition-all duration-300">
-            <div className="text-5xl font-bold text-white mb-2">
-              {stats?.averageRating}
-            </div>
-            <div className="flex justify-center mb-3">
-              {renderStars(stats?.roundedRating || 0)}
-            </div>
-            <div className="text-white/90">Overall Rating</div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur p-8 rounded-2xl text-center transform hover:scale-105 transition-all duration-300">
-            <div className="text-5xl font-bold text-white mb-2">
-              {stats?.totalReviews}
-            </div>
-            <div className="text-yellow-400 text-xl mb-3">★</div>
-            <div className="text-white/90">Verified Reviews</div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur p-8 rounded-2xl text-center transform hover:scale-105 transition-all duration-300">
-            <div className="text-5xl font-bold text-white mb-2">
-              {stats?.satisfactionRate}%
-            </div>
-            <div className="text-yellow-400 text-xl mb-3">★</div>
-            <div className="text-white/90">Satisfaction Rate</div>
-          </div>
-        </div>
+        {stats && <StatsSection stats={stats} />}
 
         {/* Featured Review Section */}
         <div
@@ -232,7 +208,7 @@ const CustomerReviews = () => {
               Review {activeIndex + 1} of {reviews.length}
             </div>
             <a
-              href="/reviews"
+              href="https://g.co/kgs/Dq42aY6"
               className="text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-1"
             >
               See All Reviews
