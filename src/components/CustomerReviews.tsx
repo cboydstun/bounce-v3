@@ -5,7 +5,6 @@ import { Star, Quote, ChevronRight, ChevronLeft } from "lucide-react";
 
 import api from "@/utils/api";
 import { API_ROUTES } from "@/config/constants";
-import { Stats } from "fs";
 import StatsSection from "./StatsSection";
 
 interface Review {
