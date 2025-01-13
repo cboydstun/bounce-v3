@@ -38,7 +38,7 @@ const StatsSection: React.FC<{ stats: Stats }> = ({ stats }) => {
           {renderStars(stats?.roundedRating || 0)}
         </div>
       ),
-      gradient: "from-yellow-400/20 to-orange-500/20",
+      gradient: "from-blue-400/20 to-indigo-500/20",
     },
     {
       icon: <Users className="w-8 h-8 text-blue-400" />,
@@ -56,7 +56,7 @@ const StatsSection: React.FC<{ stats: Stats }> = ({ stats }) => {
       subComponent: (
         <div className="text-green-400 font-medium">Would Recommend</div>
       ),
-      gradient: "from-green-400/20 to-emerald-500/20",
+      gradient: "from-blue-400/20 to-indigo-500/20",
     },
   ];
 
