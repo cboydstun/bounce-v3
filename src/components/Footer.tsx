@@ -102,9 +102,21 @@ const Footer = () => {
             <h2 className="text-xl font-bold text-primary-purple">Follow Us</h2>
             <div className="flex gap-4">
               {[
-                { icon: Facebook, href: "#", label: "Facebook" },
-                { icon: Instagram, href: "#", label: "Instagram" },
-                { icon: Twitter, href: "#", label: "Twitter" },
+                {
+                  icon: Facebook,
+                  href: "https://www.facebook.com",
+                  label: "Facebook",
+                },
+                {
+                  icon: Instagram,
+                  href: "https://www.instagram.com",
+                  label: "Instagram",
+                },
+                {
+                  icon: Twitter,
+                  href: "https://www.twitter.com",
+                  label: "Twitter",
+                },
               ].map((social) => (
                 <a
                   key={social.label}
