@@ -29,10 +29,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
       type: "website",
     },
     alternates: {
-      canonical: new URL(
-        "/faq",
-        process.env.NEXT_PUBLIC_SITE_URL || "https://satxbouncehouse.com",
-      ),
+      canonical: "https://satxbounce.com/faq",
     },
     other: {
       "script:ld+json": JSON.stringify(faqStructuredData),

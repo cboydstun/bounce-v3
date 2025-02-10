@@ -43,7 +43,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
     },
     alternates: {
-      canonical: "/contact",
+      canonical: "https://satxbounce.com/contact",
     },
     other: {
       "geo.region": "US-TX",

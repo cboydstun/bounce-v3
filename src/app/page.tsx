@@ -34,6 +34,9 @@ export const metadata: Metadata = {
       "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required.",
     images: ["https://www.satxbounce.com/og-image.jpg"],
   },
+  alternates: {
+    canonical: "https://satxbounce.com",
+  },
   other: {
     "geo.region": "US-TX",
     "geo.placename": "San Antonio",
