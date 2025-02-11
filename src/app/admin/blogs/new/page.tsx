@@ -2,25 +2,38 @@
 
 import { useRouter } from "next/navigation";
 import BlogForm, { BlogFormData } from "../BlogForm";
-import api from "@/utils/api";
 import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { Blog } from "@/types/blog";
 
 export default function NewBlog() {
   const router = useRouter();
 
-  const handleSubmit = async (data: BlogFormData) => {
+  const handleSubmit = async (data: BlogFormData): Promise<Blog> => {
     try {
-      // Convert arrays to comma-separated strings
-      const formattedData = {
-        ...data,
-        categories: Array.isArray(data.categories)
-          ? data.categories.join(",")
-          : data.categories,
-        tags: Array.isArray(data.tags) ? data.tags.join(",") : data.tags,
-      };
+      const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...data,
+          // Ensure we're sending the complete images array
+          images: [...(data.images || [])],
+          // Include featuredImage
+          featuredImage: data.featuredImage || "",
+          // Don't send newImages to the API
+          newImages: undefined,
+        }),
+      });
 
-      await api.post(`${API_BASE_URL}${API_ROUTES.BLOGS}`, formattedData);
+      if (!response.ok) {
+        throw new Error("Failed to create blog post");
+      }
+
+      const savedBlog = await response.json();
       router.push("/admin/blogs");
+      return savedBlog;
     } catch (error) {
       if (error instanceof Error) {
         throw error;

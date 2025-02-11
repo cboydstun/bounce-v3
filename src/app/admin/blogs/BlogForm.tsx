@@ -1,58 +1,44 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import Image from "next/image";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { Blog } from "@/types/blog";
+import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { CldUploadButton } from "next-cloudinary";
+import type { CloudinaryUploadWidgetResults } from "next-cloudinary";
 
-export interface BlogFormData {
-  title: string;
-  slug: string;
+// Extend the Blog type with form-specific fields
+export interface BlogFormData
+  extends Omit<Blog, "_id" | "publishDate" | "lastModified"> {
   author: {
     _id: string;
     email: string;
   };
-  introduction: string;
-  body: string;
-  conclusion: string;
-  images: Array<{
+  publishDate?: Date;
+  lastModified?: Date;
+  isFeature: boolean;
+  comments?: Array<{
+    user: string;
+    content: string;
+    date: Date;
+    isApproved: boolean;
+  }>;
+  relatedPosts?: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
+  newImages?: Array<{
     filename: string;
     url: string;
     public_id: string;
     mimetype?: string;
     size?: number;
   }>;
-  excerpt?: string;
-  featuredImage?: string;
-  categories: string[];
-  tags: string[];
-  status: "draft" | "published" | "archived";
-  publishDate?: Date;
-  lastModified?: Date;
-  comments?: Array<{
-    user: string; // ObjectId reference
-    content: string;
-    date: Date;
-    isApproved: boolean;
-  }>;
-  meta: {
-    views: number;
-    likes: number;
-    shares: number;
-  };
-  seo?: {
-    metaTitle?: string;
-    metaDescription?: string;
-    focusKeyword?: string;
-  };
-  readTime?: number;
-  isFeature: boolean;
-  relatedPosts?: string[]; // Array of Blog ObjectIds
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
 interface BlogFormProps {
   initialData?: BlogFormData;
-  onSubmit: (data: BlogFormData) => Promise<void>;
+  onSubmit: (data: BlogFormData) => Promise<Blog>;
   isEdit?: boolean;
 }
 
@@ -96,6 +82,7 @@ export default function BlogForm({
       relatedPosts: [],
       createdAt: undefined,
       updatedAt: undefined,
+      newImages: [],
     },
   );
   const [isLoading, setIsLoading] = useState(false);
@@ -107,7 +94,26 @@ export default function BlogForm({
     setIsLoading(true);
 
     try {
-      await onSubmit(formData);
+      // Create a complete blog data object, preserving all images
+      const blogData: BlogFormData = {
+        ...formData,
+        // Keep images and newImages separate until API call
+        images: formData.images || [],
+        newImages: formData.newImages || [],
+      };
+
+      // Send the data to be handled by the parent component
+      const updatedBlog = await onSubmit(blogData);
+
+      // Update form data with the new blog data
+      if (updatedBlog) {
+        setFormData((prev) => ({
+          ...prev,
+          images: updatedBlog.images || [], // Use new images from response
+          newImages: [], // Clear newImages after successful submission
+          featuredImage: updatedBlog.featuredImage || prev.featuredImage, // Preserve featured image
+        }));
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An error occurred while saving",
@@ -116,6 +122,43 @@ export default function BlogForm({
       setIsLoading(false);
     }
   };
+
+  const handleImageDelete = async (image: BlogFormData["images"][0]) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}${API_ROUTES.BLOGS}/${formData.slug}/images/${image.filename}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete image");
+      }
+
+      // If the deleted image was the featured image, clear it
+      const updatedFormData = {
+        ...formData,
+        images: formData.images.filter(
+          (img) => img.filename !== image.filename,
+        ),
+      };
+
+      if (formData.featuredImage === image.url) {
+        updatedFormData.featuredImage = "";
+      }
+
+      setFormData(updatedFormData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete image");
+    }
+  };
+
+  console.log("// BlogForm.tsx formData:", formData);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -245,6 +288,147 @@ export default function BlogForm({
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
             required
           />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium leading-6 text-gray-900">
+          Featured Image
+        </label>
+        <div className="mt-2">
+          {formData.featuredImage ? (
+            <div className="relative w-full max-w-md">
+              <Image
+                src={formData.featuredImage}
+                alt="Featured"
+                width={400}
+                height={192}
+                className="w-full h-48 object-cover rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, featuredImage: "" })}
+                className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No featured image selected</p>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium leading-6 text-gray-900">
+          Current Images
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {formData.images.map((image) => (
+            <div key={image.public_id} className="relative group">
+              <div className="relative">
+                <Image
+                  src={image.url}
+                  alt={image.filename}
+                  width={300}
+                  height={128}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+                {formData.featuredImage !== image.url && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({ ...formData, featuredImage: image.url })
+                    }
+                    className="absolute bottom-2 left-2 bg-indigo-600 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    Set as Featured
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleImageDelete(image)}
+                className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium leading-6 text-gray-900">
+          Upload Images
+        </label>
+        <div className="mt-2">
+          <CldUploadButton
+            onSuccess={(result: CloudinaryUploadWidgetResults) => {
+              if (result.info && typeof result.info !== "string") {
+                const info = result.info;
+                const newImage = {
+                  filename:
+                    info.original_filename ||
+                    info.public_id.split("/").pop() ||
+                    "",
+                  url: info.secure_url,
+                  public_id: info.public_id,
+                  mimetype: info.format ? `image/${info.format}` : undefined,
+                  size: info.bytes || 0,
+                };
+
+                setFormData((prev) => ({
+                  ...prev,
+                  newImages: [...(prev.newImages || []), newImage],
+                  // If no featured image is set, use this as featured image
+                  featuredImage: prev.featuredImage || newImage.url,
+                }));
+              }
+            }}
+            uploadPreset="satxbounce-blogs"
+            options={{
+              maxFiles: 5,
+              resourceType: "image",
+              clientAllowedFormats: ["jpg", "jpeg", "png", "gif"],
+              maxFileSize: 5000000,
+            }}
+            className="block w-full text-sm text-gray-500
+              py-2 px-4
+              rounded-md border-0
+              text-sm font-semibold
+              bg-indigo-600 text-white
+              hover:bg-indigo-500
+              cursor-pointer"
+          >
+            Upload Images
+          </CldUploadButton>
         </div>
       </div>
 
