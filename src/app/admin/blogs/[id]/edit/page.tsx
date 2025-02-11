@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import BlogForm, { BlogFormData } from "../../BlogForm";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import api from "@/utils/api";
 import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 
 interface PageProps {
@@ -23,31 +22,44 @@ export default function EditBlog({ params }: PageProps) {
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const response = await api.get(
-          `${API_BASE_URL}${API_ROUTES.BLOGS}/${id}`
+        const response = await fetch(
+          `${API_BASE_URL}${API_ROUTES.BLOGS}/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          },
         );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch blog");
+        }
+
+        const data = await response.json();
         // Ensure arrays are initialized even if null in response
+        // Format the blog data with proper defaults
         const formattedBlog: BlogFormData = {
-          ...response.data,
-          _id: response.data._id,
-          categories: response.data.categories || [],
-          tags: response.data.tags || [],
-          meta: response.data.meta || {
+          ...data,
+          categories: data.categories || [],
+          tags: data.tags || [],
+          meta: data.meta || {
             views: 0,
             likes: 0,
             shares: 0,
           },
-          isFeature: response.data.isFeature || false,
-          comments: response.data.comments || [],
-          readTime: response.data.readTime || 0,
-          relatedPosts: response.data.relatedPosts || [],
-          createdAt: response.data.createdAt,
-          updatedAt: response.data.updatedAt,
-          seo: response.data.seo || {
-            metaTitle: "",
-            metaDescription: "",
+          isFeature: data.isFeature || false,
+          comments: data.comments || [],
+          readTime: data.readTime || 0,
+          relatedPosts: data.relatedPosts || [],
+          images: data.images || [],
+          newImages: [],
+          featuredImage: data.featuredImage || "",
+          seo: data.seo || {
+            metaTitle: data.title || "",
+            metaDescription: data.excerpt || "",
             focusKeyword: "",
           },
+          author: data.author || { _id: "", email: "" },
         };
         setBlog(formattedBlog);
       } catch (err) {
@@ -62,17 +74,38 @@ export default function EditBlog({ params }: PageProps) {
 
   const handleSubmit = async (data: BlogFormData) => {
     try {
-      // Convert arrays to comma-separated strings
-      const formattedData = {
-        ...data,
-        categories: Array.isArray(data.categories)
-          ? data.categories.join(",")
-          : data.categories,
-        tags: Array.isArray(data.tags) ? data.tags.join(",") : data.tags,
-      };
+      const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}/${id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...data,
+          // Send the complete images array without double stringifying
+          images: [...(data.images || []), ...(data.newImages || [])],
+          // Include featuredImage
+          featuredImage: data.featuredImage || "",
+          // Don't send newImages to the API
+          newImages: undefined,
+        }),
+      });
 
-      await api.put(`${API_BASE_URL}${API_ROUTES.BLOGS}/${id}`, formattedData);
+      if (!response.ok) {
+        throw new Error("Failed to update blog post");
+      }
+
+      const updatedBlog = await response.json();
+
+      // Update the form with the latest data before redirecting
+      setBlog({
+        ...updatedBlog,
+        newImages: [], // Clear newImages after successful update
+        featuredImage: updatedBlog.featuredImage || "", // Ensure featuredImage is handled
+      });
+
       router.push("/admin/blogs");
+      return updatedBlog;
     } catch (error) {
       if (error instanceof Error) {
         throw error;

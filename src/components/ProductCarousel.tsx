@@ -50,7 +50,7 @@ const ProductCarousel = () => {
               return Array.isArray(spec.value)
                 ? spec.value.includes("DRY")
                 : spec.value === "DRY";
-            })
+            }),
           )
           .sort((a: Product, b: Product) => b.price.base - a.price.base);
 
@@ -85,7 +85,7 @@ const ProductCarousel = () => {
   const pageCount = Math.ceil(products.length / itemsPerPage);
   const visibleProducts = products.slice(
     currentPage * itemsPerPage,
-    currentPage * itemsPerPage + itemsPerPage
+    currentPage * itemsPerPage + itemsPerPage,
   );
 
   return (

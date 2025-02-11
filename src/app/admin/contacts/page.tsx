@@ -144,7 +144,7 @@ export default function AdminContacts() {
             slushyMachine: contact.slushyMachine,
             overnight: contact.overnight,
             sourcePage: contact.sourcePage,
-          }))
+          })),
         );
       } catch (error) {
         setError(error instanceof Error ? error.message : "An error occurred");
@@ -176,7 +176,7 @@ export default function AdminContacts() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ confirmed }),
-        }
+        },
       );
 
       if (response.status === 401) {
@@ -191,12 +191,12 @@ export default function AdminContacts() {
 
       setContacts(
         contacts.map((contact) =>
-          contact.id === id ? { ...contact, confirmed } : contact
-        )
+          contact.id === id ? { ...contact, confirmed } : contact,
+        ),
       );
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to update status"
+        error instanceof Error ? error.message : "Failed to update status",
       );
       console.error("Error updating status:", error);
     } finally {
@@ -227,7 +227,7 @@ export default function AdminContacts() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.status === 401) {
@@ -243,7 +243,7 @@ export default function AdminContacts() {
       setContacts(contacts.filter((contact) => contact.id !== id));
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to delete contact"
+        error instanceof Error ? error.message : "Failed to delete contact",
       );
       console.error("Error deleting contact:", error);
     } finally {
@@ -522,7 +522,7 @@ export default function AdminContacts() {
                       onClick={() => {
                         if (sortColumn === "partyDate") {
                           setSortDirection(
-                            sortDirection === "asc" ? "desc" : "asc"
+                            sortDirection === "asc" ? "desc" : "asc",
                           );
                         } else {
                           setSortColumn("partyDate");
@@ -612,7 +612,7 @@ export default function AdminContacts() {
                           onChange={(e) =>
                             handleUpdateStatus(
                               contact.id,
-                              e.target.value === "true"
+                              e.target.value === "true",
                             )
                           }
                           className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(contact.confirmed)}`}
