@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { setAuthToken } from "@/utils/api";
 
 export default function AdminLayout({
   children,
@@ -9,6 +11,26 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Check for auth token
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      router.push("/login");
+    } else {
+      setIsLoading(false);
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    setAuthToken(null);
+    router.push("/login");
+  };
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-gray-100"></div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -54,10 +76,10 @@ export default function AdminLayout({
             </div>
             <div className="flex items-center">
               <button
-                onClick={() => router.push("/")}
+                onClick={handleLogout}
                 className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
               >
-                Exit Admin
+                Logout
               </button>
             </div>
           </div>
