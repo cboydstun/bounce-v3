@@ -18,13 +18,13 @@ export default function EditBlog({ params }: PageProps) {
   const [blog, setBlog] = useState<BlogFormData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const resolvedParams = React.use(params);
+  const { id } = React.use(params);
 
   useEffect(() => {
     const fetchBlog = async () => {
       try {
         const response = await api.get(
-          `${API_BASE_URL}${API_ROUTES.BLOGS}/${resolvedParams.id}`,
+          `${API_BASE_URL}${API_ROUTES.BLOGS}/${id}`
         );
         // Ensure arrays are initialized even if null in response
         const formattedBlog: BlogFormData = {
@@ -58,7 +58,7 @@ export default function EditBlog({ params }: PageProps) {
     };
 
     fetchBlog();
-  }, [resolvedParams.id]);
+  }, [id]);
 
   const handleSubmit = async (data: BlogFormData) => {
     try {
@@ -71,10 +71,7 @@ export default function EditBlog({ params }: PageProps) {
         tags: Array.isArray(data.tags) ? data.tags.join(",") : data.tags,
       };
 
-      await api.put(
-        `${API_BASE_URL}${API_ROUTES.BLOGS}/${resolvedParams.id}`,
-        formattedData,
-      );
+      await api.put(`${API_BASE_URL}${API_ROUTES.BLOGS}/${id}`, formattedData);
       router.push("/admin/blogs");
     } catch (error) {
       if (error instanceof Error) {
