@@ -28,9 +28,6 @@ export const generateMetadata = async (): Promise<Metadata> => {
         "Find answers to common questions about bounce house rentals in San Antonio, TX. Learn about delivery times, safety measures, pricing, and more.",
       type: "website",
     },
-    alternates: {
-      canonical: "https://satxbounce.com/faq",
-    },
     other: {
       "script:ld+json": JSON.stringify(faqStructuredData),
     },

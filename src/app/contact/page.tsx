@@ -42,9 +42,6 @@ export async function generateMetadata(): Promise<Metadata> {
         "Contact us for bounce house rentals in San Antonio. Free delivery within Loop 1604! Available 7 days a week from 8am to 8pm.",
       type: "website",
     },
-    alternates: {
-      canonical: "https://satxbounce.com/contact",
-    },
     other: {
       "geo.region": "US-TX",
       "geo.placename": "San Antonio",
