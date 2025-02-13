@@ -10,13 +10,13 @@ import HeroSection from "../components/HeroSection";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "SATX Bounce House Rentals | San Antonio Party Equipment Rental",
+  title: "Bounce House & Party Rentals in San Antonio | SATX Bounce",
   description:
     "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required. Water slides, party equipment, and more!",
   keywords:
     "bounce house rental, San Antonio party rentals, water slides, inflatable rentals, party equipment, event rentals, free delivery",
   openGraph: {
-    title: "SATX Bounce House Rentals | San Antonio Party Equipment Rental",
+    title: "Bounce House & Party Rentals in San Antonio | SATX Bounce",
     description:
       "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required.",
     type: "website",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SATX Bounce House Rentals | San Antonio Party Equipment Rental",
+    title: "Bounce House & Party Rentals in San Antonio | SATX Bounce",
     description:
       "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required.",
     images: ["https://www.satxbounce.com/og-image.jpg"],

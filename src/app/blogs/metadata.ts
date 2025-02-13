@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Blog Posts | SATX Bounce House Rentals",
+  title: "SATX Bounce Blog | Event Ideas, Tips & Deals",
   description:
     "Stay updated with the latest news, tips, and insights about party rentals, event planning, and bounce house safety in San Antonio.",
   keywords:
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     canonical: "https://satxbounce.com/blogs",
   },
   openGraph: {
-    title: "Blog Posts | SATX Bounce House Rentals",
+    title: "SATX Bounce Blog | Event Ideas, Tips & Deals",
     description:
       "Stay updated with the latest news, tips, and insights about party rentals, event planning, and bounce house safety in San Antonio.",
     type: "website",
