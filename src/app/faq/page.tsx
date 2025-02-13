@@ -17,13 +17,13 @@ export const generateMetadata = async (): Promise<Metadata> => {
   };
 
   return {
-    title: "Frequently Asked Questions | SATX Bounce House Rentals",
+    title: "FAQ | SATX Bounce Common Questions About Our Party Rentals",
     description:
       "Find answers to common questions about bounce house rentals in San Antonio, TX. Learn about delivery times, safety measures, pricing, and more.",
     keywords:
       "bounce house rentals FAQ, San Antonio bounce house questions, party rental FAQ, waterslide rental questions, bounce house safety, rental pricing, delivery information",
     openGraph: {
-      title: "Frequently Asked Questions | SATX Bounce House Rentals",
+      title: "FAQ | SATX Bounce Common Questions About Our Party Rentals",
       description:
         "Find answers to common questions about bounce house rentals in San Antonio, TX. Learn about delivery times, safety measures, pricing, and more.",
       type: "website",

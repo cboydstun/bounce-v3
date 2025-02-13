@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | SATX Bounce",
+  title: "Terms of Service | SATX Bounce Rental Policies & Conditions",
   description: "Terms of service for SATX Bounce house rentals in San Antonio",
 };
 

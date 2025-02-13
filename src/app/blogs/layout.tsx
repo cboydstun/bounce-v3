@@ -13,13 +13,13 @@ const createBlogListingSchema = () => {
 };
 
 export const metadata: Metadata = {
-  title: "Blog | Party Planning Tips & News | SATX Bounce House Rentals",
+  title: "SATX Bounce Blog | Event Ideas, Tips & Deals",
   description:
     "Read our latest blog posts about party planning tips, bounce house safety, event ideas, and more. Stay updated with SATX Bounce House Rentals in San Antonio.",
   keywords:
     "party planning blog, bounce house tips, event ideas, San Antonio parties, party safety tips, event planning guide",
   openGraph: {
-    title: "Blog | Party Planning Tips & News | SATX Bounce House Rentals",
+    title: "SATX Bounce Blog | Event Ideas, Tips & Deals",
     description:
       "Read our latest blog posts about party planning tips, bounce house safety, event ideas, and more. Stay updated with SATX Bounce House Rentals in San Antonio.",
     type: "website",

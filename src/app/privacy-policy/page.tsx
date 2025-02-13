@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | SATX Bounce",
-  description: "Privacy policy for SATX Bounce house rentals in San Antonio",
+  description: "Privacy Policy | SATX Bounce: How We Protect Your Information",
 };
 
 export default function PrivacyPolicy() {
