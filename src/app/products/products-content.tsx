@@ -60,7 +60,9 @@ function ProductGrid({ products }: { products: Product[] }) {
 
 async function getProducts() {
   try {
-    const response = await api.get(API_ROUTES.PRODUCTS);
+    const response = await api.get(
+      `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.PRODUCTS}`
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching products:", error);

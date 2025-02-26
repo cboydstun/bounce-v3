@@ -1,14 +1,17 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Product } from "../../../types/product";
-import { API_BASE_URL, API_ROUTES } from "../../../config/constants";
+import { API_ROUTES } from "../../../config/constants";
 import ContactForm from "../../../components/ContactForm";
 import ImageGallery from "./ImageGallery";
 
 async function getProduct(slug: string): Promise<Product> {
-  const res = await fetch(`${API_BASE_URL}${API_ROUTES.PRODUCTS}/${slug}`, {
-    next: { revalidate: 3600 }, // Revalidate every hour
-  });
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.PRODUCTS}/${slug}`,
+    {
+      next: { revalidate: 3600 }, // Revalidate every hour
+    }
+  );
 
   if (!res.ok) {
     notFound();
@@ -29,7 +32,7 @@ export async function generateMetadata({
 
   const getSpecValue = (name: string) => {
     const spec = product.specifications.find(
-      (s) => s.name.toLowerCase() === name.toLowerCase(),
+      (s) => s.name.toLowerCase() === name.toLowerCase()
     );
     return spec?.value || "N/A";
   };
@@ -56,7 +59,7 @@ export default async function ProductDetail({ params }: { params: Params }) {
 
   const getSpecValue = (name: string) => {
     const spec = product.specifications.find(
-      (s) => s.name.toLowerCase() === name.toLowerCase(),
+      (s) => s.name.toLowerCase() === name.toLowerCase()
     );
     return spec?.value || "N/A";
   };

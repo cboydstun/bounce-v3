@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 
 interface ContactFormData {
   bouncer: string;
@@ -58,12 +58,12 @@ export default function EditContact({ params }: PageProps) {
         setIsLoading(true);
         const token = localStorage.getItem("auth_token");
         const response = await fetch(
-          `${API_BASE_URL}${API_ROUTES.CONTACTS}/${resolvedParams.id}`,
+          `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.CONTACTS}/${resolvedParams.id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          },
+          }
         );
 
         if (!response.ok) {
@@ -115,7 +115,7 @@ export default function EditContact({ params }: PageProps) {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}${API_ROUTES.CONTACTS}/${resolvedParams.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.CONTACTS}/${resolvedParams.id}`,
         {
           method: "PUT",
           headers: {
@@ -123,7 +123,7 @@ export default function EditContact({ params }: PageProps) {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(formData),
-        },
+        }
       );
 
       if (response.status === 401) {
@@ -140,7 +140,7 @@ export default function EditContact({ params }: PageProps) {
       router.refresh();
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to update contact",
+        error instanceof Error ? error.message : "Failed to update contact"
       );
       console.error("Error updating contact:", error);
     } finally {
@@ -151,7 +151,7 @@ export default function EditContact({ params }: PageProps) {
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({

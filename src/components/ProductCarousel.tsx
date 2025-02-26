@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { API_BASE_URL, API_ROUTES } from "../config/constants";
+import { API_ROUTES } from "../config/constants";
 import { Product, Specification } from "../types/product";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
 
@@ -39,7 +39,9 @@ const ProductCarousel = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}${API_ROUTES.PRODUCTS}`);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.PRODUCTS}`
+        );
         if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
 
@@ -50,7 +52,7 @@ const ProductCarousel = () => {
               return Array.isArray(spec.value)
                 ? spec.value.includes("DRY")
                 : spec.value === "DRY";
-            }),
+            })
           )
           .sort((a: Product, b: Product) => b.price.base - a.price.base);
 
@@ -85,7 +87,7 @@ const ProductCarousel = () => {
   const pageCount = Math.ceil(products.length / itemsPerPage);
   const visibleProducts = products.slice(
     currentPage * itemsPerPage,
-    currentPage * itemsPerPage + itemsPerPage,
+    currentPage * itemsPerPage + itemsPerPage
   );
 
   return (

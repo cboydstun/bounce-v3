@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 
 interface Contact {
   id: string;
@@ -93,11 +93,14 @@ export default function AdminContacts() {
         setError(null);
         const token = localStorage.getItem("auth_token");
 
-        const response = await fetch(`${API_BASE_URL}${API_ROUTES.CONTACTS}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.CONTACTS}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch contacts");
@@ -144,7 +147,7 @@ export default function AdminContacts() {
             slushyMachine: contact.slushyMachine,
             overnight: contact.overnight,
             sourcePage: contact.sourcePage,
-          })),
+          }))
         );
       } catch (error) {
         setError(error instanceof Error ? error.message : "An error occurred");
@@ -168,7 +171,7 @@ export default function AdminContacts() {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}${API_ROUTES.CONTACTS}/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.CONTACTS}/${id}`,
         {
           method: "PUT",
           headers: {
@@ -176,7 +179,7 @@ export default function AdminContacts() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ confirmed }),
-        },
+        }
       );
 
       if (response.status === 401) {
@@ -191,12 +194,12 @@ export default function AdminContacts() {
 
       setContacts(
         contacts.map((contact) =>
-          contact.id === id ? { ...contact, confirmed } : contact,
-        ),
+          contact.id === id ? { ...contact, confirmed } : contact
+        )
       );
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to update status",
+        error instanceof Error ? error.message : "Failed to update status"
       );
       console.error("Error updating status:", error);
     } finally {
@@ -221,13 +224,13 @@ export default function AdminContacts() {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}${API_ROUTES.CONTACTS}/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.CONTACTS}/${id}`,
         {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
 
       if (response.status === 401) {
@@ -243,7 +246,7 @@ export default function AdminContacts() {
       setContacts(contacts.filter((contact) => contact.id !== id));
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to delete contact",
+        error instanceof Error ? error.message : "Failed to delete contact"
       );
       console.error("Error deleting contact:", error);
     } finally {
@@ -522,7 +525,7 @@ export default function AdminContacts() {
                       onClick={() => {
                         if (sortColumn === "partyDate") {
                           setSortDirection(
-                            sortDirection === "asc" ? "desc" : "asc",
+                            sortDirection === "asc" ? "desc" : "asc"
                           );
                         } else {
                           setSortColumn("partyDate");
@@ -612,7 +615,7 @@ export default function AdminContacts() {
                           onChange={(e) =>
                             handleUpdateStatus(
                               contact.id,
-                              e.target.value === "true",
+                              e.target.value === "true"
                             )
                           }
                           className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(contact.confirmed)}`}

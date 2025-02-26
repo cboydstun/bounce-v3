@@ -4,7 +4,7 @@ import { useState, FormEvent } from "react";
 import Image from "next/image";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Blog } from "@/types/blog";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 import { CldUploadButton } from "next-cloudinary";
 import type { CloudinaryUploadWidgetResults } from "next-cloudinary";
 
@@ -83,7 +83,7 @@ export default function BlogForm({
       createdAt: undefined,
       updatedAt: undefined,
       newImages: [],
-    },
+    }
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -116,7 +116,7 @@ export default function BlogForm({
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "An error occurred while saving",
+        err instanceof Error ? err.message : "An error occurred while saving"
       );
     } finally {
       setIsLoading(false);
@@ -126,14 +126,14 @@ export default function BlogForm({
   const handleImageDelete = async (image: BlogFormData["images"][0]) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}${API_ROUTES.BLOGS}/${formData.slug}/images/${image.filename}`,
+        `${API_ROUTES.BLOGS}/${formData.slug}/images/${image.filename}`,
         {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
             "Content-Type": "application/json",
           },
-        },
+        }
       );
 
       if (!response.ok) {
@@ -144,7 +144,7 @@ export default function BlogForm({
       const updatedFormData = {
         ...formData,
         images: formData.images.filter(
-          (img) => img.filename !== image.filename,
+          (img) => img.filename !== image.filename
         ),
       };
 
@@ -157,8 +157,6 @@ export default function BlogForm({
       setError(err instanceof Error ? err.message : "Failed to delete image");
     }
   };
-
-  console.log("// BlogForm.tsx formData:", formData);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

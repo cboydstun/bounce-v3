@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import api from "@/utils/api";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 import { Product } from "@/types/product";
 
 export default function AdminProducts() {
@@ -17,7 +17,9 @@ export default function AdminProducts() {
     const fetchProducts = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get(`${API_BASE_URL}${API_ROUTES.PRODUCTS}`);
+        const response = await api.get(
+          `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.PRODUCTS}`
+        );
         setProducts(response.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
@@ -42,7 +44,9 @@ export default function AdminProducts() {
         return;
       }
 
-      await api.delete(`${API_BASE_URL}${API_ROUTES.PRODUCTS}/${slug}`);
+      await api.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.PRODUCTS}/${slug}`
+      );
       setProducts(products.filter((product) => product.slug !== slug));
     } catch (err) {
       console.error("Delete error:", err);
@@ -50,7 +54,7 @@ export default function AdminProducts() {
         setError("Authentication failed. Please log in again.");
       } else {
         setError(
-          err instanceof Error ? err.message : "Failed to delete product",
+          err instanceof Error ? err.message : "Failed to delete product"
         );
       }
     } finally {

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import BlogForm, { BlogFormData } from "../../BlogForm";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 
 interface PageProps {
   params: Promise<{
@@ -22,14 +22,11 @@ export default function EditBlog({ params }: PageProps) {
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}${API_ROUTES.BLOGS}/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
+        const response = await fetch(`${API_ROUTES.BLOGS}/${id}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        );
+        });
 
         if (!response.ok) {
           throw new Error("Failed to fetch blog");
@@ -74,7 +71,7 @@ export default function EditBlog({ params }: PageProps) {
 
   const handleSubmit = async (data: BlogFormData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}/${id}`, {
+      const response = await fetch(`${API_ROUTES.BLOGS}/${id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("auth_token")}`,

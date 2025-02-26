@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 import { Review } from "@/types/review";
 import { Star } from "lucide-react";
 
@@ -21,11 +21,14 @@ export default function AdminReviews() {
         setError(null);
         const token = localStorage.getItem("auth_token");
 
-        const response = await fetch(`${API_BASE_URL}${API_ROUTES.REVIEWS}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.REVIEWS}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch reviews");
@@ -59,13 +62,13 @@ export default function AdminReviews() {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}${API_ROUTES.REVIEWS}/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.REVIEWS}/${id}`,
         {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
 
       if (response.status === 401) {
@@ -81,7 +84,7 @@ export default function AdminReviews() {
       setReviews(reviews.filter((review) => review._id !== id));
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to delete review",
+        error instanceof Error ? error.message : "Failed to delete review"
       );
       console.error("Error deleting review:", error);
     } finally {

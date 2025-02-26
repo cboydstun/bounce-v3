@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Blog } from "@/types/blog";
 
@@ -15,7 +15,9 @@ export function BlogsContent() {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}`);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.BLOGS}`
+        );
         if (!response.ok) throw new Error("Failed to fetch blogs");
         const data = await response.json();
         setBlogs(data);

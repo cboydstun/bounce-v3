@@ -5,7 +5,7 @@ import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import api from "@/utils/api";
 import { Blog } from "@/types/blog";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 
 export default function AdminBlogs() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -17,7 +17,7 @@ export default function AdminBlogs() {
     const fetchBlogs = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get(`${API_BASE_URL}${API_ROUTES.BLOGS}`);
+        const response = await api.get(`${API_ROUTES.BLOGS}`);
         setBlogs(response.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
@@ -36,7 +36,7 @@ export default function AdminBlogs() {
 
     try {
       setIsLoading(true);
-      await api.delete(`${API_BASE_URL}${API_ROUTES.BLOGS}/${slug}`);
+      await api.delete(`${API_ROUTES.BLOGS}/${slug}`);
       setBlogs(blogs.filter((blog) => blog.slug !== slug));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete blog");

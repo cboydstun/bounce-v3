@@ -6,7 +6,7 @@ import ProductForm from "../../ProductForm";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type { ProductFormData } from "../../ProductForm";
 import api from "@/utils/api";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 
 interface Product extends ProductFormData {
   slug: string;
@@ -35,7 +35,7 @@ export default function EditProductPage({
         }
 
         const response = await api.get(
-          `${API_BASE_URL}${API_ROUTES.PRODUCTS}/${unwrappedParams.id}`,
+          `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.PRODUCTS}/${unwrappedParams.id}`
         );
         setProduct(response.data);
       } catch (err) {
@@ -46,7 +46,7 @@ export default function EditProductPage({
           setError(
             err instanceof Error
               ? err.message
-              : "An error occurred while fetching the product",
+              : "An error occurred while fetching the product"
           );
         }
       } finally {
@@ -68,10 +68,13 @@ export default function EditProductPage({
         return;
       }
 
-      await api.put(`${API_BASE_URL}${API_ROUTES.PRODUCTS}/${product?.slug}`, {
-        ...formData,
-        slug: product?.slug, // Preserve the slug from the original product
-      });
+      await api.put(
+        `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.PRODUCTS}/${product?.slug}`,
+        {
+          ...formData,
+          slug: product?.slug, // Preserve the slug from the original product
+        }
+      );
 
       router.push("/admin/products");
     } catch (err) {
@@ -80,7 +83,7 @@ export default function EditProductPage({
         setError("Authentication failed. Please log in again.");
       } else {
         setError(
-          err instanceof Error ? err.message : "Failed to update product",
+          err instanceof Error ? err.message : "Failed to update product"
         );
       }
     } finally {

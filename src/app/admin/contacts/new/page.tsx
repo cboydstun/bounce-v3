@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 
 interface ContactFormData {
   bouncer: string;
@@ -58,14 +58,17 @@ export default function NewContact() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}${API_ROUTES.CONTACTS}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.CONTACTS}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        }
+      );
 
       if (response.status === 401) {
         localStorage.removeItem("auth_token");
@@ -81,7 +84,7 @@ export default function NewContact() {
       router.refresh();
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to create contact",
+        error instanceof Error ? error.message : "Failed to create contact"
       );
       console.error("Error creating contact:", error);
     } finally {
@@ -92,7 +95,7 @@ export default function NewContact() {
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({

@@ -76,7 +76,7 @@ const CustomerReviews = () => {
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to fetch reviews",
+          err instanceof Error ? err.message : "Failed to fetch reviews"
         );
       } finally {
         setIsLoading(false);

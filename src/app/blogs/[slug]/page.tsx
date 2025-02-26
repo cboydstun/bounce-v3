@@ -1,13 +1,16 @@
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { Blog } from "@/types/blog";
 import Image from "next/image";
 
 async function getBlog(slug: string): Promise<Blog> {
-  const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}/${slug}`, {
-    next: { revalidate: 3600 }, // Revalidate every hour
-  });
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.BLOGS}/${slug}`,
+    {
+      next: { revalidate: 3600 }, // Revalidate every hour
+    }
+  );
 
   if (!response.ok) {
     notFound();
@@ -66,6 +69,7 @@ export default async function BlogDetail({ params }: { params: Params }) {
                 height={630}
                 className="w-full h-full object-cover"
                 priority
+                quality={90}
               />
             </div>
           )}
@@ -114,7 +118,7 @@ export default async function BlogDetail({ params }: { params: Params }) {
                 {blog.images.map(
                   (
                     image: { public_id: string; url: string },
-                    index: number,
+                    index: number
                   ) => (
                     <div
                       key={image.public_id}
@@ -126,9 +130,10 @@ export default async function BlogDetail({ params }: { params: Params }) {
                         width={600}
                         height={400}
                         className="w-full h-full object-cover"
+                        quality={90}
                       />
                     </div>
-                  ),
+                  )
                 )}
               </div>
             )}

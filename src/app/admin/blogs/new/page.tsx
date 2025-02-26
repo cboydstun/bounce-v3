@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import BlogForm, { BlogFormData } from "../BlogForm";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 import { Blog } from "@/types/blog";
 
 export default function NewBlog() {
@@ -10,7 +10,7 @@ export default function NewBlog() {
 
   const handleSubmit = async (data: BlogFormData): Promise<Blog> => {
     try {
-      const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}`, {
+      const response = await fetch(`${API_ROUTES.BLOGS}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import ReviewForm from "../../ReviewForm";
 import { Review } from "@/types/review";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 
 export default function EditReview({
   params,
@@ -28,12 +28,12 @@ export default function EditReview({
         }
 
         const response = await fetch(
-          `${API_BASE_URL}${API_ROUTES.REVIEWS}/${id}`,
+          `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.REVIEWS}/${id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          },
+          }
         );
 
         if (response.status === 401) {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import api from "@/utils/api";
-import { API_BASE_URL, API_ROUTES } from "../../config/constants";
+import { API_ROUTES } from "../../config/constants";
 import { Review } from "@/types/review";
 
 interface ReviewStats {
@@ -32,10 +32,10 @@ export default function AdminDashboard() {
       try {
         const [blogsRes, productsRes, contactsRes, reviewsRes] =
           await Promise.all([
-            api.get(`${API_BASE_URL}${API_ROUTES.BLOGS}`),
-            api.get(`${API_BASE_URL}${API_ROUTES.PRODUCTS}`),
-            api.get(`${API_BASE_URL}${API_ROUTES.CONTACTS}`),
-            api.get(`${API_BASE_URL}${API_ROUTES.REVIEWS}`),
+            api.get(`${API_ROUTES.BLOGS}`),
+            api.get(`${API_ROUTES.PRODUCTS}`),
+            api.get(`${API_ROUTES.CONTACTS}`),
+            api.get(`${API_ROUTES.REVIEWS}`),
           ]);
 
         const reviews = reviewsRes.data as Review[];
@@ -45,7 +45,7 @@ export default function AdminDashboard() {
         last24Hours.setHours(last24Hours.getHours() - 24);
 
         const recentReviews = reviews.filter(
-          (review) => new Date(review.createdAt || 0) > last24Hours,
+          (review) => new Date(review.createdAt || 0) > last24Hours
         ).length;
 
         const averageRating = reviews.length
@@ -55,7 +55,7 @@ export default function AdminDashboard() {
 
         // For this example, we'll consider reviews without a reviewId as pending
         const pendingReviews = reviews.filter(
-          (review) => !review.reviewId,
+          (review) => !review.reviewId
         ).length;
 
         setReviewStats({

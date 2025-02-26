@@ -2,10 +2,19 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import ChatWidget from "@/components/chat/ChatWidget";
 import JsonLd from "../components/JsonLd";
 import GoogleAnalytics from "../components/GoogleAnalytics";
 import { GoogleTagManager } from "@next/third-parties/google";
+import { connectToDatabase, createIndexes } from "@/utils/mongodb";
 import "./globals.css";
+
+// Initialize MongoDB connection and indexes
+connectToDatabase()
+  .then(() => {
+    createIndexes().catch(console.error);
+  })
+  .catch(console.error);
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -190,6 +199,9 @@ export default function RootLayout({
         <main className="flex-grow">{children}</main>
         <Footer />
       </body>
+      <div suppressHydrationWarning>
+        <ChatWidget />
+      </div>
       <GoogleTagManager gtmId={process.env.NEXT_GTM_ID!} />
     </html>
   );
