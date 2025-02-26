@@ -7,20 +7,17 @@ import {
   getChatMessages,
   updateSessionStatus,
 } from "@/utils/api";
-import { ChatMessage, ChatSession } from "@/types/chat";
+import { ChatMessage, ChatSession, ChatResponse } from "@/types/chat";
 
 export default function AdminChatPanel() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
-
   // Load sessions and setup polling
   useEffect(() => {
     loadSessions();
     const interval = setInterval(loadSessions, 10000); // Poll every 10 seconds
-    setPollInterval(interval);
 
     return () => {
       if (interval) clearInterval(interval);
@@ -32,7 +29,6 @@ export default function AdminChatPanel() {
     if (selectedSession) {
       loadMessages(selectedSession);
       const interval = setInterval(() => loadMessages(selectedSession), 5000);
-      setPollInterval(interval);
 
       return () => {
         if (interval) clearInterval(interval);
@@ -42,7 +38,9 @@ export default function AdminChatPanel() {
 
   const loadSessions = async () => {
     try {
-      const response = await getAdminSessions();
+      const response = (await getAdminSessions()) as ChatResponse<{
+        sessions: ChatSession[];
+      }>;
       if (response.success && response.data) {
         setSessions(response.data.sessions);
       }
@@ -53,7 +51,9 @@ export default function AdminChatPanel() {
 
   const loadMessages = async (sessionId: string) => {
     try {
-      const response = await getChatMessages(sessionId);
+      const response = (await getChatMessages(sessionId)) as ChatResponse<
+        ChatMessage[]
+      >;
       if (response.success && response.data) {
         setMessages(response.data);
       }
@@ -74,7 +74,7 @@ export default function AdminChatPanel() {
       });
 
       if (response.success && response.data) {
-        setMessages((prev) => [...prev, response.data]);
+        setMessages((prev) => [...prev, response.data as ChatMessage]);
         setNewMessage("");
       }
     } catch (error) {

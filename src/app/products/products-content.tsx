@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { Product } from "../../types/product";
-import { API_ROUTES } from "../../config/constants";
-import api from "../../utils/api";
-import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
 import { ProductFilters } from "../../components/ProductFilters";
+
+interface ProductsContentProps {
+  initialProducts: Product[];
+}
 
 function ProductGrid({ products }: { products: Product[] }) {
   return (
@@ -58,47 +59,9 @@ function ProductGrid({ products }: { products: Product[] }) {
   );
 }
 
-async function getProducts() {
-  try {
-    const response = await api.get(
-      `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.PRODUCTS}`
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching products:", error);
-    throw new Error("Failed to fetch products");
-  }
-}
-
-export function ProductsContent() {
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [initialProducts, setInitialProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch products on mount
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const products = await getProducts();
-        setInitialProducts(products);
-        setFilteredProducts(products);
-      } catch (error) {
-        console.error("Failed to fetch products:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchProducts();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
+export function ProductsContent({ initialProducts }: ProductsContentProps) {
+  const [filteredProducts, setFilteredProducts] =
+    useState<Product[]>(initialProducts);
 
   return (
     <div className="w-full bg-secondary-blue/5 py-12">

@@ -8,7 +8,7 @@ import {
 } from "@/utils/api";
 import ChatButton from "./ChatButton";
 import ChatWindow from "./ChatWindow";
-import { ChatMessage } from "@/types/chat";
+import { ChatMessage, ChatResponse, ChatSession } from "@/types/chat";
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,11 +45,13 @@ export default function ChatWidget() {
       // Clear polling when chat is closed
       if (pollInterval) clearInterval(pollInterval);
     }
-  }, [isOpen, sessionId]);
+  }, [isOpen, sessionId, pollInterval]);
 
   const loadMessages = async (sid: string) => {
     try {
-      const response = await getChatMessages(sid);
+      const response = (await getChatMessages(sid)) as ChatResponse<
+        ChatMessage[]
+      >;
       if (response.success && response.data) {
         setMessages(response.data);
       }
@@ -60,10 +62,10 @@ export default function ChatWidget() {
 
   const handleSubmitContact = async (contactInfo: string) => {
     try {
-      const response = await createChatSession({
+      const response = (await createChatSession({
         contactInfo,
         initialMessage: "Hi, I'd like to chat with you.",
-      });
+      })) as ChatResponse<{ session: ChatSession; message: ChatMessage }>;
 
       if (response.success && response.data) {
         const { session, message } = response.data;
@@ -80,13 +82,13 @@ export default function ChatWidget() {
     if (!sessionId) return;
 
     try {
-      const response = await sendChatMessage({
+      const response = (await sendChatMessage({
         sessionId,
         content,
-      });
+      })) as ChatResponse<ChatMessage>;
 
       if (response.success && response.data) {
-        setMessages((prev) => [...prev, response.data]);
+        setMessages((prev) => [...prev, response.data as ChatMessage]);
       }
     } catch (error) {
       console.error("Error sending message:", error);

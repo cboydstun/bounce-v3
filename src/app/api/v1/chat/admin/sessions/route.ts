@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { ChatResponse } from "@/types/chat";
 import { connectToDatabase } from "@/utils/mongodb";
 import { verifyToken } from "@/utils/auth";
-import ChatSession, { IChatSession } from "@/models/ChatSession";
-import ChatMessage, { IChatMessage } from "@/models/ChatMessage";
+import ChatSession from "@/models/ChatSession";
+import ChatMessage from "@/models/ChatMessage";
 
 export async function GET(request: NextRequest) {
     try {

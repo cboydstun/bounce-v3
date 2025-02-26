@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
 import { API_ROUTES } from "@/config/constants";
-import { ChatResponse, CreateSessionRequest, SendMessageRequest } from "@/types/chat";
+import { ChatResponse, CreateSessionRequest, SendMessageRequest, ChatSession, ChatMessage } from "@/types/chat";
 
 // Create API instances for different base URLs
 const api = axios.create({
@@ -90,30 +90,42 @@ export const setAuthToken = (token: string | null) => {
 
 // Chat API functions
 export const createChatSession = async (data: CreateSessionRequest) => {
-  const response = await chatApi.post<ChatResponse>(API_ROUTES.CHAT.SESSIONS, data);
+  const response = await chatApi.post<ChatResponse<{ session: ChatSession; message: ChatMessage }>>(
+    API_ROUTES.CHAT.SESSIONS,
+    data
+  );
   return response.data;
 };
 
 export const sendChatMessage = async (data: SendMessageRequest) => {
-  const response = await chatApi.post<ChatResponse>(API_ROUTES.CHAT.MESSAGES, data);
+  const response = await chatApi.post<ChatResponse<ChatMessage>>(
+    API_ROUTES.CHAT.MESSAGES,
+    data
+  );
   return response.data;
 };
 
 export const getChatMessages = async (sessionId: string) => {
-  const response = await chatApi.get<ChatResponse>(`${API_ROUTES.CHAT.MESSAGES}?sessionId=${sessionId}`);
+  const response = await chatApi.get<ChatResponse<ChatMessage[]>>(
+    `${API_ROUTES.CHAT.MESSAGES}?sessionId=${sessionId}`
+  );
   return response.data;
 };
 
 export const getAdminSessions = async () => {
-  const response = await chatApi.get<ChatResponse>(API_ROUTES.CHAT.ADMIN_SESSIONS);
+  const response = await chatApi.get<ChatResponse<{ sessions: ChatSession[] }>>(
+    API_ROUTES.CHAT.ADMIN_SESSIONS
+  );
   return response.data;
 };
 
 export const updateSessionStatus = async (sessionId: string, isActive: boolean) => {
-  const response = await chatApi.patch<ChatResponse>(API_ROUTES.CHAT.ADMIN_SESSIONS, {
-    sessionId,
-    isActive,
-  });
+  const response = await chatApi.patch<ChatResponse<void>>(
+    API_ROUTES.CHAT.ADMIN_SESSIONS,
+    {
+      sessionId,
+      isActive,
+    });
   return response.data;
 };
 

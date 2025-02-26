@@ -25,8 +25,8 @@ export interface SendMessageRequest {
     isAdmin?: boolean;
 }
 
-export interface ChatResponse {
+export interface ChatResponse<T = unknown> {
     success: boolean;
     message?: string;
-    data?: any;
+    data?: T;
 }

@@ -1,5 +1,7 @@
 import { Metadata } from "next";
 import { ProductsContent } from "./products-content";
+import { API_ROUTES } from "../../config/constants";
+import { Product } from "../../types/product";
 
 export const metadata: Metadata = {
   title: "Bounce Houses & Party Rentals | SATX Bounce",
@@ -17,6 +19,31 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ProductsPage() {
-  return <ProductsContent />;
+// Server-side data fetching function
+async function getProducts(): Promise<Product[]> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}${API_ROUTES.PRODUCTS}`,
+      {
+        next: { revalidate: 3600 }, // Revalidate every hour
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch products");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return []; // Return empty array on error
+  }
+}
+
+export default async function ProductsPage() {
+  // Fetch products on the server
+  const products = await getProducts();
+
+  // Pass pre-fetched products to the client component
+  return <ProductsContent initialProducts={products} />;
 }

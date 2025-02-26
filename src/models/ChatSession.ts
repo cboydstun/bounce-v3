@@ -1,10 +1,8 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-interface ChatSessionMethods {
-    // Add any instance methods here
-}
+type ChatSessionMethods = Record<string, never>;
 
-interface ChatSessionModel extends Model<IChatSession, {}, ChatSessionMethods> {
+interface ChatSessionModel extends Model<IChatSession, Record<string, never>, ChatSessionMethods> {
     findBySessionId(id: string): Promise<IChatSession | null>;
     findActiveSessions(): Promise<IChatSession[]>;
 }
