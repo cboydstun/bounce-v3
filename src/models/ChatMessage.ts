@@ -17,7 +17,7 @@ export interface IChatMessage extends Document {
 }
 
 const chatMessageSchema = new Schema<IChatMessage>({
-    id: { type: String, required: true, unique: true },
+    id: { type: String, required: true },
     sessionId: { type: String, required: true },
     content: { type: String, required: true },
     isAdmin: { type: Boolean, default: false },

@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosResponse, AxiosRequestConfig } from "axios";
 import { API_ROUTES } from "@/config/constants";
 import { ChatResponse, CreateSessionRequest, SendMessageRequest, ChatSession, ChatMessage } from "@/types/chat";
 
@@ -89,43 +89,49 @@ export const setAuthToken = (token: string | null) => {
 };
 
 // Chat API functions
-export const createChatSession = async (data: CreateSessionRequest) => {
+export const createChatSession = async (data: CreateSessionRequest, config?: AxiosRequestConfig) => {
   const response = await chatApi.post<ChatResponse<{ session: ChatSession; message: ChatMessage }>>(
     API_ROUTES.CHAT.SESSIONS,
-    data
+    data,
+    config
   );
   return response.data;
 };
 
-export const sendChatMessage = async (data: SendMessageRequest) => {
+export const sendChatMessage = async (data: SendMessageRequest, config?: AxiosRequestConfig) => {
   const response = await chatApi.post<ChatResponse<ChatMessage>>(
     API_ROUTES.CHAT.MESSAGES,
-    data
+    data,
+    config
   );
   return response.data;
 };
 
-export const getChatMessages = async (sessionId: string) => {
+export const getChatMessages = async (sessionId: string, config?: AxiosRequestConfig) => {
   const response = await chatApi.get<ChatResponse<ChatMessage[]>>(
-    `${API_ROUTES.CHAT.MESSAGES}?sessionId=${sessionId}`
+    `${API_ROUTES.CHAT.MESSAGES}?sessionId=${sessionId}`,
+    config
   );
   return response.data;
 };
 
-export const getAdminSessions = async () => {
+export const getAdminSessions = async (config?: AxiosRequestConfig) => {
   const response = await chatApi.get<ChatResponse<{ sessions: ChatSession[] }>>(
-    API_ROUTES.CHAT.ADMIN_SESSIONS
+    API_ROUTES.CHAT.ADMIN_SESSIONS,
+    config
   );
   return response.data;
 };
 
-export const updateSessionStatus = async (sessionId: string, isActive: boolean) => {
+export const updateSessionStatus = async (sessionId: string, isActive: boolean, config?: AxiosRequestConfig) => {
   const response = await chatApi.patch<ChatResponse<void>>(
     API_ROUTES.CHAT.ADMIN_SESSIONS,
     {
       sessionId,
       isActive,
-    });
+    },
+    config
+  );
   return response.data;
 };
 

@@ -16,7 +16,7 @@ export interface IChatSession extends Document {
 }
 
 const chatSessionSchema = new Schema<IChatSession>({
-    id: { type: String, required: true, unique: true },
+    id: { type: String, required: true },
     contactInfo: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     isActive: { type: Boolean, default: true },

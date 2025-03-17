@@ -1,80 +1,67 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  createChatSession,
-  sendChatMessage,
-  getChatMessages,
-} from "@/utils/api";
+import ChatService from "@/utils/chatService";
 import ChatButton from "./ChatButton";
 import ChatWindow from "./ChatWindow";
-import { ChatMessage, ChatResponse, ChatSession } from "@/types/chat";
+import { ChatMessage } from "@/types/chat";
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
 
   // Load existing session from localStorage
   useEffect(() => {
     const savedSessionId = localStorage.getItem("chat_session_id");
     if (savedSessionId) {
       setSessionId(savedSessionId);
-      loadMessages(savedSessionId);
+      // Initial messages will be loaded when polling starts
     }
   }, []);
+
+  // Get chat service instance
+  const chatService = ChatService.getInstance();
 
   // Setup polling for new messages when chat is open
   useEffect(() => {
     if (isOpen && sessionId) {
-      // Initial load
-      loadMessages(sessionId);
+      // Start polling for messages
+      chatService.startMessagePolling(sessionId, handleMessagesUpdate);
 
-      // Setup polling
-      const interval = setInterval(() => {
-        loadMessages(sessionId);
-      }, 5000); // Poll every 5 seconds
-
-      setPollInterval(interval);
-
+      // Cleanup when chat is closed or component unmounts
       return () => {
-        if (interval) clearInterval(interval);
+        chatService.stopMessagePolling(sessionId, handleMessagesUpdate);
       };
-    } else {
-      // Clear polling when chat is closed
-      if (pollInterval) clearInterval(pollInterval);
     }
-  }, [isOpen, sessionId, pollInterval]);
+  }, [isOpen, sessionId, chatService]);
 
-  const loadMessages = async (sid: string) => {
-    try {
-      const response = (await getChatMessages(sid)) as ChatResponse<
-        ChatMessage[]
-      >;
-      if (response.success && response.data) {
-        setMessages(response.data);
-      }
-    } catch (error) {
-      console.error("Error loading messages:", error);
-    }
+  // Callback for message updates
+  const handleMessagesUpdate = (updatedMessages: ChatMessage[]) => {
+    setMessages(updatedMessages);
   };
 
   const handleSubmitContact = async (contactInfo: string) => {
-    try {
-      const response = (await createChatSession({
-        contactInfo,
-        initialMessage: "Hi, I'd like to chat with you.",
-      })) as ChatResponse<{ session: ChatSession; message: ChatMessage }>;
+    setError(null);
+    setIsCreatingSession(true);
 
-      if (response.success && response.data) {
-        const { session, message } = response.data;
-        setSessionId(session.id);
-        setMessages([message]);
-        localStorage.setItem("chat_session_id", session.id);
-      }
+    try {
+      // Use chat service to create session
+      const { session, message } = await chatService.createChatSession(
+        contactInfo,
+        "Hi, I'd like to chat with you."
+      );
+
+      setSessionId(session.id);
+      setMessages([message]);
+      localStorage.setItem("chat_session_id", session.id);
     } catch (error) {
       console.error("Error creating chat session:", error);
+      setError("Failed to create chat session. Please try again.");
+    } finally {
+      setIsCreatingSession(false);
     }
   };
 
@@ -82,14 +69,11 @@ export default function ChatWidget() {
     if (!sessionId) return;
 
     try {
-      const response = (await sendChatMessage({
-        sessionId,
-        content,
-      })) as ChatResponse<ChatMessage>;
+      // Use chat service to send message
+      const tempMessage = chatService.sendMessage(sessionId, content, false);
 
-      if (response.success && response.data) {
-        setMessages((prev) => [...prev, response.data as ChatMessage]);
-      }
+      // Optimistically add message to UI
+      setMessages((prev) => [...prev, tempMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -109,6 +93,8 @@ export default function ChatWidget() {
         messages={messages}
         onSendMessage={handleSendMessage}
         onSubmitContact={handleSubmitContact}
+        error={error}
+        isCreatingSession={isCreatingSession}
       />
     </>
   );

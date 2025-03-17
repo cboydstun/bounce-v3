@@ -11,6 +11,8 @@ interface ChatWindowProps {
   messages: ChatMessage[];
   onSendMessage: (content: string) => void;
   onSubmitContact: (contactInfo: string) => void;
+  error?: string | null;
+  isCreatingSession?: boolean;
 }
 
 export default function ChatWindow({
@@ -20,6 +22,8 @@ export default function ChatWindow({
   messages,
   onSendMessage,
   onSubmitContact,
+  error = null,
+  isCreatingSession = false,
 }: ChatWindowProps) {
   const [message, setMessage] = useState("");
   const [contactInfo, setContactInfo] = useState("");
@@ -101,16 +105,17 @@ export default function ChatWindow({
                 placeholder="Email or phone number"
               />
             </div>
+            {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
             <button
               type="submit"
-              disabled={!isValidContact}
+              disabled={!isValidContact || isCreatingSession}
               className={`w-full py-2 px-4 rounded-md ${
-                isValidContact
+                isValidContact && !isCreatingSession
                   ? "bg-purple-600 hover:bg-purple-700 text-white"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
             >
-              Start Chat
+              {isCreatingSession ? "Creating..." : "Start Chat"}
             </button>
           </form>
         </div>

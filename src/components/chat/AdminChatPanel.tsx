@@ -1,65 +1,49 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  getAdminSessions,
-  sendChatMessage,
-  getChatMessages,
-  updateSessionStatus,
-} from "@/utils/api";
-import { ChatMessage, ChatSession, ChatResponse } from "@/types/chat";
+import ChatService from "@/utils/chatService";
+import { ChatMessage, ChatSession } from "@/types/chat";
 
 export default function AdminChatPanel() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  // Get chat service instance
+  const chatService = ChatService.getInstance();
+
   // Load sessions and setup polling
   useEffect(() => {
-    loadSessions();
-    const interval = setInterval(loadSessions, 10000); // Poll every 10 seconds
+    // Start polling for sessions
+    chatService.startSessionsPolling(handleSessionsUpdate);
 
+    // Cleanup on unmount
     return () => {
-      if (interval) clearInterval(interval);
+      chatService.stopSessionsPolling(handleSessionsUpdate);
     };
-  }, []);
+  }, [chatService]);
 
   // Load messages for selected session
   useEffect(() => {
     if (selectedSession) {
-      loadMessages(selectedSession);
-      const interval = setInterval(() => loadMessages(selectedSession), 5000);
+      // Start polling for messages
+      chatService.startMessagePolling(selectedSession, handleMessagesUpdate);
 
+      // Cleanup when session changes or component unmounts
       return () => {
-        if (interval) clearInterval(interval);
+        chatService.stopMessagePolling(selectedSession, handleMessagesUpdate);
       };
     }
-  }, [selectedSession]);
+  }, [selectedSession, chatService]);
 
-  const loadSessions = async () => {
-    try {
-      const response = (await getAdminSessions()) as ChatResponse<{
-        sessions: ChatSession[];
-      }>;
-      if (response.success && response.data) {
-        setSessions(response.data.sessions);
-      }
-    } catch (error) {
-      console.error("Error loading sessions:", error);
-    }
+  // Callback for session updates
+  const handleSessionsUpdate = (updatedSessions: ChatSession[]) => {
+    setSessions(updatedSessions);
   };
 
-  const loadMessages = async (sessionId: string) => {
-    try {
-      const response = (await getChatMessages(sessionId)) as ChatResponse<
-        ChatMessage[]
-      >;
-      if (response.success && response.data) {
-        setMessages(response.data);
-      }
-    } catch (error) {
-      console.error("Error loading messages:", error);
-    }
+  // Callback for message updates
+  const handleMessagesUpdate = (updatedMessages: ChatMessage[]) => {
+    setMessages(updatedMessages);
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -67,16 +51,16 @@ export default function AdminChatPanel() {
     if (!selectedSession || !newMessage.trim()) return;
 
     try {
-      const response = await sendChatMessage({
-        sessionId: selectedSession,
-        content: newMessage.trim(),
-        isAdmin: true,
-      });
+      // Use chat service to send message
+      const tempMessage = chatService.sendMessage(
+        selectedSession,
+        newMessage.trim(),
+        true
+      );
 
-      if (response.success && response.data) {
-        setMessages((prev) => [...prev, response.data as ChatMessage]);
-        setNewMessage("");
-      }
+      // Optimistically add message to UI
+      setMessages((prev) => [...prev, tempMessage]);
+      setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -87,10 +71,8 @@ export default function AdminChatPanel() {
     isActive: boolean
   ) => {
     try {
-      const response = await updateSessionStatus(sessionId, isActive);
-      if (response.success) {
-        loadSessions(); // Refresh sessions list
-      }
+      // Use chat service to update session status
+      await chatService.updateSessionStatus(sessionId, isActive);
     } catch (error) {
       console.error("Error updating session status:", error);
     }
