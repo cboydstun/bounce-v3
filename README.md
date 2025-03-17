@@ -33,43 +33,71 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 
 ## API Routes
 
-The application provides a RESTful API with the following endpoints:
+The application provides a comprehensive RESTful API with the following endpoints:
+
+### Users API
+
+- `POST /api/v1/users/login` - Authenticate user and retrieve JWT token
+- `POST /api/v1/users/register` - Register a new user account
+- `GET /api/v1/users/profile` - Retrieve the authenticated user's profile
+- `PUT /api/v1/users/profile` - Update the authenticated user's profile
 
 ### Products API
 
 - `GET /api/v1/products` - Retrieve all products
-- `GET /api/v1/products/:id` - Retrieve a specific product by ID
-- `POST /api/v1/products` - Create a new product
-- `PUT /api/v1/products/:slug` - Update a product by slug
-- `DELETE /api/v1/products/:slug` - Delete a product by slug
+  - Query parameters:
+    - `category`: Filter by product category
+    - `search`: Search products by text
+    - `availability`: Filter by availability status
+    - `limit`: Number of products per page (default: 10)
+    - `page`: Page number for pagination (default: 1)
+- `GET /api/v1/products/:slug` - Retrieve a specific product by slug
+- `POST /api/v1/products` - Create a new product (admin only)
+- `PUT /api/v1/products/:slug` - Update a product by slug (admin only)
+- `DELETE /api/v1/products/:slug` - Delete a product by slug (admin only)
 
 ### Blogs API
 
 - `GET /api/v1/blogs` - Retrieve all blog posts
-- `GET /api/v1/blogs/:id` - Retrieve a specific blog post by ID
-- `POST /api/v1/blogs` - Create a new blog post
-- `PUT /api/v1/blogs/:id` - Update a blog post by ID
-- `DELETE /api/v1/blogs/:slug` - Delete a blog post by slug
-- `DELETE /api/v1/blogs/:slug/images/:filename` - Delete an image from a blog post
-
-### Users API
-
-- `POST /api/v1/users/login` - Authenticate user and retrieve token
+  - Query parameters:
+    - `category`: Filter by blog category
+    - `tag`: Filter by blog tag
+    - `search`: Search blogs by text
+    - `status`: Filter by status (published, draft, archived)
+    - `limit`: Number of blogs per page (default: 10)
+    - `page`: Page number for pagination (default: 1)
+- `GET /api/v1/blogs/:id` - Retrieve a specific blog post by ID or slug
+- `POST /api/v1/blogs` - Create a new blog post (authenticated users only)
+- `PUT /api/v1/blogs/:id` - Update a blog post by ID (author or admin only)
+- `DELETE /api/v1/blogs/:id` - Delete a blog post by ID (author or admin only)
+- `POST /api/v1/blogs/:slug/images` - Upload an image to a blog post (author or admin only)
+- `DELETE /api/v1/blogs/:slug/images/:filename` - Delete an image from a blog post (author or admin only)
 
 ### Contacts API
 
-- `GET /api/v1/contacts` - Retrieve all contact requests
-- `GET /api/v1/contacts/:id` - Retrieve a specific contact request by ID
-- `POST /api/v1/contacts` - Create a new contact request
-- `PUT /api/v1/contacts/:id` - Update a contact request by ID
-- `DELETE /api/v1/contacts/:id` - Delete a contact request by ID
+- `GET /api/v1/contacts` - Retrieve all contact requests (authenticated users only)
+  - Query parameters:
+    - `startDate`: Filter by start date
+    - `endDate`: Filter by end date
+    - `confirmed`: Filter by confirmation status
+    - `limit`: Number of contacts per page (default: 50)
+    - `page`: Page number for pagination (default: 1)
+- `GET /api/v1/contacts/:id` - Retrieve a specific contact request by ID (authenticated users only)
+- `POST /api/v1/contacts` - Create a new contact request (public)
+- `PUT /api/v1/contacts/:id` - Update a contact request by ID (authenticated users only)
+- `DELETE /api/v1/contacts/:id` - Delete a contact request by ID (admin only)
 
 ### Reviews API
 
 - `GET /api/v1/reviews` - Retrieve all customer reviews
-- `POST /api/v1/reviews` - Create a new customer review
-- `PUT /api/v1/reviews/:id` - Update a customer review by ID
-- `DELETE /api/v1/reviews/:id` - Delete a customer review by ID
+  - Query parameters:
+    - `placeId`: Filter by place ID
+    - `limit`: Number of reviews per page (default: 10)
+    - `page`: Page number for pagination (default: 1)
+- `GET /api/v1/reviews/:id` - Retrieve a specific customer review by ID
+- `POST /api/v1/reviews` - Create a new customer review (authenticated users only)
+- `PUT /api/v1/reviews/:id` - Update a customer review by ID (owner or admin only)
+- `DELETE /api/v1/reviews/:id` - Delete a customer review by ID (owner or admin only)
 
 ## Project Structure
 

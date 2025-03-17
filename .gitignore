@@ -56,3 +56,6 @@ next-env.d.ts
 
 # Mobile App
 /mobile
+
+# Documentation
+/dev-roadmap
