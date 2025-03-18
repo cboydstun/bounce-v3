@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { GET, PUT, DELETE } from "../route";
 import * as dbHandler from "@/lib/test/db-handler";
 import Review from "@/models/Review";
@@ -12,7 +12,6 @@ afterAll(async () => await dbHandler.closeDatabase());
 
 describe("Single Review API", () => {
     let reviewId: string;
-    let userId: string;
     let authToken: string;
     let adminToken: string;
 
@@ -24,7 +23,6 @@ describe("Single Review API", () => {
         });
         // Assert the type of _id
         const userObjectId = user._id as mongoose.Types.ObjectId;
-        userId = userObjectId.toString();
 
         // Create admin user
         const admin = await User.create({
@@ -71,7 +69,7 @@ describe("Single Review API", () => {
                 `http://localhost:3000/api/v1/reviews/${nonExistentId}`
             );
 
-            const response = await GET(req, { params: { id: nonExistentId } });
+            const response = await GET(req, { params: Promise.resolve({ id: nonExistentId }) });
             expect(response.status).toBe(404);
 
             const data = await response.json();
@@ -83,7 +81,7 @@ describe("Single Review API", () => {
                 `http://localhost:3000/api/v1/reviews/${reviewId}`
             );
 
-            const response = await GET(req, { params: { id: reviewId } });
+            const response = await GET(req, { params: Promise.resolve({ id: reviewId }) });
             expect(response.status).toBe(200);
 
             const data = await response.json();
@@ -111,7 +109,7 @@ describe("Single Review API", () => {
                 }
             );
 
-            const response = await PUT(req, { params: { id: nonExistentId } });
+            const response = await PUT(req, { params: Promise.resolve({ id: nonExistentId }) });
             expect(response.status).toBe(404);
 
             const data = await response.json();
@@ -133,7 +131,7 @@ describe("Single Review API", () => {
                 }
             );
 
-            const response = await PUT(req, { params: { id: reviewId } });
+            const response = await PUT(req, { params: Promise.resolve({ id: reviewId }) });
             expect(response.status).toBe(200);
 
             const data = await response.json();
@@ -161,7 +159,7 @@ describe("Single Review API", () => {
                 }
             );
 
-            const response = await PUT(req, { params: { id: reviewId } });
+            const response = await PUT(req, { params: Promise.resolve({ id: reviewId }) });
             expect(response.status).toBe(200);
 
             const data = await response.json();
@@ -190,7 +188,7 @@ describe("Single Review API", () => {
                 }
             );
 
-            const response = await DELETE(req, { params: { id: nonExistentId } });
+            const response = await DELETE(req, { params: Promise.resolve({ id: nonExistentId }) });
             expect(response.status).toBe(404);
 
             const data = await response.json();
@@ -208,7 +206,7 @@ describe("Single Review API", () => {
                 }
             );
 
-            const response = await DELETE(req, { params: { id: reviewId } });
+            const response = await DELETE(req, { params: Promise.resolve({ id: reviewId }) });
             expect(response.status).toBe(200);
 
             const data = await response.json();
@@ -245,7 +243,7 @@ describe("Single Review API", () => {
                 }
             );
 
-            const response = await DELETE(req, { params: { id: reviewId2 } });
+            const response = await DELETE(req, { params: Promise.resolve({ id: reviewId2 }) });
             expect(response.status).toBe(200);
 
             // Verify review was deleted from database

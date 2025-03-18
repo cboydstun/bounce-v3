@@ -3,12 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import api from "@/utils/api";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
-import { Product } from "@/types/product";
+import { getProducts, deleteProduct } from "@/utils/api";
+import { ProductWithId } from "@/types/product";
 
 export default function AdminProducts() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithId[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -17,8 +16,9 @@ export default function AdminProducts() {
     const fetchProducts = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get(`${API_BASE_URL}${API_ROUTES.PRODUCTS}`);
-        setProducts(response.data);
+        const data = await getProducts();
+        // Extract products array from the response
+        setProducts(data.products || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
@@ -42,7 +42,7 @@ export default function AdminProducts() {
         return;
       }
 
-      await api.delete(`${API_BASE_URL}${API_ROUTES.PRODUCTS}/${slug}`);
+      await deleteProduct(slug);
       setProducts(products.filter((product) => product.slug !== slug));
     } catch (err) {
       console.error("Delete error:", err);
@@ -50,7 +50,7 @@ export default function AdminProducts() {
         setError("Authentication failed. Please log in again.");
       } else {
         setError(
-          err instanceof Error ? err.message : "Failed to delete product",
+          err instanceof Error ? err.message : "Failed to delete product"
         );
       }
     } finally {
@@ -58,7 +58,7 @@ export default function AdminProducts() {
     }
   };
 
-  const formatPrice = (price: Product["price"]) => {
+  const formatPrice = (price: ProductWithId["price"]) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: price.currency,

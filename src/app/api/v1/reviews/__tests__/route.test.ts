@@ -92,7 +92,6 @@ describe("Reviews API", () => {
 
     describe("POST /api/v1/reviews", () => {
         let authToken: string;
-        let userId: string;
 
         beforeEach(async () => {
             // Create test user
@@ -101,7 +100,6 @@ describe("Reviews API", () => {
                 password: "password123",
             });
             const userObjectId = user._id as mongoose.Types.ObjectId;
-            userId = userObjectId.toString();
 
             // Generate auth token
             authToken = jwt.sign(

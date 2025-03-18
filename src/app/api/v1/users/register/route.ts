@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Create a response object without the password
-        const { password, ...userResponse } = user.toObject();
+        const { ...userResponse } = user.toObject();
 
         return NextResponse.json(userResponse, { status: 201 });
     } catch (error) {

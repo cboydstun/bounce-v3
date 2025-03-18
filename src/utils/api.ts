@@ -203,4 +203,136 @@ export const deleteReview = async (id: string) => {
   return response.data;
 };
 
+// Products API calls
+export const getProducts = async (params?: {
+  category?: string;
+  search?: string;
+  availability?: string;
+  limit?: number;
+  page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.category) {
+    queryParams.append("category", params.category);
+  }
+
+  if (params?.search) {
+    queryParams.append("search", params.search);
+  }
+
+  if (params?.availability) {
+    queryParams.append("availability", params.availability);
+  }
+
+  if (params?.limit) {
+    queryParams.append("limit", params.limit.toString());
+  }
+
+  if (params?.page) {
+    queryParams.append("page", params.page.toString());
+  }
+
+  const queryString = queryParams.toString();
+  const url = queryString
+    ? `/api/v1/products?${queryString}`
+    : "/api/v1/products";
+
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getProductBySlug = async (slug: string) => {
+  const response = await api.get(`/api/v1/products/${slug}`);
+  return response.data;
+};
+
+export const deleteProduct = async (slug: string) => {
+  const response = await api.delete(`/api/v1/products/${slug}`);
+  return response.data;
+};
+
+export const createProduct = async (productData: {
+  name: string;
+  description: string;
+  category: string;
+  price: {
+    base: number;
+    currency: string;
+  };
+  dimensions: {
+    length: number;
+    width: number;
+    height: number;
+    unit: string;
+  };
+  capacity: number;
+  ageRange: {
+    min: number;
+    max: number;
+  };
+  setupRequirements: {
+    space: string;
+    powerSource: boolean;
+    surfaceType: string[];
+  };
+  safetyGuidelines: string;
+  rentalDuration?: "hourly" | "half-day" | "full-day" | "weekend";
+  availability?: "available" | "rented" | "maintenance" | "retired";
+  features?: string[];
+  weatherRestrictions?: string[];
+  additionalServices?: Array<{
+    name: string;
+    price: number;
+  }>;
+  images?: Array<{
+    url: string;
+    alt?: string;
+    isPrimary?: boolean;
+    filename?: string;
+    public_id?: string;
+  }>;
+  specifications?: Array<{
+    name: string;
+    value: string | number | boolean;
+  }>;
+  slug?: string;
+  maintenanceSchedule?: {
+    lastMaintenance?: Date;
+    nextMaintenance?: Date;
+  };
+}) => {
+  const response = await api.post('/api/v1/products', productData);
+  return response.data;
+};
+
+export const updateProduct = async (slug: string, productData: Partial<Parameters<typeof createProduct>[0]>) => {
+  const response = await api.put(`/api/v1/products/${slug}`, productData);
+  return response.data;
+};
+
+// Contacts API calls
+export const submitContactForm = async (formData: {
+  bouncer?: string;
+  email: string;
+  partyDate?: string;
+  partyZipCode?: string;
+  phone?: string;
+  message?: string;
+  sourcePage?: string;
+  tablesChairs?: boolean;
+  generator?: boolean;
+  popcornMachine?: boolean;
+  cottonCandyMachine?: boolean;
+  snowConeMachine?: boolean;
+  margaritaMachine?: boolean;
+  slushyMachine?: boolean;
+  overnight?: boolean;
+  consentToContact?: boolean;
+  [key: string]: any; // Allow for additional fields
+}) => {
+  const response = await api.post("/api/v1/contacts", formData);
+  return response.data;
+};
+
 export default api;

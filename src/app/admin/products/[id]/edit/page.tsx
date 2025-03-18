@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import ProductForm from "../../ProductForm";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type { ProductFormData } from "../../ProductForm";
-import api from "@/utils/api";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { getProductBySlug, updateProduct } from "@/utils/api";
 
 interface Product extends ProductFormData {
   slug: string;
@@ -34,10 +33,8 @@ export default function EditProductPage({
           return;
         }
 
-        const response = await api.get(
-          `${API_BASE_URL}${API_ROUTES.PRODUCTS}/${unwrappedParams.id}`,
-        );
-        setProduct(response.data);
+        const productData = await getProductBySlug(unwrappedParams.id);
+        setProduct(productData);
       } catch (err) {
         console.error("Fetch error:", err);
         if (err instanceof Error && err.message.includes("401")) {
@@ -46,7 +43,7 @@ export default function EditProductPage({
           setError(
             err instanceof Error
               ? err.message
-              : "An error occurred while fetching the product",
+              : "An error occurred while fetching the product"
           );
         }
       } finally {
@@ -68,9 +65,14 @@ export default function EditProductPage({
         return;
       }
 
-      await api.put(`${API_BASE_URL}${API_ROUTES.PRODUCTS}/${product?.slug}`, {
+      if (!product?.slug) {
+        setError("Product slug is missing");
+        return;
+      }
+
+      await updateProduct(product.slug, {
         ...formData,
-        slug: product?.slug, // Preserve the slug from the original product
+        slug: product.slug, // Preserve the slug from the original product
       });
 
       router.push("/admin/products");
@@ -80,7 +82,7 @@ export default function EditProductPage({
         setError("Authentication failed. Please log in again.");
       } else {
         setError(
-          err instanceof Error ? err.message : "Failed to update product",
+          err instanceof Error ? err.message : "Failed to update product"
         );
       }
     } finally {

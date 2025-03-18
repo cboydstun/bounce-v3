@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { IUserDocument } from "@/types/user";
 
 export interface AuthRequest extends NextRequest {
     user?: {

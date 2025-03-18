@@ -6,12 +6,13 @@ import mongoose from "mongoose";
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         await dbConnect();
 
-        const review = await Review.findById(params.id).populate("user", "email");
+        const resolvedParams = await params;
+        const review = await Review.findById(resolvedParams.id).populate("user", "email");
 
         if (!review) {
             return NextResponse.json({ error: "Review not found" }, { status: 404 });
@@ -29,16 +30,17 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     return withAuth(request, async (req: AuthRequest) => {
         try {
             await dbConnect();
 
             const reviewData = await req.json();
+            const resolvedParams = await params;
 
             // Find the review
-            const review = await Review.findById(params.id);
+            const review = await Review.findById(resolvedParams.id);
 
             if (!review) {
                 return NextResponse.json(
@@ -62,7 +64,7 @@ export async function PUT(
 
             // Update review
             const updatedReview = await Review.findByIdAndUpdate(
-                params.id,
+                resolvedParams.id,
                 { $set: reviewData },
                 { new: true, runValidators: true }
             );
@@ -89,14 +91,15 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     return withAuth(request, async (req: AuthRequest) => {
         try {
             await dbConnect();
+            const resolvedParams = await params;
 
             // Find the review
-            const review = await Review.findById(params.id);
+            const review = await Review.findById(resolvedParams.id);
 
             if (!review) {
                 return NextResponse.json(
@@ -119,7 +122,7 @@ export async function DELETE(
             }
 
             // Delete review
-            await Review.findByIdAndDelete(params.id);
+            await Review.findByIdAndDelete(resolvedParams.id);
 
             return NextResponse.json({ message: "Review deleted successfully" });
         } catch (error) {

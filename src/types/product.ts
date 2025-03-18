@@ -1,3 +1,5 @@
+import mongoose, { Document, Model } from "mongoose";
+
 export interface Image {
   url: string;
   alt?: string;
@@ -44,8 +46,8 @@ export interface Price {
   currency: string;
 }
 
+// Base Product interface without _id (for schema definition)
 export interface Product {
-  _id: string;
   name: string;
   slug: string;
   description: string;
@@ -66,4 +68,21 @@ export interface Product {
   additionalServices?: AdditionalService[];
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+// Product with ID (for API responses)
+export interface ProductWithId extends Product {
+  _id: string;
+}
+
+// Mongoose Document interface
+export interface IProductDocument extends Product, Document {
+  generateSlug(): Promise<string>;
+}
+
+// Mongoose Model interface
+export interface IProductModel extends Model<IProductDocument> {
+  findBySlug(slug: string): Promise<IProductDocument | null>;
+  findByCategory(category: string): Promise<IProductDocument[]>;
+  searchProducts(query: string): mongoose.Query<IProductDocument[], IProductDocument>;
 }

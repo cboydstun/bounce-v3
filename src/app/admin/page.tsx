@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import api from "@/utils/api";
-import { getReviews } from "@/utils/api";
+import api, { getReviews, getProducts } from "@/utils/api";
 import { API_ROUTES } from "../../config/constants";
 import { Review } from "@/types/review";
 
@@ -46,8 +45,12 @@ export default function AdminDashboard() {
 
       // Fetch products count
       try {
-        const productsRes = await api.get(`${API_ROUTES.PRODUCTS}`);
-        productsCount = productsRes.data?.length || 0;
+        const productsData = await getProducts();
+        // Extract products array from the response
+        const products = productsData.products || [];
+        // Get the total count from pagination.total or fall back to array length
+        productsCount = productsData.pagination?.total || products.length || 0;
+        console.log("Products API response:", productsData);
       } catch (error) {
         console.error("Failed to fetch products:", error);
       }

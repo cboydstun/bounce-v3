@@ -18,6 +18,8 @@ export interface LoginError {
 export interface IUser {
   email: string;
   password: string;
+  name?: string;
+  role?: string;
 }
 
 export interface IUserDocument extends IUser, Document {
