@@ -216,8 +216,6 @@ export const getProducts = async (params?: {
   category?: string;
   search?: string;
   availability?: string;
-  limit?: number;
-  page?: number;
 }) => {
   const queryParams = new URLSearchParams();
 
@@ -231,14 +229,6 @@ export const getProducts = async (params?: {
 
   if (params?.availability) {
     queryParams.append("availability", params.availability);
-  }
-
-  if (params?.limit) {
-    queryParams.append("limit", params.limit.toString());
-  }
-
-  if (params?.page) {
-    queryParams.append("page", params.page.toString());
   }
 
   const queryString = queryParams.toString();

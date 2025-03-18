@@ -12,7 +12,7 @@ interface ProductQuery {
 
 /**
  * GET /api/v1/products
- * Retrieve all products with filtering and pagination
+ * Retrieve all products with filtering (no pagination)
  */
 export async function GET(request: NextRequest) {
     try {
@@ -23,9 +23,6 @@ export async function GET(request: NextRequest) {
         const category = url.searchParams.get("category");
         const search = url.searchParams.get("search");
         const availability = url.searchParams.get("availability");
-        const limit = parseInt(url.searchParams.get("limit") || "10");
-        const page = parseInt(url.searchParams.get("page") || "1");
-        const skip = (page - 1) * limit;
 
         // Build query
         const query: ProductQuery = {};
@@ -41,26 +38,17 @@ export async function GET(request: NextRequest) {
 
         // If search query is provided, use text search
         if (search) {
-            products = await Product.searchProducts(search).skip(skip).limit(limit);
+            products = await Product.searchProducts(search);
             total = await Product.countDocuments({ $text: { $search: search } });
         } else {
             // Otherwise, use regular query
-            products = await Product.find(query)
-                .sort({ createdAt: -1 })
-                .skip(skip)
-                .limit(limit);
-
+            products = await Product.find(query).sort({ createdAt: -1 });
             total = await Product.countDocuments(query);
         }
 
         return NextResponse.json({
             products,
-            pagination: {
-                total,
-                page,
-                limit,
-                pages: Math.ceil(total / limit),
-            },
+            total
         });
     } catch (error) {
         console.error("Error fetching products:", error);

@@ -93,7 +93,7 @@ describe("Products API", () => {
             ]);
         });
 
-        it("should return all products with pagination", async () => {
+        it("should return all products", async () => {
             const req = new NextRequest("http://localhost:3000/api/v1/products");
 
             const response = await GET(req);
@@ -101,8 +101,7 @@ describe("Products API", () => {
 
             const data = await response.json();
             expect(data.products).toHaveLength(3);
-            expect(data.pagination).toBeDefined();
-            expect(data.pagination.total).toBe(3);
+            expect(data.total).toBe(3);
         });
 
         it("should filter products by category", async () => {
@@ -129,6 +128,58 @@ describe("Products API", () => {
             const data = await response.json();
             expect(data.products).toHaveLength(1);
             expect(data.products[0].name).toBe("Water Slide");
+        });
+
+        it("should return all products when additional products are added", async () => {
+            // Create more test products
+            await Product.create([
+                {
+                    name: "Extra Product 1",
+                    description: "Extra test product",
+                    category: "misc",
+                    price: { base: 50, currency: "USD" },
+                    rentalDuration: "full-day",
+                    availability: "available",
+                    dimensions: { length: 5, width: 5, height: 5, unit: "ft" },
+                    capacity: 2,
+                    ageRange: { min: 3, max: 12 },
+                    setupRequirements: {
+                        space: "5x5 ft",
+                        powerSource: false,
+                        surfaceType: ["any"],
+                    },
+                    features: ["Basic"],
+                    safetyGuidelines: "Standard safety",
+                },
+                {
+                    name: "Extra Product 2",
+                    description: "Another extra test product",
+                    category: "misc",
+                    price: { base: 60, currency: "USD" },
+                    rentalDuration: "full-day",
+                    availability: "available",
+                    dimensions: { length: 6, width: 6, height: 6, unit: "ft" },
+                    capacity: 3,
+                    ageRange: { min: 3, max: 12 },
+                    setupRequirements: {
+                        space: "6x6 ft",
+                        powerSource: false,
+                        surfaceType: ["any"],
+                    },
+                    features: ["Basic Plus"],
+                    safetyGuidelines: "Standard safety",
+                },
+            ]);
+
+            const req = new NextRequest("http://localhost:3000/api/v1/products");
+
+            const response = await GET(req);
+            expect(response.status).toBe(200);
+
+            const data = await response.json();
+            // Should return all 5 products (3 original + 2 extra)
+            expect(data.products.length).toBe(5);
+            expect(data.total).toBe(5);
         });
     });
 
