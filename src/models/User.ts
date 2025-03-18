@@ -24,8 +24,7 @@ const UserSchema = new Schema<IUserDocument, IUserModel>(
 UserSchema.pre("save", async function (next) {
   try {
     // Check if password is modified
-    const user = this;
-    if (!user.isModified("password")) return next();
+    if (!this.isModified("password")) return next();
 
     // Generate salt
     const salt = await bcryptjs.genSalt(10);
@@ -36,8 +35,8 @@ UserSchema.pre("save", async function (next) {
     // Replace plain text password with hashed password
     this.password = hashedPassword;
     next();
-  } catch (error: any) {
-    return next(error);
+  } catch (error: unknown) {
+    return next(error instanceof Error ? error : new Error(String(error)));
   }
 });
 

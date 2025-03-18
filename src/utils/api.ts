@@ -60,9 +60,8 @@ const setCookie = (name: string, value: string, days: number = 1) => {
   const isSecure = window.location.protocol === "https:";
   const sameSite = isSecure ? "strict" : "lax";
 
-  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; ${
-    isSecure ? "secure; " : ""
-  }samesite=${sameSite}`;
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; ${isSecure ? "secure; " : ""
+    }samesite=${sameSite}`;
 
   console.log(`Cookie ${name} set with expiration: ${days} days`);
 };
@@ -341,6 +340,7 @@ export const submitContactForm = async (formData: {
   slushyMachine?: boolean;
   overnight?: boolean;
   consentToContact?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any; // Allow for additional fields
 }) => {
   const response = await api.post("/api/v1/contacts", formData);

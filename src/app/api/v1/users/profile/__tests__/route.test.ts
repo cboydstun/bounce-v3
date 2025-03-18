@@ -25,6 +25,7 @@ describe("Profile API", () => {
       email: "test@example.com",
       password: "password123",
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     userId = (user as any)._id.toString();
 
     // Create a JWT token

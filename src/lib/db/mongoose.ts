@@ -8,7 +8,7 @@ interface MongooseCache {
 
 // Add mongoose to the NodeJS global type
 declare global {
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-var
   var mongoose: MongooseCache | undefined;
 }
 
