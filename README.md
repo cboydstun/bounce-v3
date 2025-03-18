@@ -132,6 +132,128 @@ The application provides a comprehensive RESTful API with the following endpoint
 - `PUT /api/v1/reviews/:id` - Update a customer review by ID (owner or admin only)
 - `DELETE /api/v1/reviews/:id` - Delete a customer review by ID (owner or admin only)
 
+## Products Implementation
+
+The Products API is implemented using MongoDB and Mongoose with TypeScript. It provides a comprehensive system for managing product data with advanced features like slug generation, text search, and category filtering.
+
+### MongoDB Schema
+
+The product schema is designed to handle complex rental equipment data with nested schemas for various product attributes:
+
+```typescript
+// Main Product Schema
+const ProductSchema = new Schema<IProductDocument, IProductModel>(
+  {
+    name: {
+      type: String,
+      required: [true, "Product name is required"],
+      trim: true,
+    },
+    slug: {
+      type: String,
+      unique: true,
+      index: true,
+    },
+    description: {
+      type: String,
+      required: [true, "Product description is required"],
+    },
+    category: {
+      type: String,
+      required: [true, "Product category is required"],
+      index: true,
+    },
+    price: {
+      type: PriceSchema,
+      required: [true, "Product price is required"],
+    },
+    rentalDuration: {
+      type: String,
+      enum: ["hourly", "half-day", "full-day", "weekend"],
+      required: [true, "Rental duration is required"],
+    },
+    availability: {
+      type: String,
+      enum: ["available", "rented", "maintenance", "retired"],
+      default: "available",
+    },
+    images: [ImageSchema],
+    specifications: [SpecificationSchema],
+    dimensions: {
+      type: DimensionsSchema,
+      required: [true, "Product dimensions are required"],
+    },
+    capacity: {
+      type: Number,
+      required: [true, "Capacity is required"],
+    },
+    ageRange: {
+      type: AgeRangeSchema,
+      required: [true, "Age range is required"],
+    },
+    setupRequirements: {
+      type: SetupRequirementsSchema,
+      required: [true, "Setup requirements are required"],
+    },
+    features: {
+      type: [String],
+      required: [true, "Features are required"],
+    },
+    safetyGuidelines: {
+      type: String,
+      required: [true, "Safety guidelines are required"],
+    },
+    maintenanceSchedule: MaintenanceScheduleSchema,
+    weatherRestrictions: [String],
+    additionalServices: [AdditionalServiceSchema],
+  },
+  {
+    timestamps: true,
+  }
+);
+```
+
+### Advanced Features
+
+- **Automatic Slug Generation**: Products automatically generate SEO-friendly slugs from their names
+- **Text Search**: Full-text search across product names, descriptions, features, and categories
+- **Nested Schemas**: Complex product data is organized using nested schemas for better structure
+- **Validation**: Comprehensive validation for all required fields
+- **Indexing**: Strategic indexes for optimized query performance
+- **Type Safety**: Full TypeScript integration with Mongoose for type safety
+
+### TypeScript Interfaces
+
+The product model uses TypeScript interfaces to ensure type safety:
+
+```typescript
+export interface IProductDocument extends Product, Document {
+  generateSlug(): Promise<string>;
+}
+
+export interface IProductModel extends Model<IProductDocument> {
+  findBySlug(slug: string): Promise<IProductDocument | null>;
+  findByCategory(category: string): Promise<IProductDocument[]>;
+  searchProducts(query: string): Promise<IProductDocument[]>;
+}
+```
+
+### API Endpoints
+
+The Products API provides comprehensive endpoints with filtering, pagination, and search capabilities:
+
+- **GET /api/v1/products**: List all products with filtering and pagination
+- **GET /api/v1/products/:slug**: Get a specific product by slug
+- **POST /api/v1/products**: Create a new product (admin only)
+- **PUT /api/v1/products/:slug**: Update a product (admin only)
+- **DELETE /api/v1/products/:slug**: Delete a product (admin only)
+
+### Frontend Components
+
+- `ProductCarousel.tsx`: Displays featured products in a carousel
+- `ProductFilters.tsx`: Provides filtering options for product listings
+- Admin interface for managing products
+
 ## Reviews Implementation
 
 The Reviews API is implemented using MongoDB and Mongoose with TypeScript. It provides a robust system for storing and retrieving customer reviews with pagination, filtering, and authentication.
@@ -213,7 +335,7 @@ const ReviewSchema = new Schema<IReviewDocument, IReviewModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
