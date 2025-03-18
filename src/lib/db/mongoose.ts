@@ -48,6 +48,12 @@ async function dbConnect() {
 
   // Wait for the connection to be established
   cached.conn = await cached.promise;
+
+  // Import all models to ensure they're registered
+  // This needs to be imported after the connection is established
+  // to avoid circular dependencies
+  await import('../../models');
+
   return cached.conn;
 }
 

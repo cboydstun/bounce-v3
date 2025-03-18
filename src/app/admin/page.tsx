@@ -38,7 +38,12 @@ export default function AdminDashboard() {
       // Fetch blogs count
       try {
         const blogsRes = await api.get(`${API_ROUTES.BLOGS}`);
-        blogsCount = blogsRes.data?.length || 0;
+        // Extract blogs array and pagination from the response
+        const blogsData = blogsRes.data;
+        // Get the total count from pagination.total or fall back to array length
+        blogsCount =
+          blogsData.pagination?.total || blogsData.blogs?.length || 0;
+        console.log("Blogs API response:", blogsData);
       } catch (error) {
         console.error("Failed to fetch blogs:", error);
       }

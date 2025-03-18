@@ -71,12 +71,60 @@ The application provides a comprehensive RESTful API with the following endpoint
     - `status`: Filter by status (published, draft, archived)
     - `limit`: Number of blogs per page (default: 10)
     - `page`: Page number for pagination (default: 1)
-- `GET /api/v1/blogs/:id` - Retrieve a specific blog post by ID or slug
+  - Response format:
+    ```json
+    {
+      "blogs": [
+        {
+          "_id": "67d9dcc99a94b06936b304c7",
+          "title": "Sample Blog Post",
+          "slug": "sample-blog-post",
+          "author": "6382a44a44b6735842231ed2",
+          "introduction": "This is a sample introduction.",
+          "body": "This is the main content of the blog post.",
+          "conclusion": "This is the conclusion of the blog post.",
+          "status": "published",
+          "publishDate": "2025-03-18T20:51:21.719Z",
+          "categories": ["test"],
+          "tags": ["sample"],
+          "readTime": 1,
+          "meta": { "views": 0, "likes": 0, "shares": 0 }
+        }
+      ],
+      "pagination": {
+        "total": 42,
+        "page": 1,
+        "limit": 10,
+        "pages": 5
+      }
+    }
+    ```
+- `GET /api/v1/blogs/:slug` - Retrieve a specific blog post by slug
 - `POST /api/v1/blogs` - Create a new blog post (authenticated users only)
-- `PUT /api/v1/blogs/:id` - Update a blog post by ID (author or admin only)
-- `DELETE /api/v1/blogs/:id` - Delete a blog post by ID (author or admin only)
+  - Required fields: `title`, `introduction`, `body`, `conclusion`
+  - Optional fields: `excerpt`, `categories`, `tags`, `status`, `featuredImage`
+  - Authentication: JWT token in Authorization header
+- `PUT /api/v1/blogs/:slug` - Update a blog post by slug (author or admin only)
+- `DELETE /api/v1/blogs/:slug` - Delete a blog post by slug (author or admin only)
 - `POST /api/v1/blogs/:slug/images` - Upload an image to a blog post (author or admin only)
 - `DELETE /api/v1/blogs/:slug/images/:filename` - Delete an image from a blog post (author or admin only)
+
+#### Development Scripts for Blogs
+
+The project includes development scripts to help with blog creation and testing:
+
+- `scripts/create-dev-blog.js` - Creates a sample blog post with authentication for development purposes
+- `create-blog.js` - Another example script for blog creation with JWT authentication
+
+To use these scripts:
+
+```bash
+# Install required dependencies
+npm install jsonwebtoken @types/jsonwebtoken
+
+# Run the development script
+node scripts/create-dev-blog.js
+```
 
 ### Contacts API
 

@@ -5,15 +5,23 @@ import { Blog } from "@/types/blog";
 import Image from "next/image";
 
 async function getBlog(slug: string): Promise<Blog> {
-  const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}/${slug}`, {
-    next: { revalidate: 3600 }, // Revalidate every hour
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}/${slug}`, {
+      next: { revalidate: 3600 }, // Revalidate every hour
+    });
 
-  if (!response.ok) {
-    notFound();
+    if (!response.ok) {
+      if (response.status === 404) {
+        notFound();
+      }
+      throw new Error(`Failed to fetch blog: ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching blog:", error);
+    throw error;
   }
-
-  return response.json();
 }
 
 type Params = Promise<{ slug: string }>;
@@ -73,12 +81,13 @@ export default async function BlogDetail({ params }: { params: Params }) {
           <header className="mb-8">
             <div className="flex flex-wrap gap-2 mb-4">
               {blog.categories.map((category: string) => (
-                <span
+                <a
                   key={category}
-                  className="bg-primary-purple/10 text-primary-purple px-3 py-1 rounded-full text-sm"
+                  href={`/blogs?category=${encodeURIComponent(category)}`}
+                  className="bg-primary-purple/10 text-primary-purple px-3 py-1 rounded-full text-sm hover:bg-primary-purple/20 transition-colors"
                 >
                   {category}
-                </span>
+                </a>
               ))}
             </div>
             <h1 className="text-4xl font-bold text-primary-purple mb-4">
@@ -114,7 +123,7 @@ export default async function BlogDetail({ params }: { params: Params }) {
                 {blog.images.map(
                   (
                     image: { public_id: string; url: string },
-                    index: number,
+                    index: number
                   ) => (
                     <div
                       key={image.public_id}
@@ -128,7 +137,7 @@ export default async function BlogDetail({ params }: { params: Params }) {
                         className="w-full h-full object-cover"
                       />
                     </div>
-                  ),
+                  )
                 )}
               </div>
             )}
@@ -141,12 +150,13 @@ export default async function BlogDetail({ params }: { params: Params }) {
               <div className="border-t pt-6 mt-8">
                 <div className="flex flex-wrap gap-2">
                   {blog.tags.map((tag: string) => (
-                    <span
+                    <a
                       key={tag}
-                      className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm"
+                      href={`/blogs?tag=${encodeURIComponent(tag)}`}
+                      className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm hover:bg-gray-200 transition-colors"
                     >
                       #{tag}
-                    </span>
+                    </a>
                   ))}
                 </div>
               </div>
