@@ -88,7 +88,7 @@ export default function LoginPage() {
           err.message.includes("connection")
         ) {
           setError(
-            "Network error. Please check your internet connection and try again."
+            "Network error. Please check your internet connection and try again.",
           );
         } else if (
           err.message.includes("401") ||

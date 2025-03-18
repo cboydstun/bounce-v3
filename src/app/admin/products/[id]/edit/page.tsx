@@ -43,7 +43,7 @@ export default function EditProductPage({
           setError(
             err instanceof Error
               ? err.message
-              : "An error occurred while fetching the product"
+              : "An error occurred while fetching the product",
           );
         }
       } finally {
@@ -82,7 +82,7 @@ export default function EditProductPage({
         setError("Authentication failed. Please log in again.");
       } else {
         setError(
-          err instanceof Error ? err.message : "Failed to update product"
+          err instanceof Error ? err.message : "Failed to update product",
         );
       }
     } finally {

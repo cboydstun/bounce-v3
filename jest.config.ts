@@ -13,16 +13,11 @@ const config: Config = {
     "\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/test/__mocks__/fileMock.js",
     "^@/(.*)$": "<rootDir>/src/$1",
   },
-  transformIgnorePatterns: [
-    "/node_modules/(?!next)"
-  ],
+  transformIgnorePatterns: ["/node_modules/(?!next)"],
   testEnvironmentOptions: {
     url: "http://localhost:3000",
   },
-  testPathIgnorePatterns: [
-    "/node_modules/",
-    "/.next/"
-  ],
+  testPathIgnorePatterns: ["/node_modules/", "/.next/"],
   // Increase timeout for tests
   testTimeout: 30000,
   // Force exit after tests complete

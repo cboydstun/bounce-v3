@@ -26,7 +26,7 @@ export async function generateMetadata({
 
   const getSpecValue = (name: string) => {
     const spec = product.specifications.find(
-      (s) => s.name.toLowerCase() === name.toLowerCase()
+      (s) => s.name.toLowerCase() === name.toLowerCase(),
     );
     return spec?.value || "N/A";
   };
@@ -53,7 +53,7 @@ export default async function ProductDetail({ params }: { params: Params }) {
 
   const getSpecValue = (name: string) => {
     const spec = product.specifications.find(
-      (s) => s.name.toLowerCase() === name.toLowerCase()
+      (s) => s.name.toLowerCase() === name.toLowerCase(),
     );
     return spec?.value || "N/A";
   };

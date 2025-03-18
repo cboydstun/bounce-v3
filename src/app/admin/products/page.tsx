@@ -50,7 +50,7 @@ export default function AdminProducts() {
         setError("Authentication failed. Please log in again.");
       } else {
         setError(
-          err instanceof Error ? err.message : "Failed to delete product"
+          err instanceof Error ? err.message : "Failed to delete product",
         );
       }
     } finally {

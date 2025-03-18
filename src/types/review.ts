@@ -68,7 +68,7 @@ export interface IReview {
   user?: Types.ObjectId; // Reference to User model
 }
 
-export interface IReviewDocument extends IReview, Document { }
+export interface IReviewDocument extends IReview, Document {}
 
 export interface IReviewModel extends Model<IReviewDocument> {
   findByReviewId(reviewId: string): Promise<IReviewDocument | null>;

@@ -3,7 +3,8 @@ import { LoginCredentials, LoginResponse } from "@/types/user";
 
 // Use relative URLs for API endpoints when in the browser
 // This ensures we're using the Next.js API routes
-const baseURL = typeof window !== 'undefined' ? '' : process.env.API_BASE_URL || '';
+const baseURL =
+  typeof window !== "undefined" ? "" : process.env.API_BASE_URL || "";
 
 const api = axios.create({
   baseURL,
@@ -59,8 +60,9 @@ const setCookie = (name: string, value: string, days: number = 1) => {
   const isSecure = window.location.protocol === "https:";
   const sameSite = isSecure ? "strict" : "lax";
 
-  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; ${isSecure ? "secure; " : ""
-    }samesite=${sameSite}`;
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; ${
+    isSecure ? "secure; " : ""
+  }samesite=${sameSite}`;
 
   console.log(`Cookie ${name} set with expiration: ${days} days`);
 };
@@ -71,7 +73,10 @@ const deleteCookie = (name: string) => {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 };
 
-export const setAuthToken = (token: string | null, rememberMe: boolean = false) => {
+export const setAuthToken = (
+  token: string | null,
+  rememberMe: boolean = false,
+) => {
   if (typeof window !== "undefined") {
     if (token) {
       // Store in localStorage for API requests
@@ -85,7 +90,9 @@ export const setAuthToken = (token: string | null, rememberMe: boolean = false) 
       const days = rememberMe ? 30 : 1;
       setCookie("auth_token", token, days);
 
-      console.log(`Auth token set successfully with ${days} day expiration (rememberMe: ${rememberMe})`);
+      console.log(
+        `Auth token set successfully with ${days} day expiration (rememberMe: ${rememberMe})`,
+      );
     } else {
       // Remove from localStorage
       localStorage.removeItem("auth_token");
@@ -102,7 +109,9 @@ export const setAuthToken = (token: string | null, rememberMe: boolean = false) 
 };
 
 // Authentication API calls
-export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
+export const login = async (
+  credentials: LoginCredentials,
+): Promise<LoginResponse> => {
   const response = await api.post<LoginResponse>(
     "/api/v1/users/login",
     credentials,
@@ -192,7 +201,7 @@ export const updateReview = async (
     authorName?: string;
     isLocalGuide?: boolean;
     likes?: number;
-  }
+  },
 ) => {
   const response = await api.put(`/api/v1/reviews/${id}`, reviewData);
   return response.data;
@@ -302,11 +311,14 @@ export const createProduct = async (productData: {
     nextMaintenance?: Date;
   };
 }) => {
-  const response = await api.post('/api/v1/products', productData);
+  const response = await api.post("/api/v1/products", productData);
   return response.data;
 };
 
-export const updateProduct = async (slug: string, productData: Partial<Parameters<typeof createProduct>[0]>) => {
+export const updateProduct = async (
+  slug: string,
+  productData: Partial<Parameters<typeof createProduct>[0]>,
+) => {
   const response = await api.put(`/api/v1/products/${slug}`, productData);
   return response.data;
 };

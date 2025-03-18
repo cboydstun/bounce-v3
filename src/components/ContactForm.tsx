@@ -91,7 +91,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
 
         const filteredBouncers = productsArray.filter((product: Bouncer) => {
           const typeSpec = product.specifications?.find(
-            (spec) => spec.name === "Type"
+            (spec) => spec.name === "Type",
           );
           if (!typeSpec) return false;
 
@@ -106,7 +106,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
         // Set selected bouncer image and name if initialBouncerId is provided
         if (initialBouncerId) {
           const selectedBouncer = filteredBouncers.find(
-            (b: Bouncer) => b._id === initialBouncerId
+            (b: Bouncer) => b._id === initialBouncerId,
           );
           if (selectedBouncer) {
             if (selectedBouncer.images[0]?.url) {
@@ -137,11 +137,11 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
     if (numbers.length >= 10) {
       return `(${numbers.slice(0, 3)})-${numbers.slice(3, 6)}-${numbers.slice(
         6,
-        10
+        10,
       )}`;
     } else if (numbers.length >= 6) {
       return `(${numbers.slice(0, 3)})-${numbers.slice(3, 6)}-${numbers.slice(
-        6
+        6,
       )}`;
     } else if (numbers.length >= 3) {
       return `(${numbers.slice(0, 3)})-${numbers.slice(3)}`;
@@ -214,7 +214,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -287,7 +287,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
             <option value="">Choose a bouncer...</option>
             {bouncers.map((bouncer) => {
               const typeSpec = bouncer.specifications.find(
-                (spec) => spec.name === "Type"
+                (spec) => spec.name === "Type",
               );
               const type = Array.isArray(typeSpec?.value)
                 ? typeSpec.value.join("/")

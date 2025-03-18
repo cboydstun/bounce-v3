@@ -213,7 +213,7 @@ const ReviewSchema = new Schema<IReviewDocument, IReviewModel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 ```
 

@@ -84,5 +84,7 @@ export interface IProductDocument extends Product, Document {
 export interface IProductModel extends Model<IProductDocument> {
   findBySlug(slug: string): Promise<IProductDocument | null>;
   findByCategory(category: string): Promise<IProductDocument[]>;
-  searchProducts(query: string): mongoose.Query<IProductDocument[], IProductDocument>;
+  searchProducts(
+    query: string,
+  ): mongoose.Query<IProductDocument[], IProductDocument>;
 }

@@ -77,7 +77,7 @@ export default function AdminReviews() {
       }
 
       setError(
-        error instanceof Error ? error.message : "Failed to delete review"
+        error instanceof Error ? error.message : "Failed to delete review",
       );
       console.error("Error deleting review:", error);
     } finally {

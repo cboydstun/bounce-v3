@@ -8,27 +8,27 @@ import { withAuth, AuthRequest } from "@/middleware/auth";
  * Retrieve a specific product by slug
  */
 export async function GET(
-    request: NextRequest,
-    { params }: { params: Promise<{ slug: string }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> },
 ) {
-    try {
-        await dbConnect();
+  try {
+    await dbConnect();
 
-        const resolvedParams = await params;
-        const product = await Product.findBySlug(resolvedParams.slug);
+    const resolvedParams = await params;
+    const product = await Product.findBySlug(resolvedParams.slug);
 
-        if (!product) {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
-        }
-
-        return NextResponse.json(product);
-    } catch (error) {
-        console.error("Error fetching product:", error);
-        return NextResponse.json(
-            { error: "Failed to fetch product" },
-            { status: 500 }
-        );
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
+
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch product" },
+      { status: 500 },
+    );
+  }
 }
 
 /**
@@ -36,50 +36,50 @@ export async function GET(
  * Update a product by slug (admin only)
  */
 export async function PUT(
-    request: NextRequest,
-    { params }: { params: Promise<{ slug: string }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> },
 ) {
-    return withAuth(request, async (req: AuthRequest) => {
-        try {
-            // Check if user is admin
-            if (req.user?.role !== "admin") {
-                return NextResponse.json(
-                    { error: "Not authorized to update products" },
-                    { status: 403 }
-                );
-            }
+  return withAuth(request, async (req: AuthRequest) => {
+    try {
+      // Check if user is admin
+      if (req.user?.role !== "admin") {
+        return NextResponse.json(
+          { error: "Not authorized to update products" },
+          { status: 403 },
+        );
+      }
 
-            await dbConnect();
+      await dbConnect();
 
-            const productData = await req.json();
-            const resolvedParams = await params;
+      const productData = await req.json();
+      const resolvedParams = await params;
 
-            // Find the product
-            const product = await Product.findBySlug(resolvedParams.slug);
+      // Find the product
+      const product = await Product.findBySlug(resolvedParams.slug);
 
-            if (!product) {
-                return NextResponse.json(
-                    { error: "Product not found" },
-                    { status: 404 }
-                );
-            }
+      if (!product) {
+        return NextResponse.json(
+          { error: "Product not found" },
+          { status: 404 },
+        );
+      }
 
-            // Update product
-            const updatedProduct = await Product.findByIdAndUpdate(
-                product._id,
-                { $set: productData },
-                { new: true, runValidators: true }
-            );
+      // Update product
+      const updatedProduct = await Product.findByIdAndUpdate(
+        product._id,
+        { $set: productData },
+        { new: true, runValidators: true },
+      );
 
-            return NextResponse.json(updatedProduct);
-        } catch (error) {
-            console.error("Error updating product:", error);
-            return NextResponse.json(
-                { error: "Failed to update product" },
-                { status: 500 }
-            );
-        }
-    });
+      return NextResponse.json(updatedProduct);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      return NextResponse.json(
+        { error: "Failed to update product" },
+        { status: 500 },
+      );
+    }
+  });
 }
 
 /**
@@ -87,42 +87,42 @@ export async function PUT(
  * Delete a product by slug (admin only)
  */
 export async function DELETE(
-    request: NextRequest,
-    { params }: { params: Promise<{ slug: string }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> },
 ) {
-    return withAuth(request, async (req: AuthRequest) => {
-        try {
-            // Check if user is admin
-            if (req.user?.role !== "admin") {
-                return NextResponse.json(
-                    { error: "Not authorized to delete products" },
-                    { status: 403 }
-                );
-            }
+  return withAuth(request, async (req: AuthRequest) => {
+    try {
+      // Check if user is admin
+      if (req.user?.role !== "admin") {
+        return NextResponse.json(
+          { error: "Not authorized to delete products" },
+          { status: 403 },
+        );
+      }
 
-            await dbConnect();
-            const resolvedParams = await params;
+      await dbConnect();
+      const resolvedParams = await params;
 
-            // Find the product
-            const product = await Product.findBySlug(resolvedParams.slug);
+      // Find the product
+      const product = await Product.findBySlug(resolvedParams.slug);
 
-            if (!product) {
-                return NextResponse.json(
-                    { error: "Product not found" },
-                    { status: 404 }
-                );
-            }
+      if (!product) {
+        return NextResponse.json(
+          { error: "Product not found" },
+          { status: 404 },
+        );
+      }
 
-            // Delete product
-            await Product.findByIdAndDelete(product._id);
+      // Delete product
+      await Product.findByIdAndDelete(product._id);
 
-            return NextResponse.json({ message: "Product deleted successfully" });
-        } catch (error) {
-            console.error("Error deleting product:", error);
-            return NextResponse.json(
-                { error: "Failed to delete product" },
-                { status: 500 }
-            );
-        }
-    });
+      return NextResponse.json({ message: "Product deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      return NextResponse.json(
+        { error: "Failed to delete product" },
+        { status: 500 },
+      );
+    }
+  });
 }

@@ -18,7 +18,7 @@ global.TextEncoder = function TextEncoder() {
       }
       return { read: str.length, written: str.length };
     },
-    encoding: 'utf-8'
+    encoding: "utf-8",
   };
 };
 
@@ -28,9 +28,9 @@ global.TextDecoder = function TextDecoder() {
     decode: function decode(array: Uint8Array): string {
       return String.fromCharCode.apply(null, Array.from(array));
     },
-    encoding: 'utf-8',
+    encoding: "utf-8",
     fatal: false,
-    ignoreBOM: false
+    ignoreBOM: false,
   };
 };
 
@@ -60,7 +60,7 @@ jest.mock("next/server", () => {
     private method: string;
     private bodyContent: any;
     private headerValues: Record<string, string> = {
-      "authorization": "Bearer mock-token"
+      authorization: "Bearer mock-token",
     };
 
     constructor(input: string | URL, init?: RequestInit) {
@@ -71,7 +71,7 @@ jest.mock("next/server", () => {
       // Set headers from init
       if (init?.headers) {
         const headers = init.headers as Record<string, string>;
-        Object.keys(headers).forEach(key => {
+        Object.keys(headers).forEach((key) => {
           this.headerValues[key.toLowerCase()] = headers[key];
         });
       }
@@ -82,7 +82,7 @@ jest.mock("next/server", () => {
       return Promise.resolve(
         typeof this.bodyContent === "string"
           ? JSON.parse(this.bodyContent)
-          : this.bodyContent
+          : this.bodyContent,
       );
     }
 
@@ -92,7 +92,7 @@ jest.mock("next/server", () => {
         get: (name: string) => this.headerValues[name.toLowerCase()] || null,
         set: (name: string, value: string) => {
           this.headerValues[name.toLowerCase()] = value;
-        }
+        },
       };
     }
 
@@ -117,11 +117,15 @@ jest.mock("next/server", () => {
         json: async () => data,
         cookies: {
           set: jest.fn(), // Mock the set method
-          get: jest.fn().mockReturnValue({ name: "auth_token", value: "test-token" }),
-          getAll: jest.fn().mockReturnValue([{ name: "auth_token", value: "test-token" }]),
+          get: jest
+            .fn()
+            .mockReturnValue({ name: "auth_token", value: "test-token" }),
+          getAll: jest
+            .fn()
+            .mockReturnValue([{ name: "auth_token", value: "test-token" }]),
           delete: jest.fn(),
           has: jest.fn().mockReturnValue(true),
-        }
+        },
       };
       return response;
     }

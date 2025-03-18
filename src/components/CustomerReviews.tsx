@@ -73,7 +73,7 @@ const CustomerReviews = () => {
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to fetch reviews"
+          err instanceof Error ? err.message : "Failed to fetch reviews",
         );
       } finally {
         setIsLoading(false);
@@ -182,10 +182,10 @@ const CustomerReviews = () => {
                       <span className="text-gray-500 ml-2">
                         {reviews[activeIndex].time instanceof Date
                           ? new Date(
-                              reviews[activeIndex].time
+                              reviews[activeIndex].time,
                             ).toLocaleDateString()
                           : new Date(
-                              reviews[activeIndex].time as unknown as string
+                              reviews[activeIndex].time as unknown as string,
                             ).toLocaleDateString()}
                       </span>
                     </div>
