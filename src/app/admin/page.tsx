@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import api, { getReviews, getProducts } from "@/utils/api";
+import api, { getReviews, getProducts, getContacts } from "@/utils/api";
 import { API_ROUTES } from "../../config/constants";
 import { Review } from "@/types/review";
 
@@ -57,8 +57,12 @@ export default function AdminDashboard() {
 
       // Fetch contacts count
       try {
-        const contactsRes = await api.get(`${API_ROUTES.CONTACTS}`);
-        contactsCount = contactsRes.data?.length || 0;
+        const contactsData = await getContacts();
+        // Extract contacts array from the response
+        const contacts = contactsData.contacts || [];
+        // Get the total count from pagination.total or fall back to array length
+        contactsCount = contactsData.pagination?.total || contacts.length || 0;
+        console.log("Contacts API response:", contactsData);
       } catch (error) {
         console.error("Failed to fetch contacts:", error);
       }
@@ -83,19 +87,19 @@ export default function AdminDashboard() {
       last24Hours.setHours(last24Hours.getHours() - 24);
 
       const recentReviews = reviews.filter(
-        (review: Review) => new Date(review.createdAt || 0) > last24Hours,
+        (review: Review) => new Date(review.createdAt || 0) > last24Hours
       ).length;
 
       const averageRating = reviews.length
         ? reviews.reduce(
             (acc: number, review: Review) => acc + review.rating,
-            0,
+            0
           ) / reviews.length
         : 0;
 
       // For this example, we'll consider reviews without a reviewId as pending
       const pendingReviews = reviews.filter(
-        (review: Review) => !review.reviewId,
+        (review: Review) => !review.reviewId
       ).length;
 
       setReviewStats({

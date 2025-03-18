@@ -22,7 +22,7 @@ export async function GET(
     }
 
     return NextResponse.json(review);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching review:", error);
     return NextResponse.json(
       { error: "Failed to fetch review" },
@@ -73,7 +73,7 @@ export async function PUT(
       );
 
       return NextResponse.json(updatedReview);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error updating review:", error);
 
       // Handle validation errors

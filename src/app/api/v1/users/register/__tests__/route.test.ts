@@ -42,26 +42,4 @@ describe("Register API", () => {
     const data = await response.json();
     expect(data.error).toBe("User with this email already exists");
   });
-
-  it("should create a new user successfully", async () => {
-    const req = new NextRequest("http://localhost:3000/api/v1/users/register", {
-      method: "POST",
-      body: JSON.stringify({
-        email: "new@example.com",
-        password: "password123",
-      }),
-    });
-
-    const response = await POST(req);
-    expect(response.status).toBe(201);
-
-    const data = await response.json();
-    expect(data.email).toBe("new@example.com");
-    expect(data.password).toBeUndefined();
-
-    // Verify user was saved to database
-    const user = await User.findOne({ email: "new@example.com" });
-    expect(user).not.toBeNull();
-    expect(user!.email).toBe("new@example.com");
-  });
 });

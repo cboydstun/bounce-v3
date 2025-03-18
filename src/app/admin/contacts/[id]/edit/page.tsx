@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { getContactById, updateContact } from "@/utils/api";
 
 interface ContactFormData {
   bouncer: string;
@@ -56,25 +56,15 @@ export default function EditContact({ params }: PageProps) {
     const fetchContact = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem("auth_token");
-        const response = await fetch(
-          `${API_BASE_URL}${API_ROUTES.CONTACTS}/${resolvedParams.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch contact");
-        }
+        // Use the getContactById function from the API client
+        const contact = await getContactById(resolvedParams.id);
 
-        const contact = await response.json();
         // Format the date to YYYY-MM-DD for the date input
         const formattedDate = contact.partyDate
           ? new Date(contact.partyDate).toISOString().split("T")[0]
           : "";
+
         setFormData({
           bouncer: contact.bouncer,
           email: contact.email,
@@ -93,6 +83,13 @@ export default function EditContact({ params }: PageProps) {
           slushyMachine: contact.slushyMachine || false,
         });
       } catch (error) {
+        // Handle authentication errors
+        if (error instanceof Error && error.message.includes("401")) {
+          localStorage.removeItem("auth_token");
+          router.push("/login");
+          return;
+        }
+
         setError(error instanceof Error ? error.message : "An error occurred");
         console.error("Error fetching contact:", error);
       } finally {
@@ -101,46 +98,29 @@ export default function EditContact({ params }: PageProps) {
     };
 
     fetchContact();
-  }, [resolvedParams.id]);
+  }, [resolvedParams.id, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setIsLoading(true);
-      const token = localStorage.getItem("auth_token");
 
-      if (!token) {
-        router.push("/login");
-        return;
-      }
+      // Use the updateContact function from the API client
+      await updateContact(resolvedParams.id, formData);
 
-      const response = await fetch(
-        `${API_BASE_URL}${API_ROUTES.CONTACTS}/${resolvedParams.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(formData),
-        },
-      );
-
-      if (response.status === 401) {
+      // Navigate back to contacts list
+      router.push("/admin/contacts");
+      router.refresh();
+    } catch (error) {
+      // Handle authentication errors
+      if (error instanceof Error && error.message.includes("401")) {
         localStorage.removeItem("auth_token");
         router.push("/login");
         return;
       }
 
-      if (!response.ok) {
-        throw new Error("Failed to update contact");
-      }
-
-      router.push("/admin/contacts");
-      router.refresh();
-    } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to update contact",
+        error instanceof Error ? error.message : "Failed to update contact"
       );
       console.error("Error updating contact:", error);
     } finally {
@@ -151,7 +131,7 @@ export default function EditContact({ params }: PageProps) {
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({

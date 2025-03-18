@@ -323,6 +323,104 @@ export const updateProduct = async (
 };
 
 // Contacts API calls
+export const getContacts = async (params?: {
+  startDate?: string;
+  endDate?: string;
+  confirmed?: boolean;
+  limit?: number;
+  page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.startDate) {
+    queryParams.append("startDate", params.startDate);
+  }
+
+  if (params?.endDate) {
+    queryParams.append("endDate", params.endDate);
+  }
+
+  if (params?.confirmed !== undefined) {
+    queryParams.append("confirmed", params.confirmed.toString());
+  }
+
+  if (params?.limit) {
+    queryParams.append("limit", params.limit.toString());
+  }
+
+  if (params?.page) {
+    queryParams.append("page", params.page.toString());
+  }
+
+  const queryString = queryParams.toString();
+  const url = queryString
+    ? `/api/v1/contacts?${queryString}`
+    : "/api/v1/contacts";
+
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getContactById = async (id: string) => {
+  const response = await api.get(`/api/v1/contacts/${id}`);
+  return response.data;
+};
+
+export const createContact = async (contactData: {
+  bouncer: string;
+  email: string;
+  phone?: string;
+  partyDate: string;
+  partyZipCode: string;
+  message?: string;
+  confirmed?: boolean;
+  tablesChairs?: boolean;
+  generator?: boolean;
+  popcornMachine?: boolean;
+  cottonCandyMachine?: boolean;
+  snowConeMachine?: boolean;
+  margaritaMachine?: boolean;
+  slushyMachine?: boolean;
+  overnight?: boolean;
+  sourcePage: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any; // Allow for additional fields
+}) => {
+  const response = await api.post("/api/v1/contacts", contactData);
+  return response.data;
+};
+
+export const updateContact = async (
+  id: string,
+  contactData: Partial<{
+    bouncer: string;
+    email: string;
+    phone: string;
+    partyDate: string;
+    partyZipCode: string;
+    message: string;
+    confirmed: boolean;
+    tablesChairs: boolean;
+    generator: boolean;
+    popcornMachine: boolean;
+    cottonCandyMachine: boolean;
+    snowConeMachine: boolean;
+    margaritaMachine: boolean;
+    slushyMachine: boolean;
+    overnight: boolean;
+    sourcePage: string;
+  }>
+) => {
+  const response = await api.put(`/api/v1/contacts/${id}`, contactData);
+  return response.data;
+};
+
+export const deleteContact = async (id: string) => {
+  const response = await api.delete(`/api/v1/contacts/${id}`);
+  return response.data;
+};
+
+// Legacy function for backward compatibility
 export const submitContactForm = async (formData: {
   bouncer?: string;
   email: string;
@@ -343,8 +441,13 @@ export const submitContactForm = async (formData: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any; // Allow for additional fields
 }) => {
-  const response = await api.post("/api/v1/contacts", formData);
-  return response.data;
+  return createContact({
+    ...formData,
+    bouncer: formData.bouncer || "Unknown",
+    partyDate: formData.partyDate || new Date().toISOString(),
+    partyZipCode: formData.partyZipCode || "00000",
+    sourcePage: formData.sourcePage || "website",
+  });
 };
 
 export default api;

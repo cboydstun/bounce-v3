@@ -254,6 +254,159 @@ The Products API provides comprehensive endpoints with filtering, pagination, an
 - `ProductFilters.tsx`: Provides filtering options for product listings
 - Admin interface for managing products
 
+## Contacts Implementation
+
+The Contacts API is implemented using MongoDB and Mongoose with TypeScript. It provides a comprehensive system for managing customer contact requests with advanced features like date filtering, pagination, and role-based access control.
+
+### MongoDB Schema
+
+```typescript
+const ContactSchema = new Schema<IContactDocument, IContactModel>(
+  {
+    bouncer: {
+      type: String,
+      required: [true, "Bouncer name is required"],
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      trim: true,
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, "Please use a valid email address"],
+      index: true,
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    partyDate: {
+      type: String,
+      required: [true, "Party date is required"],
+      index: true,
+    },
+    partyZipCode: {
+      type: String,
+      required: [true, "Party zip code is required"],
+      trim: true,
+    },
+    message: {
+      type: String,
+      trim: true,
+    },
+    confirmed: {
+      type: Boolean,
+      default: false,
+    },
+    tablesChairs: {
+      type: Boolean,
+      default: false,
+    },
+    generator: {
+      type: Boolean,
+      default: false,
+    },
+    popcornMachine: {
+      type: Boolean,
+      default: false,
+    },
+    cottonCandyMachine: {
+      type: Boolean,
+      default: false,
+    },
+    snowConeMachine: {
+      type: Boolean,
+      default: false,
+    },
+    margaritaMachine: {
+      type: Boolean,
+      default: false,
+    },
+    slushyMachine: {
+      type: Boolean,
+      default: false,
+    },
+    overnight: {
+      type: Boolean,
+      default: false,
+    },
+    sourcePage: {
+      type: String,
+      required: [true, "Source page is required"],
+      default: "website",
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+```
+
+### Features
+
+- **Date Range Filtering**: Filter contacts by party date range
+- **Confirmation Status Filtering**: Filter contacts by confirmation status
+- **Pagination**: Server-side pagination for efficient data loading
+- **Role-Based Access Control**: Admin-only access for sensitive operations
+- **Email Validation**: Built-in validation for email addresses
+- **Text Search**: Contacts are indexed for text search capabilities
+- **Notification System**: Email and SMS notifications for new contact requests
+
+### TypeScript Interfaces
+
+The contact model uses TypeScript interfaces to ensure type safety:
+
+```typescript
+export interface Contact {
+  _id: string;
+  bouncer: string;
+  email: string;
+  phone?: string;
+  partyDate: string;
+  partyZipCode: string;
+  message?: string;
+  confirmed: boolean;
+  tablesChairs?: boolean;
+  generator?: boolean;
+  popcornMachine?: boolean;
+  cottonCandyMachine?: boolean;
+  snowConeMachine?: boolean;
+  margaritaMachine?: boolean;
+  slushyMachine?: boolean;
+  overnight?: boolean;
+  sourcePage: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface IContactDocument extends Omit<Contact, "_id">, Document {}
+
+export interface IContactModel extends Model<IContactDocument> {
+  findByEmail(email: string): Promise<IContactDocument[]>;
+  findByPartyDate(date: string): Promise<IContactDocument[]>;
+  findByDateRange(
+    startDate: string,
+    endDate: string
+  ): Promise<IContactDocument[]>;
+}
+```
+
+### API Endpoints
+
+The Contacts API provides comprehensive endpoints with filtering, pagination, and role-based access control:
+
+- **GET /api/v1/contacts**: List all contacts with filtering and pagination (authenticated users only)
+- **GET /api/v1/contacts/:id**: Get a specific contact by ID (authenticated users only)
+- **POST /api/v1/contacts**: Create a new contact (public)
+- **PUT /api/v1/contacts/:id**: Update a contact (authenticated users only)
+- **DELETE /api/v1/contacts/:id**: Delete a contact (admin only)
+
+### Frontend Components
+
+- `ContactForm.tsx`: Public-facing form for submitting contact requests
+- Admin interface for managing contacts with filtering and pagination
+- Contact detail view for viewing and editing contact information
+
 ## Reviews Implementation
 
 The Reviews API is implemented using MongoDB and Mongoose with TypeScript. It provides a robust system for storing and retrieving customer reviews with pagination, filtering, and authentication.
