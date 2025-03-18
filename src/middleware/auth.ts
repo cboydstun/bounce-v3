@@ -6,6 +6,7 @@ export interface AuthRequest extends NextRequest {
     user?: {
         id: string;
         email: string;
+        role?: string;
     };
 }
 
@@ -33,6 +34,7 @@ export async function withAuth(
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
             id: string;
             email: string;
+            role?: string;
         };
 
         // Add user to request

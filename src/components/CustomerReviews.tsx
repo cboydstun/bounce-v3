@@ -3,26 +3,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { Star, Quote, ChevronRight, ChevronLeft } from "lucide-react";
 
-import api from "@/utils/api";
-import { API_ROUTES } from "@/config/constants";
+import { getReviews } from "@/utils/api";
+import { Review } from "@/types/review";
 import StatsSection from "./StatsSection";
 
-interface Review {
-  _id: string;
-  placeId: string;
-  reviewId: string;
-  authorName: string;
-  authorUrl?: string;
-  profilePhotoUrl?: string;
-  rating: number;
-  text: string;
-  relativeTimeDescription?: string;
-  language?: string;
-  time: string;
-  likes: number;
-  isLocalGuide: boolean;
-  createdAt: string;
-  updatedAt: string;
+// Define pagination interface
+interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
 }
 
 const CustomerReviews = () => {
@@ -31,6 +21,12 @@ const CustomerReviews = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<Pagination>({
+    total: 0,
+    page: 1,
+    limit: 10,
+    pages: 0,
+  });
 
   // Calculate review stats
   const stats = useMemo(() => {
@@ -64,19 +60,20 @@ const CustomerReviews = () => {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await api.get<Review[]>(API_ROUTES.REVIEWS);
-        if (!response.data) {
-          throw new Error("No data received from server");
-        }
-        const reviewsData = Array.isArray(response.data) ? response.data : [];
-        if (reviewsData.length === 0) {
+        const response = await getReviews({
+          page: pagination.page,
+          limit: pagination.limit,
+        });
+
+        if (!response.reviews || response.reviews.length === 0) {
           setError("No reviews available");
         } else {
-          setReviews(reviewsData);
+          setReviews(response.reviews);
+          setPagination(response.pagination);
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to fetch reviews",
+          err instanceof Error ? err.message : "Failed to fetch reviews"
         );
       } finally {
         setIsLoading(false);
@@ -84,7 +81,7 @@ const CustomerReviews = () => {
     };
 
     fetchReviews();
-  }, []);
+  }, [pagination.page, pagination.limit]);
 
   const renderMessage = (message: string, isLoading: boolean = false) => (
     <div className="w-full bg-[#663399] py-18">
@@ -182,9 +179,15 @@ const CustomerReviews = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {renderStars(reviews[activeIndex].rating)}
-                      {/* <span className="text-gray-500 ml-2">
-                        {new Date(reviews[activeIndex].time).toLocaleDateString()}
-                      </span> */}
+                      <span className="text-gray-500 ml-2">
+                        {reviews[activeIndex].time instanceof Date
+                          ? new Date(
+                              reviews[activeIndex].time
+                            ).toLocaleDateString()
+                          : new Date(
+                              reviews[activeIndex].time as unknown as string
+                            ).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -203,16 +206,55 @@ const CustomerReviews = () => {
           </div>
 
           <div className="bg-gray-50 p-6 flex justify-between items-center">
-            <div className="text-gray-600">
-              Review {activeIndex + 1} of {reviews.length}
+            <div className="text-gray-600 flex items-center gap-2">
+              <span>
+                Review {activeIndex + 1} of {reviews.length}
+              </span>
+              {pagination.pages > 1 && (
+                <span className="text-sm text-gray-500">
+                  (Page {pagination.page} of {pagination.pages})
+                </span>
+              )}
             </div>
-            <a
-              href="https://g.co/kgs/Dq42aY6"
-              className="text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-1"
-            >
-              See All Reviews
-              <ChevronRight className="w-4 h-4" />
-            </a>
+            <div className="flex items-center gap-4">
+              {pagination.pages > 1 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setPagination((prev) => ({
+                        ...prev,
+                        page: Math.max(1, prev.page - 1),
+                      }))
+                    }
+                    disabled={pagination.page <= 1}
+                    className={`p-1 rounded-full ${pagination.page <= 1 ? "text-gray-300 cursor-not-allowed" : "text-purple-600 hover:bg-purple-100"}`}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPagination((prev) => ({
+                        ...prev,
+                        page: Math.min(prev.pages, prev.page + 1),
+                      }))
+                    }
+                    disabled={pagination.page >= pagination.pages}
+                    className={`p-1 rounded-full ${pagination.page >= pagination.pages ? "text-gray-300 cursor-not-allowed" : "text-purple-600 hover:bg-purple-100"}`}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              <a
+                href="https://g.co/kgs/Dq42aY6"
+                className="text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-1"
+              >
+                See All Reviews
+                <ChevronRight className="w-4 h-4" />
+              </a>
+            </div>
           </div>
         </div>
       </div>

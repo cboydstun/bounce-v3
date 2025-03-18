@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import api from "@/utils/api";
-import { API_BASE_URL, API_ROUTES } from "../../config/constants";
+import { getReviews } from "@/utils/api";
+import { API_ROUTES } from "../../config/constants";
 import { Review } from "@/types/review";
 
 interface ReviewStats {
@@ -29,67 +30,100 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const fetchStats = async () => {
+      // Initialize default values
+      let blogsCount = 0;
+      let productsCount = 0;
+      let contactsCount = 0;
+      let reviewsData = { reviews: [], pagination: { total: 0 } };
+
+      // Fetch blogs count
       try {
-        const [blogsRes, productsRes, contactsRes, reviewsRes] =
-          await Promise.all([
-            api.get(`${API_BASE_URL}${API_ROUTES.BLOGS}`),
-            api.get(`${API_BASE_URL}${API_ROUTES.PRODUCTS}`),
-            api.get(`${API_BASE_URL}${API_ROUTES.CONTACTS}`),
-            api.get(`${API_BASE_URL}${API_ROUTES.REVIEWS}`),
-          ]);
-
-        const reviews = reviewsRes.data as Review[];
-
-        // Calculate review statistics
-        const last24Hours = new Date();
-        last24Hours.setHours(last24Hours.getHours() - 24);
-
-        const recentReviews = reviews.filter(
-          (review) => new Date(review.createdAt || 0) > last24Hours,
-        ).length;
-
-        const averageRating = reviews.length
-          ? reviews.reduce((acc, review) => acc + review.rating, 0) /
-            reviews.length
-          : 0;
-
-        // For this example, we'll consider reviews without a reviewId as pending
-        const pendingReviews = reviews.filter(
-          (review) => !review.reviewId,
-        ).length;
-
-        setReviewStats({
-          averageRating,
-          recentReviews,
-          pendingReviews,
-          totalReviews: reviews.length,
-        });
-
-        setStats([
-          {
-            name: "Total Blogs",
-            stat: String(blogsRes.data.length),
-            href: "/admin/blogs",
-          },
-          {
-            name: "Total Products",
-            stat: String(productsRes.data.length),
-            href: "/admin/products",
-          },
-          {
-            name: "Contact Requests",
-            stat: String(contactsRes.data.length),
-            href: "/admin/contacts",
-          },
-          {
-            name: "Customer Reviews",
-            stat: String(reviewsRes.data.length),
-            href: "/admin/reviews",
-          },
-        ]);
+        const blogsRes = await api.get(`${API_ROUTES.BLOGS}`);
+        blogsCount = blogsRes.data?.length || 0;
       } catch (error) {
-        console.error("Failed to fetch stats:", error);
+        console.error("Failed to fetch blogs:", error);
       }
+
+      // Fetch products count
+      try {
+        const productsRes = await api.get(`${API_ROUTES.PRODUCTS}`);
+        productsCount = productsRes.data?.length || 0;
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      }
+
+      // Fetch contacts count
+      try {
+        const contactsRes = await api.get(`${API_ROUTES.CONTACTS}`);
+        contactsCount = contactsRes.data?.length || 0;
+      } catch (error) {
+        console.error("Failed to fetch contacts:", error);
+      }
+
+      // Fetch reviews count - this is the one we really care about
+      try {
+        reviewsData = await getReviews();
+        console.log("Reviews API response:", reviewsData);
+      } catch (error) {
+        console.error("Failed to fetch reviews:", error);
+      }
+
+      // Extract reviews from the new response format
+      const reviews = reviewsData.reviews || [];
+
+      // Get the total count from pagination.total
+      const totalReviews = reviewsData.pagination?.total || reviews.length || 0;
+      console.log("Total reviews count:", totalReviews);
+
+      // Calculate review statistics
+      const last24Hours = new Date();
+      last24Hours.setHours(last24Hours.getHours() - 24);
+
+      const recentReviews = reviews.filter(
+        (review: Review) => new Date(review.createdAt || 0) > last24Hours
+      ).length;
+
+      const averageRating = reviews.length
+        ? reviews.reduce(
+            (acc: number, review: Review) => acc + review.rating,
+            0
+          ) / reviews.length
+        : 0;
+
+      // For this example, we'll consider reviews without a reviewId as pending
+      const pendingReviews = reviews.filter(
+        (review: Review) => !review.reviewId
+      ).length;
+
+      setReviewStats({
+        averageRating,
+        recentReviews,
+        pendingReviews,
+        totalReviews,
+      });
+
+      setStats([
+        {
+          name: "Total Blogs",
+          stat: String(blogsCount),
+          href: "/admin/blogs",
+        },
+        {
+          name: "Total Products",
+          stat: String(productsCount),
+          href: "/admin/products",
+        },
+        {
+          name: "Contact Requests",
+          stat: String(contactsCount),
+          href: "/admin/contacts",
+        },
+        {
+          name: "Customer Reviews",
+          stat: String(totalReviews),
+          href: "/admin/reviews",
+        },
+      ]);
     };
 
     fetchStats();

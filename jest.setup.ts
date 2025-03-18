@@ -67,6 +67,14 @@ jest.mock("next/server", () => {
       this.url = input.toString();
       this.method = init?.method || "GET";
       this.bodyContent = init?.body || "{}";
+
+      // Set headers from init
+      if (init?.headers) {
+        const headers = init.headers as Record<string, string>;
+        Object.keys(headers).forEach(key => {
+          this.headerValues[key.toLowerCase()] = headers[key];
+        });
+      }
     }
 
     // Mock the json method
@@ -107,6 +115,13 @@ jest.mock("next/server", () => {
         status: init?.status || 200,
         headers: new Headers(init?.headers),
         json: async () => data,
+        cookies: {
+          set: jest.fn(), // Mock the set method
+          get: jest.fn().mockReturnValue({ name: "auth_token", value: "test-token" }),
+          getAll: jest.fn().mockReturnValue([{ name: "auth_token", value: "test-token" }]),
+          delete: jest.fn(),
+          has: jest.fn().mockReturnValue(true),
+        }
       };
       return response;
     }

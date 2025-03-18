@@ -136,4 +136,71 @@ export const updateUserProfile = async (userData: {
   return response.data;
 };
 
+// Reviews API calls
+export const getReviews = async (params?: {
+  placeId?: string;
+  limit?: number;
+  page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.placeId) {
+    queryParams.append("placeId", params.placeId);
+  }
+
+  if (params?.limit) {
+    queryParams.append("limit", params.limit.toString());
+  }
+
+  if (params?.page) {
+    queryParams.append("page", params.page.toString());
+  }
+
+  const queryString = queryParams.toString();
+  const url = queryString
+    ? `/api/v1/reviews?${queryString}`
+    : "/api/v1/reviews";
+
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getReviewById = async (id: string) => {
+  const response = await api.get(`/api/v1/reviews/${id}`);
+  return response.data;
+};
+
+export const createReview = async (reviewData: {
+  placeId: string;
+  authorName: string;
+  rating: number;
+  text: string;
+  isLocalGuide?: boolean;
+  authorUrl?: string;
+  profilePhotoUrl?: string;
+  language?: string;
+}) => {
+  const response = await api.post("/api/v1/reviews", reviewData);
+  return response.data;
+};
+
+export const updateReview = async (
+  id: string,
+  reviewData: {
+    rating?: number;
+    text?: string;
+    authorName?: string;
+    isLocalGuide?: boolean;
+    likes?: number;
+  }
+) => {
+  const response = await api.put(`/api/v1/reviews/${id}`, reviewData);
+  return response.data;
+};
+
+export const deleteReview = async (id: string) => {
+  const response = await api.delete(`/api/v1/reviews/${id}`);
+  return response.data;
+};
+
 export default api;
