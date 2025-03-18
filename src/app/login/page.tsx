@@ -1,41 +1,108 @@
 "use client";
 
-import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, FormEvent, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { login } from "@/utils/api";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check if we were redirected from a protected page and for existing tokens
+  useEffect(() => {
+    // Check if we were redirected from a protected page
+    const from = searchParams.get("from");
+    if (from) {
+      setError(`You need to be logged in to access ${from}`);
+    }
+
+    // Check if we already have a token in localStorage or cookies
+    const localStorageToken = localStorage.getItem("auth_token");
+    const cookieToken = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("auth_token="))
+      ?.split("=")[1];
+
+    // If we have a token, redirect to admin or the page they were trying to access
+    if (localStorageToken || cookieToken) {
+      console.log("Found existing auth token, redirecting...");
+      router.push(from || "/admin");
+    }
+  }, [searchParams, router]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Basic validation
+    // Enhanced validation
     if (!email) {
-      setError("Please provide an email");
+      setError("Please provide an email address");
       setIsLoading(false);
       return;
     }
+
+    if (!email.match(/^\S+@\S+\.\S+$/)) {
+      setError("Please provide a valid email address");
+      setIsLoading(false);
+      return;
+    }
+
     if (!password) {
       setError("Please provide a password");
       setIsLoading(false);
       return;
     }
 
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      await login({ email, password });
-      router.push("/admin"); // Redirect to admin dashboard after successful login
+      // Call the login API endpoint with remember me preference
+      const response = await login({
+        email,
+        password,
+        rememberMe, // Pass the remember me preference to the API
+      });
+
+      // Redirect to admin dashboard or the page they were trying to access
+      const from = searchParams.get("from");
+      router.push(from || "/admin");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An error occurred during login",
-      );
+      console.error("Login error:", err);
+
+      // Improved error handling with more specific messages
+      if (err instanceof Error) {
+        if (
+          err.message.includes("network") ||
+          err.message.includes("connection")
+        ) {
+          setError(
+            "Network error. Please check your internet connection and try again."
+          );
+        } else if (
+          err.message.includes("401") ||
+          err.message.includes("Invalid credentials")
+        ) {
+          setError("Invalid email or password. Please try again.");
+        } else if (err.message.includes("404")) {
+          setError("Login service not found. Please try again later.");
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError("An unexpected error occurred. Please try again later.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -84,6 +151,34 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
               />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                disabled={isLoading}
+              />
+              <label
+                htmlFor="remember-me"
+                className="ml-2 block text-sm text-gray-900"
+              >
+                Remember me
+              </label>
+            </div>
+            <div className="text-sm">
+              <Link
+                href="/register"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Don't have an account?
+              </Link>
             </div>
           </div>
 

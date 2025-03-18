@@ -24,7 +24,12 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 - **Contact System**: Contact forms with admin management interface
 - **Admin Panel**: Secure administrative interface for content management
 - **Customer Reviews**: Display and management of customer feedback
-- **Authentication**: Secure login system with protected routes
+- **Authentication**: Secure JWT-based authentication with:
+  - Token storage in both localStorage and cookies for robust auth persistence
+  - "Remember Me" functionality with configurable token expiration
+  - Protected routes with middleware-based access control
+  - Secure password hashing with bcrypt
+  - Rate limiting for login attempts
 - **Responsive Design**: Mobile-friendly interface with modern UI components
 - **Analytics**: Built-in analytics tracking with Google Analytics and Google Tag Manager
 - **SEO Optimization**: Comprehensive metadata, OpenGraph, and Twitter cards
@@ -187,7 +192,18 @@ npm install
 2. Set up environment variables:
 
    - Copy `.env.sample` to `.env.local`
-   - Configure required environment variables
+   - Configure required environment variables:
+
+     ```
+     # MongoDB Connection
+     MONGODB_URI=your_mongodb_connection_string
+
+     # Authentication
+     JWT_SECRET=your_secure_jwt_secret_key
+
+     # API Configuration (optional, for external API access)
+     API_BASE_URL=http://localhost:3000
+     ```
 
 3. Start development server:
 
