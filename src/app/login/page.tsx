@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { login } from "@/utils/api";
 
 // Create a separate client component for the login form
 const LoginForm = () => {
@@ -67,6 +68,13 @@ const LoginForm = () => {
     }
 
     try {
+      // Call the login API endpoint
+      await login({
+        email,
+        password,
+        rememberMe,
+      });
+
       // Redirect to admin dashboard or the page they were trying to access
       const from = searchParams.get("from");
       router.push(from || "/admin");
@@ -80,7 +88,7 @@ const LoginForm = () => {
           err.message.includes("connection")
         ) {
           setError(
-            "Network error. Please check your internet connection and try again.",
+            "Network error. Please check your internet connection and try again."
           );
         } else if (
           err.message.includes("401") ||
