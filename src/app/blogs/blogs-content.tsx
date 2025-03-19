@@ -7,28 +7,10 @@ import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Blog } from "@/types/blog";
 
-interface PaginationData {
-  total: number;
-  page: number;
-  limit: number;
-  pages: number;
-}
-
-interface BlogsResponse {
-  blogs: Blog[];
-  pagination: PaginationData;
-}
-
 export function BlogsContent() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState<PaginationData>({
-    total: 0,
-    page: 1,
-    limit: 10,
-    pages: 0,
-  });
   const [category, setCategory] = useState<string | null>(null);
   const [tag, setTag] = useState<string | null>(null);
   const [search, setSearch] = useState<string>("");
@@ -42,7 +24,6 @@ export function BlogsContent() {
       const categoryParam = urlParams.get("category");
       const tagParam = urlParams.get("tag");
       const searchParam = urlParams.get("search");
-      const pageParam = urlParams.get("page");
 
       if (categoryParam) setCategory(categoryParam);
       if (tagParam) setTag(tagParam);
@@ -50,16 +31,10 @@ export function BlogsContent() {
         setSearch(searchParam);
         setSearchInput(searchParam);
       }
-      if (pageParam) {
-        const page = parseInt(pageParam);
-        if (!isNaN(page) && page > 0) {
-          setPagination((prev) => ({ ...prev, page }));
-        }
-      }
     }
   }, []);
 
-  // Fetch blogs when filters or pagination change
+  // Fetch blogs when filters change
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
@@ -70,20 +45,37 @@ export function BlogsContent() {
         if (category) params.append("category", category);
         if (tag) params.append("tag", tag);
         if (search) params.append("search", search);
-        params.append("page", pagination.page.toString());
-        params.append("limit", pagination.limit.toString());
 
         const queryString = params.toString() ? `?${params.toString()}` : "";
         const response = await fetch(
-          `${API_BASE_URL}${API_ROUTES.BLOGS}${queryString}`,
+          `${API_BASE_URL}${API_ROUTES.BLOGS}${queryString}`
         );
 
         if (!response.ok) throw new Error("Failed to fetch blogs");
 
-        const data: BlogsResponse = await response.json();
-        setBlogs(data.blogs);
-        setPagination(data.pagination);
+        const data = await response.json();
+
+        // Handle different response formats
+        let blogsList: Blog[] = [];
+        if (Array.isArray(data)) {
+          // If the API returns an array directly
+          blogsList = data;
+        } else if (data.blogs && Array.isArray(data.blogs)) {
+          // If the API returns an object with a blogs property
+          blogsList = data.blogs;
+        } else if (typeof data === "object" && data !== null) {
+          // If the API returns some other object, try to extract blogs
+          const possibleBlogs = Object.values(data).find((val) =>
+            Array.isArray(val)
+          );
+          if (possibleBlogs) {
+            blogsList = possibleBlogs as Blog[];
+          }
+        }
+
+        setBlogs(blogsList);
       } catch (err) {
+        console.error("Error fetching blogs:", err);
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
         setLoading(false);
@@ -91,17 +83,15 @@ export function BlogsContent() {
     };
 
     fetchBlogs();
-  }, [pagination.page, pagination.limit, category, tag, search]);
+  }, [category, tag, search]);
 
-  // Update URL with current filters and pagination
+  // Update URL with current filters
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams();
       if (category) params.append("category", category);
       if (tag) params.append("tag", tag);
       if (search) params.append("search", search);
-      if (pagination.page > 1)
-        params.append("page", pagination.page.toString());
 
       const newUrl =
         window.location.pathname +
@@ -110,28 +100,20 @@ export function BlogsContent() {
       // Update URL without reloading the page
       window.history.pushState({ path: newUrl }, "", newUrl);
     }
-  }, [category, tag, search, pagination.page]);
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage > 0 && newPage <= pagination.pages) {
-      setPagination((prev) => ({ ...prev, page: newPage }));
-    }
-  };
+  }, [category, tag, search]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearch(searchInput);
-    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page on new search
   };
 
   const handleCategoryClick = (selectedCategory: string) => {
     setCategory((prev) =>
-      prev === selectedCategory ? null : selectedCategory,
+      prev === selectedCategory ? null : selectedCategory
     );
     setTag(null); // Reset tag when category changes
     setSearch(""); // Reset search when category changes
     setSearchInput(""); // Reset search input when category changes
-    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
   };
 
   const handleTagClick = (selectedTag: string) => {
@@ -139,7 +121,6 @@ export function BlogsContent() {
     setCategory(null); // Reset category when tag changes
     setSearch(""); // Reset search when tag changes
     setSearchInput(""); // Reset search input when tag changes
-    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
   };
 
   const clearFilters = () => {
@@ -147,7 +128,6 @@ export function BlogsContent() {
     setTag(null);
     setSearch("");
     setSearchInput("");
-    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
   };
 
   if (loading) {
@@ -350,54 +330,6 @@ export function BlogsContent() {
                 </Link>
               ))}
             </div>
-
-            {/* Pagination controls */}
-            {pagination.pages > 1 && (
-              <div className="flex justify-center mt-8">
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={pagination.page === 1}
-                    className={`px-3 py-1 rounded-md ${
-                      pagination.page === 1
-                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                        : "bg-primary-blue text-white hover:bg-primary-blue/90"
-                    }`}
-                  >
-                    Previous
-                  </button>
-
-                  {Array.from(
-                    { length: pagination.pages },
-                    (_, i) => i + 1,
-                  ).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`px-3 py-1 rounded-md ${
-                        pagination.page === page
-                          ? "bg-primary-blue text-white"
-                          : "bg-white text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={pagination.page === pagination.pages}
-                    className={`px-3 py-1 rounded-md ${
-                      pagination.page === pagination.pages
-                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                        : "bg-primary-blue text-white hover:bg-primary-blue/90"
-                    }`}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>
