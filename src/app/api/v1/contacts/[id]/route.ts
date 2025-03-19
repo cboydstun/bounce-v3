@@ -114,8 +114,8 @@ export async function DELETE(
 ) {
   return withAuth(request, async (req: AuthRequest) => {
     try {
-      // Check if user is authenticated and is admin
-      if (!req.user || req.user.role !== "admin") {
+      // Check if user is authenticated
+      if (!req.user) {
         return NextResponse.json(
           { error: "Not authorized to delete contacts" },
           { status: 403 },
