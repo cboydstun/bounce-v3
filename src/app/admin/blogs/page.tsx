@@ -37,7 +37,7 @@ export default function AdminBlogs() {
             page: 1,
             limit: 10,
             pages: 0,
-          }
+          },
         );
 
         console.log("Blogs API response:", response.data);

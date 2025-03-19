@@ -120,7 +120,7 @@ export default function EditContact({ params }: PageProps) {
       }
 
       setError(
-        error instanceof Error ? error.message : "Failed to update contact"
+        error instanceof Error ? error.message : "Failed to update contact",
       );
       console.error("Error updating contact:", error);
     } finally {
@@ -131,7 +131,7 @@ export default function EditContact({ params }: PageProps) {
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({

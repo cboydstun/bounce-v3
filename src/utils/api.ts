@@ -60,8 +60,9 @@ const setCookie = (name: string, value: string, days: number = 1) => {
   const isSecure = window.location.protocol === "https:";
   const sameSite = isSecure ? "strict" : "lax";
 
-  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; ${isSecure ? "secure; " : ""
-    }samesite=${sameSite}`;
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; ${
+    isSecure ? "secure; " : ""
+  }samesite=${sameSite}`;
 
   console.log(`Cookie ${name} set with expiration: ${days} days`);
 };
@@ -399,7 +400,7 @@ export const updateContact = async (
     slushyMachine: boolean;
     overnight: boolean;
     sourcePage: string;
-  }>
+  }>,
 ) => {
   const response = await api.put(`/api/v1/contacts/${id}`, contactData);
   return response.data;

@@ -166,8 +166,8 @@ export default function AdminContacts() {
       // Update the local state
       setContacts(
         contacts.map((contact) =>
-          contact.id === id ? { ...contact, confirmed } : contact
-        )
+          contact.id === id ? { ...contact, confirmed } : contact,
+        ),
       );
     } catch (error) {
       // Handle authentication errors
@@ -178,7 +178,7 @@ export default function AdminContacts() {
       }
 
       setError(
-        error instanceof Error ? error.message : "Failed to update status"
+        error instanceof Error ? error.message : "Failed to update status",
       );
       console.error("Error updating status:", error);
     } finally {
@@ -210,7 +210,7 @@ export default function AdminContacts() {
       }
 
       setError(
-        error instanceof Error ? error.message : "Failed to delete contact"
+        error instanceof Error ? error.message : "Failed to delete contact",
       );
       console.error("Error deleting contact:", error);
     } finally {
@@ -489,7 +489,7 @@ export default function AdminContacts() {
                       onClick={() => {
                         if (sortColumn === "partyDate") {
                           setSortDirection(
-                            sortDirection === "asc" ? "desc" : "asc"
+                            sortDirection === "asc" ? "desc" : "asc",
                           );
                         } else {
                           setSortColumn("partyDate");
@@ -579,7 +579,7 @@ export default function AdminContacts() {
                           onChange={(e) =>
                             handleUpdateStatus(
                               contact.id,
-                              e.target.value === "true"
+                              e.target.value === "true",
                             )
                           }
                           className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(contact.confirmed)}`}

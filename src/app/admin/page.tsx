@@ -92,19 +92,19 @@ export default function AdminDashboard() {
       last24Hours.setHours(last24Hours.getHours() - 24);
 
       const recentReviews = reviews.filter(
-        (review: Review) => new Date(review.createdAt || 0) > last24Hours
+        (review: Review) => new Date(review.createdAt || 0) > last24Hours,
       ).length;
 
       const averageRating = reviews.length
         ? reviews.reduce(
             (acc: number, review: Review) => acc + review.rating,
-            0
+            0,
           ) / reviews.length
         : 0;
 
       // For this example, we'll consider reviews without a reviewId as pending
       const pendingReviews = reviews.filter(
-        (review: Review) => !review.reviewId
+        (review: Review) => !review.reviewId,
       ).length;
 
       setReviewStats({

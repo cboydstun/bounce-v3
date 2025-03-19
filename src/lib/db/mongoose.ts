@@ -52,7 +52,7 @@ async function dbConnect() {
   // Import all models to ensure they're registered
   // This needs to be imported after the connection is established
   // to avoid circular dependencies
-  await import('../../models');
+  await import("../../models");
 
   return cached.conn;
 }

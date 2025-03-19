@@ -50,11 +50,11 @@ export interface IBlog {
   title: string;
   slug: string;
   author:
-  | Types.ObjectId
-  | {
-    _id: Types.ObjectId;
-    name?: string;
-  };
+    | Types.ObjectId
+    | {
+        _id: Types.ObjectId;
+        name?: string;
+      };
   introduction: string;
   body: string;
   conclusion: string;
@@ -84,11 +84,13 @@ export interface IBlog {
   };
   readTime?: number;
   isFeature?: boolean;
-  relatedPosts?: Types.ObjectId[] | Array<{
-    _id: Types.ObjectId;
-    title: string;
-    slug: string;
-  }>;
+  relatedPosts?:
+    | Types.ObjectId[]
+    | Array<{
+        _id: Types.ObjectId;
+        title: string;
+        slug: string;
+      }>;
 }
 
 export interface IBlogDocument extends IBlog, Document {
@@ -98,7 +100,9 @@ export interface IBlogDocument extends IBlog, Document {
 
 export interface IBlogModel extends Model<IBlogDocument> {
   findBySlug(slug: string): mongoose.Query<IBlogDocument | null, IBlogDocument>;
-  findByCategory(category: string): mongoose.Query<IBlogDocument[], IBlogDocument>;
+  findByCategory(
+    category: string,
+  ): mongoose.Query<IBlogDocument[], IBlogDocument>;
   findByTag(tag: string): mongoose.Query<IBlogDocument[], IBlogDocument>;
   findPublished(): mongoose.Query<IBlogDocument[], IBlogDocument>;
   searchBlogs(query: string): mongoose.Query<IBlogDocument[], IBlogDocument>;

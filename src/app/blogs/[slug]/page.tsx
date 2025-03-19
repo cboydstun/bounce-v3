@@ -123,7 +123,7 @@ export default async function BlogDetail({ params }: { params: Params }) {
                 {blog.images.map(
                   (
                     image: { public_id: string; url: string },
-                    index: number
+                    index: number,
                   ) => (
                     <div
                       key={image.public_id}
@@ -137,7 +137,7 @@ export default async function BlogDetail({ params }: { params: Params }) {
                         className="w-full h-full object-cover"
                       />
                     </div>
-                  )
+                  ),
                 )}
               </div>
             )}

@@ -35,7 +35,10 @@ export async function withAuth(
     const token = authHeader.split(" ")[1];
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-secret') as {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "test-secret",
+    ) as {
       id: string;
       email: string;
       role?: string;
