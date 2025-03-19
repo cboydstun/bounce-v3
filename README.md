@@ -23,6 +23,8 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 - **Product Management**: Product catalog with detailed views and admin controls
 - **Contact System**: Contact forms with admin management interface
 - **Admin Panel**: Secure administrative interface for content management
+- **Analytics Dashboard**: Comprehensive analytics with revenue tracking, booking trends, and product popularity
+- **Calendar View**: Visual calendar for tracking bookings with color-coded status indicators
 - **Customer Reviews**: Display and management of customer feedback
 - **Authentication**: Secure JWT-based authentication with:
   - Token storage in both localStorage and cookies for robust auth persistence
@@ -257,7 +259,7 @@ const ProductSchema = new Schema<IProductDocument, IProductModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -386,7 +388,7 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -434,7 +436,7 @@ export interface IContactModel extends Model<IContactDocument> {
   findByPartyDate(date: string): Promise<IContactDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string,
+    endDate: string
   ): Promise<IContactDocument[]>;
 }
 ```
@@ -454,6 +456,43 @@ The Contacts API provides comprehensive endpoints with filtering, pagination, an
 - `ContactForm.tsx`: Public-facing form for submitting contact requests
 - Admin interface for managing contacts with filtering and pagination
 - Contact detail view for viewing and editing contact information
+- `ContactCalendar.tsx`: Calendar view for visualizing contacts with color-coded status indicators
+
+## Analytics Implementation
+
+The application includes a comprehensive analytics dashboard that provides insights into business performance:
+
+### Revenue Analytics
+
+- **Total Revenue Tracking**: Visualizes revenue over selected time periods
+- **Period Filtering**: Filter revenue data by various time periods (current month, last 30 days, year to date, etc.)
+- **Trend Analysis**: Line chart visualization of revenue trends over time
+
+### Booking Trends
+
+- **Booking Volume Analysis**: Track the number of bookings over time
+- **Status Breakdown**: View confirmed vs. pending bookings at a glance
+- **Period Comparison**: Compare booking volumes across different time periods
+
+### Product Popularity
+
+- **Most Popular Products**: Horizontal bar chart showing the most frequently booked products
+- **Rental Frequency**: Track which products are rented most often
+- **Data-Driven Inventory Decisions**: Identify high-demand products to inform inventory management
+
+### Calendar View
+
+- **Visual Booking Calendar**: Calendar interface for viewing all bookings
+- **Color-Coded Status**: Yellow for pending bookings, green for confirmed bookings
+- **Date Navigation**: Easily navigate between months and view booking details
+- **Booking Details**: Click on calendar events to view and edit booking details
+
+### Frontend Components
+
+- `RevenueChart.tsx`: Line chart component for revenue visualization
+- `BookingsTrend.tsx`: Bar chart component for booking trend analysis
+- `ProductPopularity.tsx`: Horizontal bar chart for product popularity
+- `ContactCalendar.tsx`: Calendar component for visualizing bookings
 
 ## Reviews Implementation
 
@@ -536,7 +575,7 @@ const ReviewSchema = new Schema<IReviewDocument, IReviewModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
