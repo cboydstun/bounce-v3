@@ -511,6 +511,9 @@ The application includes a comprehensive analytics dashboard that provides insig
 - `ProductPopularity.tsx`: Horizontal bar chart for product popularity
 - `SeasonalTrends.tsx`: Analyze and visualize seasonal booking patterns
 - `ForecastChart.tsx`: Predictive charts for revenue and bookings
+- `RevenueChart.tsx`: Line chart component for revenue visualization
+- `BookingsTrend.tsx`: Bar chart component for booking trend analysis
+- `ProductPopularity.tsx`: Horizontal bar chart for product popularity
 - `ContactCalendar.tsx`: Calendar component for visualizing bookings
 
 ## Reviews Implementation
