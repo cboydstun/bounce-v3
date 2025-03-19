@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { getContacts, updateContact, deleteContact } from "@/utils/api";
+import { Contact as ApiContact } from "@/types/contact";
 
 interface Contact {
   id: string;
@@ -91,61 +92,59 @@ export default function AdminContacts() {
       try {
         setIsLoading(true);
         setError(null);
-        const token = localStorage.getItem("auth_token");
 
-        const response = await fetch(`${API_BASE_URL}${API_ROUTES.CONTACTS}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        // Prepare query parameters for API call
+        const params: {
+          startDate?: string;
+          endDate?: string;
+          confirmed?: boolean;
+          limit?: number;
+          page?: number;
+        } = {
+          limit: pageSize,
+          page: currentPage,
+        };
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch contacts");
+        // Add date filters if set
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
+
+        // Add confirmation filter if not "all"
+        if (confirmationFilter === "confirmed") {
+          params.confirmed = true;
+        } else if (confirmationFilter === "pending") {
+          params.confirmed = false;
         }
 
-        const data = await response.json();
-        interface ApiContact {
-          _id: string;
-          bouncer: string;
-          email: string;
-          phone?: string;
-          partyDate: string;
-          partyZipCode: string;
-          message?: string;
-          confirmed: boolean;
-          createdAt: string;
-          tablesChairs?: boolean;
-          generator?: boolean;
-          popcornMachine?: boolean;
-          cottonCandyMachine?: boolean;
-          snowConeMachine?: boolean;
-          margaritaMachine?: boolean;
-          slushyMachine?: boolean;
-          overnight?: boolean;
-          sourcePage: string;
-        }
-        setContacts(
-          data.map((contact: ApiContact) => ({
-            id: contact._id,
-            bouncer: contact.bouncer,
-            email: contact.email,
-            phone: contact.phone,
-            partyDate: contact.partyDate,
-            partyZipCode: contact.partyZipCode,
-            message: contact.message,
-            confirmed: contact.confirmed,
-            createdAt: contact.createdAt,
-            tablesChairs: contact.tablesChairs,
-            generator: contact.generator,
-            popcornMachine: contact.popcornMachine,
-            cottonCandyMachine: contact.cottonCandyMachine,
-            snowConeMachine: contact.snowConeMachine,
-            margaritaMachine: contact.margaritaMachine,
-            slushyMachine: contact.slushyMachine,
-            overnight: contact.overnight,
-            sourcePage: contact.sourcePage,
-          })),
-        );
+        // Call the API with filters
+        const data = await getContacts(params);
+
+        // Map the contacts from the API response
+        const mappedContacts = data.contacts.map((contact: ApiContact) => ({
+          id: contact._id,
+          bouncer: contact.bouncer,
+          email: contact.email,
+          phone: contact.phone,
+          partyDate: contact.partyDate,
+          partyZipCode: contact.partyZipCode,
+          message: contact.message,
+          confirmed: contact.confirmed,
+          createdAt: contact.createdAt,
+          tablesChairs: contact.tablesChairs,
+          generator: contact.generator,
+          popcornMachine: contact.popcornMachine,
+          cottonCandyMachine: contact.cottonCandyMachine,
+          snowConeMachine: contact.snowConeMachine,
+          margaritaMachine: contact.margaritaMachine,
+          slushyMachine: contact.slushyMachine,
+          overnight: contact.overnight,
+          sourcePage: contact.sourcePage,
+        }));
+
+        setContacts(mappedContacts);
+
+        // Log for debugging
+        console.log("Contacts API response:", data);
       } catch (error) {
         setError(error instanceof Error ? error.message : "An error occurred");
         console.error("Error fetching contacts:", error);
@@ -155,46 +154,29 @@ export default function AdminContacts() {
     };
 
     fetchContacts();
-  }, [router]);
+  }, [router, currentPage, pageSize, startDate, endDate, confirmationFilter]);
 
   const handleUpdateStatus = async (id: string, confirmed: boolean) => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem("auth_token");
 
-      if (!token) {
-        router.push("/login");
-        return;
-      }
+      // Use the updateContact function from the API client
+      await updateContact(id, { confirmed });
 
-      const response = await fetch(
-        `${API_BASE_URL}${API_ROUTES.CONTACTS}/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ confirmed }),
-        },
-      );
-
-      if (response.status === 401) {
-        localStorage.removeItem("auth_token");
-        router.push("/login");
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Failed to update status");
-      }
-
+      // Update the local state
       setContacts(
         contacts.map((contact) =>
           contact.id === id ? { ...contact, confirmed } : contact,
         ),
       );
     } catch (error) {
+      // Handle authentication errors
+      if (error instanceof Error && error.message.includes("401")) {
+        localStorage.removeItem("auth_token");
+        router.push("/login");
+        return;
+      }
+
       setError(
         error instanceof Error ? error.message : "Failed to update status",
       );
@@ -213,35 +195,20 @@ export default function AdminContacts() {
 
     try {
       setIsLoading(true);
-      const token = localStorage.getItem("auth_token");
 
-      if (!token) {
-        router.push("/login");
-        return;
-      }
+      // Use the deleteContact function from the API client
+      await deleteContact(id);
 
-      const response = await fetch(
-        `${API_BASE_URL}${API_ROUTES.CONTACTS}/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      if (response.status === 401) {
+      // Update the local state
+      setContacts(contacts.filter((contact) => contact.id !== id));
+    } catch (error) {
+      // Handle authentication errors
+      if (error instanceof Error && error.message.includes("401")) {
         localStorage.removeItem("auth_token");
         router.push("/login");
         return;
       }
 
-      if (!response.ok) {
-        throw new Error("Failed to delete contact");
-      }
-
-      setContacts(contacts.filter((contact) => contact.id !== id));
-    } catch (error) {
       setError(
         error instanceof Error ? error.message : "Failed to delete contact",
       );

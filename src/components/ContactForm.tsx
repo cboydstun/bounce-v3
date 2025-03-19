@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
 import Image from "next/image";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { getProducts, createContact } from "@/utils/api";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
 
 interface Specification {
@@ -85,11 +84,12 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
       setIsLoading(true);
       setLoadError(null);
       try {
-        const response = await axios.get(
-          `${API_BASE_URL}${API_ROUTES.PRODUCTS}`,
-        );
+        const data = await getProducts();
 
-        const filteredBouncers = response.data.filter((product: Bouncer) => {
+        // Extract products array from the response
+        const productsArray = data.products || [];
+
+        const filteredBouncers = productsArray.filter((product: Bouncer) => {
           const typeSpec = product.specifications?.find(
             (spec) => spec.name === "Type",
           );
@@ -185,7 +185,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
     if (!validateForm() || !formData.consentToContact) return;
 
     try {
-      await axios.post(`${API_BASE_URL}${API_ROUTES.CONTACTS}`, formData);
+      await createContact(formData);
       setSubmitStatus("success");
       setFormData({
         bouncer: "",

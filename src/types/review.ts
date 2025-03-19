@@ -1,3 +1,5 @@
+import { Document, Model, Types } from "mongoose";
+
 export interface Review {
   _id: string;
   placeId: string;
@@ -14,6 +16,7 @@ export interface Review {
   isLocalGuide: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  user?: string; // Reference to user who created the review
 }
 
 // Base type with common fields
@@ -47,3 +50,27 @@ export type ReviewFormData = CreateReviewData;
 export const urlRegex =
   /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
 export const languageRegex = /^[a-z]{2}(-[A-Z]{2})?$/;
+
+// Add Mongoose interfaces
+export interface IReview {
+  placeId: string;
+  reviewId: string;
+  authorName: string;
+  authorUrl?: string;
+  profilePhotoUrl?: string;
+  rating: number;
+  text: string;
+  relativeTimeDescription?: string;
+  language?: string;
+  time: Date;
+  likes: number;
+  isLocalGuide: boolean;
+  user?: Types.ObjectId; // Reference to User model
+}
+
+export interface IReviewDocument extends IReview, Document {}
+
+export interface IReviewModel extends Model<IReviewDocument> {
+  findByReviewId(reviewId: string): Promise<IReviewDocument | null>;
+  findByPlaceId(placeId: string): Promise<IReviewDocument[]>;
+}

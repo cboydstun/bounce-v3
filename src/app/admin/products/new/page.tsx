@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ProductForm from "../ProductForm";
-import api from "@/utils/api";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { createProduct } from "@/utils/api";
 
 interface ProductFormData {
   name: string;
@@ -74,7 +73,7 @@ export default function NewProductPage() {
         additionalServices: formData.additionalServices || [],
       };
 
-      await api.post(`${API_BASE_URL}${API_ROUTES.PRODUCTS}`, productData);
+      await createProduct(productData);
       router.push("/admin/products");
     } catch (err) {
       console.error("Error creating product:", err);

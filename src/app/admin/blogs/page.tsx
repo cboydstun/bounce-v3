@@ -11,14 +11,36 @@ export default function AdminBlogs() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    pages: 0,
+  });
 
   // Fetch blogs on component mount
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get(`${API_BASE_URL}${API_ROUTES.BLOGS}`);
-        setBlogs(response.data);
+        // Include status=all to get all blogs including drafts and archived
+        const response = await api.get(`${API_ROUTES.BLOGS}?status=all`);
+
+        // Extract blogs and pagination from the response
+        const { blogs: fetchedBlogs, pagination: paginationData } =
+          response.data;
+
+        setBlogs(fetchedBlogs || []);
+        setPagination(
+          paginationData || {
+            total: 0,
+            page: 1,
+            limit: 10,
+            pages: 0,
+          },
+        );
+
+        console.log("Blogs API response:", response.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
@@ -36,8 +58,17 @@ export default function AdminBlogs() {
 
     try {
       setIsLoading(true);
-      await api.delete(`${API_BASE_URL}${API_ROUTES.BLOGS}/${slug}`);
+      // Use the relative URL with the API_ROUTES constant
+      await api.delete(`${API_ROUTES.BLOGS}/${slug}`);
+
+      // Remove the deleted blog from the state
       setBlogs(blogs.filter((blog) => blog.slug !== slug));
+
+      // Update pagination total count
+      setPagination((prev) => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1),
+      }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete blog");
     } finally {
@@ -98,6 +129,11 @@ export default function AdminBlogs() {
       <div className="mt-8 flow-root">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+            {/* Pagination info */}
+            <div className="mb-4 text-sm text-gray-500">
+              Showing {blogs.length} of {pagination.total} blogs
+            </div>
+
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">

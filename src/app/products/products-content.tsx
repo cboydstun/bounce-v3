@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Product } from "../../types/product";
-import { API_ROUTES } from "../../config/constants";
-import api from "../../utils/api";
+import { ProductWithId } from "../../types/product";
+import { getProducts } from "../../utils/api";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
 import { ProductFilters } from "../../components/ProductFilters";
 
-function ProductGrid({ products }: { products: Product[] }) {
+function ProductGrid({ products }: { products: ProductWithId[] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {products.map((product) => (
@@ -58,26 +57,18 @@ function ProductGrid({ products }: { products: Product[] }) {
   );
 }
 
-async function getProducts() {
-  try {
-    const response = await api.get(API_ROUTES.PRODUCTS);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching products:", error);
-    throw new Error("Failed to fetch products");
-  }
-}
-
 export function ProductsContent() {
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [initialProducts, setInitialProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<ProductWithId[]>([]);
+  const [initialProducts, setInitialProducts] = useState<ProductWithId[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch products on mount
   useEffect(() => {
     async function fetchProducts() {
       try {
-        const products = await getProducts();
+        const data = await getProducts();
+        // Extract products array from the response
+        const products = data.products || [];
         setInitialProducts(products);
         setFilteredProducts(products);
       } catch (error) {

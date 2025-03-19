@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { API_BASE_URL, API_ROUTES } from "../config/constants";
-import { Product, Specification } from "../types/product";
+import { ProductWithId, Specification } from "../types/product";
+import { getProducts } from "../utils/api";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
 
 const ProductCarousel = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithId[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
@@ -39,12 +39,11 @@ const ProductCarousel = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}${API_ROUTES.PRODUCTS}`);
-        if (!response.ok) throw new Error("Failed to fetch products");
-        const data = await response.json();
+        const data = await getProducts();
 
-        const filteredAndSortedProducts = [...data]
-          .filter((product: Product) =>
+        // The API returns { products: [...] }
+        const filteredAndSortedProducts = [...data.products]
+          .filter((product: ProductWithId) =>
             product.specifications.some((spec: Specification) => {
               if (spec.name !== "Type") return false;
               return Array.isArray(spec.value)
@@ -52,7 +51,9 @@ const ProductCarousel = () => {
                 : spec.value === "DRY";
             }),
           )
-          .sort((a: Product, b: Product) => b.price.base - a.price.base);
+          .sort(
+            (a: ProductWithId, b: ProductWithId) => b.price.base - a.price.base,
+          );
 
         setProducts(filteredAndSortedProducts);
       } catch (err) {

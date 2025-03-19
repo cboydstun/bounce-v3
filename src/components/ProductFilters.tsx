@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ArrowUpDown, Filter, X } from "lucide-react";
-import type { Product } from "../types/product";
+import type { ProductWithId } from "../types/product";
 
 type FilterType = "ALL" | "DRY" | "WET" | "EXTRA";
 
 interface ProductFiltersProps {
-  products: Product[];
-  onFilteredProducts: (products: Product[]) => void;
+  products: ProductWithId[];
+  onFilteredProducts: (products: ProductWithId[]) => void;
 }
 
 export function ProductFilters({

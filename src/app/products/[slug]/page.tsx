@@ -1,20 +1,17 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Product } from "../../../types/product";
-import { API_BASE_URL, API_ROUTES } from "../../../config/constants";
+import { ProductWithId } from "../../../types/product";
+import { getProductBySlug } from "../../../utils/api";
 import ContactForm from "../../../components/ContactForm";
 import ImageGallery from "./ImageGallery";
 
-async function getProduct(slug: string): Promise<Product> {
-  const res = await fetch(`${API_BASE_URL}${API_ROUTES.PRODUCTS}/${slug}`, {
-    next: { revalidate: 3600 }, // Revalidate every hour
-  });
-
-  if (!res.ok) {
+async function getProduct(slug: string): Promise<ProductWithId> {
+  try {
+    return await getProductBySlug(slug);
+  } catch (error) {
+    console.error("Error fetching product:", error);
     notFound();
   }
-
-  return res.json();
 }
 
 type Params = Promise<{ slug: string }>;

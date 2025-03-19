@@ -8,6 +8,7 @@ import InfoSections from "../components/InfoSections";
 import OccasionsSection from "../components/OccasionsSection";
 import HeroSection from "../components/HeroSection";
 import type { Metadata } from "next";
+// import MapSection from "../components/MapSection";
 
 export const metadata: Metadata = {
   title: "Bounce House & Party Rentals in San Antonio | SATX Bounce",
@@ -132,6 +133,9 @@ export default async function HomePage() {
 
       {/* Info Sections */}
       <InfoSections />
+
+      {/* Map Section */}
+      {/* <MapSection /> */}
 
       {/* CTA Section */}
       <div className="flex justify-center items-center py-4 my-4">

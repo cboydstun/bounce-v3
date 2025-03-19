@@ -4,35 +4,48 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 import { Review } from "@/types/review";
-import { Star } from "lucide-react";
+import { Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { getReviews, deleteReview } from "@/utils/api";
+
+// Define pagination interface
+interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
 
 export default function AdminReviews() {
   const router = useRouter();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<Pagination>({
+    total: 0,
+    page: 1,
+    limit: 10,
+    pages: 0,
+  });
+  const [deleteInProgress, setDeleteInProgress] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchReviews = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const token = localStorage.getItem("auth_token");
 
-        const response = await fetch(`${API_BASE_URL}${API_ROUTES.REVIEWS}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const response = await getReviews({
+          page: pagination.page,
+          limit: pagination.limit,
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch reviews");
+        if (!response.reviews) {
+          throw new Error("Invalid response format");
         }
 
-        const data = await response.json();
-        setReviews(data);
+        setReviews(response.reviews);
+        setPagination(response.pagination);
       } catch (error) {
         setError(error instanceof Error ? error.message : "An error occurred");
         console.error("Error fetching reviews:", error);
@@ -42,7 +55,7 @@ export default function AdminReviews() {
     };
 
     fetchReviews();
-  }, [router]);
+  }, [pagination.page, pagination.limit]);
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this review?")) {
@@ -50,43 +63,33 @@ export default function AdminReviews() {
     }
 
     try {
-      setIsLoading(true);
-      const token = localStorage.getItem("auth_token");
+      setDeleteInProgress(id);
 
-      if (!token) {
-        router.push("/login");
-        return;
-      }
+      await deleteReview(id);
 
-      const response = await fetch(
-        `${API_BASE_URL}${API_ROUTES.REVIEWS}/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      if (response.status === 401) {
-        localStorage.removeItem("auth_token");
-        router.push("/login");
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Failed to delete review");
-      }
-
+      // Update the reviews list after successful deletion
       setReviews(reviews.filter((review) => review._id !== id));
     } catch (error) {
+      // Handle authentication errors
+      if (error instanceof Error && error.message.includes("401")) {
+        router.push("/login");
+        return;
+      }
+
       setError(
         error instanceof Error ? error.message : "Failed to delete review",
       );
       console.error("Error deleting review:", error);
     } finally {
-      setIsLoading(false);
+      setDeleteInProgress(null);
     }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({
+      ...prev,
+      page: Math.max(1, Math.min(newPage, prev.pages)),
+    }));
   };
 
   const renderStars = (rating: number) => {
@@ -136,7 +139,69 @@ export default function AdminReviews() {
         </div>
       )}
 
-      <div className="mt-8 flow-root">
+      {/* Pagination Controls */}
+      {pagination.pages > 1 && (
+        <div className="flex justify-between items-center mt-4">
+          <div className="text-sm text-gray-700">
+            Showing page {pagination.page} of {pagination.pages}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+              className={`p-2 rounded ${
+                pagination.page <= 1
+                  ? "text-gray-300 cursor-not-allowed"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+              // Show pages around current page
+              let pageNum;
+              if (pagination.pages <= 5) {
+                pageNum = i + 1;
+              } else if (pagination.page <= 3) {
+                pageNum = i + 1;
+              } else if (pagination.page >= pagination.pages - 2) {
+                pageNum = pagination.pages - 4 + i;
+              } else {
+                pageNum = pagination.page - 2 + i;
+              }
+
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`w-8 h-8 flex items-center justify-center rounded ${
+                    pagination.page === pageNum
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={pagination.page >= pagination.pages}
+              className={`p-2 rounded ${
+                pagination.page >= pagination.pages
+                  ? "text-gray-300 cursor-not-allowed"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+              aria-label="Next page"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 flow-root">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
@@ -216,9 +281,9 @@ export default function AdminReviews() {
                         <button
                           onClick={() => handleDelete(review._id)}
                           className="text-red-600 hover:text-red-900"
-                          disabled={isLoading}
+                          disabled={deleteInProgress === review._id}
                         >
-                          {isLoading ? (
+                          {deleteInProgress === review._id ? (
                             <LoadingSpinner className="w-4 h-4" />
                           ) : (
                             "Delete"
