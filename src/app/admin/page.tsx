@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import api, { getReviews, getProducts, getContacts } from "@/utils/api";
 import { API_ROUTES } from "../../config/constants";
 import { Review } from "@/types/review";
+import RevenueChart from "@/components/analytics/RevenueChart";
+import BookingsTrend from "@/components/analytics/BookingsTrend";
+import ProductPopularity from "@/components/analytics/ProductPopularity";
 
 interface ReviewStats {
   averageRating: number;
@@ -26,6 +29,7 @@ export default function AdminDashboard() {
     { name: "Contact Requests", stat: "...", href: "/admin/contacts" },
     { name: "Customer Reviews", stat: "...", href: "/admin/reviews" },
   ]);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState("currentMonth");
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -92,19 +96,19 @@ export default function AdminDashboard() {
       last24Hours.setHours(last24Hours.getHours() - 24);
 
       const recentReviews = reviews.filter(
-        (review: Review) => new Date(review.createdAt || 0) > last24Hours,
+        (review: Review) => new Date(review.createdAt || 0) > last24Hours
       ).length;
 
       const averageRating = reviews.length
         ? reviews.reduce(
             (acc: number, review: Review) => acc + review.rating,
-            0,
+            0
           ) / reviews.length
         : 0;
 
       // For this example, we'll consider reviews without a reviewId as pending
       const pendingReviews = reviews.filter(
-        (review: Review) => !review.reviewId,
+        (review: Review) => !review.reviewId
       ).length;
 
       setReviewStats({
@@ -164,7 +168,40 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-3">
+      {/* Analytics Period Selector */}
+      <div className="mt-8 mb-4">
+        <label
+          htmlFor="period-select"
+          className="block text-sm font-medium text-gray-700 mb-2"
+        >
+          Analytics Period
+        </label>
+        <select
+          id="period-select"
+          value={analyticsPeriod}
+          onChange={(e) => setAnalyticsPeriod(e.target.value)}
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+        >
+          <option value="nextMonth">Next Month (Based on Last Year)</option>
+          <option value="currentMonth">Current Month</option>
+          <option value="last30Days">Last 30 Days</option>
+          <option value="yearToDate">Year to Date</option>
+          <option value="lastYear">Last Year</option>
+          <option value="all">All Time</option>
+        </select>
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <RevenueChart period={analyticsPeriod} />
+        <BookingsTrend period={analyticsPeriod} />
+      </div>
+
+      <div className="mt-5 mb-8">
+        <ProductPopularity period={analyticsPeriod} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div className="rounded-lg bg-white shadow p-6">
           <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
             Quick Actions
