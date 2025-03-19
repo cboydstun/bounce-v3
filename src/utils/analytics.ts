@@ -175,3 +175,171 @@ export function formatCurrency(amount: number): string {
         currency: 'USD',
     }).format(amount);
 }
+
+// Calculate conversion rate
+export function calculateConversionRate(contacts: Contact[], confirmedContacts: Contact[]): number {
+    return contacts.length > 0 ? (confirmedContacts.length / contacts.length) * 100 : 0;
+}
+
+// Calculate average order value
+export function calculateAOV(contacts: Contact[], products: ProductWithId[]): number {
+    if (contacts.length === 0) return 0;
+
+    const totalRevenue = contacts.reduce((total, contact) => {
+        const product = products.find(p => p.name === contact.bouncer);
+        return total + (product?.price.base || 0);
+    }, 0);
+
+    return totalRevenue / contacts.length;
+}
+
+// Identify repeat customers
+export function identifyRepeatCustomers(contacts: Contact[]): {
+    repeatRate: number;
+    repeatCustomers: Record<string, number>;
+} {
+    // Group contacts by email
+    const customerContacts: Record<string, Contact[]> = {};
+
+    contacts.forEach(contact => {
+        if (!customerContacts[contact.email]) {
+            customerContacts[contact.email] = [];
+        }
+        customerContacts[contact.email].push(contact);
+    });
+
+    // Count customers with multiple bookings
+    const repeatCustomers: Record<string, number> = {};
+    let repeatCustomerCount = 0;
+
+    Object.entries(customerContacts).forEach(([email, customerBookings]) => {
+        if (customerBookings.length > 1) {
+            repeatCustomers[email] = customerBookings.length;
+            repeatCustomerCount++;
+        }
+    });
+
+    // Calculate repeat rate
+    const totalCustomers = Object.keys(customerContacts).length;
+    const repeatRate = totalCustomers > 0 ? (repeatCustomerCount / totalCustomers) * 100 : 0;
+
+    return { repeatRate, repeatCustomers };
+}
+
+// Generate revenue forecast using simple moving average
+export function generateRevenueForecast(
+    historicalContacts: Contact[],
+    products: ProductWithId[],
+    forecastPeriod: number = 3 // Default to 3 periods ahead
+): { dates: string[]; values: number[] } {
+    // Group contacts by month
+    const revenueByMonth: Record<string, number> = {};
+
+    historicalContacts.forEach(contact => {
+        const date = new Date(contact.partyDate);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+        if (!revenueByMonth[monthKey]) {
+            revenueByMonth[monthKey] = 0;
+        }
+
+        const product = products.find(p => p.name === contact.bouncer);
+        revenueByMonth[monthKey] += product?.price.base || 0;
+    });
+
+    // Convert to arrays for processing
+    const sortedMonths = Object.keys(revenueByMonth).sort();
+    const revenues = sortedMonths.map(month => revenueByMonth[month]);
+
+    // Need at least 3 months of data for forecasting
+    if (revenues.length < 3) {
+        return { dates: sortedMonths, values: revenues };
+    }
+
+    // Simple moving average for forecasting
+    const windowSize = 3; // Use last 3 months for average
+    const lastValues = revenues.slice(-windowSize);
+    const average = lastValues.reduce((sum, val) => sum + val, 0) / windowSize;
+
+    // Generate forecast dates
+    const forecastDates: string[] = [];
+    const forecastValues: number[] = [];
+
+    const lastDate = new Date(sortedMonths[sortedMonths.length - 1] + '-01');
+
+    for (let i = 1; i <= forecastPeriod; i++) {
+        const forecastDate = new Date(lastDate);
+        forecastDate.setMonth(forecastDate.getMonth() + i);
+        const forecastMonthKey = `${forecastDate.getFullYear()}-${String(forecastDate.getMonth() + 1).padStart(2, '0')}`;
+
+        forecastDates.push(forecastMonthKey);
+        forecastValues.push(average);
+    }
+
+    return {
+        dates: [...sortedMonths, ...forecastDates],
+        values: [...revenues, ...forecastValues]
+    };
+}
+
+// Analyze seasonal trends
+export function analyzeSeasonalTrends(
+    contacts: Contact[],
+    period: 'weekly' | 'monthly' | 'quarterly' = 'monthly'
+): Record<string, number> {
+    const trendsData: Record<string, number> = {};
+
+    contacts.forEach(contact => {
+        const date = new Date(contact.partyDate);
+        let key: string;
+
+        switch (period) {
+            case 'weekly':
+                // Get week number (0-51)
+                const weekNum = Math.floor((date.getDate() - 1) / 7);
+                key = `Week ${weekNum + 1}`;
+                break;
+            case 'monthly':
+                // Month name
+                key = date.toLocaleString('default', { month: 'long' });
+                break;
+            case 'quarterly':
+                // Quarter (Q1-Q4)
+                const quarter = Math.floor(date.getMonth() / 3) + 1;
+                key = `Q${quarter}`;
+                break;
+        }
+
+        if (!trendsData[key]) {
+            trendsData[key] = 0;
+        }
+
+        trendsData[key]++;
+    });
+
+    return trendsData;
+}
+
+// Calculate year-over-year growth
+export function calculateYoYGrowth(
+    currentPeriodContacts: Contact[],
+    previousPeriodContacts: Contact[],
+    products: ProductWithId[]
+): number {
+    // Calculate revenue for current period
+    const currentRevenue = currentPeriodContacts.reduce((total, contact) => {
+        const product = products.find(p => p.name === contact.bouncer);
+        return total + (product?.price.base || 0);
+    }, 0);
+
+    // Calculate revenue for previous period
+    const previousRevenue = previousPeriodContacts.reduce((total, contact) => {
+        const product = products.find(p => p.name === contact.bouncer);
+        return total + (product?.price.base || 0);
+    }, 0);
+
+    // Calculate growth rate
+    if (previousRevenue === 0) return 100; // If no previous revenue, consider it 100% growth
+
+    return ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+}

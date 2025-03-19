@@ -462,16 +462,24 @@ The Contacts API provides comprehensive endpoints with filtering, pagination, an
 
 The application includes a comprehensive analytics dashboard that provides insights into business performance:
 
+### Business Performance Dashboard
+
+- **Key Performance Indicators**: Track critical metrics like conversion rate, average order value, and repeat booking rate
+- **Period Filtering**: Analyze data across different time periods (current month, last 30 days, year to date, etc.)
+- **Year-over-Year Comparison**: Compare current performance with previous periods
+- **Trend Visualization**: Visual representation of performance trends over time
+
 ### Revenue Analytics
 
 - **Total Revenue Tracking**: Visualizes revenue over selected time periods
-- **Period Filtering**: Filter revenue data by various time periods (current month, last 30 days, year to date, etc.)
+- **Revenue Forecasting**: Predictive analysis of future revenue based on historical data
 - **Trend Analysis**: Line chart visualization of revenue trends over time
 
 ### Booking Trends
 
 - **Booking Volume Analysis**: Track the number of bookings over time
 - **Status Breakdown**: View confirmed vs. pending bookings at a glance
+- **Booking Forecasting**: Predict future booking volumes based on historical patterns
 - **Period Comparison**: Compare booking volumes across different time periods
 
 ### Product Popularity
@@ -479,6 +487,13 @@ The application includes a comprehensive analytics dashboard that provides insig
 - **Most Popular Products**: Horizontal bar chart showing the most frequently booked products
 - **Rental Frequency**: Track which products are rented most often
 - **Data-Driven Inventory Decisions**: Identify high-demand products to inform inventory management
+
+### Seasonal Analysis
+
+- **Peak Period Identification**: Automatically identify busiest months or quarters
+- **Low Season Detection**: Highlight periods with lower booking volumes
+- **Business Insights**: Actionable recommendations based on seasonal patterns
+- **Period Comparison**: View data by week, month, or quarter
 
 ### Calendar View
 
@@ -489,6 +504,13 @@ The application includes a comprehensive analytics dashboard that provides insig
 
 ### Frontend Components
 
+- `KpiCards.tsx`: Display key performance indicators with trend indicators
+- `ConversionAnalysis.tsx`: Analyze conversion funnel and rates over time
+- `RevenueChart.tsx`: Line chart component for revenue visualization and forecasting
+- `BookingsTrend.tsx`: Bar chart component for booking trend analysis
+- `ProductPopularity.tsx`: Horizontal bar chart for product popularity
+- `SeasonalTrends.tsx`: Analyze and visualize seasonal booking patterns
+- `ForecastChart.tsx`: Predictive charts for revenue and bookings
 - `RevenueChart.tsx`: Line chart component for revenue visualization
 - `BookingsTrend.tsx`: Bar chart component for booking trend analysis
 - `ProductPopularity.tsx`: Horizontal bar chart for product popularity
