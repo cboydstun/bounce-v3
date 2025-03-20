@@ -2,6 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import {
   IContactDocument,
   IContactModel,
+  ConfirmationStatus,
   emailRegex,
   phoneRegex,
 } from "../types/contact";
@@ -41,8 +42,15 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
       trim: true,
     },
     confirmed: {
-      type: Boolean,
-      default: false,
+      type: String,
+      enum: [
+        "Confirmed",
+        "Pending",
+        "Called / Texted",
+        "Declined",
+        "Cancelled",
+      ],
+      default: "Pending",
     },
     tablesChairs: {
       type: Boolean,
@@ -80,6 +88,58 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
       type: String,
       required: [true, "Source page is required"],
       default: "website",
+    },
+    // Address information
+    streetAddress: {
+      type: String,
+      trim: true,
+    },
+    city: {
+      type: String,
+      trim: true,
+    },
+    state: {
+      type: String,
+      trim: true,
+      default: "Texas",
+    },
+    // Party timing
+    partyStartTime: {
+      type: String,
+      trim: true,
+    },
+    partyEndTime: {
+      type: String,
+      trim: true,
+    },
+    // Delivery information
+    deliveryDay: {
+      type: Date,
+    },
+    deliveryTime: {
+      type: String,
+      trim: true,
+    },
+    pickupDay: {
+      type: Date,
+    },
+    pickupTime: {
+      type: String,
+      trim: true,
+    },
+    // Payment and admin information
+    paymentMethod: {
+      type: String,
+      enum: ["cash", "quickbooks", "paypal", "free"],
+      trim: true,
+    },
+    discountComments: {
+      type: String,
+      trim: true,
+    },
+    adminComments: {
+      type: String,
+      trim: true,
     },
   },
   {

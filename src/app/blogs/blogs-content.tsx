@@ -48,7 +48,7 @@ export function BlogsContent() {
 
         const queryString = params.toString() ? `?${params.toString()}` : "";
         const response = await fetch(
-          `${API_BASE_URL}${API_ROUTES.BLOGS}${queryString}`
+          `${API_BASE_URL}${API_ROUTES.BLOGS}${queryString}`,
         );
 
         if (!response.ok) throw new Error("Failed to fetch blogs");
@@ -66,7 +66,7 @@ export function BlogsContent() {
         } else if (typeof data === "object" && data !== null) {
           // If the API returns some other object, try to extract blogs
           const possibleBlogs = Object.values(data).find((val) =>
-            Array.isArray(val)
+            Array.isArray(val),
           );
           if (possibleBlogs) {
             blogsList = possibleBlogs as Blog[];
@@ -109,7 +109,7 @@ export function BlogsContent() {
 
   const handleCategoryClick = (selectedCategory: string) => {
     setCategory((prev) =>
-      prev === selectedCategory ? null : selectedCategory
+      prev === selectedCategory ? null : selectedCategory,
     );
     setTag(null); // Reset tag when category changes
     setSearch(""); // Reset search when category changes

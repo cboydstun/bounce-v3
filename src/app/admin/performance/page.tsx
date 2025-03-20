@@ -40,8 +40,9 @@ export default function PerformanceDashboard() {
     previousBookings: 0,
     yoyGrowth: 0,
   });
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [conversionByMonth, setConversionByMonth] = useState<
-    Record<string, { total: number; confirmed: number }>
+    Record<string, { total: number; statuses: Record<string, number> }>
   >({});
   const [revenueForecast, setRevenueForecast] = useState<{
     dates: string[];
@@ -70,7 +71,7 @@ export default function PerformanceDashboard() {
   const getPreviousPeriodRange = (
     period: string,
     currentStartDate: string,
-    currentEndDate: string
+    currentEndDate: string,
   ) => {
     const currentStart = new Date(currentStartDate);
     const currentEnd = new Date(currentEndDate);
@@ -129,7 +130,7 @@ export default function PerformanceDashboard() {
         const previousDateRange = getPreviousPeriodRange(
           period,
           dateRange.startDate,
-          dateRange.endDate
+          dateRange.endDate,
         );
 
         // Fetch contacts for current period
@@ -167,19 +168,19 @@ export default function PerformanceDashboard() {
 
         // Calculate metrics
         const confirmedContacts = currentContacts.filter(
-          (contact) => contact.confirmed
+          (contact) => contact.confirmed === "Confirmed",
         );
         const previousConfirmedContacts = previousContacts.filter(
-          (contact) => contact.confirmed
+          (contact) => contact.confirmed === "Confirmed",
         );
 
         const conversionRate = calculateConversionRate(
           currentContacts,
-          confirmedContacts
+          confirmedContacts,
         );
         const previousConversionRate = calculateConversionRate(
           previousContacts,
-          previousConfirmedContacts
+          previousConfirmedContacts,
         );
 
         const aov = calculateAOV(currentContacts, productsList);
@@ -202,7 +203,7 @@ export default function PerformanceDashboard() {
         const yoyGrowth = calculateYoYGrowth(
           currentContacts,
           previousContacts,
-          productsList
+          productsList,
         );
 
         // Update metrics state
@@ -220,10 +221,18 @@ export default function PerformanceDashboard() {
           yoyGrowth,
         });
 
-        // Calculate conversion by month
+        // Calculate status counts for current period
+        const statusCountsMap: Record<string, number> = {};
+        currentContacts.forEach((contact) => {
+          const status = contact.confirmed;
+          statusCountsMap[status] = (statusCountsMap[status] || 0) + 1;
+        });
+        setStatusCounts(statusCountsMap);
+
+        // Calculate conversion by month with all statuses
         const conversionMonthly: Record<
           string,
-          { total: number; confirmed: number }
+          { total: number; statuses: Record<string, number> }
         > = {};
 
         // Group all contacts by month
@@ -232,13 +241,18 @@ export default function PerformanceDashboard() {
           const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
           if (!conversionMonthly[monthKey]) {
-            conversionMonthly[monthKey] = { total: 0, confirmed: 0 };
+            conversionMonthly[monthKey] = {
+              total: 0,
+              statuses: {},
+            };
           }
 
           conversionMonthly[monthKey].total++;
-          if (contact.confirmed) {
-            conversionMonthly[monthKey].confirmed++;
-          }
+
+          // Count by status
+          const status = contact.confirmed;
+          conversionMonthly[monthKey].statuses[status] =
+            (conversionMonthly[monthKey].statuses[status] || 0) + 1;
         });
 
         setConversionByMonth(conversionMonthly);
@@ -247,7 +261,7 @@ export default function PerformanceDashboard() {
         const revenueData = generateRevenueForecast(
           allContacts,
           productsList,
-          6
+          6,
         );
         setRevenueForecast(revenueData);
 
@@ -268,7 +282,7 @@ export default function PerformanceDashboard() {
         // Convert to arrays for forecasting
         const sortedMonths = Object.keys(bookingsByMonth).sort();
         const bookingCounts = sortedMonths.map(
-          (month) => bookingsByMonth[month]
+          (month) => bookingsByMonth[month],
         );
 
         // Simple forecasting (similar to revenue forecast)
@@ -282,7 +296,7 @@ export default function PerformanceDashboard() {
             lastValues.reduce((sum, val) => sum + val, 0) / windowSize;
 
           const lastDate = new Date(
-            sortedMonths[sortedMonths.length - 1] + "-01"
+            sortedMonths[sortedMonths.length - 1] + "-01",
           );
 
           for (let i = 1; i <= 6; i++) {
@@ -419,8 +433,11 @@ export default function PerformanceDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ConversionAnalysis
             totalContacts={contacts.length}
-            confirmedContacts={contacts.filter((c) => c.confirmed).length}
+            confirmedContacts={
+              contacts.filter((c) => c.confirmed === "Confirmed").length
+            }
             conversionRate={metrics.conversionRate}
+            statusCounts={statusCounts}
             conversionByMonth={conversionByMonth}
           />
 

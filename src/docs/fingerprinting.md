@@ -317,7 +317,7 @@ export default function ContactForm() {
   });
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     // Track when the user starts filling out the form (only once)
     if (

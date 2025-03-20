@@ -2,7 +2,7 @@
  * Utility functions for tracking conversion events
  */
 
-import { ConversionEventType } from '@/types/visitor';
+import { ConversionEventType } from "@/types/visitor";
 
 /**
  * Track a conversion event
@@ -12,48 +12,48 @@ import { ConversionEventType } from '@/types/visitor';
  * @param completed Whether the conversion was completed (default: true)
  */
 export const trackConversion = async (
-    type: ConversionEventType,
-    product?: string,
-    value?: number,
-    completed: boolean = true
+  type: ConversionEventType,
+  product?: string,
+  value?: number,
+  completed: boolean = true,
 ): Promise<void> => {
-    try {
-        // Get visitor ID from localStorage if available
-        const visitorId = localStorage.getItem('visitorId');
-        
-        if (!visitorId) {
-            console.warn('Cannot track conversion: No visitor ID found');
-            return;
-        }
-        
-        // Get current page
-        const currentPage = window.location.pathname;
-        
-        // Create conversion event data
-        const conversionEvent = {
-            type,
-            product,
-            value,
-            completed
-        };
-        
-        // Send to API
-        await fetch('/api/v1/visitors', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                visitorId,
-                currentPage,
-                conversionEvent
-            }),
-        });
-        
-        console.log(`Conversion tracked: ${type}`, { product, value, completed });
-    } catch (error) {
-        console.error('Error tracking conversion:', error);
+  try {
+    // Get visitor ID from localStorage if available
+    const visitorId = localStorage.getItem("visitorId");
+
+    if (!visitorId) {
+      console.warn("Cannot track conversion: No visitor ID found");
+      return;
     }
+
+    // Get current page
+    const currentPage = window.location.pathname;
+
+    // Create conversion event data
+    const conversionEvent = {
+      type,
+      product,
+      value,
+      completed,
+    };
+
+    // Send to API
+    await fetch("/api/v1/visitors", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        visitorId,
+        currentPage,
+        conversionEvent,
+      }),
+    });
+
+    console.log(`Conversion tracked: ${type}`, { product, value, completed });
+  } catch (error) {
+    console.error("Error tracking conversion:", error);
+  }
 };
 
 /**
@@ -61,7 +61,7 @@ export const trackConversion = async (
  * @param product Optional product associated with the contact
  */
 export const trackContactForm = async (product?: string): Promise<void> => {
-    return trackConversion('contact_form', product);
+  return trackConversion("contact_form", product);
 };
 
 /**
@@ -69,15 +69,17 @@ export const trackContactForm = async (product?: string): Promise<void> => {
  * @param product The product being checked
  */
 export const trackPriceCheck = async (product: string): Promise<void> => {
-    return trackConversion('price_check', product);
+  return trackConversion("price_check", product);
 };
 
 /**
  * Track an availability check
  * @param product The product being checked
  */
-export const trackAvailabilityCheck = async (product: string): Promise<void> => {
-    return trackConversion('availability_check', product);
+export const trackAvailabilityCheck = async (
+  product: string,
+): Promise<void> => {
+  return trackConversion("availability_check", product);
 };
 
 /**
@@ -85,8 +87,11 @@ export const trackAvailabilityCheck = async (product: string): Promise<void> => 
  * @param product The product being booked
  * @param value The value of the booking
  */
-export const trackBookingStarted = async (product: string, value?: number): Promise<void> => {
-    return trackConversion('booking_started', product, value);
+export const trackBookingStarted = async (
+  product: string,
+  value?: number,
+): Promise<void> => {
+  return trackConversion("booking_started", product, value);
 };
 
 /**
@@ -94,8 +99,11 @@ export const trackBookingStarted = async (product: string, value?: number): Prom
  * @param product The product that was booked
  * @param value The value of the booking
  */
-export const trackBookingCompleted = async (product: string, value: number): Promise<void> => {
-    return trackConversion('booking_completed', product, value);
+export const trackBookingCompleted = async (
+  product: string,
+  value: number,
+): Promise<void> => {
+  return trackConversion("booking_completed", product, value);
 };
 
 /**
@@ -103,6 +111,9 @@ export const trackBookingCompleted = async (product: string, value: number): Pro
  * @param product The product that was being booked
  * @param value The potential value of the booking
  */
-export const trackBookingAbandoned = async (product: string, value?: number): Promise<void> => {
-    return trackConversion('booking_started', product, value, false);
+export const trackBookingAbandoned = async (
+  product: string,
+  value?: number,
+): Promise<void> => {
+  return trackConversion("booking_started", product, value, false);
 };

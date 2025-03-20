@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getContacts, updateContact, deleteContact } from "@/utils/api";
-import { Contact as ApiContact } from "@/types/contact";
+import { Contact as ApiContact, ConfirmationStatus } from "@/types/contact";
 
 interface Contact {
   id: string;
@@ -15,7 +15,7 @@ interface Contact {
   partyDate: string;
   partyZipCode: string;
   message?: string;
-  confirmed: boolean;
+  confirmed: ConfirmationStatus;
   createdAt: string;
   tablesChairs?: boolean;
   generator?: boolean;
@@ -26,9 +26,31 @@ interface Contact {
   slushyMachine?: boolean;
   overnight?: boolean;
   sourcePage: string;
+  // Address information
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  // Party timing
+  partyStartTime?: string;
+  partyEndTime?: string;
+  // Delivery information
+  deliveryDay?: string;
+  deliveryTime?: string;
+  pickupDay?: string;
+  pickupTime?: string;
+  // Payment and admin information
+  paymentMethod?: string;
+  discountComments?: string;
+  adminComments?: string;
 }
 
-type ConfirmationFilter = "all" | "confirmed" | "pending";
+type ConfirmationFilter =
+  | "all"
+  | "confirmed"
+  | "pending"
+  | "called"
+  | "declined"
+  | "cancelled";
 type DateRangeFilter = "none" | "week" | "month" | "year";
 
 export default function AdminContacts() {
@@ -139,6 +161,22 @@ export default function AdminContacts() {
           slushyMachine: contact.slushyMachine,
           overnight: contact.overnight,
           sourcePage: contact.sourcePage,
+          // Address information
+          streetAddress: contact.streetAddress,
+          city: contact.city,
+          state: contact.state,
+          // Party timing
+          partyStartTime: contact.partyStartTime,
+          partyEndTime: contact.partyEndTime,
+          // Delivery information
+          deliveryDay: contact.deliveryDay,
+          deliveryTime: contact.deliveryTime,
+          pickupDay: contact.pickupDay,
+          pickupTime: contact.pickupTime,
+          // Payment and admin information
+          paymentMethod: contact.paymentMethod,
+          discountComments: contact.discountComments,
+          adminComments: contact.adminComments,
         }));
 
         setContacts(mappedContacts);
@@ -156,7 +194,10 @@ export default function AdminContacts() {
     fetchContacts();
   }, [router, currentPage, pageSize, startDate, endDate, confirmationFilter]);
 
-  const handleUpdateStatus = async (id: string, confirmed: boolean) => {
+  const handleUpdateStatus = async (
+    id: string,
+    confirmed: ConfirmationStatus,
+  ) => {
     try {
       setIsLoading(true);
 
@@ -218,10 +259,20 @@ export default function AdminContacts() {
     }
   };
 
-  const getStatusColor = (confirmed: boolean) => {
-    return confirmed
-      ? "bg-green-100 text-green-800"
-      : "bg-yellow-100 text-yellow-800";
+  const getStatusColor = (status: ConfirmationStatus) => {
+    switch (status) {
+      case "Confirmed":
+        return "bg-green-100 text-green-800";
+      case "Called / Texted":
+        return "bg-blue-100 text-blue-800";
+      case "Declined":
+        return "bg-red-100 text-red-800";
+      case "Cancelled":
+        return "bg-gray-100 text-gray-800";
+      case "Pending":
+      default:
+        return "bg-yellow-100 text-yellow-800";
+    }
   };
 
   const resetFilters = () => {
@@ -249,12 +300,28 @@ export default function AdminContacts() {
             : true;
 
     // Confirmation filter
-    const meetsConfirmationCriteria =
-      confirmationFilter === "all"
-        ? true
-        : confirmationFilter === "confirmed"
-          ? contact.confirmed
-          : !contact.confirmed;
+    let meetsConfirmationCriteria = true;
+    if (confirmationFilter !== "all") {
+      switch (confirmationFilter) {
+        case "confirmed":
+          meetsConfirmationCriteria = contact.confirmed === "Confirmed";
+          break;
+        case "pending":
+          meetsConfirmationCriteria = contact.confirmed === "Pending";
+          break;
+        case "called":
+          meetsConfirmationCriteria = contact.confirmed === "Called / Texted";
+          break;
+        case "declined":
+          meetsConfirmationCriteria = contact.confirmed === "Declined";
+          break;
+        case "cancelled":
+          meetsConfirmationCriteria = contact.confirmed === "Cancelled";
+          break;
+        default:
+          meetsConfirmationCriteria = true;
+      }
+    }
 
     return meetsDateCriteria && meetsConfirmationCriteria;
   });
@@ -388,7 +455,7 @@ export default function AdminContacts() {
               This Year
             </button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => {
                 setConfirmationFilter("all");
@@ -427,6 +494,45 @@ export default function AdminContacts() {
               }`}
             >
               Pending
+            </button>
+            <button
+              onClick={() => {
+                setConfirmationFilter("called");
+                setCurrentPage(1);
+              }}
+              className={`rounded-md px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ${
+                confirmationFilter === "called"
+                  ? "bg-blue-600 text-white ring-blue-600"
+                  : "bg-white text-gray-900 ring-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              Called / Texted
+            </button>
+            <button
+              onClick={() => {
+                setConfirmationFilter("declined");
+                setCurrentPage(1);
+              }}
+              className={`rounded-md px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ${
+                confirmationFilter === "declined"
+                  ? "bg-red-600 text-white ring-red-600"
+                  : "bg-white text-gray-900 ring-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              Declined
+            </button>
+            <button
+              onClick={() => {
+                setConfirmationFilter("cancelled");
+                setCurrentPage(1);
+              }}
+              className={`rounded-md px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ${
+                confirmationFilter === "cancelled"
+                  ? "bg-gray-600 text-white ring-gray-600"
+                  : "bg-white text-gray-900 ring-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              Cancelled
             </button>
             <button
               onClick={resetFilters}
@@ -548,10 +654,46 @@ export default function AdminContacts() {
                         <div className="text-gray-500">{contact.phone}</div>
                       </td>
                       <td className="px-3 py-4 text-sm text-gray-500">
-                        <div>{contact.partyZipCode}</div>
+                        <div className="font-medium">Location:</div>
+                        <div>
+                          {contact.streetAddress ? (
+                            <>
+                              {contact.streetAddress}, {contact.city || ""}{" "}
+                              {contact.state || ""}
+                            </>
+                          ) : (
+                            <>Zip: {contact.partyZipCode}</>
+                          )}
+                        </div>
+
+                        {(contact.partyStartTime || contact.partyEndTime) && (
+                          <>
+                            <div className="font-medium mt-2">Time:</div>
+                            <div>
+                              {contact.partyStartTime && (
+                                <>Start: {contact.partyStartTime}</>
+                              )}
+                              {contact.partyStartTime &&
+                                contact.partyEndTime && <> - </>}
+                              {contact.partyEndTime && (
+                                <>End: {contact.partyEndTime}</>
+                              )}
+                            </div>
+                          </>
+                        )}
+
+                        {contact.paymentMethod && (
+                          <div className="mt-2">
+                            <span className="font-medium">Payment: </span>
+                            {contact.paymentMethod.charAt(0).toUpperCase() +
+                              contact.paymentMethod.slice(1)}
+                          </div>
+                        )}
+
                         {contact.message && (
-                          <div className="max-w-xs overflow-hidden text-ellipsis">
-                            Note: {contact.message}
+                          <div className="max-w-xs overflow-hidden text-ellipsis mt-2">
+                            <span className="font-medium">Note: </span>
+                            {contact.message}
                           </div>
                         )}
                       </td>
@@ -575,18 +717,23 @@ export default function AdminContacts() {
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                         <select
-                          value={contact.confirmed.toString()}
+                          value={contact.confirmed}
                           onChange={(e) =>
                             handleUpdateStatus(
                               contact.id,
-                              e.target.value === "true",
+                              e.target.value as ConfirmationStatus,
                             )
                           }
                           className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(contact.confirmed)}`}
                           disabled={isLoading}
                         >
-                          <option value="false">Pending</option>
-                          <option value="true">Confirmed</option>
+                          <option value="Pending">Pending</option>
+                          <option value="Confirmed">Confirmed</option>
+                          <option value="Called / Texted">
+                            Called / Texted
+                          </option>
+                          <option value="Declined">Declined</option>
+                          <option value="Cancelled">Cancelled</option>
                         </select>
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">

@@ -2,13 +2,15 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { Calendar, Views, momentLocalizer } from "react-big-calendar";
-import { format, parseISO } from "date-fns";
 import { useRouter } from "next/navigation";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Contact } from "@/types/contact";
 
 // Create a date localizer
-const localizer = momentLocalizer(require("moment"));
+const moment = require("moment");
+// Ensure moment doesn't apply timezone offset for date display
+moment.parseZone = true;
+const localizer = momentLocalizer(moment);
 
 interface ContactEvent {
   id: string;
@@ -39,7 +41,12 @@ const ContactCalendar: React.FC<ContactCalendarProps> = ({
 
   // Convert contacts to calendar events
   const events: ContactEvent[] = contacts.map((contact) => {
-    const partyDate = new Date(contact.partyDate);
+    // Get the original date
+    const originalDate = new Date(contact.partyDate);
+
+    // Create a new date with one day added to fix the timezone issue
+    const partyDate = new Date(originalDate);
+    partyDate.setDate(originalDate.getDate() + 1);
 
     // Create an end date 2 hours after the start date
     const endDate = new Date(partyDate);
@@ -57,14 +64,47 @@ const ContactCalendar: React.FC<ContactCalendarProps> = ({
 
   // Custom event styling based on confirmation status
   const eventStyleGetter = (event: ContactEvent) => {
-    const isConfirmed = event.resource.confirmed;
+    const status = event.resource.confirmed;
+    console.log("Status type:", typeof status, "Value:", status); // Debug log
+
+    // Define colors for different statuses
+    let backgroundColor = "#FBBF24"; // Default yellow for Pending
+    let textColor = "black";
+
+    // Handle both boolean and string values
+    if (typeof status === "boolean") {
+      // Handle legacy boolean values
+      backgroundColor = status ? "#10B981" : "#FBBF24"; // Green if true, yellow if false
+      textColor = status ? "white" : "black";
+    } else {
+      // Handle new string enum values
+      switch (status) {
+        case "Confirmed":
+          backgroundColor = "#10B981"; // Green
+          textColor = "white";
+          break;
+        case "Called / Texted":
+          backgroundColor = "#3B82F6"; // Blue
+          textColor = "white";
+          break;
+        case "Declined":
+          backgroundColor = "#EF4444"; // Red
+          textColor = "white";
+          break;
+        case "Cancelled":
+          backgroundColor = "#6B7280"; // Gray
+          textColor = "white";
+          break;
+        // Pending is the default yellow
+      }
+    }
 
     return {
       style: {
-        backgroundColor: isConfirmed ? "#10B981" : "#FBBF24", // Green for confirmed, yellow for pending
+        backgroundColor,
         borderRadius: "4px",
         opacity: 0.8,
-        color: isConfirmed ? "white" : "black",
+        color: textColor,
         border: "0px",
         display: "block",
       },
@@ -95,7 +135,7 @@ const ContactCalendar: React.FC<ContactCalendarProps> = ({
       </span>
       <span className="rbc-toolbar-label">{label}</span>
       <span className="rbc-btn-group">
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center">
             <div className="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
             <span className="text-xs">Confirmed</span>
@@ -103,6 +143,18 @@ const ContactCalendar: React.FC<ContactCalendarProps> = ({
           <div className="flex items-center">
             <div className="w-3 h-3 bg-yellow-400 rounded-full mr-1"></div>
             <span className="text-xs">Pending</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-blue-500 rounded-full mr-1"></div>
+            <span className="text-xs">Called / Texted</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-red-500 rounded-full mr-1"></div>
+            <span className="text-xs">Declined</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-gray-500 rounded-full mr-1"></div>
+            <span className="text-xs">Cancelled</span>
           </div>
         </div>
       </span>
@@ -130,7 +182,12 @@ const ContactCalendar: React.FC<ContactCalendarProps> = ({
         popup
         tooltipAccessor={(event: ContactEvent) => {
           const contact = event.resource;
-          return `${contact.bouncer}\nEmail: ${contact.email}\nPhone: ${contact.phone || "N/A"}\nZip: ${contact.partyZipCode}\nStatus: ${contact.confirmed ? "Confirmed" : "Pending"}`;
+          // Handle both boolean and string values for status display
+          let status = contact.confirmed;
+          if (typeof status === "boolean") {
+            status = status ? "Confirmed" : "Pending";
+          }
+          return `${contact.bouncer}\nEmail: ${contact.email}\nPhone: ${contact.phone || "N/A"}\nZip: ${contact.partyZipCode}\nStatus: ${status}`;
         }}
       />
     </div>

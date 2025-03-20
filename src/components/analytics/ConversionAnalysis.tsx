@@ -19,32 +19,52 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
 interface ConversionAnalysisProps {
   totalContacts: number;
   confirmedContacts: number;
   conversionRate: number;
-  conversionByMonth?: Record<string, { total: number; confirmed: number }>;
+  statusCounts?: Record<string, number>;
+  conversionByMonth?: Record<
+    string,
+    { total: number; statuses: Record<string, number> }
+  >;
 }
 
 const ConversionAnalysis: React.FC<ConversionAnalysisProps> = ({
   totalContacts,
   confirmedContacts,
   conversionRate,
+  statusCounts = {},
   conversionByMonth,
 }) => {
   const [chartView, setChartView] = useState<"funnel" | "trend">("funnel");
 
-  // Funnel chart data
+  // Status colors mapping
+  const statusColors = {
+    Confirmed: "#10B981", // Green
+    Pending: "#FBBF24", // Yellow
+    "Called / Texted": "#3B82F6", // Blue
+    Declined: "#EF4444", // Red
+    Cancelled: "#6B7280", // Gray
+  };
+
+  // Funnel chart data with all statuses
   const funnelData = {
-    labels: ["Total Contacts", "Confirmed Bookings"],
+    labels: ["Total Contacts", ...Object.keys(statusCounts)],
     datasets: [
       {
         label: "Contacts",
-        data: [totalContacts, confirmedContacts],
-        backgroundColor: ["#3B82F6", "#10B981"],
+        data: [totalContacts, ...Object.values(statusCounts)],
+        backgroundColor: [
+          "#3B82F6", // Blue for total
+          ...Object.keys(statusCounts).map(
+            (status) =>
+              statusColors[status as keyof typeof statusColors] || "#9CA3AF",
+          ),
+        ],
       },
     ],
   };
@@ -67,13 +87,17 @@ const ConversionAnalysis: React.FC<ConversionAnalysisProps> = ({
             data: Object.values(conversionByMonth).map((data) => data.total),
             backgroundColor: "#3B82F6",
           },
-          {
-            label: "Confirmed Bookings",
-            data: Object.values(conversionByMonth).map(
-              (data) => data.confirmed
-            ),
-            backgroundColor: "#10B981",
-          },
+          // Create a dataset for each status
+          ...Object.keys(statusColors).map((status) => {
+            return {
+              label: status,
+              data: Object.values(conversionByMonth).map(
+                (data) => data.statuses[status] || 0,
+              ),
+              backgroundColor:
+                statusColors[status as keyof typeof statusColors],
+            };
+          }),
         ],
       }
     : null;
@@ -109,7 +133,9 @@ const ConversionAnalysis: React.FC<ConversionAnalysisProps> = ({
   // Calculate conversion rates by month if data is available
   const conversionRatesByMonth = conversionByMonth
     ? Object.entries(conversionByMonth).map(([month, data]) => {
-        const rate = data.total > 0 ? (data.confirmed / data.total) * 100 : 0;
+        // Use the "Confirmed" status count for the rate calculation
+        const confirmedCount = data.statuses["Confirmed"] || 0;
+        const rate = data.total > 0 ? (confirmedCount / data.total) * 100 : 0;
         // Format month key (e.g., "2025-03" to "Mar 2025")
         const [year, monthNum] = month.split("-");
         const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);

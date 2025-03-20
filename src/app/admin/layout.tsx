@@ -106,7 +106,7 @@ export default function AdminLayout({
                   <span className="sr-only">Open main menu</span>
                   {/* Arrow icon that rotates when clicked */}
                   <svg
-                    className={`h-6 w-6 transform transition-transform duration-200 ${mobileMenuOpen ? 'rotate-180' : ''}`}
+                    className={`h-6 w-6 transform transition-transform duration-200 ${mobileMenuOpen ? "rotate-180" : ""}`}
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -130,9 +130,9 @@ export default function AdminLayout({
               </button>
             </div>
           </div>
-          
+
           {/* Mobile menu, show/hide based on menu state */}
-          <div className={`${mobileMenuOpen ? 'block' : 'hidden'} sm:hidden`}>
+          <div className={`${mobileMenuOpen ? "block" : "hidden"} sm:hidden`}>
             <div className="pt-2 pb-3 space-y-1">
               <Link
                 href="/admin"

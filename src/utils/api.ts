@@ -381,6 +381,8 @@ export const createContact = async (contactData: {
   return response.data;
 };
 
+import { ConfirmationStatus } from "@/types/contact";
+
 export const updateContact = async (
   id: string,
   contactData: Partial<{
@@ -390,7 +392,7 @@ export const updateContact = async (
     partyDate: string;
     partyZipCode: string;
     message: string;
-    confirmed: boolean;
+    confirmed: ConfirmationStatus | boolean; // Support both for backward compatibility
     tablesChairs: boolean;
     generator: boolean;
     popcornMachine: boolean;
@@ -400,6 +402,22 @@ export const updateContact = async (
     slushyMachine: boolean;
     overnight: boolean;
     sourcePage: string;
+    // Address information
+    streetAddress?: string;
+    city?: string;
+    state?: string;
+    // Party timing
+    partyStartTime?: string;
+    partyEndTime?: string;
+    // Delivery information
+    deliveryDay?: string;
+    deliveryTime?: string;
+    pickupDay?: string;
+    pickupTime?: string;
+    // Payment and admin information
+    paymentMethod?: "cash" | "quickbooks" | "paypal" | "free";
+    discountComments?: string;
+    adminComments?: string;
   }>,
 ) => {
   const response = await api.put(`/api/v1/contacts/${id}`, contactData);

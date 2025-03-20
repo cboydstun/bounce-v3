@@ -123,7 +123,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   // Set up global error tracking on the client side
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     setupErrorTracking();
   }
   return (

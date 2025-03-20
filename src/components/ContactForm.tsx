@@ -199,15 +199,15 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
         margaritaMachine: formData.margaritaMachine,
         slushyMachine: formData.slushyMachine,
         overnight: formData.overnight,
-      }
+      },
     });
 
     try {
       await createContact(formData);
-      
+
       // Track conversion event
       trackContactForm(formData.bouncer);
-      
+
       setSubmitStatus("success");
       setFormData({
         bouncer: "",
@@ -240,7 +240,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-    
+
     // Track form start when user first interacts with the form
     // Only track once when the form is empty
     if (
