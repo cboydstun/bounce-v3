@@ -60,9 +60,8 @@ const setCookie = (name: string, value: string, days: number = 1) => {
   const isSecure = window.location.protocol === "https:";
   const sameSite = isSecure ? "strict" : "lax";
 
-  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; ${
-    isSecure ? "secure; " : ""
-  }samesite=${sameSite}`;
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; ${isSecure ? "secure; " : ""
+    }samesite=${sameSite}`;
 
   console.log(`Cookie ${name} set with expiration: ${days} days`);
 };
@@ -320,6 +319,7 @@ export const getContacts = async (params?: {
   confirmed?: boolean;
   limit?: number;
   page?: number;
+  deliveryDay?: string; // Add deliveryDay parameter
 }) => {
   const queryParams = new URLSearchParams();
 
@@ -341,6 +341,11 @@ export const getContacts = async (params?: {
 
   if (params?.page) {
     queryParams.append("page", params.page.toString());
+  }
+
+  // Add support for deliveryDay parameter
+  if (params?.deliveryDay) {
+    queryParams.append("deliveryDay", params.deliveryDay);
   }
 
   const queryString = queryParams.toString();

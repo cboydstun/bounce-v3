@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       const url = new URL(request.url);
       const startDate = url.searchParams.get("startDate");
       const endDate = url.searchParams.get("endDate");
+      const deliveryDay = url.searchParams.get("deliveryDay");
       const confirmed = url.searchParams.get("confirmed");
       const limit = parseInt(url.searchParams.get("limit") || "50");
       const page = parseInt(url.searchParams.get("page") || "1");
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
       // Build query
       const query: Record<string, unknown> = {};
 
-      // Date range filter
+      // Date range filter for party date
       if (startDate && endDate) {
         query.partyDate = {
           $gte: new Date(startDate),
@@ -40,6 +41,21 @@ export async function GET(request: NextRequest) {
         query.partyDate = { $gte: new Date(startDate) };
       } else if (endDate) {
         query.partyDate = { $lte: new Date(endDate) };
+      }
+
+      // Filter by delivery day
+      if (deliveryDay) {
+        // Create a date range for the entire day
+        const startOfDay = new Date(deliveryDay);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(deliveryDay);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        query.deliveryDay = {
+          $gte: startOfDay,
+          $lte: endOfDay
+        };
       }
 
       // Confirmation status filter
