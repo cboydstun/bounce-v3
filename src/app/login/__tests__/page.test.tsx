@@ -65,7 +65,7 @@ describe("LoginPage", () => {
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/remember me/i)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /sign in/i })
+      screen.getByRole("button", { name: /sign in/i }),
     ).toBeInTheDocument();
   });
 
@@ -75,7 +75,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
 
     expect(
-      screen.getByText("You need to be logged in to access /admin/products")
+      screen.getByText("You need to be logged in to access /admin/products"),
     ).toBeInTheDocument();
   });
 
@@ -176,7 +176,7 @@ describe("LoginPage", () => {
     // Wait for error message - use the actual error message from the component
     await waitFor(() => {
       expect(
-        screen.getByText("Invalid email or password. Please try again.")
+        screen.getByText("Invalid email or password. Please try again."),
       ).toBeInTheDocument();
     });
   });

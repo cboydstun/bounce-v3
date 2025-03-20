@@ -80,22 +80,46 @@ export async function PUT(
 
       const contactData = await request.json();
 
-      // Find the contact
-      const contact = await Contact.findById(resolvedParams.id);
+      // Find the contact document and update it manually
+      const contactDoc = await Contact.findById(resolvedParams.id);
 
-      if (!contact) {
+      if (!contactDoc) {
         return NextResponse.json(
           { error: "Contact not found" },
           { status: 404 },
         );
       }
 
-      // Update contact
-      const updatedContact = await Contact.findByIdAndUpdate(
-        resolvedParams.id,
-        { $set: contactData },
-        { new: true, runValidators: true },
-      );
+      // Update all fields from contactData
+      Object.keys(contactData).forEach((key) => {
+        // Special handling for the confirmed field
+        if (key === "confirmed") {
+          if (typeof contactData.confirmed === "string") {
+            // Ensure it's one of the valid enum values
+            const validValues = [
+              "Confirmed",
+              "Pending",
+              "Called / Texted",
+              "Declined",
+              "Cancelled",
+            ];
+            if (validValues.includes(contactData.confirmed)) {
+              contactDoc.confirmed = contactData.confirmed;
+            }
+          } else if (typeof contactData.confirmed === "boolean") {
+            // Convert boolean to string enum value
+            contactDoc.confirmed = contactData.confirmed
+              ? "Confirmed"
+              : "Pending";
+          }
+        } else {
+          // For all other fields, update directly
+          (contactDoc as any)[key] = contactData[key];
+        }
+      });
+
+      // Save the updated document
+      const updatedContact = await contactDoc.save();
 
       return NextResponse.json(updatedContact);
     } catch (error: unknown) {

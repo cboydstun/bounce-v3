@@ -19,7 +19,7 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
 interface SeasonalTrendsProps {
@@ -80,7 +80,7 @@ const SeasonalTrends: React.FC<SeasonalTrendsProps> = ({
             acc.values.push(count);
             return acc;
           },
-          { labels: [] as string[], values: [] as number[] }
+          { labels: [] as string[], values: [] as number[] },
         );
     } else if (periodType === "quarterly") {
       // Sort quarters in order
@@ -98,7 +98,7 @@ const SeasonalTrends: React.FC<SeasonalTrendsProps> = ({
             acc.values.push(count);
             return acc;
           },
-          { labels: [] as string[], values: [] as number[] }
+          { labels: [] as string[], values: [] as number[] },
         );
     } else {
       // Sort weeks numerically
@@ -114,7 +114,7 @@ const SeasonalTrends: React.FC<SeasonalTrendsProps> = ({
             acc.values.push(count);
             return acc;
           },
-          { labels: [] as string[], values: [] as number[] }
+          { labels: [] as string[], values: [] as number[] },
         );
     }
   })();
@@ -123,10 +123,10 @@ const SeasonalTrends: React.FC<SeasonalTrendsProps> = ({
   const maxValue = Math.max(...sortedData.values);
   const minValue = Math.min(...sortedData.values);
   const peakPeriods = sortedData.labels.filter(
-    (_, index) => sortedData.values[index] === maxValue
+    (_, index) => sortedData.values[index] === maxValue,
   );
   const lowPeriods = sortedData.labels.filter(
-    (_, index) => sortedData.values[index] === minValue
+    (_, index) => sortedData.values[index] === minValue,
   );
 
   // Calculate average bookings per period

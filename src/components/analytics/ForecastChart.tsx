@@ -24,7 +24,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
 interface ForecastChartProps {
@@ -62,7 +62,7 @@ const ForecastChart: React.FC<ForecastChartProps> = ({
       const date = new Date(
         parseInt(parts[0]),
         parseInt(parts[1]) - 1,
-        parseInt(parts[2])
+        parseInt(parts[2]),
       );
       return date.toLocaleString("default", { month: "short", day: "numeric" });
     }
@@ -93,7 +93,7 @@ const ForecastChart: React.FC<ForecastChartProps> = ({
       {
         label: "Historical",
         data: combinedValues.map((value, index) =>
-          index < forecastStartIndex ? value : null
+          index < forecastStartIndex ? value : null,
         ),
         borderColor: "#3B82F6",
         backgroundColor: "rgba(59, 130, 246, 0.1)",
@@ -105,7 +105,7 @@ const ForecastChart: React.FC<ForecastChartProps> = ({
       {
         label: "Forecast",
         data: combinedValues.map((value, index) =>
-          index >= forecastStartIndex ? value : null
+          index >= forecastStartIndex ? value : null,
         ),
         borderColor: "#8B5CF6",
         backgroundColor: "rgba(139, 92, 246, 0.1)",
@@ -189,7 +189,7 @@ const ForecastChart: React.FC<ForecastChartProps> = ({
             {type === "revenue"
               ? formatCurrency(
                   historicalData.values.reduce((sum, val) => sum + val, 0) /
-                    historicalData.values.length || 0
+                    historicalData.values.length || 0,
                 )
               : (
                   historicalData.values.reduce((sum, val) => sum + val, 0) /
@@ -207,7 +207,7 @@ const ForecastChart: React.FC<ForecastChartProps> = ({
               ? formatCurrency(
                   forecastData.values
                     .slice(0, forecastPeriods)
-                    .reduce((sum, val) => sum + val, 0) / forecastPeriods || 0
+                    .reduce((sum, val) => sum + val, 0) / forecastPeriods || 0,
                 )
               : (
                   forecastData.values

@@ -38,6 +38,9 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
   const [totalBookings, setTotalBookings] = useState<number>(0);
   const [confirmedBookings, setConfirmedBookings] = useState<number>(0);
   const [pendingBookings, setPendingBookings] = useState<number>(0);
+  const [calledTextedBookings, setCalledTextedBookings] = useState<number>(0);
+  const [declinedBookings, setDeclinedBookings] = useState<number>(0);
+  const [cancelledBookings, setCancelledBookings] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,16 +66,34 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
         // Calculate bookings data
         const bookingsData = groupContactsByPeriod(contacts, period);
 
-        // Count confirmed and pending bookings
+        // Count bookings by status
         const confirmed = contacts.filter(
-          (contact) => contact.confirmed
+          (contact) => contact.confirmed === "Confirmed"
         ).length;
-        const pending = contacts.length - confirmed;
+
+        const pending = contacts.filter(
+          (contact) => contact.confirmed === "Pending"
+        ).length;
+
+        const calledTexted = contacts.filter(
+          (contact) => contact.confirmed === "Called / Texted"
+        ).length;
+
+        const declined = contacts.filter(
+          (contact) => contact.confirmed === "Declined"
+        ).length;
+
+        const cancelled = contacts.filter(
+          (contact) => contact.confirmed === "Cancelled"
+        ).length;
 
         setChartData(bookingsData.chartData);
         setTotalBookings(contacts.length);
         setConfirmedBookings(confirmed);
         setPendingBookings(pending);
+        setCalledTextedBookings(calledTexted);
+        setDeclinedBookings(declined);
+        setCancelledBookings(cancelled);
       } catch (error) {
         console.error("Error fetching bookings data:", error);
         setError("Failed to load bookings data");
@@ -102,26 +123,47 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium text-gray-900">Bookings Trend</h3>
-        <div className="flex space-x-4">
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-lg font-medium text-gray-900">Bookings Trend</h3>
           <div className="text-center">
             <div className="text-3xl font-bold text-gray-900">
               {totalBookings}
             </div>
             <div className="text-xs text-gray-500">Total</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">
+        </div>
+
+        <div className="grid grid-cols-5 gap-2">
+          <div className="text-center p-2 bg-green-50 rounded-md">
+            <div className="text-xl font-bold text-green-600">
               {confirmedBookings}
             </div>
             <div className="text-xs text-gray-500">Confirmed</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-yellow-500">
+          <div className="text-center p-2 bg-yellow-50 rounded-md">
+            <div className="text-xl font-bold text-yellow-500">
               {pendingBookings}
             </div>
             <div className="text-xs text-gray-500">Pending</div>
+          </div>
+          <div className="text-center p-2 bg-blue-50 rounded-md">
+            <div className="text-xl font-bold text-blue-500">
+              {calledTextedBookings}
+            </div>
+            <div className="text-xs text-gray-500">Called/Texted</div>
+          </div>
+          <div className="text-center p-2 bg-red-50 rounded-md">
+            <div className="text-xl font-bold text-red-500">
+              {declinedBookings}
+            </div>
+            <div className="text-xs text-gray-500">Declined</div>
+          </div>
+          <div className="text-center p-2 bg-gray-50 rounded-md">
+            <div className="text-xl font-bold text-gray-500">
+              {cancelledBookings}
+            </div>
+            <div className="text-xs text-gray-500">Cancelled</div>
           </div>
         </div>
       </div>
@@ -132,7 +174,11 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
             responsive: true,
             maintainAspectRatio: true,
             scales: {
+              x: {
+                stacked: true,
+              },
               y: {
+                stacked: true,
                 beginAtZero: true,
                 ticks: {
                   precision: 0, // Only show whole numbers
@@ -141,7 +187,23 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
             },
             plugins: {
               legend: {
-                display: false,
+                display: true,
+                position: "top",
+                labels: {
+                  boxWidth: 12,
+                  font: {
+                    size: 11,
+                  },
+                },
+              },
+              tooltip: {
+                callbacks: {
+                  label: (context: any) => {
+                    const label = context.dataset.label || "";
+                    const value = context.parsed.y;
+                    return `${label}: ${value}`;
+                  },
+                },
               },
             },
           }}

@@ -40,7 +40,7 @@ jest.mock("@/models/User", () => {
     __esModule: true,
     default: {
       findOne: jest.fn(() => ({
-        select: jest.fn().mockResolvedValue(mockUser)
+        select: jest.fn().mockResolvedValue(mockUser),
       })),
       findById: jest.fn().mockResolvedValue(mockUser),
     },
@@ -92,14 +92,19 @@ describe("Login API Route", () => {
 
   it("should return 400 if email or password is missing", async () => {
     // Create a request with missing credentials
-    const request = new NextRequest("http://localhost:3000/api/v1/users/login", {
-      method: "POST",
-      body: JSON.stringify({}),
-    });
+    const request = new NextRequest(
+      "http://localhost:3000/api/v1/users/login",
+      {
+        method: "POST",
+        body: JSON.stringify({}),
+      },
+    );
 
     const response = await POST(request);
 
-    expect(response.json()).toEqual({ error: "Email and password are required" });
+    expect(response.json()).toEqual({
+      error: "Email and password are required",
+    });
     expect(response.status).toEqual(400);
   });
 
@@ -107,23 +112,28 @@ describe("Login API Route", () => {
     // Mock User.findOne to return null (user not found)
     const mockSelectFn = jest.fn().mockResolvedValue(null);
     (User.findOne as jest.Mock).mockReturnValue({
-      select: mockSelectFn
+      select: mockSelectFn,
     });
 
     // Create a request with valid format but non-existent user
-    const request = new NextRequest("http://localhost:3000/api/v1/users/login", {
-      method: "POST",
-      body: JSON.stringify({
-        email: "nonexistent@example.com",
-        password: "password123",
-      }),
-    });
+    const request = new NextRequest(
+      "http://localhost:3000/api/v1/users/login",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          email: "nonexistent@example.com",
+          password: "password123",
+        }),
+      },
+    );
 
     const response = await POST(request);
 
     expect(response.json()).toEqual({ error: "Invalid credentials" });
     expect(response.status).toEqual(401);
-    expect(User.findOne).toHaveBeenCalledWith({ email: "nonexistent@example.com" });
+    expect(User.findOne).toHaveBeenCalledWith({
+      email: "nonexistent@example.com",
+    });
     expect(mockSelectFn).toHaveBeenCalledWith("+password");
   });
 
@@ -138,17 +148,20 @@ describe("Login API Route", () => {
     // Mock User.findOne to return the mock user
     const mockSelectFn = jest.fn().mockResolvedValue(mockUser);
     (User.findOne as jest.Mock).mockReturnValue({
-      select: mockSelectFn
+      select: mockSelectFn,
     });
 
     // Create a request with valid user but wrong password
-    const request = new NextRequest("http://localhost:3000/api/v1/users/login", {
-      method: "POST",
-      body: JSON.stringify({
-        email: "test@example.com",
-        password: "wrongpassword",
-      }),
-    });
+    const request = new NextRequest(
+      "http://localhost:3000/api/v1/users/login",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          email: "test@example.com",
+          password: "wrongpassword",
+        }),
+      },
+    );
 
     const response = await POST(request);
 
@@ -176,17 +189,20 @@ describe("Login API Route", () => {
     // Mock User.findOne to return the mock user
     const mockSelectFn = jest.fn().mockResolvedValue(mockUser);
     (User.findOne as jest.Mock).mockReturnValue({
-      select: mockSelectFn
+      select: mockSelectFn,
     });
 
     // Create a request with valid credentials
-    const request = new NextRequest("http://localhost:3000/api/v1/users/login", {
-      method: "POST",
-      body: JSON.stringify({
-        email: "test@example.com",
-        password: "password123",
-      }),
-    });
+    const request = new NextRequest(
+      "http://localhost:3000/api/v1/users/login",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          email: "test@example.com",
+          password: "password123",
+        }),
+      },
+    );
 
     const response = await POST(request);
 
@@ -212,20 +228,23 @@ describe("Login API Route", () => {
     // Mock User.findOne to return the mock user
     const mockSelectFn = jest.fn().mockResolvedValue(mockUser);
     (User.findOne as jest.Mock).mockReturnValue({
-      select: mockSelectFn
+      select: mockSelectFn,
     });
 
     // Mock jwt.sign to return a token
     (jwt.sign as jest.Mock).mockReturnValue("fake-token");
 
     // Create a request with valid credentials
-    const request = new NextRequest("http://localhost:3000/api/v1/users/login", {
-      method: "POST",
-      body: JSON.stringify({
-        email: "test@example.com",
-        password: "password123",
-      }),
-    });
+    const request = new NextRequest(
+      "http://localhost:3000/api/v1/users/login",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          email: "test@example.com",
+          password: "password123",
+        }),
+      },
+    );
 
     const response = await POST(request);
 
@@ -233,7 +252,7 @@ describe("Login API Route", () => {
     expect(jwt.sign).toHaveBeenCalledWith(
       { id: "user123", email: "test@example.com" },
       "test-secret",
-      { expiresIn: "1d" }
+      { expiresIn: "1d" },
     );
     expect(response.cookies.set).toHaveBeenCalledWith({
       name: "auth_token",
@@ -261,7 +280,7 @@ describe("Login API Route", () => {
     // Mock User.findOne to return the mock user
     const mockSelectFn = jest.fn().mockResolvedValue(mockUser);
     (User.findOne as jest.Mock).mockReturnValue({
-      select: mockSelectFn
+      select: mockSelectFn,
     });
 
     // Mock jwt.sign to return a token
@@ -269,17 +288,20 @@ describe("Login API Route", () => {
 
     // Create a request with valid credentials and rememberMe
     // Use a different IP address to avoid rate limiting
-    const request = new NextRequest("http://localhost:3000/api/v1/users/login", {
-      method: "POST",
-      headers: {
-        "x-forwarded-for": "192.168.1.100", // Different IP
+    const request = new NextRequest(
+      "http://localhost:3000/api/v1/users/login",
+      {
+        method: "POST",
+        headers: {
+          "x-forwarded-for": "192.168.1.100", // Different IP
+        },
+        body: JSON.stringify({
+          email: "test@example.com",
+          password: "password123",
+          rememberMe: true,
+        }),
       },
-      body: JSON.stringify({
-        email: "test@example.com",
-        password: "password123",
-        rememberMe: true,
-      }),
-    });
+    );
 
     const response = await POST(request);
 
@@ -287,7 +309,7 @@ describe("Login API Route", () => {
     expect(jwt.sign).toHaveBeenCalledWith(
       { id: "user123", email: "test@example.com" },
       "test-secret",
-      { expiresIn: "30d" }
+      { expiresIn: "30d" },
     );
     expect(response.cookies.set).toHaveBeenCalledWith({
       name: "auth_token",
@@ -307,21 +329,24 @@ describe("Login API Route", () => {
 
     // Create a request with valid credentials
     // Use a different IP address to avoid rate limiting
-    const request = new NextRequest("http://localhost:3000/api/v1/users/login", {
-      method: "POST",
-      headers: {
-        "x-forwarded-for": "192.168.1.200", // Different IP
+    const request = new NextRequest(
+      "http://localhost:3000/api/v1/users/login",
+      {
+        method: "POST",
+        headers: {
+          "x-forwarded-for": "192.168.1.200", // Different IP
+        },
+        body: JSON.stringify({
+          email: "test@example.com",
+          password: "password123",
+        }),
       },
-      body: JSON.stringify({
-        email: "test@example.com",
-        password: "password123",
-      }),
-    });
+    );
 
     const response = await POST(request);
 
     expect(response.json()).toEqual({
-      error: "Database connection failed. Please try again later."
+      error: "Database connection failed. Please try again later.",
     });
     expect(response.status).toEqual(500);
   });
@@ -333,16 +358,19 @@ describe("Login API Route", () => {
     }
 
     // Create a request with an IP that has exceeded the rate limit
-    const request = new NextRequest("http://localhost:3000/api/v1/users/login", {
-      method: "POST",
-      headers: {
-        "x-forwarded-for": "192.168.1.1",
+    const request = new NextRequest(
+      "http://localhost:3000/api/v1/users/login",
+      {
+        method: "POST",
+        headers: {
+          "x-forwarded-for": "192.168.1.1",
+        },
+        body: JSON.stringify({
+          email: "test@example.com",
+          password: "password123",
+        }),
       },
-      body: JSON.stringify({
-        email: "test@example.com",
-        password: "password123",
-      }),
-    });
+    );
 
     // Call the endpoint 6 times (exceeding the limit of 5)
     await POST(request);
@@ -353,7 +381,7 @@ describe("Login API Route", () => {
     const response = await POST(request);
 
     expect(response.json()).toEqual({
-      error: "Too many login attempts, please try again later"
+      error: "Too many login attempts, please try again later",
     });
     expect(response.status).toEqual(429);
   });

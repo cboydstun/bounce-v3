@@ -1,5 +1,13 @@
 import { Document, Model } from "mongoose";
 
+// Define confirmation status enum
+export type ConfirmationStatus =
+  | "Confirmed"
+  | "Pending"
+  | "Called / Texted"
+  | "Declined"
+  | "Cancelled";
+
 // Define the Contact interface
 export interface Contact {
   _id: string;
@@ -9,7 +17,7 @@ export interface Contact {
   partyDate: Date;
   partyZipCode: string;
   message?: string;
-  confirmed: boolean;
+  confirmed: ConfirmationStatus;
   tablesChairs?: boolean;
   generator?: boolean;
   popcornMachine?: boolean;
@@ -19,6 +27,22 @@ export interface Contact {
   slushyMachine?: boolean;
   overnight?: boolean;
   sourcePage: string;
+  // Address information
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  // Party timing
+  partyStartTime?: string;
+  partyEndTime?: string;
+  // Delivery information
+  deliveryDay?: Date;
+  deliveryTime?: string;
+  pickupDay?: Date;
+  pickupTime?: string;
+  // Payment and admin information
+  paymentMethod?: "cash" | "quickbooks" | "paypal" | "free";
+  discountComments?: string;
+  adminComments?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -43,7 +67,7 @@ export interface ContactFormData {
   partyDate: string;
   partyZipCode: string;
   message?: string;
-  confirmed?: boolean;
+  confirmed?: ConfirmationStatus;
   tablesChairs?: boolean;
   generator?: boolean;
   popcornMachine?: boolean;
@@ -53,6 +77,22 @@ export interface ContactFormData {
   slushyMachine?: boolean;
   overnight?: boolean;
   sourcePage: string;
+  // Address information
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  // Party timing
+  partyStartTime?: string;
+  partyEndTime?: string;
+  // Delivery information
+  deliveryDay?: string;
+  deliveryTime?: string;
+  pickupDay?: string;
+  pickupTime?: string;
+  // Payment and admin information
+  paymentMethod?: "cash" | "quickbooks" | "paypal" | "free";
+  discountComments?: string;
+  adminComments?: string;
 }
 
 // Email and phone validation regex patterns

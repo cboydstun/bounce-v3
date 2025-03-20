@@ -44,7 +44,13 @@ export async function GET(request: NextRequest) {
 
       // Confirmation status filter
       if (confirmed !== null && confirmed !== undefined) {
-        query.confirmed = confirmed === "true";
+        if (confirmed === "true") {
+          query.confirmed = "Confirmed";
+        } else if (confirmed === "false") {
+          query.confirmed = "Pending";
+        }
+        // For backward compatibility, also handle the case where confirmed is a boolean in the database
+        // This can be removed once all documents have been migrated to use the string enum
       }
 
       // Execute query with pagination
@@ -95,6 +101,13 @@ export async function POST(request: NextRequest) {
         { error: `Missing required fields: ${missingFields.join(", ")}` },
         { status: 400 },
       );
+    }
+
+    // Ensure confirmed field is a string enum value if provided
+    if (contactData.confirmed !== undefined) {
+      if (typeof contactData.confirmed === "boolean") {
+        contactData.confirmed = contactData.confirmed ? "Confirmed" : "Pending";
+      }
     }
 
     // Create contact
