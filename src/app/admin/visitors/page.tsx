@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IVisitor } from '@/types/visitor';
+import api from '@/utils/api';
 import { 
     calculateReturningRate,
     calculateAverageReturnTime,
@@ -48,13 +49,9 @@ export default function VisitorsPage() {
         const fetchVisitors = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`/api/v1/visitors?page=${pagination.page}&limit=${pagination.limit}`);
-                
-                if (!res.ok) {
-                    throw new Error('Failed to fetch visitors');
-                }
-                
-                const data = await res.json();
+                // Use the API utility instead of fetch to automatically include auth headers
+                const response = await api.get(`/api/v1/visitors?page=${pagination.page}&limit=${pagination.limit}`);
+                const data = response.data;
                 
                 if (data.success) {
                     setVisitors(data.visitors);

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '@/utils/api';
 
 interface VisitorPage {
     url: string;
@@ -74,13 +75,9 @@ export default function VisitorDetailPage({ params }: { params: { id: string } }
         const fetchVisitor = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`/api/v1/visitors/${visitorId}`);
-                
-                if (!res.ok) {
-                    throw new Error('Failed to fetch visitor data');
-                }
-                
-                const data = await res.json();
+                // Use the API utility instead of fetch to automatically include auth headers
+                const response = await api.get(`/api/v1/visitors/${visitorId}`);
+                const data = response.data;
                 
                 if (data.success) {
                     setVisitor(data.visitor);
