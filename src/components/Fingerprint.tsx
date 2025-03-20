@@ -21,6 +21,9 @@ function Fingerprint() {
                 const visitorId = await getFingerprint();
                 setFingerprint(visitorId);
                 
+                // Store in localStorage for conversion tracking
+                localStorage.setItem('visitorId', visitorId);
+
                 // Get additional browser information
                 const screenData = {
                     width: window.screen.width,
@@ -72,6 +75,21 @@ function Fingerprint() {
                     };
                 }
                 
+                // Get UTM parameters from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const utmParams = {
+                    source: urlParams.get('utm_source'),
+                    medium: urlParams.get('utm_medium'),
+                    campaign: urlParams.get('utm_campaign'),
+                    term: urlParams.get('utm_term'),
+                    content: urlParams.get('utm_content')
+                };
+                
+                // Measure page load time
+                const pageLoadTime = performance.timing 
+                    ? performance.timing.loadEventEnd - performance.timing.navigationStart
+                    : null;
+                
                 // Send data to API
                 await fetch('/api/v1/visitors', {
                     method: 'POST',
@@ -88,7 +106,9 @@ function Fingerprint() {
                         browser: browserInfo,
                         os: osInfo,
                         network: networkInfo,
-                        hardware: hardwareInfo
+                        hardware: hardwareInfo,
+                        utmParams: Object.values(utmParams).some(v => v) ? utmParams : undefined,
+                        pageLoadTime: pageLoadTime && pageLoadTime > 0 ? pageLoadTime : undefined
                     }),
                 });
                 

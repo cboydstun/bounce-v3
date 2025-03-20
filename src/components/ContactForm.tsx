@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { getProducts, createContact } from "@/utils/api";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
+import { trackFormStart, trackFormSubmit } from "@/utils/trackInteraction";
+import { trackContactForm } from "@/utils/trackConversion";
 
 interface Specification {
   name: string;
@@ -184,8 +186,28 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
 
     if (!validateForm() || !formData.consentToContact) return;
 
+    // Track form submission interaction
+    trackFormSubmit("contact-form", undefined, {
+      formType: "contact",
+      bouncer: formData.bouncer,
+      extras: {
+        tablesChairs: formData.tablesChairs,
+        generator: formData.generator,
+        popcornMachine: formData.popcornMachine,
+        cottonCandyMachine: formData.cottonCandyMachine,
+        snowConeMachine: formData.snowConeMachine,
+        margaritaMachine: formData.margaritaMachine,
+        slushyMachine: formData.slushyMachine,
+        overnight: formData.overnight,
+      }
+    });
+
     try {
       await createContact(formData);
+      
+      // Track conversion event
+      trackContactForm(formData.bouncer);
+      
       setSubmitStatus("success");
       setFormData({
         bouncer: "",
@@ -218,6 +240,19 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
+    
+    // Track form start when user first interacts with the form
+    // Only track once when the form is empty
+    if (
+      formData.bouncer === "" &&
+      formData.email === "" &&
+      formData.partyDate === "" &&
+      formData.partyZipCode === "" &&
+      formData.phone === "" &&
+      formData.message === ""
+    ) {
+      trackFormStart("contact-form");
+    }
 
     if (name === "phone") {
       setFormData((prev) => ({
