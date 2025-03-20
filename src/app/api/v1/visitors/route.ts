@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db/mongoose";
 import Visitor from "@/models/Visitor";
 import { getClientIp } from "@/utils/ip";
 import { detectDevice } from "@/utils/device";
+import { getLocationFromIp } from "@/utils/geolocation";
 
 /**
  * POST /api/v1/visitors
@@ -33,6 +34,9 @@ export async function POST(req: NextRequest) {
         // Detect device type
         const userAgent = req.headers.get("user-agent") || "";
         const device = detectDevice(userAgent);
+
+        // Get location data from IP address
+        const locationData = await getLocationFromIp(ipAddress);
 
         // Get current timestamp
         const now = new Date();
@@ -223,6 +227,7 @@ export async function POST(req: NextRequest) {
                 userAgent,
                 device,
                 ipAddress,
+                location: locationData || undefined,
                 ...visitorData,
                 visitedPages: [{
                     url: currentPage || "/",

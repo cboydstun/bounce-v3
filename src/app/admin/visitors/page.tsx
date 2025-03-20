@@ -99,8 +99,16 @@ export default function VisitorsPage() {
         <div className="container mx-auto p-4">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Visitor Analytics Dashboard</h1>
-                <div className="text-sm text-gray-500">
-                    Total visitors: {pagination.total}
+                <div className="flex items-center space-x-4">
+                    <a 
+                        href="/admin/visitors/update-locations" 
+                        className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                    >
+                        Update Locations
+                    </a>
+                    <div className="text-sm text-gray-500">
+                        Total visitors: {pagination.total}
+                    </div>
                 </div>
             </div>
             
