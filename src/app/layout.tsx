@@ -5,6 +5,11 @@ import Footer from "../components/Footer";
 import JsonLd from "../components/JsonLd";
 import GoogleAnalytics from "../components/GoogleAnalytics";
 import { GoogleTagManager } from "@next/third-parties/google";
+<<<<<<< Updated upstream
+=======
+import Fingerprint from "../components/Fingerprint";
+import { setupErrorTracking } from "../utils/trackInteraction";
+>>>>>>> Stashed changes
 import "./globals.css";
 
 const geistSans = Geist({
@@ -119,6 +124,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Set up global error tracking on the client side
+  if (typeof window !== 'undefined') {
+    setupErrorTracking();
+  }
   return (
     <html lang="en">
       <head>
