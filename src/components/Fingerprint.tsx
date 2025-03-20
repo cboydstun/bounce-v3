@@ -23,7 +23,7 @@ function Fingerprint() {
                 
                 // Store in localStorage for conversion tracking
                 localStorage.setItem('visitorId', visitorId);
-                
+
                 // Get additional browser information
                 const screenData = {
                     width: window.screen.width,

@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
         await dbConnect();
         
         const data = await req.json();
+
         const { 
             visitorId, 
             currentPage, 
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
             utmParams,
             ...visitorData 
         } = data;
+
         
         // Get IP address from request
         const ipAddress = getClientIp(req);
@@ -31,10 +33,10 @@ export async function POST(req: NextRequest) {
         // Detect device type
         const userAgent = req.headers.get("user-agent") || "";
         const device = detectDevice(userAgent);
-        
+
         // Get current timestamp
         const now = new Date();
-        
+
         // Check if visitor exists
         let visitor = await Visitor.findOne({ visitorId });
         

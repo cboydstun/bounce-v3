@@ -126,8 +126,7 @@ const VisitorSchema = new Schema<IVisitor>({
         city: String,
         latitude: Number,
         longitude: Number
-    },
-    
+    },    
     // Browser information
     browser: {
         name: String,

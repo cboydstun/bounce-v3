@@ -27,6 +27,7 @@ import VisitorTimePatterns from '@/components/analytics/VisitorTimePatterns';
 import ConversionFunnelAnalytics from '@/components/analytics/ConversionFunnelAnalytics';
 import MarketingAttributionAnalytics from '@/components/analytics/MarketingAttributionAnalytics';
 
+
 interface PaginationData {
     total: number;
     page: number;
@@ -172,8 +173,7 @@ export default function VisitorsPage() {
                                     hourlyData={timePatterns.hourOfDay} 
                                     dailyData={timePatterns.dayOfWeek} 
                                 />
-                            </div>
-                            
+                            </div>                            
                             <ConversionFunnelAnalytics visitors={visitors} />
                             
                             <MarketingAttributionAnalytics visitors={visitors} />

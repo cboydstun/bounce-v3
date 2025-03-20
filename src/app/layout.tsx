@@ -7,6 +7,7 @@ import GoogleAnalytics from "../components/GoogleAnalytics";
 import { GoogleTagManager } from "@next/third-parties/google";
 import Fingerprint from "../components/Fingerprint";
 import { setupErrorTracking } from "../utils/trackInteraction";
+
 import "./globals.css";
 
 const geistSans = Geist({
