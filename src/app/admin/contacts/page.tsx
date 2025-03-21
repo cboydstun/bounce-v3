@@ -62,17 +62,32 @@ export default function AdminContacts() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [confirmationFilter, setConfirmationFilter] =
-    useState<ConfirmationFilter>("all");
-  const [dateRangeFilter, setDateRangeFilter] =
-    useState<DateRangeFilter>("none");
 
   // Helper functions for date ranges
   const formatDateForInput = (date: Date): string => {
     return date.toISOString().split("T")[0];
   };
+
+  // Initialize with first and last day of current month
+  const getCurrentMonthDates = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return {
+      startDate: formatDateForInput(start),
+      endDate: formatDateForInput(end),
+    };
+  };
+
+  const { startDate: initialStartDate, endDate: initialEndDate } =
+    getCurrentMonthDates();
+
+  const [startDate, setStartDate] = useState<string>(initialStartDate);
+  const [endDate, setEndDate] = useState<string>(initialEndDate);
+  const [confirmationFilter, setConfirmationFilter] =
+    useState<ConfirmationFilter>("all");
+  const [dateRangeFilter, setDateRangeFilter] =
+    useState<DateRangeFilter>("month");
 
   const setThisWeek = () => {
     const now = new Date();
@@ -120,12 +135,7 @@ export default function AdminContacts() {
           startDate?: string;
           endDate?: string;
           confirmed?: boolean;
-          limit?: number;
-          page?: number;
-        } = {
-          limit: pageSize,
-          page: currentPage,
-        };
+        } = {};
 
         // Add date filters if set
         if (startDate) params.startDate = startDate;
@@ -192,11 +202,11 @@ export default function AdminContacts() {
     };
 
     fetchContacts();
-  }, [router, currentPage, pageSize, startDate, endDate, confirmationFilter]);
+  }, [router, startDate, endDate, confirmationFilter]);
 
   const handleUpdateStatus = async (
     id: string,
-    confirmed: ConfirmationStatus,
+    confirmed: ConfirmationStatus
   ) => {
     try {
       setIsLoading(true);
@@ -207,8 +217,8 @@ export default function AdminContacts() {
       // Update the local state
       setContacts(
         contacts.map((contact) =>
-          contact.id === id ? { ...contact, confirmed } : contact,
-        ),
+          contact.id === id ? { ...contact, confirmed } : contact
+        )
       );
     } catch (error) {
       // Handle authentication errors
@@ -219,7 +229,7 @@ export default function AdminContacts() {
       }
 
       setError(
-        error instanceof Error ? error.message : "Failed to update status",
+        error instanceof Error ? error.message : "Failed to update status"
       );
       console.error("Error updating status:", error);
     } finally {
@@ -251,7 +261,7 @@ export default function AdminContacts() {
       }
 
       setError(
-        error instanceof Error ? error.message : "Failed to delete contact",
+        error instanceof Error ? error.message : "Failed to delete contact"
       );
       console.error("Error deleting contact:", error);
     } finally {
@@ -595,7 +605,7 @@ export default function AdminContacts() {
                       onClick={() => {
                         if (sortColumn === "partyDate") {
                           setSortDirection(
-                            sortDirection === "asc" ? "desc" : "asc",
+                            sortDirection === "asc" ? "desc" : "asc"
                           );
                         } else {
                           setSortColumn("partyDate");
@@ -721,7 +731,7 @@ export default function AdminContacts() {
                           onChange={(e) =>
                             handleUpdateStatus(
                               contact.id,
-                              e.target.value as ConfirmationStatus,
+                              e.target.value as ConfirmationStatus
                             )
                           }
                           className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(contact.confirmed)}`}

@@ -24,9 +24,6 @@ export async function GET(request: NextRequest) {
       const endDate = url.searchParams.get("endDate");
       const deliveryDay = url.searchParams.get("deliveryDay");
       const confirmed = url.searchParams.get("confirmed");
-      const limit = parseInt(url.searchParams.get("limit") || "50");
-      const page = parseInt(url.searchParams.get("page") || "1");
-      const skip = (page - 1) * limit;
 
       // Build query
       const query: Record<string, unknown> = {};
@@ -69,23 +66,11 @@ export async function GET(request: NextRequest) {
         // This can be removed once all documents have been migrated to use the string enum
       }
 
-      // Execute query with pagination
-      const contacts = await Contact.find(query)
-        .sort({ partyDate: 1 })
-        .skip(skip)
-        .limit(limit);
-
-      // Get total count for pagination
-      const total = await Contact.countDocuments(query);
+      // Execute query without pagination to allow client-side filtering and pagination
+      const contacts = await Contact.find(query).sort({ partyDate: 1 });
 
       return NextResponse.json({
         contacts,
-        pagination: {
-          total,
-          page,
-          limit,
-          pages: Math.ceil(total / limit),
-        },
       });
     } catch (error: unknown) {
       console.error("Error fetching contacts:", error);
