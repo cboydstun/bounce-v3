@@ -116,7 +116,7 @@ const ContactCalendar: React.FC<ContactCalendarProps> = ({
     (event: ContactEvent) => {
       router.push(`/admin/contacts/${event.id}/edit`);
     },
-    [router]
+    [router],
   );
 
   // Custom toolbar to add filters if needed in the future

@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
         query.deliveryDay = {
           $gte: startOfDay,
-          $lte: endOfDay
+          $lte: endOfDay,
         };
       }
 

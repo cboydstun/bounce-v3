@@ -26,7 +26,7 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
 interface BookingsTrendProps {
@@ -68,23 +68,23 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
 
         // Count bookings by status
         const confirmed = contacts.filter(
-          (contact) => contact.confirmed === "Confirmed"
+          (contact) => contact.confirmed === "Confirmed",
         ).length;
 
         const pending = contacts.filter(
-          (contact) => contact.confirmed === "Pending"
+          (contact) => contact.confirmed === "Pending",
         ).length;
 
         const calledTexted = contacts.filter(
-          (contact) => contact.confirmed === "Called / Texted"
+          (contact) => contact.confirmed === "Called / Texted",
         ).length;
 
         const declined = contacts.filter(
-          (contact) => contact.confirmed === "Declined"
+          (contact) => contact.confirmed === "Declined",
         ).length;
 
         const cancelled = contacts.filter(
-          (contact) => contact.confirmed === "Cancelled"
+          (contact) => contact.confirmed === "Cancelled",
         ).length;
 
         setChartData(bookingsData.chartData);

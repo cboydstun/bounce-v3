@@ -48,7 +48,7 @@ export default function RouteMap({
     // Initialize map
     const map = L.map(mapRef.current).setView(
       [startCoordinates[1], startCoordinates[0]], // Leaflet uses [lat, lng]
-      10
+      10,
     );
 
     // Add OpenStreetMap tile layer
@@ -73,7 +73,7 @@ export default function RouteMap({
             `<b>${index + 1}. ${contact.bouncer}</b><br>
                         ${contact.streetAddress || ""}<br>
                         ${contact.city || ""}, ${contact.state || ""} ${contact.partyZipCode || ""}<br>
-                        Phone: ${contact.phone || "N/A"}`
+                        Phone: ${contact.phone || "N/A"}`,
           );
       }
     });

@@ -1,0 +1,100 @@
+{
+  "holidays": [
+    {
+      "name": "New Year's Day",
+      "startDate": "2024-12-26",
+      "endDate": "2025-01-01",
+      "message": "Start the new year with high-flying fun! Our bounce houses are the perfect way to give your New Year's celebration an extra bounce of excitement."
+    },
+    {
+      "name": "Valentine's Day",
+      "startDate": "2025-02-02",
+      "endDate": "2025-02-14",
+      "message": "Bounce into someone's heart this Valentine's Day! Our heart-shaped and pink bounce houses will add a special touch of love and fun to your celebration."
+    },
+    {
+      "name": "St. Patrick's Day",
+      "startDate": "2025-02-15",
+      "endDate": "2025-03-17",
+      "message": "Feel the luck of the Irish with our festive bounce houses! They're more fun than finding a pot of gold at the end of the rainbow."
+    },
+    {
+      "name": "Easter",
+      "startDate": "2025-03-18",
+      "endDate": "2025-04-20",
+      "message": "Hop into Easter fun with our bounce houses! They're the perfect addition to your Easter egg hunt and springtime celebration."
+    },
+    {
+      "name": "Cinco de Mayo",
+      "startDate": "2025-04-21",
+      "endDate": "2025-05-05",
+      "message": "¡Olé! Celebrate Cinco de Mayo with a festive bounce house fiesta that will have everyone jumping with joy!"
+    },
+    {
+      "name": "Mother's Day",
+      "startDate": "2025-05-06",
+      "endDate": "2025-05-11",
+      "message": "Give Mom what she really wants this Mother's Day – kids having fun (and burning energy) in a bounce house while she relaxes!"
+    },
+    {
+      "name": "Memorial Day",
+      "startDate": "2025-05-12",
+      "endDate": "2025-05-26",
+      "message": "Kick off summer the right way with a patriotic bounce house for your Memorial Day cookout! Red, white, and bounce for everyone."
+    },
+    {
+      "name": "Father's Day",
+      "startDate": "2025-05-27",
+      "endDate": "2025-06-15",
+      "message": "Dad will love watching the kids have a blast in one of our awesome bounce houses – and he might just join in the fun too!"
+    },
+    {
+      "name": "Independence Day",
+      "startDate": "2025-06-16",
+      "endDate": "2025-07-04",
+      "message": "Make your 4th of July celebration explode with fun! Our patriotic bounce houses are the perfect addition to your family cookout."
+    },
+    {
+      "name": "Summer Kickoff",
+      "startDate": "2025-07-05",
+      "endDate": "2025-07-31",
+      "message": "School's out for summer! Celebrate with our water slide inflatables and bounce houses for the ultimate summer vacation party."
+    },
+    {
+      "name": "Back to School",
+      "startDate": "2025-08-01",
+      "endDate": "2025-08-17",
+      "message": "Squeeze in one last adventure before the school bell rings! Our bounce houses are the perfect way to end summer vacation with a bang."
+    },
+    {
+      "name": "Labor Day",
+      "startDate": "2025-08-18",
+      "endDate": "2025-09-01",
+      "message": "Say goodbye to summer with one last bounce! Our inflatable rentals are the perfect way to celebrate Labor Day weekend."
+    },
+    {
+      "name": "Halloween",
+      "startDate": "2025-10-01",
+      "endDate": "2025-10-31",
+      "message": "Bounce-tacular Halloween fun awaits! Our spooky-themed bounce houses are a monster hit at any Halloween party or fall festival."
+    },
+    {
+      "name": "Thanksgiving",
+      "startDate": "2025-11-01",
+      "endDate": "2025-11-27",
+      "message": "Keep the kids entertained while the turkey cooks! Our bounce houses are the perfect way to work up an appetite for that Thanksgiving feast."
+    },
+    {
+      "name": "Hanukkah",
+      "startDate": "2025-11-28",
+      "endDate": "2025-12-22",
+      "message": "Eight nights of bouncing joy! Celebrate Hanukkah with an inflatable that will have everyone jumping with holiday spirit."
+    },
+    {
+      "name": "Christmas",
+      "startDate": "2025-12-23",
+      "endDate": "2025-12-25",
+      "message": "Make spirits bright with a festive bounce house! Santa's elves approve of our Christmas-themed inflatables for your holiday gathering."
+    }
+  ]
+}

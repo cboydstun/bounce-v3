@@ -104,15 +104,25 @@ export function groupContactsByPeriod(contacts: Contact[], period: string) {
   const sortedDates = Object.keys(groupedData).sort();
 
   // Count statuses for each date
-  const statusCounts = sortedDates.map(date => {
+  const statusCounts = sortedDates.map((date) => {
     const dateContacts = groupedData[date];
 
     // Count each status type
-    const confirmed = dateContacts.filter(contact => contact.confirmed === "Confirmed").length;
-    const pending = dateContacts.filter(contact => contact.confirmed === "Pending").length;
-    const calledTexted = dateContacts.filter(contact => contact.confirmed === "Called / Texted").length;
-    const declined = dateContacts.filter(contact => contact.confirmed === "Declined").length;
-    const cancelled = dateContacts.filter(contact => contact.confirmed === "Cancelled").length;
+    const confirmed = dateContacts.filter(
+      (contact) => contact.confirmed === "Confirmed",
+    ).length;
+    const pending = dateContacts.filter(
+      (contact) => contact.confirmed === "Pending",
+    ).length;
+    const calledTexted = dateContacts.filter(
+      (contact) => contact.confirmed === "Called / Texted",
+    ).length;
+    const declined = dateContacts.filter(
+      (contact) => contact.confirmed === "Declined",
+    ).length;
+    const cancelled = dateContacts.filter(
+      (contact) => contact.confirmed === "Cancelled",
+    ).length;
 
     return {
       total: dateContacts.length,
@@ -120,7 +130,7 @@ export function groupContactsByPeriod(contacts: Contact[], period: string) {
       pending,
       calledTexted,
       declined,
-      cancelled
+      cancelled,
     };
   });
 
@@ -130,31 +140,31 @@ export function groupContactsByPeriod(contacts: Contact[], period: string) {
       datasets: [
         {
           label: "Confirmed",
-          data: statusCounts.map(counts => counts.confirmed),
+          data: statusCounts.map((counts) => counts.confirmed),
           backgroundColor: "#10B981", // Green
         },
         {
           label: "Pending",
-          data: statusCounts.map(counts => counts.pending),
+          data: statusCounts.map((counts) => counts.pending),
           backgroundColor: "#FBBF24", // Yellow
         },
         {
           label: "Called/Texted",
-          data: statusCounts.map(counts => counts.calledTexted),
+          data: statusCounts.map((counts) => counts.calledTexted),
           backgroundColor: "#3B82F6", // Blue
         },
         {
           label: "Declined",
-          data: statusCounts.map(counts => counts.declined),
+          data: statusCounts.map((counts) => counts.declined),
           backgroundColor: "#EF4444", // Red
         },
         {
           label: "Cancelled",
-          data: statusCounts.map(counts => counts.cancelled),
+          data: statusCounts.map((counts) => counts.cancelled),
           backgroundColor: "#6B7280", // Gray
-        }
-      ]
-    }
+        },
+      ],
+    },
   };
 }
 

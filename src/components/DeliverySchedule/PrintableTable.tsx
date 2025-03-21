@@ -138,7 +138,8 @@ const PrintableTable = forwardRef<HTMLDivElement, PrintableTableProps>(
                   {timeSlots.length > 0 &&
                   timeSlots[timeSlots.length - 1].travelInfo
                     ? `Est. travel: ${Math.round(
-                        timeSlots[timeSlots.length - 1].travelInfo.duration / 60
+                        timeSlots[timeSlots.length - 1].travelInfo.duration /
+                          60,
                       )} min`
                     : "-"}
                 </td>
@@ -157,7 +158,7 @@ const PrintableTable = forwardRef<HTMLDivElement, PrintableTableProps>(
         </table>
       </div>
     );
-  }
+  },
 );
 
 PrintableTable.displayName = "PrintableTable";

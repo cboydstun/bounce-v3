@@ -42,7 +42,7 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
   const scheduleRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const [timeSlots, setTimeSlots] = useState<DeliveryTimeSlotType[]>(
-    optimizedRoute.timeSlots
+    optimizedRoute.timeSlots,
   );
 
   // Set up sensors for drag and drop
@@ -50,13 +50,13 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   // Create a memoized array of IDs for the sortable context
   const itemIds = useMemo(
     () => timeSlots.map((slot) => slot.contact._id),
-    [timeSlots]
+    [timeSlots],
   );
 
   // Handle drag end event
@@ -66,10 +66,10 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
     if (over && active.id !== over.id) {
       setTimeSlots((items) => {
         const oldIndex = items.findIndex(
-          (item) => item.contact._id === active.id
+          (item) => item.contact._id === active.id,
         );
         const newIndex = items.findIndex(
-          (item) => item.contact._id === over.id
+          (item) => item.contact._id === over.id,
         );
 
         const newItems = arrayMove(items, oldIndex, newIndex);
@@ -117,7 +117,7 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
     try {
       localStorage.setItem(
         `schedule_${optimizedRoute.startTime.toISOString().split("T")[0]}`,
-        JSON.stringify(optimizedRoute)
+        JSON.stringify(optimizedRoute),
       );
       alert("Schedule saved successfully!");
     } catch (error) {
@@ -300,7 +300,7 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
                     timeSlots[timeSlots.length - 1].travelInfo
                       ? `${Math.round(
                           timeSlots[timeSlots.length - 1].travelInfo.duration /
-                            60
+                            60,
                         )} min`
                       : "-"}
                   </td>
@@ -440,7 +440,8 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
                   {timeSlots.length > 0 &&
                   timeSlots[timeSlots.length - 1].travelInfo
                     ? `${Math.round(
-                        timeSlots[timeSlots.length - 1].travelInfo.duration / 60
+                        timeSlots[timeSlots.length - 1].travelInfo.duration /
+                          60,
                       )} min`
                     : "-"}
                 </td>
