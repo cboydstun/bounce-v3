@@ -7,6 +7,7 @@ import {
   OptimizedRoute,
 } from "../../../utils/routeOptimization";
 import RouteMap from "../../../components/RouteMap";
+import { DeliverySchedule } from "../../../components/DeliverySchedule";
 import { Contact } from "../../../types/contact";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -250,139 +251,16 @@ export default function RoutePlannerPage() {
             </p>
           </div>
 
-          <div className="bg-white border rounded-lg shadow-sm mb-6 overflow-hidden">
-            <h2 className="text-xl font-bold p-4 bg-gray-50 border-b">
-              Delivery Schedule
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Time
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Location
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Activity
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Travel
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {/* Start location - no time */}
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      -
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        Start Location
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {startAddress}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        Departure
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      -
-                    </td>
-                  </tr>
-
-                  {/* Delivery locations - fixed one-hour blocks */}
-                  {optimizedRoute.timeSlots.map((slot, index) => (
-                    <tr key={slot.contact._id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {slot.timeBlock.start.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                        {" - "}
-                        {slot.timeBlock.end.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {slot.contact.bouncer}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {slot.contact.streetAddress}, {slot.contact.city},{" "}
-                          {slot.contact.state} {slot.contact.partyZipCode}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                          Delivery
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {Math.round(slot.travelInfo.duration / 60)} min (
-                        {(slot.travelInfo.distance / 1000).toFixed(1)} km)
-                      </td>
-                    </tr>
-                  ))}
-
-                  {/* Return to start if enabled */}
-                  {optimizedRoute.returnToStart && (
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {optimizedRoute.endTime.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          Return to Start
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {startAddress}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                          Arrival
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {optimizedRoute.timeSlots.length > 0 &&
-                        optimizedRoute.timeSlots[
-                          optimizedRoute.timeSlots.length - 1
-                        ].travelInfo
-                          ? `Est. travel: ${Math.round(
-                              optimizedRoute.timeSlots[
-                                optimizedRoute.timeSlots.length - 1
-                              ].travelInfo.duration / 60
-                            )} min`
-                          : "-"}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <DeliverySchedule
+            optimizedRoute={optimizedRoute}
+            startAddress={startAddress}
+            editable={true}
+            onScheduleChange={(updatedRoute) => {
+              console.log("Schedule updated:", updatedRoute);
+              // In a real implementation, we would update the route
+              // setOptimizedRoute(updatedRoute);
+            }}
+          />
 
           <div className="mb-6">
             <h2 className="text-xl font-bold mb-2">Route Map</h2>
