@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ArrowRight } from "lucide-react";
 import CustomerReviews from "../components/CustomerReviews";
 import ContactForm from "../components/ContactForm";
@@ -9,6 +10,7 @@ import OccasionsSection from "../components/OccasionsSection";
 import HeroSection from "../components/HeroSection";
 import type { Metadata } from "next";
 // import MapSection from "../components/MapSection";
+import promos from "../../promos.json";
 
 export const metadata: Metadata = {
   title: "Bounce House & Party Rentals in San Antonio | SATX Bounce",
@@ -93,9 +95,17 @@ const localBusinessSchema = {
   },
 };
 
+import PromoModalWrapper from "../components/PromoModalWrapper";
+
 export default async function HomePage() {
   return (
     <>
+      {/* Promo Modal */}
+      <PromoModalWrapper
+        holidays={promos.holidays}
+        delayInSeconds={10}
+        persistenceDays={1}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
