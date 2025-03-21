@@ -22,15 +22,13 @@ export async function GET(request: NextRequest) {
       const url = new URL(request.url);
       const startDate = url.searchParams.get("startDate");
       const endDate = url.searchParams.get("endDate");
+      const deliveryDay = url.searchParams.get("deliveryDay");
       const confirmed = url.searchParams.get("confirmed");
-      const limit = parseInt(url.searchParams.get("limit") || "50");
-      const page = parseInt(url.searchParams.get("page") || "1");
-      const skip = (page - 1) * limit;
 
       // Build query
       const query: Record<string, unknown> = {};
 
-      // Date range filter
+      // Date range filter for party date
       if (startDate && endDate) {
         query.partyDate = {
           $gte: new Date(startDate),
@@ -40,6 +38,21 @@ export async function GET(request: NextRequest) {
         query.partyDate = { $gte: new Date(startDate) };
       } else if (endDate) {
         query.partyDate = { $lte: new Date(endDate) };
+      }
+
+      // Filter by delivery day
+      if (deliveryDay) {
+        // Create a date range for the entire day
+        const startOfDay = new Date(deliveryDay);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(deliveryDay);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        query.deliveryDay = {
+          $gte: startOfDay,
+          $lte: endOfDay
+        };
       }
 
       // Confirmation status filter
@@ -53,23 +66,11 @@ export async function GET(request: NextRequest) {
         // This can be removed once all documents have been migrated to use the string enum
       }
 
-      // Execute query with pagination
-      const contacts = await Contact.find(query)
-        .sort({ partyDate: 1 })
-        .skip(skip)
-        .limit(limit);
-
-      // Get total count for pagination
-      const total = await Contact.countDocuments(query);
+      // Execute query without pagination to allow client-side filtering and pagination
+      const contacts = await Contact.find(query).sort({ partyDate: 1 });
 
       return NextResponse.json({
         contacts,
-        pagination: {
-          total,
-          page,
-          limit,
-          pages: Math.ceil(total / limit),
-        },
       });
     } catch (error: unknown) {
       console.error("Error fetching contacts:", error);
