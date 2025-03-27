@@ -23,7 +23,7 @@ export interface Contact {
   popcornMachine?: boolean;
   cottonCandyMachine?: boolean;
   snowConeMachine?: boolean;
-  margaritaMachine?: boolean;
+  basketballShoot?: boolean;
   slushyMachine?: boolean;
   overnight?: boolean;
   sourcePage: string;
@@ -73,7 +73,7 @@ export interface ContactFormData {
   popcornMachine?: boolean;
   cottonCandyMachine?: boolean;
   snowConeMachine?: boolean;
-  margaritaMachine?: boolean;
+  basketballShoot?: boolean;
   slushyMachine?: boolean;
   overnight?: boolean;
   sourcePage: string;

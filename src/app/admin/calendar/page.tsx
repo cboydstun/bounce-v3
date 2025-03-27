@@ -99,7 +99,7 @@ export default function CalendarPage() {
           popcornMachine: contact.popcornMachine,
           cottonCandyMachine: contact.cottonCandyMachine,
           snowConeMachine: contact.snowConeMachine,
-          margaritaMachine: contact.margaritaMachine,
+          basketballShoot: contact.basketballShoot,
           slushyMachine: contact.slushyMachine,
           overnight: contact.overnight,
           sourcePage: contact.sourcePage,

@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
                     Popcorn Machine: ${contactData.popcornMachine ? "Yes" : "No"}
                     Cotton Candy Machine: ${contactData.cottonCandyMachine ? "Yes" : "No"}
                     Snow Cone Machine: ${contactData.snowConeMachine ? "Yes" : "No"}
-                    Margarita Machine: ${contactData.margaritaMachine ? "Yes" : "No"}
+                    Basketball Shoot: ${contactData.basketballShoot ? "Yes" : "No"}
                     Slushy Machine: ${contactData.slushyMachine ? "Yes" : "No"}
                     Overnight: ${contactData.overnight ? "Yes" : "No"}
                     Confirmed: NOT YET!
