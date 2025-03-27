@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ProductWithId } from "../../../types/product";
 import { getProductBySlug } from "../../../utils/api";
 import ContactForm from "../../../components/ContactForm";
+import ProductAvailabilitySection from "./ProductAvailabilitySection";
 import ImageGallery from "./ImageGallery";
 
 async function getProduct(slug: string): Promise<ProductWithId> {
@@ -132,8 +133,16 @@ export default async function ProductDetail({ params }: { params: Params }) {
             </div>
           </div>
 
-          {/* Contact Form Section */}
-          <div className="max-w-4xl mx-auto">
+        {/* Availability Calendar Section */}
+        <div className="max-w-4xl mx-auto mb-12">
+          <ProductAvailabilitySection 
+            productSlug={product.slug} 
+            productName={product.name} 
+          />
+        </div>
+
+        {/* Contact Form Section */}
+        <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-xl shadow-lg p-8">
               <h2 className="text-3xl font-bold text-center text-primary-purple mb-8">
                 Book {product.name}
