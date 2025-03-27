@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Star, Quote, ChevronRight, ChevronLeft } from "lucide-react";
 
 import { getReviews } from "@/utils/api";
@@ -13,6 +13,64 @@ const CustomerReviews = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedReviews, setExpandedReviews] = useState<Record<number, boolean>>({});
+
+  // Constants for text truncation
+  const MAX_CHARS = 150;
+  
+  const isTruncated = useCallback((text: string) => {
+    return text.length > MAX_CHARS;
+  }, []);
+  
+  const toggleExpand = useCallback((index: number) => {
+    setExpandedReviews(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+    
+    // Pause auto-rotation when a review is expanded
+    if (!expandedReviews[index]) {
+      setIsPaused(true);
+    }
+  }, [expandedReviews]);
+  
+  const renderReviewText = useCallback((text: string, index: number) => {
+    const isExpanded = expandedReviews[index] || false;
+    
+    if (!isTruncated(text) || isExpanded) {
+      return (
+        <>
+          {text}
+          {isExpanded && (
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                toggleExpand(index);
+              }} 
+              className="text-purple-600 hover:text-purple-700 font-medium ml-2"
+            >
+              See Less
+            </button>
+          )}
+        </>
+      );
+    }
+    
+    return (
+      <>
+        {text.substring(0, MAX_CHARS)}...
+        <button 
+          onClick={(e) => {
+            e.preventDefault();
+            toggleExpand(index);
+          }} 
+          className="text-purple-600 hover:text-purple-700 font-medium ml-2"
+        >
+          See More
+        </button>
+      </>
+    );
+  }, [expandedReviews, isTruncated, toggleExpand]);
 
   // Calculate review stats
   const stats = useMemo(() => {
@@ -102,12 +160,29 @@ const CustomerReviews = () => {
     ));
   };
 
+
   const nextReview = () => {
-    setActiveIndex((prev) => (prev + 1) % reviews.length);
+    const newIndex = (activeIndex + 1) % reviews.length;
+    setActiveIndex(newIndex);
+    // Reset expanded state when navigating
+    if (expandedReviews[activeIndex]) {
+      setExpandedReviews(prev => ({
+        ...prev,
+        [activeIndex]: false
+      }));
+    }
   };
 
   const prevReview = () => {
-    setActiveIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
+    const newIndex = (activeIndex - 1 + reviews.length) % reviews.length;
+    setActiveIndex(newIndex);
+    // Reset expanded state when navigating
+    if (expandedReviews[activeIndex]) {
+      setExpandedReviews(prev => ({
+        ...prev,
+        [activeIndex]: false
+      }));
+    }
   };
 
   return (
@@ -148,9 +223,17 @@ const CustomerReviews = () => {
             <div className="relative">
               <Quote className="absolute text-purple-100 w-24 h-24 -left-4 -top-4" />
               <div className="relative">
-                <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
-                  {reviews[activeIndex].text}
-                </p>
+                <div 
+                  className="overflow-hidden transition-all duration-500 ease-in-out"
+                  style={{ 
+                    maxHeight: expandedReviews[activeIndex] ? '1000px' : '120px',
+                    minHeight: '190px',
+                  }}
+                >
+                  <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
+                    {renderReviewText(reviews[activeIndex].text, activeIndex)}
+                  </p>
+                </div>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-400 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
                     {reviews[activeIndex].authorName[0]}
