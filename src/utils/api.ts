@@ -453,4 +453,22 @@ export const submitContactForm = async (formData: {
   });
 };
 
+export const checkProductAvailability = async (
+  productSlug: string,
+  date: string
+): Promise<{
+  available: boolean;
+  product: {
+    name: string;
+    slug: string;
+    status: string;
+  };
+  reason?: string;
+}> => {
+  const response = await api.get(
+    `/api/v1/products/availability?slug=${productSlug}&date=${date}`
+  );
+  return response.data;
+};
+
 export default api;

@@ -21,6 +21,7 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 
 - **Blog Management**: Full-featured blog system with rich text editing
 - **Product Management**: Product catalog with detailed views and admin controls
+- **Product Availability**: Interactive calendar showing product availability by date
 - **Contact System**: Contact forms with admin management interface
 - **Admin Panel**: Secure administrative interface for content management
 - **Analytics Dashboard**: Comprehensive analytics with revenue tracking, booking trends, and product popularity
@@ -62,6 +63,34 @@ The application provides a comprehensive RESTful API with the following endpoint
 - `POST /api/v1/products` - Create a new product (admin only)
 - `PUT /api/v1/products/:slug` - Update a product by slug (admin only)
 - `DELETE /api/v1/products/:slug` - Delete a product by slug (admin only)
+- `GET /api/v1/products/availability` - Check product availability for a specific date
+  - Query parameters:
+    - `productId`: The ID of the product to check (alternative to slug)
+    - `slug`: The slug of the product to check (alternative to productId)
+    - `date`: The date to check availability for (YYYY-MM-DD format)
+  - Response format:
+    ```json
+    {
+      "available": true,
+      "product": {
+        "name": "Bounce House",
+        "slug": "bounce-house",
+        "status": "available"
+      }
+    }
+    ```
+    or if unavailable:
+    ```json
+    {
+      "available": false,
+      "product": {
+        "name": "Bounce House",
+        "slug": "bounce-house",
+        "status": "available"
+      },
+      "reason": "Product is already booked for this date"
+    }
+    ```
 
 ### Blogs API
 
@@ -302,6 +331,11 @@ The Products API provides comprehensive endpoints with filtering, pagination, an
 
 - `ProductCarousel.tsx`: Displays featured products in a carousel
 - `ProductFilters.tsx`: Provides filtering options for product listings
+- `ProductAvailabilityCalendar.tsx`: Interactive calendar component that displays product availability by date
+  - Shows color-coded dates (green for available, red for unavailable)
+  - Allows users to select dates to check availability
+  - Caches availability data to minimize API calls
+  - Provides visual feedback on availability status
 - Admin interface for managing products
 
 ## Contacts Implementation
