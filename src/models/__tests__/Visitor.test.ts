@@ -110,4 +110,88 @@ describe("Visitor Model", () => {
 
     await expect(Visitor.create(duplicateVisitor)).rejects.toThrow();
   });
+
+  it("should exclude visitors who have visited admin pages", async () => {
+    // Clear all visitors before this test
+    await Visitor.deleteMany({});
+    
+    // Create regular visitor
+    await Visitor.create({
+      visitorId: "regular-visitor-123",
+      device: "Desktop",
+      userAgent: "Regular User Agent",
+      visitedPages: [
+        {
+          url: "/products",
+          timestamp: new Date(),
+        },
+        {
+          url: "/contact",
+          timestamp: new Date(),
+        }
+      ]
+    });
+
+    // Create admin visitor
+    await Visitor.create({
+      visitorId: "admin-visitor-456",
+      device: "Desktop",
+      userAgent: "Admin User Agent",
+      visitedPages: [
+        {
+          url: "/products",
+          timestamp: new Date(),
+        },
+        {
+          url: "/admin/dashboard",
+          timestamp: new Date(),
+        }
+      ]
+    });
+
+    // Create visitor with mixed pages
+    await Visitor.create({
+      visitorId: "mixed-visitor-789",
+      device: "Desktop",
+      userAgent: "Mixed User Agent",
+      visitedPages: [
+        {
+          url: "/products",
+          timestamp: new Date(),
+        },
+        {
+          url: "/admin/visitors",
+          timestamp: new Date(),
+        },
+        {
+          url: "/contact",
+          timestamp: new Date(),
+        }
+      ]
+    });
+
+    // Query to exclude admin visitors (same query as used in the API)
+    const nonAdminVisitors = await Visitor.find({
+      visitedPages: { 
+        $not: { 
+          $elemMatch: { 
+            url: /^\/admin/ 
+          } 
+        } 
+      }
+    });
+
+    // Should only return the regular visitor
+    expect(nonAdminVisitors.length).toBe(1);
+    expect(nonAdminVisitors[0].visitorId).toBe("regular-visitor-123");
+
+    // Query to find admin visitors
+    const adminVisitors = await Visitor.find({
+      "visitedPages.url": /^\/admin/
+    });
+
+    // Should return both admin and mixed visitors
+    expect(adminVisitors.length).toBe(2);
+    expect(adminVisitors.map(v => v.visitorId).sort()).toEqual(["admin-visitor-456", "mixed-visitor-789"].sort());
+  });
 });

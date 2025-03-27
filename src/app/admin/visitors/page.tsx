@@ -55,7 +55,7 @@ export default function VisitorsPage() {
         setLoading(true);
         // Use the API utility instead of fetch to automatically include auth headers
         const response = await api.get(
-          `/api/v1/visitors?page=${pagination.page}&limit=${pagination.limit}`,
+          `/api/v1/visitors?page=${pagination.page}&limit=${pagination.limit}&includeAdmin=false`,
         );
         const data = response.data;
 

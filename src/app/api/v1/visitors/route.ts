@@ -397,11 +397,27 @@ export async function GET(req: NextRequest) {
     const page = parseInt(url.searchParams.get("page") || "1");
     const skip = (page - 1) * limit;
 
-    // Get total count for pagination
-    const total = await Visitor.countDocuments();
+    // Parse additional query parameters
+    const includeAdmin = url.searchParams.get("includeAdmin") === "true";
+    
+    // Build query to exclude admin visitors unless explicitly requested
+    const query = includeAdmin 
+      ? {} 
+      : { 
+          visitedPages: { 
+            $not: { 
+              $elemMatch: { 
+                url: /^\/admin/ 
+              } 
+            } 
+          } 
+        };
 
-    // Get visitors with pagination
-    const visitors = await Visitor.find()
+    // Get total count for pagination (filtered by query)
+    const total = await Visitor.countDocuments(query);
+
+    // Get visitors with pagination (filtered by query)
+    const visitors = await Visitor.find(query)
       .sort({ lastVisit: -1 })
       .skip(skip)
       .limit(limit);
