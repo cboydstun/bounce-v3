@@ -148,21 +148,11 @@ export const updateUserProfile = async (userData: {
 // Reviews API calls
 export const getReviews = async (params?: {
   placeId?: string;
-  limit?: number;
-  page?: number;
 }) => {
   const queryParams = new URLSearchParams();
 
   if (params?.placeId) {
     queryParams.append("placeId", params.placeId);
-  }
-
-  if (params?.limit) {
-    queryParams.append("limit", params.limit.toString());
-  }
-
-  if (params?.page) {
-    queryParams.append("page", params.page.toString());
   }
 
   const queryString = queryParams.toString();

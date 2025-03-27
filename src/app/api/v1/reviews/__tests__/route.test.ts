@@ -74,7 +74,7 @@ describe("Reviews API", () => {
       expect(data.reviews[1].placeId).toBe("place1");
     });
 
-    it("should paginate results correctly", async () => {
+    it("should return all reviews without pagination", async () => {
       const req = new NextRequest(
         "http://localhost:3000/api/v1/reviews?limit=2&page=1",
       );
@@ -83,10 +83,13 @@ describe("Reviews API", () => {
       expect(response.status).toBe(200);
 
       const data = await response.json();
-      expect(data.reviews).toHaveLength(2);
+      // Should return all 3 reviews despite the limit parameter
+      expect(data.reviews).toHaveLength(3);
+      // Pagination object should still be present for backward compatibility
       expect(data.pagination.page).toBe(1);
-      expect(data.pagination.limit).toBe(2);
-      expect(data.pagination.pages).toBe(2);
+      expect(data.pagination.limit).toBe(3);
+      expect(data.pagination.pages).toBe(1);
+      expect(data.pagination.total).toBe(3);
     });
   });
 

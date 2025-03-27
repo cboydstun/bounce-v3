@@ -81,11 +81,11 @@ const ProductCarousel = () => {
   return (
     <div className="product-carousels-container">
       {/* All three sliders stacked vertically */}
-      <ProductSlider products={dryProducts} title="DRY Bounce Houses" />
+      <ProductSlider products={dryProducts} title="🎈 Dry Bounce Houses 🏰" />
 
-      <ProductSlider products={wetProducts} title="WET Bounce Houses" />
+      <ProductSlider products={wetProducts} title="💦 Wet Waterslides 🛝" />
 
-      <ProductSlider products={extraProducts} title="EXTRA Equipment" />
+      <ProductSlider products={extraProducts} title="🍹 Extras 🍿" />
     </div>
   );
 };

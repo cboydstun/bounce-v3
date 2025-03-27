@@ -7,26 +7,12 @@ import { getReviews } from "@/utils/api";
 import { Review } from "@/types/review";
 import StatsSection from "./StatsSection";
 
-// Define pagination interface
-interface Pagination {
-  total: number;
-  page: number;
-  limit: number;
-  pages: number;
-}
-
 const CustomerReviews = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState<Pagination>({
-    total: 0,
-    page: 1,
-    limit: 10,
-    pages: 0,
-  });
 
   // Calculate review stats
   const stats = useMemo(() => {
@@ -60,16 +46,12 @@ const CustomerReviews = () => {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await getReviews({
-          page: pagination.page,
-          limit: pagination.limit,
-        });
+        const response = await getReviews();
 
         if (!response.reviews || response.reviews.length === 0) {
           setError("No reviews available");
         } else {
           setReviews(response.reviews);
-          setPagination(response.pagination);
         }
       } catch (err) {
         setError(
@@ -81,7 +63,7 @@ const CustomerReviews = () => {
     };
 
     fetchReviews();
-  }, [pagination.page, pagination.limit]);
+  }, []);
 
   const renderMessage = (message: string, isLoading: boolean = false) => (
     <div className="w-full bg-[#663399] py-18">
@@ -210,43 +192,8 @@ const CustomerReviews = () => {
               <span>
                 Review {activeIndex + 1} of {reviews.length}
               </span>
-              {pagination.pages > 1 && (
-                <span className="text-sm text-gray-500">
-                  (Page {pagination.page} of {pagination.pages})
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-4">
-              {pagination.pages > 1 && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() =>
-                      setPagination((prev) => ({
-                        ...prev,
-                        page: Math.max(1, prev.page - 1),
-                      }))
-                    }
-                    disabled={pagination.page <= 1}
-                    className={`p-1 rounded-full ${pagination.page <= 1 ? "text-gray-300 cursor-not-allowed" : "text-purple-600 hover:bg-purple-100"}`}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      setPagination((prev) => ({
-                        ...prev,
-                        page: Math.min(prev.pages, prev.page + 1),
-                      }))
-                    }
-                    disabled={pagination.page >= pagination.pages}
-                    className={`p-1 rounded-full ${pagination.page >= pagination.pages ? "text-gray-300 cursor-not-allowed" : "text-purple-600 hover:bg-purple-100"}`}
-                    aria-label="Next page"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
               <a
                 href="https://g.co/kgs/Dq42aY6"
                 className="text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-1"

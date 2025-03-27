@@ -11,9 +11,6 @@ export async function GET(request: NextRequest) {
     // Parse query parameters
     const url = new URL(request.url);
     const placeId = url.searchParams.get("placeId");
-    const limit = parseInt(url.searchParams.get("limit") || "10");
-    const page = parseInt(url.searchParams.get("page") || "1");
-    const skip = (page - 1) * limit;
 
     // Build query
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,23 +19,21 @@ export async function GET(request: NextRequest) {
       query.placeId = placeId;
     }
 
-    // Execute query with pagination
+    // Execute query without pagination - return all reviews
     const reviews = await Review.find(query)
       .sort({ time: -1 })
-      .skip(skip)
-      .limit(limit)
       .populate("user", "email"); // Optionally populate user data
 
-    // Get total count for pagination
-    const total = await Review.countDocuments(query);
+    // Set total count to the number of reviews returned
+    const total = reviews.length;
 
     return NextResponse.json({
       reviews,
       pagination: {
         total,
-        page,
-        limit,
-        pages: Math.ceil(total / limit),
+        page: 1,
+        limit: total,
+        pages: 1,
       },
     });
   } catch (error) {
