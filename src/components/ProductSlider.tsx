@@ -4,18 +4,27 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useSwipeable } from "react-swipeable";
 import { ProductWithId } from "../types/product";
 
 interface ProductSliderProps {
   products: ProductWithId[];
   title: string;
+  testItemsPerPage?: number; // For testing purposes
 }
 
-const ProductSlider: React.FC<ProductSliderProps> = ({ products, title }) => {
+const ProductSlider: React.FC<ProductSliderProps> = ({ 
+  products, 
+  title,
+  testItemsPerPage 
+}) => {
   const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(testItemsPerPage || 1);
 
   useEffect(() => {
+    // Skip resize handling if testItemsPerPage is provided (for testing)
+    if (testItemsPerPage !== undefined) return;
+    
     // Update items per page based on window width
     const handleResize = () => {
       if (window.innerWidth >= 1024)
@@ -32,7 +41,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ products, title }) => {
     // Update on window resize
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [testItemsPerPage]);
 
   if (!products.length) {
     return null; // Don't render anything if no products
@@ -44,6 +53,24 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ products, title }) => {
     currentPage * itemsPerPage + itemsPerPage,
   );
 
+  // Configure swipe handlers
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (currentPage < pageCount - 1) {
+        setCurrentPage(prev => prev + 1);
+      }
+    },
+    onSwipedRight: () => {
+      if (currentPage > 0) {
+        setCurrentPage(prev => prev - 1);
+      }
+    },
+    // Prevent scrolling while swiping
+    preventScrollOnSwipe: true,
+    // Only activate for horizontal swipes
+    trackMouse: false
+  });
+
   return (
     <div className="w-full py-6 mb-6 bg-[#663399] rounded-lg">
       <div className="container mx-auto px-4">
@@ -51,7 +78,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ products, title }) => {
           {title}
         </h2>
 
-        <div className="relative">
+        <div className="relative" {...swipeHandlers}>
           {/* Navigation Buttons */}
           {pageCount > 1 && (
             <>
