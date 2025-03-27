@@ -72,7 +72,7 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
       type: Boolean,
       default: false,
     },
-    margaritaMachine: {
+    basketballShoot: {
       type: Boolean,
       default: false,
     },

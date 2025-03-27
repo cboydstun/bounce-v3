@@ -22,7 +22,7 @@ interface Contact {
   popcornMachine?: boolean;
   cottonCandyMachine?: boolean;
   snowConeMachine?: boolean;
-  margaritaMachine?: boolean;
+  basketballShoot?: boolean;
   slushyMachine?: boolean;
   overnight?: boolean;
   sourcePage: string;
@@ -167,7 +167,7 @@ export default function AdminContacts() {
           popcornMachine: contact.popcornMachine,
           cottonCandyMachine: contact.cottonCandyMachine,
           snowConeMachine: contact.snowConeMachine,
-          margaritaMachine: contact.margaritaMachine,
+          basketballShoot: contact.basketballShoot,
           slushyMachine: contact.slushyMachine,
           overnight: contact.overnight,
           sourcePage: contact.sourcePage,
@@ -718,8 +718,8 @@ export default function AdminContacts() {
                           {contact.snowConeMachine && (
                             <li>Snow Cone Machine</li>
                           )}
-                          {contact.margaritaMachine && (
-                            <li>Margarita Machine</li>
+                          {contact.basketballShoot && (
+                            <li>Basketball Shoot</li>
                           )}
                           {contact.slushyMachine && <li>Slushy Machine</li>}
                           {contact.overnight && <li>Overnight</li>}

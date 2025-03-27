@@ -174,6 +174,7 @@ describe("Contacts API", () => {
         tablesChairs: true,
         generator: true,
         popcornMachine: true,
+        basketballShoot: true,
         sourcePage: "instagram",
       };
 

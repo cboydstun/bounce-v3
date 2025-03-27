@@ -28,7 +28,7 @@ export default function EditContact({ params }: PageProps) {
     popcornMachine: false,
     cottonCandyMachine: false,
     snowConeMachine: false,
-    margaritaMachine: false,
+    basketballShoot: false,
     slushyMachine: false,
     overnight: false,
     sourcePage: "admin",
@@ -95,7 +95,7 @@ export default function EditContact({ params }: PageProps) {
           cottonCandyMachine: contact.cottonCandyMachine || false,
           snowConeMachine: contact.snowConeMachine || false,
           overnight: contact.overnight || false,
-          margaritaMachine: contact.margaritaMachine || false,
+          basketballShoot: contact.basketballShoot || false,
           slushyMachine: contact.slushyMachine || false,
           sourcePage: contact.sourcePage || "admin",
           // Address information
@@ -534,12 +534,12 @@ export default function EditContact({ params }: PageProps) {
             <label className="flex items-center space-x-2">
               <input
                 type="checkbox"
-                name="margaritaMachine"
-                checked={formData.margaritaMachine}
+                name="basketballShoot"
+                checked={formData.basketballShoot}
                 onChange={handleInputChange}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <span>Margarita Machine</span>
+              <span>Basketball Shoot</span>
             </label>
 
             <label className="flex items-center space-x-2">

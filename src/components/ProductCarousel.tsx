@@ -9,7 +9,7 @@ import ProductSlider from "./ProductSlider";
 // Helper function to filter products by type
 const filterProductsByType = (
   products: ProductWithId[],
-  type: string
+  type: string,
 ): ProductWithId[] => {
   return products
     .filter((product: ProductWithId) =>
@@ -18,7 +18,7 @@ const filterProductsByType = (
         return Array.isArray(spec.value)
           ? spec.value.includes(type)
           : spec.value === type;
-      })
+      }),
     )
     .sort((a: ProductWithId, b: ProductWithId) => b.price.base - a.price.base);
 };
@@ -46,17 +46,17 @@ const ProductCarousel = () => {
   // Filter products by type
   const dryProducts = useMemo(
     () => filterProductsByType(allProducts, "DRY"),
-    [allProducts]
+    [allProducts],
   );
 
   const wetProducts = useMemo(
     () => filterProductsByType(allProducts, "WET"),
-    [allProducts]
+    [allProducts],
   );
 
   const extraProducts = useMemo(
     () => filterProductsByType(allProducts, "EXTRA"),
-    [allProducts]
+    [allProducts],
   );
 
   if (loading)

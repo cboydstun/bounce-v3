@@ -146,9 +146,7 @@ export const updateUserProfile = async (userData: {
 };
 
 // Reviews API calls
-export const getReviews = async (params?: {
-  placeId?: string;
-}) => {
+export const getReviews = async (params?: { placeId?: string }) => {
   const queryParams = new URLSearchParams();
 
   if (params?.placeId) {
@@ -366,7 +364,7 @@ export const createContact = async (contactData: {
   popcornMachine?: boolean;
   cottonCandyMachine?: boolean;
   snowConeMachine?: boolean;
-  margaritaMachine?: boolean;
+  basketballShoot?: boolean;
   slushyMachine?: boolean;
   overnight?: boolean;
   sourcePage: string;
@@ -394,7 +392,7 @@ export const updateContact = async (
     popcornMachine: boolean;
     cottonCandyMachine: boolean;
     snowConeMachine: boolean;
-    margaritaMachine: boolean;
+    basketballShoot: boolean;
     slushyMachine: boolean;
     overnight: boolean;
     sourcePage: string;
@@ -439,7 +437,7 @@ export const submitContactForm = async (formData: {
   popcornMachine?: boolean;
   cottonCandyMachine?: boolean;
   snowConeMachine?: boolean;
-  margaritaMachine?: boolean;
+  basketballShoot?: boolean;
   slushyMachine?: boolean;
   overnight?: boolean;
   consentToContact?: boolean;

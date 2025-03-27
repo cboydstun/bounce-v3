@@ -41,7 +41,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ products, title }) => {
   const pageCount = Math.ceil(products.length / itemsPerPage);
   const visibleProducts = products.slice(
     currentPage * itemsPerPage,
-    currentPage * itemsPerPage + itemsPerPage
+    currentPage * itemsPerPage + itemsPerPage,
   );
 
   return (

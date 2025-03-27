@@ -33,7 +33,7 @@ interface FormData {
   popcornMachine: boolean;
   cottonCandyMachine: boolean;
   snowConeMachine: boolean;
-  margaritaMachine: boolean;
+  basketballShoot: boolean;
   slushyMachine: boolean;
   overnight: boolean;
   consentToContact: boolean;
@@ -65,7 +65,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
     popcornMachine: false,
     cottonCandyMachine: false,
     snowConeMachine: false,
-    margaritaMachine: false,
+    basketballShoot: false,
     slushyMachine: false,
     overnight: false,
     consentToContact: false,
@@ -196,7 +196,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
         popcornMachine: formData.popcornMachine,
         cottonCandyMachine: formData.cottonCandyMachine,
         snowConeMachine: formData.snowConeMachine,
-        margaritaMachine: formData.margaritaMachine,
+        basketballShoot: formData.basketballShoot,
         slushyMachine: formData.slushyMachine,
         overnight: formData.overnight,
       },
@@ -222,7 +222,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
         popcornMachine: false,
         cottonCandyMachine: false,
         snowConeMachine: false,
-        margaritaMachine: false,
+        basketballShoot: false,
         slushyMachine: false,
         overnight: false,
         consentToContact: false,
@@ -455,7 +455,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
             { id: "popcornMachine", label: "🍿 Popcorn Machine" },
             { id: "cottonCandyMachine", label: "🍭 Cotton Candy" },
             { id: "snowConeMachine", label: "🧊 Snow Cones" },
-            { id: "margaritaMachine", label: "🍹 Margarita Machine" },
+            { id: "basketballShoot", label: "🏀 Basketball Shoot" },
             { id: "slushyMachine", label: "🥤 Slushy Machine" },
             { id: "overnight", label: "🌙 Overnight Rental" },
           ].map(({ id, label }) => (
