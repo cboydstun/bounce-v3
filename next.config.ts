@@ -15,6 +15,23 @@ const nextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    turbo: {
+      // Configure Turbopack to handle source maps
+      resolveExtensions: [
+        '.tsx',
+        '.ts',
+        '.jsx',
+        '.js',
+        '.mjs',
+        '.json',
+      ],
+      // You can add rules for any webpack loaders you're using if needed
+      // rules: {
+      //   // Example if you need to configure any loaders
+      // },
+    },
+  },
   // Add webpack configuration for source maps
   webpack: (
     config: any,
