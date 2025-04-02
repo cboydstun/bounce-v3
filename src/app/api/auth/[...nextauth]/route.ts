@@ -12,6 +12,35 @@ const debugLog = (message: string, data?: any) => {
   console.log(`[AUTH DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
 };
 
+// Determine the cookie domain based on the environment
+let cookieDomain: string | undefined = undefined;
+
+// For Vercel preview deployments
+if (process.env.VERCEL_URL) {
+  cookieDomain = ".vercel.app";
+  debugLog('Using Vercel preview domain for cookies', { cookieDomain });
+} 
+// For production deployment
+else if (process.env.NEXTAUTH_URL) {
+  try {
+    const url = new URL(process.env.NEXTAUTH_URL);
+    // Extract domain without subdomain
+    const hostParts = url.hostname.split('.');
+    if (hostParts.length > 1) {
+      // For domains like sub.example.com, use .example.com
+      cookieDomain = '.' + hostParts.slice(-2).join('.');
+    } else {
+      cookieDomain = url.hostname;
+    }
+    debugLog('Using NEXTAUTH_URL domain for cookies', { 
+      hostname: url.hostname,
+      cookieDomain 
+    });
+  } catch (e) {
+    debugLog('Error parsing NEXTAUTH_URL', { error: e });
+  }
+}
+
 // Enhanced environment variable logging (with partial secrets)
 debugLog('NextAuth initialization environment', {
   NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'not set',
@@ -23,6 +52,7 @@ debugLog('NextAuth initialization environment', {
   VERCEL_URL: process.env.VERCEL_URL || 'not set',
   MONGODB_URI_SET: !!process.env.MONGODB_URI,
   REQUEST_HOST: typeof window !== 'undefined' ? window.location.host : 'server-side',
+  COOKIE_DOMAIN: cookieDomain || 'not set',
 });
 
 // Rate limiting implementation (simplified version of the existing one)
@@ -225,6 +255,7 @@ const authOptionsBase: NextAuthOptions = {
         path: "/",
         secure: true, // Always use secure in production
         maxAge: 30 * 24 * 60 * 60, // 30 days
+        domain: cookieDomain, // Dynamic domain setting
       },
     },
     callbackUrl: {
@@ -234,6 +265,7 @@ const authOptionsBase: NextAuthOptions = {
         sameSite: "none", // Changed from "lax" to "none"
         path: "/",
         secure: true, // Always use secure
+        domain: cookieDomain, // Dynamic domain setting
       },
     },
     csrfToken: {
@@ -243,6 +275,7 @@ const authOptionsBase: NextAuthOptions = {
         sameSite: "none", // Changed from "lax" to "none"
         path: "/",
         secure: true, // Always use secure
+        domain: cookieDomain, // Dynamic domain setting
       },
     },
   },
