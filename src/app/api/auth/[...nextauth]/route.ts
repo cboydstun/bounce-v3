@@ -1,155 +1,103 @@
 import NextAuth from "next-auth";
-import type { NextAuthOptions, Session, User as NextAuthUser } from "next-auth";
-import type { JWT } from "next-auth/jwt";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import dbConnect from "@/lib/db/mongoose";
 import User from "@/models/User";
 import { IUserDocument } from "@/types/user";
-import { NextRequest } from "next/server";
 
-// Rate limiting implementation (simplified version of the existing one)
-const ipThrottling = new Map<string, { count: number; timestamp: number }>();
-
-const applyRateLimit = (ip: string): boolean => {
-  const now = Date.now();
-  const windowMs = 15 * 60 * 1000; // 15 minutes
-  const maxAttempts = 5; // 5 login attempts per IP in the window
-
-  const record = ipThrottling.get(ip);
-
-  // If no record exists or the record is expired, create a new one
-  if (!record || now - record.timestamp > windowMs) {
-    ipThrottling.set(ip, { count: 1, timestamp: now });
-    return true;
-  }
-
-  // If the record exists and is within the window, increment the count
-  if (record.count < maxAttempts) {
-    record.count++;
-    return true;
-  }
-
-  // If the record exists and the count exceeds the limit, block the request
-  return false;
+// Debug logger function
+const debugLog = (message: string, data?: any) => {
+  console.log(`[AUTH DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
 };
 
-export const authOptions: NextAuthOptions = {
-  debug: false,
+// Log environment variables
+debugLog('Environment variables', {
+  NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'not set',
+  NEXTAUTH_SECRET_SET: !!process.env.NEXTAUTH_SECRET,
+  JWT_SECRET_SET: !!process.env.JWT_SECRET,
+  NODE_ENV: process.env.NODE_ENV,
+  VERCEL_URL: process.env.VERCEL_URL || 'not set',
+});
+
+// Create minimal auth options
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        rememberMe: { label: "Remember Me", type: "checkbox" },
       },
-      async authorize(credentials, req): Promise<NextAuthUser | null> {
+      async authorize(credentials) {
+        debugLog('authorize() called', { 
+          hasEmail: !!credentials?.email,
+          hasPassword: !!credentials?.password
+        });
+        
         if (!credentials?.email || !credentials?.password) {
+          debugLog('Missing credentials');
           return null;
         }
 
-        // Apply rate limiting
-        // Handle headers properly for Node.js IncomingMessage
-        let ip = "unknown";
-
-        if (req && req.headers) {
-          const forwardedFor = req.headers["x-forwarded-for"];
-          ip = Array.isArray(forwardedFor)
-            ? forwardedFor[0]
-            : typeof forwardedFor === "string"
-              ? forwardedFor.split(",")[0].trim()
-              : "unknown";
-        }
-
-        if (!applyRateLimit(ip)) {
-          throw new Error("Too many login attempts, please try again later");
-        }
-
         try {
+          debugLog('Connecting to database...');
           await dbConnect();
-
-          // Find user and include password for comparison
-          const user = (await User.findOne({ email: credentials.email }).select(
-            "+password",
-          )) as IUserDocument | null;
-
-          // Check if user exists and password is correct
-          if (!user || !(await user.comparePassword(credentials.password))) {
+          
+          const user = await User.findOne({ email: credentials.email }).select("+password") as IUserDocument | null;
+          
+          if (!user) {
+            debugLog('User not found');
             return null;
           }
-
-          // Convert Mongoose document to NextAuth user
-          return {
+          
+          const passwordValid = await user.comparePassword(credentials.password);
+          debugLog('Password validation', { valid: passwordValid });
+          
+          if (!passwordValid) {
+            return null;
+          }
+          
+          const authUser = {
             id: user._id ? user._id.toString() : user.id,
             email: user.email,
             name: user.name || undefined,
-            // Role is no longer needed for access control
-            // Add any other fields needed by NextAuth
           };
+          
+          debugLog('Authentication successful', { userId: authUser.id });
+          return authUser;
         } catch (error) {
-          console.error("Authentication error:", error);
+          debugLog('Authentication error', { error });
+          console.error("Auth error:", error);
           return null;
         }
       },
     }),
   ],
-  session: {
-    strategy: "jwt" as const,
-    // Default session expiration - will be overridden by callback if rememberMe is true
-    maxAge: 60 * 60 * 24, // 1 day by default
+  // Use JWT strategy
+  session: { 
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  callbacks: {
-    async jwt({
-      token,
-      user,
-      trigger,
-      session,
-    }: {
-      token: JWT;
-      user?: NextAuthUser;
-      trigger?: "signIn" | "signUp" | "update";
-      session?: any;
-    }) {
-      // Initial sign in
-      if (user) {
-        token.id = user.id;
-        // No longer adding role to token
-      }
-
-      // Handle remember me option during sign in
-      if (trigger === "signIn" && session?.rememberMe === "true") {
-        // Set token expiration to 30 days if remember me is checked
-        token.rememberMe = true;
-      }
-
-      return token;
-    },
-    async session({ session, token }: { session: Session; token: JWT }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        // No longer adding role to session
-      }
-
-      return session;
-    },
-  },
+  // Enable debug mode
+  debug: true,
+  // Use environment secret
+  secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
+  // Minimal pages config
   pages: {
     signIn: "/login",
-    error: "/login", // Error code passed in query string
+    error: "/login",
   },
-  cookies: {
-    sessionToken: {
-      name: "next-auth.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-      },
-    },
-  },
-  secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
 };
 
+debugLog('NextAuth configuration', {
+  providers: ['credentials'],
+  sessionStrategy: 'jwt',
+  debug: true,
+  pagesConfigured: !!authOptions.pages,
+});
+
+// Create handler with minimal config
 const handler = NextAuth(authOptions);
+
+// Export handler
 export { handler as GET, handler as POST };

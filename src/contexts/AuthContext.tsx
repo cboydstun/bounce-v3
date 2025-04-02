@@ -8,9 +8,18 @@ import {
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
-import { setAuthToken } from "@/utils/api";
+import { useSession, signOut, getSession } from "next-auth/react";
 import { IUser } from "@/types/user";
+
+// Debug logger function
+const debugLog = (message: string, data?: any) => {
+  console.log(`[AUTH CONTEXT DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
+};
+
+// Log environment info
+debugLog('Environment', {
+  NODE_ENV: process.env.NODE_ENV,
+});
 
 interface AuthContextType {
   user: IUser | null;
@@ -35,59 +44,102 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  debugLog('AuthProvider initialized', { status, hasSession: !!session });
+
+  // Debug function to check cookies
+  const checkAuthCookies = () => {
+    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+      const [name, value] = cookie.trim().split('=');
+      if (name.includes('next-auth')) {
+        acc[name] = 'exists';
+      }
+      return acc;
+    }, {} as Record<string, string>);
+    
+    debugLog('Auth cookies check', { cookies });
+  };
+
   useEffect(() => {
     // Update user state when session changes
+    debugLog('Session status changed', { 
+      newStatus: status, 
+      hasSession: !!session,
+      user: session?.user ? {
+        id: session.user.id,
+        email: session.user.email
+      } : null
+    });
+    
     if (status === "loading") {
       setLoading(true);
+      debugLog('Session loading...');
       return;
     }
 
+    // Check cookies on status change
+    checkAuthCookies();
+
+    // Additional session verification with getSession
+    const verifySession = async () => {
+      try {
+        const sessionData = await getSession();
+        debugLog('getSession() verification', { 
+          hasSession: !!sessionData,
+          matchesUseSession: sessionData === session
+        });
+      } catch (err) {
+        debugLog('getSession() error', { error: err });
+      }
+    };
+    
+    verifySession();
+
     if (status === "authenticated" && session?.user) {
+      debugLog('User authenticated, setting user state');
+      
       // Convert NextAuth session user to our IUser type
-      setUser({
+      const userObj = {
         email: session.user.email || "",
         name: session.user.name || undefined,
-        // Role has been removed
-        // Add any other fields needed from the session
-      });
+      };
+      
+      setUser(userObj);
 
-      // For backward compatibility with existing code
-      // Use the session token for API calls
-      if (session.user.id) {
-        // Create a JWT-like token for backward compatibility
-        const backwardCompatToken = `nextauth-${session.user.id}`;
-        setAuthToken(backwardCompatToken);
-      }
+      // No need to set auth token manually anymore
+      // The API interceptor will use the NextAuth.js session directly
+      debugLog('User authenticated with NextAuth.js', { userId: session.user.id });
     } else {
+      debugLog('User not authenticated, clearing user state');
       setUser(null);
-      setAuthToken(null);
     }
 
     setLoading(false);
   }, [session, status]);
 
   const logout = async () => {
+    debugLog('Logout initiated');
     try {
+      // Check cookies before logout (for debugging)
+      checkAuthCookies();
+      
       // Call NextAuth signOut with redirect: false to prevent automatic redirect
+      // NextAuth.js will handle clearing cookies and session data
+      debugLog('Calling NextAuth signOut()...');
       await signOut({ redirect: false });
-
-      // Clear auth token from localStorage and axios headers
-      setAuthToken(null);
+      debugLog('signOut() completed');
 
       // Clear user state
       setUser(null);
+      debugLog('User state cleared');
 
-      // Clear any cookies related to authentication
-      document.cookie =
-        "next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      document.cookie =
-        "next-auth.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      document.cookie =
-        "next-auth.callback-url=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      // Check cookies after logout (for debugging)
+      checkAuthCookies();
 
       // Redirect to login page
+      debugLog('Redirecting to login page');
       router.push("/login");
     } catch (error) {
+      debugLog('Logout error', { error });
       console.error("Logout error:", error);
       // Still attempt to redirect even if there was an error
       router.push("/login");
