@@ -18,14 +18,7 @@ const nextConfig = {
   experimental: {
     turbo: {
       // Configure Turbopack to handle source maps
-      resolveExtensions: [
-        '.tsx',
-        '.ts',
-        '.jsx',
-        '.js',
-        '.mjs',
-        '.json',
-      ],
+      resolveExtensions: [".tsx", ".ts", ".jsx", ".js", ".mjs", ".json"],
       // You can add rules for any webpack loaders you're using if needed
       // rules: {
       //   // Example if you need to configure any loaders

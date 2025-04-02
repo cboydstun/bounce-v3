@@ -30,7 +30,7 @@ api.interceptors.request.use(
       try {
         // Get session from NextAuth.js
         const session = await getSession();
-        
+
         if (session?.user?.id) {
           // Use session user ID for authorization
           config.headers.Authorization = `Bearer nextauth-${session.user.id}`;

@@ -7,11 +7,14 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 // Debug logger function
 const debugLog = (message: string, data?: any) => {
-  console.log(`[LOGIN DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
+  console.log(
+    `[LOGIN DEBUG] ${message}`,
+    data ? JSON.stringify(data, null, 2) : "",
+  );
 };
 
 // Log environment info
-debugLog('Environment', {
+debugLog("Environment", {
   NODE_ENV: process.env.NODE_ENV,
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
 });
@@ -21,8 +24,8 @@ const LoginForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
-  
-  debugLog('Session status', { status, hasSession: !!session });
+
+  debugLog("Session status", { status, hasSession: !!session });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -34,37 +37,41 @@ const LoginForm = () => {
     const from = searchParams.get("from");
     if (from) {
       setError(`You need to be logged in to access ${from}`);
-      debugLog('Redirected from protected page', { from });
+      debugLog("Redirected from protected page", { from });
     }
 
     // If already authenticated, redirect
     if (status === "authenticated") {
-      debugLog('User is authenticated, redirecting', { 
+      debugLog("User is authenticated, redirecting", {
         destination: from || "/admin",
-        sessionUser: session?.user ? {
-          id: session.user.id,
-          email: session.user.email
-        } : null
+        sessionUser: session?.user
+          ? {
+              id: session.user.id,
+              email: session.user.email,
+            }
+          : null,
       });
       router.push(from || "/admin");
     }
-    
+
     // Debug session on mount
     const checkSession = async () => {
       try {
         const sessionData = await getSession();
-        debugLog('getSession() result', { 
+        debugLog("getSession() result", {
           hasSession: !!sessionData,
-          user: sessionData?.user ? {
-            id: sessionData.user.id,
-            email: sessionData.user.email
-          } : null
+          user: sessionData?.user
+            ? {
+                id: sessionData.user.id,
+                email: sessionData.user.email,
+              }
+            : null,
         });
       } catch (err) {
-        debugLog('getSession() error', { error: err });
+        debugLog("getSession() error", { error: err });
       }
     };
-    
+
     checkSession();
   }, [searchParams, router, status, session]);
 
@@ -72,40 +79,40 @@ const LoginForm = () => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-    debugLog('Login form submitted', { email });
+    debugLog("Login form submitted", { email });
 
     // Enhanced validation
     if (!email) {
       setError("Please provide an email address");
       setIsLoading(false);
-      debugLog('Validation failed: missing email');
+      debugLog("Validation failed: missing email");
       return;
     }
 
     if (!email.match(/^\S+@\S+\.\S+$/)) {
       setError("Please provide a valid email address");
       setIsLoading(false);
-      debugLog('Validation failed: invalid email format');
+      debugLog("Validation failed: invalid email format");
       return;
     }
 
     if (!password) {
       setError("Please provide a password");
       setIsLoading(false);
-      debugLog('Validation failed: missing password');
+      debugLog("Validation failed: missing password");
       return;
     }
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters long");
       setIsLoading(false);
-      debugLog('Validation failed: password too short');
+      debugLog("Validation failed: password too short");
       return;
     }
 
     try {
-      debugLog('Calling NextAuth signIn()...');
-      
+      debugLog("Calling NextAuth signIn()...");
+
       // Call NextAuth.js signIn
       const result = await signIn("credentials", {
         redirect: false,
@@ -114,11 +121,11 @@ const LoginForm = () => {
         rememberMe: rememberMe.toString(),
       });
 
-      debugLog('signIn() result', { 
-        ok: result?.ok, 
+      debugLog("signIn() result", {
+        ok: result?.ok,
         hasError: !!result?.error,
         error: result?.error,
-        url: result?.url
+        url: result?.url,
       });
 
       if (result?.error) {
@@ -133,22 +140,26 @@ const LoginForm = () => {
       } else if (result?.ok) {
         // Check session after successful login
         const sessionAfterLogin = await getSession();
-        debugLog('Session after login', { 
+        debugLog("Session after login", {
           hasSession: !!sessionAfterLogin,
-          user: sessionAfterLogin?.user ? {
-            id: sessionAfterLogin.user.id,
-            email: sessionAfterLogin.user.email
-          } : null
+          user: sessionAfterLogin?.user
+            ? {
+                id: sessionAfterLogin.user.id,
+                email: sessionAfterLogin.user.email,
+              }
+            : null,
         });
-        
+
         // Redirect to admin dashboard or the page they were trying to access
         const from = searchParams.get("from");
-        debugLog('Login successful, redirecting', { destination: from || "/admin" });
+        debugLog("Login successful, redirecting", {
+          destination: from || "/admin",
+        });
         router.push(from || "/admin");
       }
     } catch (err) {
       console.error("Login error:", err);
-      debugLog('Login exception', { error: err });
+      debugLog("Login exception", { error: err });
 
       // Improved error handling with more specific messages
       if (err instanceof Error) {
