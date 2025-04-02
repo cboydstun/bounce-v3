@@ -114,8 +114,6 @@ function Fingerprint() {
               pageLoadTime && pageLoadTime > 0 ? pageLoadTime : undefined,
           }),
         });
-
-        console.log("Visitor tracked:", visitorId);
       } catch (error) {
         console.error("Error tracking visitor:", error);
       }

@@ -39,8 +39,6 @@ export default function AdminBlogs() {
             pages: 0,
           },
         );
-
-        console.log("Blogs API response:", response.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {

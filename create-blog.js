@@ -39,7 +39,6 @@ async function createBlog() {
     });
 
     const data = await response.json();
-    console.log("Response:", data);
   } catch (error) {
     console.error("Error:", error);
   }

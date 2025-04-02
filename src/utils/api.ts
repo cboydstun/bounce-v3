@@ -27,6 +27,7 @@ export interface ApiError {
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
+      // Try to get token from localStorage (for backward compatibility)
       const token = localStorage.getItem("auth_token");
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -63,8 +64,6 @@ const setCookie = (name: string, value: string, days: number = 1) => {
   document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; ${
     isSecure ? "secure; " : ""
   }samesite=${sameSite}`;
-
-  console.log(`Cookie ${name} set with expiration: ${days} days`);
 };
 
 // Helper function to delete a cookie
@@ -73,45 +72,41 @@ const deleteCookie = (name: string) => {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 };
 
+// This function is kept for backward compatibility with existing code
+// NextAuth.js will handle token storage and cookies automatically
 export const setAuthToken = (
   token: string | null,
   rememberMe: boolean = false,
 ) => {
   if (typeof window !== "undefined") {
     if (token) {
-      // Store in localStorage for API requests
-      localStorage.setItem("auth_token", token);
-
       // Set in axios headers
       api.defaults.headers.common.Authorization = `Bearer ${token}`;
 
-      // Store in cookie for middleware authentication
-      // Use 30 days expiration if rememberMe is true, otherwise 1 day
-      const days = rememberMe ? 30 : 1;
-      setCookie("auth_token", token, days);
-
-      console.log(
-        `Auth token set successfully with ${days} day expiration (rememberMe: ${rememberMe})`,
-      );
+      // For backward compatibility, still store in localStorage
+      // In a full migration, this would be removed as NextAuth handles tokens
+      localStorage.setItem("auth_token", token);
     } else {
-      // Remove from localStorage
-      localStorage.removeItem("auth_token");
-
       // Remove from axios headers
       delete api.defaults.headers.common.Authorization;
 
-      // Remove from cookies
-      deleteCookie("auth_token");
-
-      console.log("Auth token removed from localStorage and cookie");
+      // For backward compatibility
+      localStorage.removeItem("auth_token");
     }
   }
 };
 
 // Authentication API calls
+// These functions are kept for backward compatibility
+// New code should use NextAuth.js functions directly
+
+// This function is deprecated - use signIn from next-auth/react instead
 export const login = async (
   credentials: LoginCredentials,
 ): Promise<LoginResponse> => {
+  console.warn(
+    "The login function is deprecated. Use NextAuth.js signIn instead.",
+  );
   const response = await api.post<LoginResponse>(
     "/api/v1/users/login",
     credentials,
@@ -132,7 +127,11 @@ export const register = async (userData: {
   return response.data;
 };
 
+// This function is deprecated - use the session from useSession() instead
 export const getUserProfile = async () => {
+  console.warn(
+    "The getUserProfile function is deprecated. Use NextAuth.js session instead.",
+  );
   const response = await api.get("/api/v1/users/profile");
   return response.data;
 };
@@ -455,7 +454,7 @@ export const submitContactForm = async (formData: {
 
 export const checkProductAvailability = async (
   productSlug: string,
-  date: string
+  date: string,
 ): Promise<{
   available: boolean;
   product: {
@@ -466,7 +465,7 @@ export const checkProductAvailability = async (
   reason?: string;
 }> => {
   const response = await api.get(
-    `/api/v1/products/availability?slug=${productSlug}&date=${date}`
+    `/api/v1/products/availability?slug=${productSlug}&date=${date}`,
   );
   return response.data;
 };

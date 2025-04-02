@@ -190,9 +190,6 @@ export default function AdminContacts() {
         }));
 
         setContacts(mappedContacts);
-
-        // Log for debugging
-        console.log("Contacts API response:", data);
       } catch (error) {
         setError(error instanceof Error ? error.message : "An error occurred");
         console.error("Error fetching contacts:", error);
@@ -718,9 +715,7 @@ export default function AdminContacts() {
                           {contact.snowConeMachine && (
                             <li>Snow Cone Machine</li>
                           )}
-                          {contact.basketballShoot && (
-                            <li>Basketball Shoot</li>
-                          )}
+                          {contact.basketballShoot && <li>Basketball Shoot</li>}
                           {contact.slushyMachine && <li>Slushy Machine</li>}
                           {contact.overnight && <li>Overnight</li>}
                         </ul>

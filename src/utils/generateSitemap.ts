@@ -129,7 +129,6 @@ async function generate() {
     });
 
     writeFileSync("public/sitemap.xml", formatted);
-    console.log("Sitemap generated successfully!");
   } catch (error) {
     console.error("Error generating sitemap:", error);
     process.exit(1);

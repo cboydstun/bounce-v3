@@ -9,28 +9,31 @@ import Contact from "@/models/Contact";
  * @param date The date to check availability for
  * @returns A promise that resolves to true if the product is available, false otherwise
  */
-async function checkProductAvailability(product: any, date: Date): Promise<boolean> {
+async function checkProductAvailability(
+  product: any,
+  date: Date,
+): Promise<boolean> {
   // 1. Check if product's general status is "available"
   if (product.availability !== "available") {
     return false;
   }
-  
+
   // 2. Check for confirmed bookings on the date
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
-  
+
   const endOfDay = new Date(date);
   endOfDay.setHours(23, 59, 59, 999);
-  
+
   const bookings = await Contact.find({
     bouncer: product.name,
     partyDate: {
       $gte: startOfDay,
-      $lte: endOfDay
+      $lte: endOfDay,
     },
-    confirmed: "Confirmed"
+    confirmed: "Confirmed",
   });
-  
+
   return bookings.length === 0;
 }
 
@@ -58,21 +61,21 @@ function getUnavailabilityReason(product: any, date: Date): string {
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-    
+
     // Parse query parameters
     const url = new URL(request.url);
     const productId = url.searchParams.get("productId");
     const slug = url.searchParams.get("slug");
     const dateStr = url.searchParams.get("date");
-    
+
     // Validate parameters
     if ((!productId && !slug) || !dateStr) {
       return NextResponse.json(
         { error: "Product ID/slug and date are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
-    
+
     // Find product
     let product = null;
     try {
@@ -81,54 +84,53 @@ export async function GET(request: NextRequest) {
       } else if (slug) {
         product = await Product.findBySlug(slug);
       }
-      
+
       if (!product) {
         return NextResponse.json(
           { error: "Product not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
     } catch (err) {
       // Handle invalid ObjectId format
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-    
+
     // Parse and validate date
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) {
       return NextResponse.json(
         { error: "Invalid date format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
-    
+
     // Check availability
     const isAvailable = await checkProductAvailability(product, date);
-    
+
     // Prepare response
     const response = {
       available: isAvailable,
       product: {
         name: product.name,
         slug: product.slug,
-        status: product.availability
-      }
+        status: product.availability,
+      },
     };
-    
+
     // Add reason if not available
     if (!isAvailable) {
-      Object.assign(response, { reason: getUnavailabilityReason(product, date) });
+      Object.assign(response, {
+        reason: getUnavailabilityReason(product, date),
+      });
     }
-    
+
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error checking availability:", error);
     return NextResponse.json(
       { error: "Failed to check availability" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

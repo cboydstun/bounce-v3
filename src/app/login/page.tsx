@@ -2,40 +2,32 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signIn, useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { login } from "@/utils/api";
 
 // Create a separate client component for the login form
 const LoginForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check if we were redirected from a protected page and for existing tokens
+  // Check if we were redirected from a protected page
   useEffect(() => {
-    // Check if we were redirected from a protected page
     const from = searchParams.get("from");
     if (from) {
       setError(`You need to be logged in to access ${from}`);
     }
 
-    // Check if we already have a token in localStorage or cookies
-    const localStorageToken = localStorage.getItem("auth_token");
-    const cookieToken = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("auth_token="))
-      ?.split("=")[1];
-
-    // If we have a token, redirect to admin or the page they were trying to access
-    if (localStorageToken || cookieToken) {
-      console.log("Found existing auth token, redirecting...");
+    // If already authenticated, redirect
+    if (status === "authenticated") {
       router.push(from || "/admin");
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, status, session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,16 +60,28 @@ const LoginForm = () => {
     }
 
     try {
-      // Call the login API endpoint
-      await login({
+      // Call NextAuth.js signIn
+      const result = await signIn("credentials", {
+        redirect: false,
         email,
         password,
-        rememberMe,
+        rememberMe: rememberMe.toString(),
       });
 
-      // Redirect to admin dashboard or the page they were trying to access
-      const from = searchParams.get("from");
-      router.push(from || "/admin");
+      if (result?.error) {
+        console.error("Login error:", result.error);
+
+        // Handle specific error messages
+        if (result.error.includes("Too many login attempts")) {
+          setError("Too many login attempts. Please try again later.");
+        } else {
+          setError("Invalid email or password. Please try again.");
+        }
+      } else if (result?.ok) {
+        // Redirect to admin dashboard or the page they were trying to access
+        const from = searchParams.get("from");
+        router.push(from || "/admin");
+      }
     } catch (err) {
       console.error("Login error:", err);
 
@@ -90,13 +94,6 @@ const LoginForm = () => {
           setError(
             "Network error. Please check your internet connection and try again.",
           );
-        } else if (
-          err.message.includes("401") ||
-          err.message.includes("Invalid credentials")
-        ) {
-          setError("Invalid email or password. Please try again.");
-        } else if (err.message.includes("404")) {
-          setError("Login service not found. Please try again later.");
         } else {
           setError(err.message);
         }

@@ -18,9 +18,6 @@ export async function geocodeAddress(
       // Return [longitude, latitude]
       const coordinates = response.data.features[0].geometry.coordinates;
 
-      // Log the result for debugging
-      console.log(`Geocoded "${address}" to coordinates:`, coordinates);
-
       return coordinates;
     }
 

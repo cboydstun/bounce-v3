@@ -6,7 +6,16 @@ import Image from "next/image";
 
 async function getBlog(slug: string): Promise<Blog> {
   try {
-    const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}/${slug}`, {
+    // For server components in Next.js App Router, we need to use a properly formatted URL
+    // If we're running on the server, we need to use an absolute URL
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      (typeof window === "undefined" ? "http://localhost:3000" : "");
+
+    // Construct the URL properly
+    const url = new URL(`${API_ROUTES.BLOGS}/${slug}`, baseUrl || undefined);
+
+    const response = await fetch(url.toString(), {
       next: { revalidate: 3600 }, // Revalidate every hour
     });
 

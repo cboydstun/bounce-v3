@@ -8,7 +8,7 @@ import { ProductWithId } from "../../types/product";
 
 // Mock react-swipeable (we'll add this library later)
 jest.mock("react-swipeable", () => ({
-  useSwipeable: jest.fn(config => {
+  useSwipeable: jest.fn((config) => {
     // Return handlers that we can access in tests
     return {
       onSwipedLeft: config.onSwipedLeft,
@@ -28,7 +28,13 @@ jest.mock("next/image", () => ({
 // Mock next/link
 jest.mock("next/link", () => ({
   __esModule: true,
-  default: ({ children, href }: { children: React.ReactNode; href: string }) => {
+  default: ({
+    children,
+    href,
+  }: {
+    children: React.ReactNode;
+    href: string;
+  }) => {
     return <a href={href}>{children}</a>;
   },
 }));
@@ -110,34 +116,34 @@ describe("ProductSlider", () => {
   beforeEach(() => {
     // Reset all mocks before each test
     jest.clearAllMocks();
-    
+
     // Mock window.innerWidth to test responsive behavior
-    Object.defineProperty(window, 'innerWidth', {
+    Object.defineProperty(window, "innerWidth", {
       writable: true,
       configurable: true,
       value: 1024, // Default to desktop view
     });
-    
+
     // Mock window resize event
-    window.dispatchEvent(new Event('resize'));
+    window.dispatchEvent(new Event("resize"));
   });
 
   it("renders the product slider with title", () => {
     render(<ProductSlider products={mockProducts} title="Test Products" />);
-    
+
     expect(screen.getByText("Test Products")).toBeInTheDocument();
   });
 
   it("renders navigation buttons when there are multiple pages", () => {
     // Use testItemsPerPage to force pagination
     render(
-      <ProductSlider 
-        products={mockProducts} 
-        title="Test Products" 
+      <ProductSlider
+        products={mockProducts}
+        title="Test Products"
         testItemsPerPage={1} // Show only 1 product per page to ensure multiple pages
-      />
+      />,
     );
-    
+
     // Should have previous and next buttons
     expect(screen.getByLabelText("Previous products")).toBeInTheDocument();
     expect(screen.getByLabelText("Next products")).toBeInTheDocument();
@@ -146,90 +152,100 @@ describe("ProductSlider", () => {
   it("does not render navigation buttons when there's only one page", () => {
     // Use testItemsPerPage to force all products on one page
     render(
-      <ProductSlider 
-        products={[mockProducts[0]]} 
-        title="Test Products" 
+      <ProductSlider
+        products={[mockProducts[0]]}
+        title="Test Products"
         testItemsPerPage={3} // Show 3 products per page, but we only have 1 product
-      />
+      />,
     );
-    
+
     // Should not have navigation buttons
-    expect(screen.queryByLabelText("Previous products")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Previous products"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Next products")).not.toBeInTheDocument();
   });
 
   it("navigates to the next page when clicking the next button", () => {
     render(
-      <ProductSlider 
-        products={mockProducts} 
-        title="Test Products" 
+      <ProductSlider
+        products={mockProducts}
+        title="Test Products"
         testItemsPerPage={1} // Show only 1 product per page to ensure multiple pages
-      />
+      />,
     );
-    
+
     // Click the next button
     fireEvent.click(screen.getByLabelText("Next products"));
-    
+
     // The previous button should be enabled after navigating to the next page
-    expect(screen.getByLabelText("Previous products")).not.toHaveAttribute("disabled");
+    expect(screen.getByLabelText("Previous products")).not.toHaveAttribute(
+      "disabled",
+    );
   });
 
   it("navigates to the previous page when clicking the previous button", () => {
     render(
-      <ProductSlider 
-        products={mockProducts} 
-        title="Test Products" 
+      <ProductSlider
+        products={mockProducts}
+        title="Test Products"
         testItemsPerPage={1} // Show only 1 product per page to ensure multiple pages
-      />
+      />,
     );
-    
+
     // First navigate to the next page
     fireEvent.click(screen.getByLabelText("Next products"));
-    
+
     // Then navigate back to the previous page
     fireEvent.click(screen.getByLabelText("Previous products"));
-    
+
     // The previous button should be disabled when on the first page
-    expect(screen.getByLabelText("Previous products")).toHaveAttribute("disabled");
+    expect(screen.getByLabelText("Previous products")).toHaveAttribute(
+      "disabled",
+    );
   });
 
   it("navigates to the next page when swiping left", () => {
     render(
-      <ProductSlider 
-        products={mockProducts} 
-        title="Test Products" 
+      <ProductSlider
+        products={mockProducts}
+        title="Test Products"
         testItemsPerPage={1} // Show only 1 product per page to ensure multiple pages
-      />
+      />,
     );
-    
+
     // Get the swipe handlers from the mock
     const mockUseSwipeable = require("react-swipeable").useSwipeable;
     const swipeHandlers = mockUseSwipeable.mock.calls[0][0];
-    
+
     // Use fireEvent to click the next button instead of simulating a swipe
     // This is more reliable in the test environment
     fireEvent.click(screen.getByLabelText("Next products"));
-    
+
     // The previous button should be enabled after navigating to the next page
-    expect(screen.getByLabelText("Previous products")).not.toHaveAttribute("disabled");
+    expect(screen.getByLabelText("Previous products")).not.toHaveAttribute(
+      "disabled",
+    );
   });
 
   it("navigates to the previous page when swiping right", () => {
     render(
-      <ProductSlider 
-        products={mockProducts} 
-        title="Test Products" 
+      <ProductSlider
+        products={mockProducts}
+        title="Test Products"
         testItemsPerPage={1} // Show only 1 product per page to ensure multiple pages
-      />
+      />,
     );
-    
+
     // First navigate to the next page
     fireEvent.click(screen.getByLabelText("Next products"));
-    
+
     // Then navigate back using the previous button instead of simulating a swipe
     fireEvent.click(screen.getByLabelText("Previous products"));
-    
+
     // The previous button should be disabled when on the first page
-    expect(screen.getByLabelText("Previous products")).toHaveAttribute("disabled");
+    expect(screen.getByLabelText("Previous products")).toHaveAttribute(
+      "disabled",
+    );
   });
 });

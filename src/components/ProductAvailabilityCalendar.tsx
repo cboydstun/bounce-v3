@@ -41,15 +41,15 @@ export default function ProductAvailabilityCalendar({
   useEffect(() => {
     const start = new Date(date.getFullYear(), date.getMonth(), 1);
     const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    
+
     const dates: Date[] = [];
     const currentDate = new Date(start);
-    
+
     while (currentDate <= end) {
       dates.push(new Date(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     setVisibleDates(dates);
     setIsLoading(true);
   }, [date]);
@@ -57,27 +57,27 @@ export default function ProductAvailabilityCalendar({
   // Check availability for visible dates
   useEffect(() => {
     if (visibleDates.length === 0) return;
-    
+
     const newEvents: AvailabilityEvent[] = [];
     let pendingChecks = 0;
     let hasError = false;
-    
+
     // Start with loading state
     setIsLoading(true);
     setError(null);
-    
+
     // Filter dates that haven't been checked yet
-    const uncheckedDates = visibleDates.filter(date => {
-      const dateStr = date.toISOString().split('T')[0];
+    const uncheckedDates = visibleDates.filter((date) => {
+      const dateStr = date.toISOString().split("T")[0];
       return checkedDates[dateStr] === undefined;
     });
-    
+
     // If all dates are already checked, just create events from cache
     if (uncheckedDates.length === 0) {
-      visibleDates.forEach(date => {
-        const dateStr = date.toISOString().split('T')[0];
+      visibleDates.forEach((date) => {
+        const dateStr = date.toISOString().split("T")[0];
         const available = checkedDates[dateStr];
-        
+
         newEvents.push({
           id: dateStr,
           title: available ? "Available" : "Unavailable",
@@ -87,24 +87,26 @@ export default function ProductAvailabilityCalendar({
           available,
         });
       });
-      
-      setEvents(newEvents.sort((a, b) => a.start.getTime() - b.start.getTime()));
+
+      setEvents(
+        newEvents.sort((a, b) => a.start.getTime() - b.start.getTime()),
+      );
       setIsLoading(false);
       return;
     }
-    
+
     // Prepare to collect all new availability data
     const newCheckedDates: Record<string, boolean> = {};
     pendingChecks = uncheckedDates.length;
-    
+
     // Check each unchecked date
     uncheckedDates.forEach(async (date) => {
-      const dateStr = date.toISOString().split('T')[0];
-      
+      const dateStr = date.toISOString().split("T")[0];
+
       try {
         // Check availability for this date
         const result = await checkProductAvailability(productSlug, dateStr);
-        
+
         // Store the result (but don't update state yet)
         newCheckedDates[dateStr] = result.available;
       } catch (err) {
@@ -112,22 +114,23 @@ export default function ProductAvailabilityCalendar({
         hasError = true;
       } finally {
         pendingChecks--;
-        
+
         // When all checks are complete, update state once
         if (pendingChecks === 0) {
           // Update checkedDates state once with all new data
-          setCheckedDates(prev => ({
+          setCheckedDates((prev) => ({
             ...prev,
-            ...newCheckedDates
+            ...newCheckedDates,
           }));
-          
+
           // Create events from both cached and new data
-          visibleDates.forEach(date => {
-            const dateStr = date.toISOString().split('T')[0];
-            const available = newCheckedDates[dateStr] !== undefined 
-              ? newCheckedDates[dateStr] 
-              : checkedDates[dateStr];
-            
+          visibleDates.forEach((date) => {
+            const dateStr = date.toISOString().split("T")[0];
+            const available =
+              newCheckedDates[dateStr] !== undefined
+                ? newCheckedDates[dateStr]
+                : checkedDates[dateStr];
+
             if (available !== undefined) {
               newEvents.push({
                 id: dateStr,
@@ -139,12 +142,16 @@ export default function ProductAvailabilityCalendar({
               });
             }
           });
-          
+
           if (hasError) {
-            setError("Failed to load some availability data. Please try again.");
+            setError(
+              "Failed to load some availability data. Please try again.",
+            );
           }
-          
-          setEvents(newEvents.sort((a, b) => a.start.getTime() - b.start.getTime()));
+
+          setEvents(
+            newEvents.sort((a, b) => a.start.getTime() - b.start.getTime()),
+          );
           setIsLoading(false);
         }
       }
@@ -155,7 +162,7 @@ export default function ProductAvailabilityCalendar({
   const eventStyleGetter = (event: AvailabilityEvent) => {
     const backgroundColor = event.available ? "#10B981" : "#EF4444"; // Green if available, red if not
     const textColor = "white";
-    
+
     return {
       style: {
         backgroundColor,
@@ -170,15 +177,17 @@ export default function ProductAvailabilityCalendar({
 
   // Custom day styling to show availability
   const dayPropGetter = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    const event = events.find(e => e.id === dateStr);
-    
+    const dateStr = date.toISOString().split("T")[0];
+    const event = events.find((e) => e.id === dateStr);
+
     if (!event) return {};
-    
+
     return {
-      className: event.available ? 'available-day' : 'unavailable-day',
+      className: event.available ? "available-day" : "unavailable-day",
       style: {
-        backgroundColor: event.available ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+        backgroundColor: event.available
+          ? "rgba(16, 185, 129, 0.1)"
+          : "rgba(239, 68, 68, 0.1)",
       },
     };
   };
@@ -192,22 +201,30 @@ export default function ProductAvailabilityCalendar({
   const CustomToolbar = ({ label, onNavigate, date: calendarDate }: any) => {
     const navigate = (action: string) => {
       let newDate = new Date(calendarDate);
-      
+
       switch (action) {
-        case 'PREV':
-          newDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1);
+        case "PREV":
+          newDate = new Date(
+            calendarDate.getFullYear(),
+            calendarDate.getMonth() - 1,
+            1,
+          );
           break;
-        case 'NEXT':
-          newDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
+        case "NEXT":
+          newDate = new Date(
+            calendarDate.getFullYear(),
+            calendarDate.getMonth() + 1,
+            1,
+          );
           break;
-        case 'TODAY':
+        case "TODAY":
           newDate = new Date();
           break;
       }
-      
+
       // Call the original onNavigate function
       onNavigate(action);
-      
+
       // Also update our component's date state
       setDate(newDate);
     };
@@ -215,13 +232,13 @@ export default function ProductAvailabilityCalendar({
     return (
       <div className="rbc-toolbar">
         <span className="rbc-btn-group">
-          <button type="button" onClick={() => navigate('PREV')}>
+          <button type="button" onClick={() => navigate("PREV")}>
             Previous
           </button>
-          <button type="button" onClick={() => navigate('TODAY')}>
+          <button type="button" onClick={() => navigate("TODAY")}>
             Today
           </button>
-          <button type="button" onClick={() => navigate('NEXT')}>
+          <button type="button" onClick={() => navigate("NEXT")}>
             Next
           </button>
         </span>
@@ -247,19 +264,17 @@ export default function ProductAvailabilityCalendar({
       <h2 className="text-2xl font-bold text-primary-purple mb-4">
         {productName} Availability
       </h2>
-      
+
       {isLoading && (
         <div className="flex justify-center items-center h-[400px]">
           <LoadingSpinner className="w-8 h-8 text-primary-blue" />
         </div>
       )}
-      
+
       {error && (
-        <div className="p-4 bg-red-100 text-red-700 rounded-lg">
-          {error}
-        </div>
+        <div className="p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>
       )}
-      
+
       {!isLoading && !error && (
         <div className="h-[500px]">
           <Calendar
@@ -268,7 +283,7 @@ export default function ProductAvailabilityCalendar({
             startAccessor="start"
             endAccessor="end"
             style={{ height: "100%" }}
-            views={['month']}
+            views={["month"]}
             defaultView="month"
             date={date}
             onNavigate={setDate}
@@ -279,33 +294,42 @@ export default function ProductAvailabilityCalendar({
             components={{
               toolbar: CustomToolbar,
             }}
-            tooltipAccessor={(event: AvailabilityEvent) => 
-              `${productName} is ${event.available ? 'available' : 'not available'} on this date`
+            tooltipAccessor={(event: AvailabilityEvent) =>
+              `${productName} is ${event.available ? "available" : "not available"} on this date`
             }
           />
         </div>
       )}
-      
+
       {selectedDate && (
-        <div className={`mt-4 p-4 rounded-lg ${
-          events.find(e => e.id === selectedDate.toISOString().split('T')[0])?.available
-            ? "bg-green-100 text-green-700"
-            : "bg-red-100 text-red-700"
-        }`}>
+        <div
+          className={`mt-4 p-4 rounded-lg ${
+            events.find(
+              (e) => e.id === selectedDate.toISOString().split("T")[0],
+            )?.available
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
           <p className="font-medium">
-            {productName} is {events.find(e => e.id === selectedDate.toISOString().split('T')[0])?.available
+            {productName} is{" "}
+            {events.find(
+              (e) => e.id === selectedDate.toISOString().split("T")[0],
+            )?.available
               ? "available"
-              : "not available"
-            } on {selectedDate.toLocaleDateString()}.
+              : "not available"}{" "}
+            on {selectedDate.toLocaleDateString()}.
           </p>
-          {!events.find(e => e.id === selectedDate.toISOString().split('T')[0])?.available && (
+          {!events.find(
+            (e) => e.id === selectedDate.toISOString().split("T")[0],
+          )?.available && (
             <p className="text-sm mt-1">
               This date is already booked or the product is unavailable.
             </p>
           )}
         </div>
       )}
-      
+
       <style jsx global>{`
         .available-day {
           background-color: rgba(16, 185, 129, 0.1);

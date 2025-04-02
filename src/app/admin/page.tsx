@@ -47,7 +47,6 @@ export default function AdminDashboard() {
         // Get the total count from pagination.total or fall back to array length
         blogsCount =
           blogsData.pagination?.total || blogsData.blogs?.length || 0;
-        console.log("Blogs API response:", blogsData);
       } catch (error) {
         console.error("Failed to fetch blogs:", error);
       }
@@ -59,7 +58,6 @@ export default function AdminDashboard() {
         const products = productsData.products || [];
         // Get the total count from pagination.total or fall back to array length
         productsCount = productsData.pagination?.total || products.length || 0;
-        console.log("Products API response:", productsData);
       } catch (error) {
         console.error("Failed to fetch products:", error);
       }
@@ -71,7 +69,6 @@ export default function AdminDashboard() {
         const contacts = contactsData.contacts || [];
         // Get the total count from pagination.total or fall back to array length
         contactsCount = contactsData.pagination?.total || contacts.length || 0;
-        console.log("Contacts API response:", contactsData);
       } catch (error) {
         console.error("Failed to fetch contacts:", error);
       }
@@ -79,7 +76,6 @@ export default function AdminDashboard() {
       // Fetch reviews count - this is the one we really care about
       try {
         reviewsData = await getReviews();
-        console.log("Reviews API response:", reviewsData);
       } catch (error) {
         console.error("Failed to fetch reviews:", error);
       }
@@ -89,7 +85,6 @@ export default function AdminDashboard() {
 
       // Get the total count from pagination.total
       const totalReviews = reviewsData.pagination?.total || reviews.length || 0;
-      console.log("Total reviews count:", totalReviews);
 
       // Calculate review statistics
       const last24Hours = new Date();

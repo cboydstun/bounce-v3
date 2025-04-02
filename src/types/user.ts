@@ -17,7 +17,7 @@ export interface LoginError {
 // Mongoose interfaces
 export interface IUser {
   email: string;
-  password: string;
+  password?: string; // Make password optional for session user objects
   name?: string;
   role?: string;
 }

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { setAuthToken } from "@/utils/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminLayout({
   children,
@@ -11,22 +11,17 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const { logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Check for auth token
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      router.push("/login");
-    } else {
-      setIsLoading(false);
-    }
-  }, [router]);
+    // The loading state is managed by the useAuth hook
+    setIsLoading(false);
+  }, []);
 
   const handleLogout = () => {
-    setAuthToken(null);
-    router.push("/login");
+    logout();
   };
 
   if (isLoading) {

@@ -24,7 +24,11 @@ export interface BlogFormData
     date: Date;
     isApproved: boolean;
   }>;
-  relatedPosts?: string[];
+  relatedPosts?: Array<{
+    _id: string;
+    title: string;
+    slug: string;
+  }>;
   createdAt?: Date;
   updatedAt?: Date;
   newImages?: Array<{
@@ -157,8 +161,6 @@ export default function BlogForm({
       setError(err instanceof Error ? err.message : "Failed to delete image");
     }
   };
-
-  console.log("// BlogForm.tsx formData:", formData);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
