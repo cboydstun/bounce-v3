@@ -13,11 +13,16 @@
  * node scripts/debug-auth.js [--url=https://your-site.com] [--email=test@example.com] [--password=yourpassword]
  */
 
-const fetch = require('node-fetch');
-const { parse } = require('url');
-const { promisify } = require('util');
-const readline = require('readline');
-const crypto = require('crypto');
+// const fetch = require('node-fetch');
+// const { parse } = require('url');
+// const { promisify } = require('util');
+// const readline = require('readline');
+// const crypto = require('crypto');
+import fetch from 'node-fetch';
+import { parse } from 'url';
+import { promisify } from 'util';
+import readline from 'readline';
+import crypto from 'crypto';
 
 // Create readline interface for user input
 const rl = readline.createInterface({
