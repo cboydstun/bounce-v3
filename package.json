@@ -41,6 +41,7 @@
     "lucide-react": "^0.469.0",
     "mongoose": "^8.12.1",
     "next": "^15.2.3",
+    "next-auth": "^4.24.11",
     "next-cloudinary": "^6.16.0",
     "node-fetch": "^3.3.2",
     "nodemailer": "^6.10.0",

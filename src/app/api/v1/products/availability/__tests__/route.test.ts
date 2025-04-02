@@ -78,7 +78,7 @@ describe("Product Availability API", () => {
 
   it("should return 400 if product ID/slug is missing", async () => {
     const req = new NextRequest(
-      "http://localhost:3000/api/v1/products/availability?date=2025-04-20"
+      "http://localhost:3000/api/v1/products/availability?date=2025-04-20",
     );
 
     const response = await GET(req);
@@ -90,7 +90,7 @@ describe("Product Availability API", () => {
 
   it("should return 400 if date is missing", async () => {
     const req = new NextRequest(
-      `http://localhost:3000/api/v1/products/availability?productId=${productId}`
+      `http://localhost:3000/api/v1/products/availability?productId=${productId}`,
     );
 
     const response = await GET(req);
@@ -102,7 +102,7 @@ describe("Product Availability API", () => {
 
   it("should return 404 if product is not found", async () => {
     const req = new NextRequest(
-      "http://localhost:3000/api/v1/products/availability?productId=nonexistentid&date=2025-04-20"
+      "http://localhost:3000/api/v1/products/availability?productId=nonexistentid&date=2025-04-20",
     );
 
     const response = await GET(req);
@@ -114,7 +114,7 @@ describe("Product Availability API", () => {
 
   it("should return available=true when product is available on the date", async () => {
     const req = new NextRequest(
-      `http://localhost:3000/api/v1/products/availability?productId=${productId}&date=2025-04-20`
+      `http://localhost:3000/api/v1/products/availability?productId=${productId}&date=2025-04-20`,
     );
 
     const response = await GET(req);
@@ -130,7 +130,7 @@ describe("Product Availability API", () => {
 
   it("should return available=true when using slug instead of productId", async () => {
     const req = new NextRequest(
-      `http://localhost:3000/api/v1/products/availability?slug=${productSlug}&date=2025-04-20`
+      `http://localhost:3000/api/v1/products/availability?slug=${productSlug}&date=2025-04-20`,
     );
 
     const response = await GET(req);
@@ -143,7 +143,7 @@ describe("Product Availability API", () => {
 
   it("should return available=false when product has a confirmed booking on the date", async () => {
     const req = new NextRequest(
-      `http://localhost:3000/api/v1/products/availability?productId=${productId}&date=2025-04-15`
+      `http://localhost:3000/api/v1/products/availability?productId=${productId}&date=2025-04-15`,
     );
 
     const response = await GET(req);
@@ -157,12 +157,14 @@ describe("Product Availability API", () => {
 
   it("should return available=false when product's general status is not available", async () => {
     // Find the maintenance product
-    const maintenanceProduct = await Product.findOne({ name: "Maintenance Bounce House" });
+    const maintenanceProduct = await Product.findOne({
+      name: "Maintenance Bounce House",
+    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const maintenanceProductId = (maintenanceProduct as any)._id.toString();
 
     const req = new NextRequest(
-      `http://localhost:3000/api/v1/products/availability?productId=${maintenanceProductId}&date=2025-04-20`
+      `http://localhost:3000/api/v1/products/availability?productId=${maintenanceProductId}&date=2025-04-20`,
     );
 
     const response = await GET(req);
@@ -177,7 +179,7 @@ describe("Product Availability API", () => {
 
   it("should handle invalid date format", async () => {
     const req = new NextRequest(
-      `http://localhost:3000/api/v1/products/availability?productId=${productId}&date=invalid-date`
+      `http://localhost:3000/api/v1/products/availability?productId=${productId}&date=invalid-date`,
     );
 
     const response = await GET(req);

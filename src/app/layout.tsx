@@ -7,6 +7,7 @@ import GoogleAnalytics from "../components/GoogleAnalytics";
 import { GoogleTagManager } from "@next/third-parties/google";
 import Fingerprint from "../components/Fingerprint";
 import { setupErrorTracking } from "../utils/trackInteraction";
+import { Providers } from "./providers";
 
 import "./globals.css";
 
@@ -193,10 +194,12 @@ export default function RootLayout({
             },
           }}
         />
-        <Navigation />
-        <main className="flex-grow">{children}</main>
-        <Footer />
-        <Fingerprint />
+        <Providers>
+          <Navigation />
+          <main className="flex-grow">{children}</main>
+          <Footer />
+          <Fingerprint />
+        </Providers>
       </body>
       <GoogleTagManager gtmId={process.env.NEXT_GTM_ID!} />
     </html>

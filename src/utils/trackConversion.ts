@@ -49,8 +49,6 @@ export const trackConversion = async (
         conversionEvent,
       }),
     });
-
-    console.log(`Conversion tracked: ${type}`, { product, value, completed });
   } catch (error) {
     console.error("Error tracking conversion:", error);
   }

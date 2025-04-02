@@ -1,8 +1,8 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signIn, useSession } from "next-auth/react";
 import LoginPage from "../page";
-import { login } from "@/utils/api";
 
 // Mock the next/navigation hooks
 jest.mock("next/navigation", () => ({
@@ -10,9 +10,10 @@ jest.mock("next/navigation", () => ({
   useSearchParams: jest.fn(),
 }));
 
-// Mock the api utilities
-jest.mock("@/utils/api", () => ({
-  login: jest.fn(),
+// Mock next-auth
+jest.mock("next-auth/react", () => ({
+  signIn: jest.fn(),
+  useSession: jest.fn(),
 }));
 
 // Mock the LoadingSpinner component
@@ -33,28 +34,10 @@ describe("LoginPage", () => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (useSearchParams as jest.Mock).mockReturnValue(mockSearchParams);
-
-    // Mock localStorage
-    const localStorageMock = {
-      getItem: jest.fn(),
-      setItem: jest.fn(),
-      removeItem: jest.fn(),
-    };
-    // Only mock window and document if they exist (for jsdom environment)
-    if (typeof window !== "undefined") {
-      Object.defineProperty(window, "localStorage", {
-        value: localStorageMock,
-        writable: true,
-      });
-    }
-
-    // Mock document.cookie
-    if (typeof document !== "undefined") {
-      Object.defineProperty(document, "cookie", {
-        writable: true,
-        value: "",
-      });
-    }
+    (useSession as jest.Mock).mockReturnValue({
+      data: null,
+      status: "unauthenticated",
+    });
   });
 
   it("renders the login form", () => {
@@ -79,9 +62,12 @@ describe("LoginPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("redirects to admin if token exists", () => {
-    // Mock localStorage to return a token
-    (window.localStorage.getItem as jest.Mock).mockReturnValue("fake-token");
+  it("redirects to admin if already authenticated", () => {
+    // Mock authenticated session
+    (useSession as jest.Mock).mockReturnValue({
+      data: { user: { email: "test@example.com" } },
+      status: "authenticated",
+    });
 
     // Make sure "from" is not set for this test
     mockSearchParams.get.mockReturnValue(null);
@@ -108,9 +94,12 @@ describe("LoginPage", () => {
     // and it's difficult to test without mocking the useState hook
   });
 
-  it("calls login API and redirects on successful login", async () => {
-    // Mock successful login
-    (login as jest.Mock).mockResolvedValue({ token: "fake-token" });
+  it("calls signIn and redirects on successful login", async () => {
+    // Mock successful signIn
+    (signIn as jest.Mock).mockResolvedValue({
+      ok: true,
+      error: null,
+    });
 
     render(<LoginPage />);
 
@@ -133,18 +122,12 @@ describe("LoginPage", () => {
 
     // Wait for login to complete
     await waitFor(() => {
-      // Verify login was called with correct credentials
-      expect(login).toHaveBeenCalledWith({
+      // Verify signIn was called with correct credentials
+      expect(signIn).toHaveBeenCalledWith("credentials", {
+        redirect: false,
         email: "test@example.com",
         password: "password123",
-        rememberMe: true,
-      });
-
-      // Verify login was called with correct credentials
-      expect(login).toHaveBeenCalledWith({
-        email: "test@example.com",
-        password: "password123",
-        rememberMe: true,
+        rememberMe: "true",
       });
 
       // Make sure "from" is not set for this test
@@ -156,8 +139,11 @@ describe("LoginPage", () => {
   });
 
   it("displays error message on login failure", async () => {
-    // Mock login failure
-    (login as jest.Mock).mockRejectedValue(new Error("Invalid credentials"));
+    // Mock signIn failure
+    (signIn as jest.Mock).mockResolvedValue({
+      ok: false,
+      error: "Invalid credentials",
+    });
 
     render(<LoginPage />);
 

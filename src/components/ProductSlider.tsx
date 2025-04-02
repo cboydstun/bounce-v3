@@ -13,10 +13,10 @@ interface ProductSliderProps {
   testItemsPerPage?: number; // For testing purposes
 }
 
-const ProductSlider: React.FC<ProductSliderProps> = ({ 
-  products, 
+const ProductSlider: React.FC<ProductSliderProps> = ({
+  products,
   title,
-  testItemsPerPage 
+  testItemsPerPage,
 }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(testItemsPerPage || 1);
@@ -24,7 +24,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({
   useEffect(() => {
     // Skip resize handling if testItemsPerPage is provided (for testing)
     if (testItemsPerPage !== undefined) return;
-    
+
     // Update items per page based on window width
     const handleResize = () => {
       if (window.innerWidth >= 1024)
@@ -57,18 +57,18 @@ const ProductSlider: React.FC<ProductSliderProps> = ({
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => {
       if (currentPage < pageCount - 1) {
-        setCurrentPage(prev => prev + 1);
+        setCurrentPage((prev) => prev + 1);
       }
     },
     onSwipedRight: () => {
       if (currentPage > 0) {
-        setCurrentPage(prev => prev - 1);
+        setCurrentPage((prev) => prev - 1);
       }
     },
     // Prevent scrolling while swiping
     preventScrollOnSwipe: true,
     // Only activate for horizontal swipes
-    trackMouse: false
+    trackMouse: false,
   });
 
   return (

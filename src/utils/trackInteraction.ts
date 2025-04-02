@@ -49,12 +49,6 @@ export const trackInteraction = async (
         interaction,
       }),
     });
-
-    console.log(`Interaction tracked: ${type}`, {
-      element,
-      page: currentPage,
-      data,
-    });
   } catch (error) {
     console.error("Error tracking interaction:", error);
   }
@@ -214,11 +208,6 @@ export const trackClientError = async (
         clientError,
       }),
     });
-
-    console.log(`Client error tracked: ${errorType}`, {
-      message: errorMessage,
-      url: currentPage,
-    });
   } catch (trackingError) {
     console.error("Error tracking client error:", trackingError);
   }
@@ -251,7 +240,5 @@ export const setupErrorTracking = (): void => {
     window.addEventListener("unhandledrejection", (event) => {
       trackClientError(event.reason || "Unhandled Promise Rejection");
     });
-
-    console.log("Global error tracking set up");
   }
 };

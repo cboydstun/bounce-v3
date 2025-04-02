@@ -65,7 +65,6 @@ const ContactCalendar: React.FC<ContactCalendarProps> = ({
   // Custom event styling based on confirmation status
   const eventStyleGetter = (event: ContactEvent) => {
     const status = event.resource.confirmed;
-    console.log("Status type:", typeof status, "Value:", status); // Debug log
 
     // Define colors for different statuses
     let backgroundColor = "#FBBF24"; // Default yellow for Pending

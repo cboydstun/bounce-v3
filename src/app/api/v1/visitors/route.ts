@@ -399,18 +399,18 @@ export async function GET(req: NextRequest) {
 
     // Parse additional query parameters
     const includeAdmin = url.searchParams.get("includeAdmin") === "true";
-    
+
     // Build query to exclude admin visitors unless explicitly requested
-    const query = includeAdmin 
-      ? {} 
-      : { 
-          visitedPages: { 
-            $not: { 
-              $elemMatch: { 
-                url: /^\/admin/ 
-              } 
-            } 
-          } 
+    const query = includeAdmin
+      ? {}
+      : {
+          visitedPages: {
+            $not: {
+              $elemMatch: {
+                url: /^\/admin/,
+              },
+            },
+          },
         };
 
     // Get total count for pagination (filtered by query)

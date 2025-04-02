@@ -6,19 +6,22 @@ import mongoose from "mongoose";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } },
+  { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
     await dbConnect();
 
+    // Await the params object to get the slug
+    const { slug } = await params;
+
     let blog;
 
     // Check if slug is a valid MongoDB ObjectId
-    if (mongoose.Types.ObjectId.isValid(params.slug)) {
-      blog = await Blog.findById(params.slug).populate("author", "name");
+    if (mongoose.Types.ObjectId.isValid(slug)) {
+      blog = await Blog.findById(slug).populate("author", "name");
     } else {
       // If not a valid ObjectId, try to find by slug
-      blog = await Blog.findBySlug(params.slug);
+      blog = await Blog.findBySlug(slug);
     }
 
     if (!blog) {
@@ -41,7 +44,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { slug: string } },
+  { params }: { params: Promise<{ slug: string }> },
 ) {
   return withAuth(request, async (req: AuthRequest) => {
     try {
@@ -55,15 +58,18 @@ export async function PUT(
 
       await dbConnect();
 
+      // Await the params object to get the slug
+      const { slug } = await params;
+
       // Find the blog
       let blog;
 
       // Check if slug is a valid MongoDB ObjectId
-      if (mongoose.Types.ObjectId.isValid(params.slug)) {
-        blog = await Blog.findById(params.slug);
+      if (mongoose.Types.ObjectId.isValid(slug)) {
+        blog = await Blog.findById(slug);
       } else {
         // If not a valid ObjectId, try to find by slug
-        blog = await Blog.findOne({ slug: params.slug });
+        blog = await Blog.findOne({ slug });
       }
 
       if (!blog) {
@@ -109,7 +115,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { slug: string } },
+  { params }: { params: Promise<{ slug: string }> },
 ) {
   return withAuth(request, async (req: AuthRequest) => {
     try {
@@ -123,15 +129,18 @@ export async function DELETE(
 
       await dbConnect();
 
+      // Await the params object to get the slug
+      const { slug } = await params;
+
       // Find the blog
       let blog;
 
       // Check if slug is a valid MongoDB ObjectId
-      if (mongoose.Types.ObjectId.isValid(params.slug)) {
-        blog = await Blog.findById(params.slug);
+      if (mongoose.Types.ObjectId.isValid(slug)) {
+        blog = await Blog.findById(slug);
       } else {
         // If not a valid ObjectId, try to find by slug
-        blog = await Blog.findOne({ slug: params.slug });
+        blog = await Blog.findOne({ slug });
       }
 
       if (!blog) {

@@ -101,8 +101,6 @@ export default function RoutePlannerPage() {
 
       // Update the start coordinates with the geocoded coordinates
       setStartCoordinates(result.startCoordinates);
-      console.log("Geocoded start coordinates:", result.startCoordinates);
-
       setOptimizedRoute(result);
     } catch (error) {
       console.error("Error optimizing route:", error);

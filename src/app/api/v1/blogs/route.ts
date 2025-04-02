@@ -73,10 +73,6 @@ export async function GET(request: NextRequest) {
       } else if (!status) {
         query.status = "published"; // Default to published blogs if no status specified
       }
-      // If status is 'all', don't add a status filter to the query
-
-      console.log("Query:", query); // Log the query for debugging
-
       blogs = await Blog.find(query)
         .sort({ publishDate: -1 })
         .skip(skip)

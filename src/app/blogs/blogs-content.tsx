@@ -47,9 +47,18 @@ export function BlogsContent() {
         if (search) params.append("search", search);
 
         const queryString = params.toString() ? `?${params.toString()}` : "";
-        const response = await fetch(
-          `${API_BASE_URL}${API_ROUTES.BLOGS}${queryString}`,
-        );
+
+        // Construct the URL properly
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL ||
+          (typeof window === "undefined"
+            ? "http://localhost:3000"
+            : window.location.origin);
+
+        // Create a proper URL object
+        const url = new URL(`${API_ROUTES.BLOGS}${queryString}`, baseUrl);
+
+        const response = await fetch(url.toString());
 
         if (!response.ok) throw new Error("Failed to fetch blogs");
 

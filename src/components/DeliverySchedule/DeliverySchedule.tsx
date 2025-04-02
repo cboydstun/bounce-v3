@@ -110,7 +110,6 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
   const handleSave = () => {
     // In a real implementation, this would save to a database or file
     // For now, we'll just log to console and toggle edit mode
-    console.log("Saving schedule:", optimizedRoute);
     setIsEditing(false);
 
     // Store in localStorage for persistence

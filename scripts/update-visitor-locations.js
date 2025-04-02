@@ -94,8 +94,6 @@ async function updateVisitorLocations() {
       ],
     });
 
-    console.log(`Found ${visitors.length} visitors without location data`);
-
     // Process visitors in batches to avoid rate limits (45 requests per minute for IP-API)
     const batchSize = 40;
     const delay = 70 * 1000; // 70 seconds delay between batches

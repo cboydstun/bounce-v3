@@ -114,7 +114,7 @@ describe("Visitor Model", () => {
   it("should exclude visitors who have visited admin pages", async () => {
     // Clear all visitors before this test
     await Visitor.deleteMany({});
-    
+
     // Create regular visitor
     await Visitor.create({
       visitorId: "regular-visitor-123",
@@ -128,8 +128,8 @@ describe("Visitor Model", () => {
         {
           url: "/contact",
           timestamp: new Date(),
-        }
-      ]
+        },
+      ],
     });
 
     // Create admin visitor
@@ -145,8 +145,8 @@ describe("Visitor Model", () => {
         {
           url: "/admin/dashboard",
           timestamp: new Date(),
-        }
-      ]
+        },
+      ],
     });
 
     // Create visitor with mixed pages
@@ -166,19 +166,19 @@ describe("Visitor Model", () => {
         {
           url: "/contact",
           timestamp: new Date(),
-        }
-      ]
+        },
+      ],
     });
 
     // Query to exclude admin visitors (same query as used in the API)
     const nonAdminVisitors = await Visitor.find({
-      visitedPages: { 
-        $not: { 
-          $elemMatch: { 
-            url: /^\/admin/ 
-          } 
-        } 
-      }
+      visitedPages: {
+        $not: {
+          $elemMatch: {
+            url: /^\/admin/,
+          },
+        },
+      },
     });
 
     // Should only return the regular visitor
@@ -187,11 +187,13 @@ describe("Visitor Model", () => {
 
     // Query to find admin visitors
     const adminVisitors = await Visitor.find({
-      "visitedPages.url": /^\/admin/
+      "visitedPages.url": /^\/admin/,
     });
 
     // Should return both admin and mixed visitors
     expect(adminVisitors.length).toBe(2);
-    expect(adminVisitors.map(v => v.visitorId).sort()).toEqual(["admin-visitor-456", "mixed-visitor-789"].sort());
+    expect(adminVisitors.map((v) => v.visitorId).sort()).toEqual(
+      ["admin-visitor-456", "mixed-visitor-789"].sort(),
+    );
   });
 });
