@@ -49,7 +49,8 @@ const applyRateLimit = (ip: string): boolean => {
 };
 
 export const authOptions: NextAuthOptions = {
-  debug: true, // Enable NextAuth debug mode in production for troubleshooting
+  // Enable NextAuth debug mode for troubleshooting
+  debug: process.env.NODE_ENV === "production",
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -217,10 +218,32 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
+        // Always use secure cookies in production
+        secure: process.env.NODE_ENV === "production",
+        // Set a longer max age for cookies
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+      },
+    },
+    callbackUrl: {
+      name: "next-auth.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+    csrfToken: {
+      name: "next-auth.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
         secure: process.env.NODE_ENV === "production",
       },
     },
   },
+  // Use NEXTAUTH_SECRET as the primary secret, with JWT_SECRET as fallback
   secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
 };
 

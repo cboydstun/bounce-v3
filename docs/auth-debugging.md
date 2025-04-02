@@ -1,141 +1,179 @@
-# Authentication Debugging Guide
+# NextAuth.js Authentication Debugging Guide
 
-This guide provides instructions for debugging authentication issues in the application, particularly focusing on problems that occur in production but not in development.
+This document provides guidance on debugging authentication issues with NextAuth.js, particularly focusing on the differences between development and production environments.
 
 ## Table of Contents
 
-1. [Common Authentication Issues](#common-authentication-issues)
-2. [Debug Logging](#debug-logging)
-3. [Debug Page](#debug-page)
-4. [Test Script](#test-script)
-5. [Environment Variables](#environment-variables)
-6. [Cookie Issues](#cookie-issues)
-7. [Production Checklist](#production-checklist)
+1. [Common Issues](#common-issues)
+2. [Environment Variables](#environment-variables)
+3. [Cookie Settings](#cookie-settings)
+4. [Middleware Configuration](#middleware-configuration)
+5. [Debugging Tools](#debugging-tools)
+6. [Vercel Deployment Considerations](#vercel-deployment-considerations)
 
-## Common Authentication Issues
+## Common Issues
 
-Authentication issues that appear in production but not in development are often related to:
+### Authentication Works in Development but Not in Production
 
-1. **Missing Environment Variables**: NEXTAUTH_URL, NEXTAUTH_SECRET, or JWT_SECRET not properly set in production
-2. **Cookie Configuration**: Secure cookies requiring HTTPS in production
-3. **CORS Issues**: Cross-origin requests being blocked
-4. **Database Connection**: Problems connecting to MongoDB in production
-5. **Middleware Execution**: Different behavior in production vs development
-6. **Token Verification**: Issues with JWT verification
+This is a common issue with NextAuth.js and typically stems from one of these causes:
 
-## Debug Logging
+1. **Environment Variables**: Missing or incorrect NEXTAUTH_URL or NEXTAUTH_SECRET in production
+2. **Cookie Settings**: Secure cookies not working correctly in production
+3. **Middleware Conflicts**: Middleware intercepting requests that should be excluded
+4. **CORS Issues**: Cross-origin resource sharing problems in production
 
-We've added extensive debug logging throughout the authentication flow. These logs will help identify where the authentication process is failing.
+### Analytics Interference
 
-Key files with debug logging:
-
-- `src/app/api/auth/[...nextauth]/route.ts` - NextAuth API route
-- `src/app/login/page.tsx` - Login page component
-- `src/middleware.ts` - Next.js middleware
-- `src/contexts/AuthContext.tsx` - Auth context provider
-- `src/middleware/auth.ts` - API route auth middleware
-
-The logs include:
-
-- Environment variable checks
-- Database connection status
-- Token creation and verification
-- Session management
-- Cookie handling
-
-## Debug Page
-
-A special debug page is available at `/debug-auth` that provides real-time information about:
-
-- Current session status
-- Environment variables
-- Authentication cookies
-- LocalStorage items
-- Browser information
-
-This page also allows you to:
-
-- Test login/logout functionality
-- Check session data
-- Verify environment configuration
-
-**Important**: This page displays sensitive information and should be protected or disabled in production after debugging is complete.
-
-## Test Script
-
-A Node.js script is provided to test the authentication flow directly:
-
-```bash
-# Run against local development server
-node scripts/test-auth.js
-
-# Run against production
-node scripts/test-auth.js https://your-production-site.com
-```
-
-This script tests:
-
-1. CSRF token generation
-2. Login with credentials
-3. Session retrieval
-4. Logout functionality
+A specific issue we've identified is that analytics endpoints (like `/api/v1/visitors`) were being intercepted by the authentication middleware, causing redirect loops and 405 Method Not Allowed errors.
 
 ## Environment Variables
 
-Ensure these environment variables are properly set in production:
+NextAuth.js requires these environment variables to be properly set:
 
 ```
-# Required for NextAuth.js
 NEXTAUTH_URL=https://your-production-site.com
 NEXTAUTH_SECRET=your-secure-secret-key
-
-# Alternative to NEXTAUTH_SECRET (only one is needed)
-JWT_SECRET=your-secure-secret-key
-
-# Database connection
-MONGODB_URI=your-mongodb-connection-string
 ```
 
-**Note**: In production, `NEXTAUTH_URL` must use HTTPS if your site uses HTTPS.
+### NEXTAUTH_URL
 
-## Cookie Issues
+- Must be the full URL of your site in production
+- Should include the protocol (https://) and domain
+- Should not include a trailing slash
+- Example: `NEXTAUTH_URL=https://bounce-v3-git-nextauth-chris-boydstuns-projects.vercel.app`
 
-Common cookie-related issues:
+### NEXTAUTH_SECRET
 
-1. **Secure Flag**: In production, cookies are set with `secure: true` which requires HTTPS
-2. **Domain Issues**: Ensure cookies are set for the correct domain
-3. **SameSite Policy**: NextAuth uses `sameSite: "lax"` which may cause issues with certain cross-origin requests
-4. **HttpOnly Flag**: Session cookies are HttpOnly and cannot be accessed by JavaScript
+- Used to encrypt tokens and cookies
+- Should be a secure random string
+- Can be generated with: `openssl rand -base64 32`
+- Must be the same across all instances of your application
 
-To check cookies in the browser:
+## Cookie Settings
 
-1. Open Developer Tools (F12)
-2. Go to Application tab (Chrome) or Storage tab (Firefox)
-3. Look for Cookies in the sidebar
-4. Check for `next-auth.session-token` cookie
+NextAuth.js uses cookies to store session information. In production:
 
-## Production Checklist
+1. **Secure Flag**: Cookies must have the `Secure` flag set (requires HTTPS)
+2. **SameSite**: Usually set to `Lax` for best compatibility
+3. **HttpOnly**: Should be enabled for security
+4. **Domain**: Must match your site's domain
 
-Before deploying to production, verify:
+Our updated configuration sets these correctly:
 
-- [ ] All required environment variables are set
-- [ ] Database connection string is correct
-- [ ] NEXTAUTH_URL matches your production URL
-- [ ] HTTPS is properly configured if using secure cookies
-- [ ] JWT secret is strong and secure
-- [ ] Session configuration is appropriate for your use case
-- [ ] Middleware is correctly configured
+```javascript
+cookies: {
+  sessionToken: {
+    name: "next-auth.session-token",
+    options: {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+    },
+  },
+  // Other cookies...
+}
+```
+
+## Middleware Configuration
+
+The middleware configuration is critical for ensuring that authentication checks are applied to the right routes.
+
+### Fixed Issues
+
+We've updated the middleware configuration to:
+
+1. **Exclude Analytics Endpoints**: The `/api/v1/visitors` endpoint is now excluded from authentication checks
+2. **Specify Protected Routes**: Instead of broadly matching all API routes, we now explicitly list protected routes
+3. **Improve Debugging**: Added more detailed logging to help diagnose issues
+
+### Current Configuration
+
+```javascript
+export const config = {
+  matcher: [
+    // Match all admin routes
+    "/admin/:path*",
+    // Match specific API routes that need protection
+    "/api/v1/users/:path*",
+    "/api/v1/contacts/:path*",
+    "/api/v1/products/admin/:path*",
+    "/api/v1/reviews/admin/:path*",
+    "/api/v1/blogs/admin/:path*",
+  ],
+};
+```
+
+## Debugging Tools
+
+We've added several debugging tools to help diagnose authentication issues:
+
+### Debug Script
+
+A new script at `scripts/debug-auth.js` can be used to test the authentication flow:
+
+```bash
+# Run with default settings
+node scripts/debug-auth.js
+
+# Specify URL and credentials
+node scripts/debug-auth.js --url=https://your-site.com --email=user@example.com --password=yourpassword
+```
+
+This script will:
+
+1. Check environment variables
+2. Test cookie settings
+3. Attempt to log in
+4. Verify session persistence
+5. Test access to protected routes
+
+### Debug Logging
+
+We've enhanced logging throughout the authentication system:
+
+- `[AUTH DEBUG]` - Logs from the NextAuth.js configuration
+- `[MIDDLEWARE DEBUG]` - Logs from the middleware
+- `[AUTH CONTEXT DEBUG]` - Logs from the AuthContext component
+- `[LOGIN DEBUG]` - Logs from the login page
+
+These logs will help identify where authentication is failing.
+
+## Vercel Deployment Considerations
+
+When deploying to Vercel, consider these additional points:
+
+1. **Environment Variables**: Set them in the Vercel dashboard under Project Settings > Environment Variables
+2. **Preview Deployments**: Each preview deployment gets its own URL, so NEXTAUTH_URL needs to be set accordingly
+3. **Serverless Functions**: Vercel uses serverless functions, which can affect how cookies and sessions work
+4. **Edge Middleware**: If using Vercel Edge Middleware, there are additional considerations for authentication
+
+### Recommended Vercel Configuration
+
+In your `vercel.json`:
+
+```json
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install --include=dev",
+  "framework": "nextjs",
+  "outputDirectory": ".next"
+}
+```
 
 ## Troubleshooting Steps
 
-If authentication is failing in production:
+If you're still experiencing issues:
 
-1. Check server logs for error messages
-2. Visit `/debug-auth` to inspect session state and environment variables
-3. Run the test script against your production URL
-4. Verify cookies are being set correctly
-5. Check for CORS errors in the browser console
-6. Ensure database connection is working
-7. Verify JWT secret is consistent
+1. **Check Environment Variables**: Verify NEXTAUTH_URL and NEXTAUTH_SECRET are set correctly
+2. **Run the Debug Script**: Use `scripts/debug-auth.js` to diagnose issues
+3. **Check Browser Console**: Look for errors related to cookies or CORS
+4. **Inspect Network Requests**: Check for redirects or 401/403 errors
+5. **Verify HTTPS**: Ensure your site is using HTTPS in production
+6. **Clear Cookies**: Try clearing browser cookies and testing again
+7. **Check Middleware Logs**: Look for middleware logs to see if routes are being intercepted incorrectly
 
-If you identify missing environment variables or configuration issues, update your deployment configuration and redeploy.
+If all else fails, you may need to temporarily disable the middleware for analytics endpoints and gradually re-enable protection for specific routes.

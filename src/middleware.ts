@@ -47,6 +47,7 @@ export async function middleware(request: NextRequest) {
       "/api/v1/users/login",
       "/api/v1/reviews",
       "/api/v1/blogs", // Base blogs endpoint
+      "/api/v1/visitors", // Analytics endpoint - should not require auth
     ];
 
     // Check if the path is a blog detail route
@@ -54,17 +55,25 @@ export async function middleware(request: NextRequest) {
       /^\/api\/v1\/blogs\/[^\/]+$/,
     );
 
+    // Check if the path is an analytics-related route
+    const isAnalyticsPath = 
+      request.nextUrl.pathname.startsWith("/api/v1/visitors") ||
+      request.nextUrl.pathname.includes("/analytics");
+
     // Check if the current path is a protected API path
     const isProtectedApiPath =
       request.nextUrl.pathname.startsWith("/api/v1") &&
       !publicApiPaths.some((path) => request.nextUrl.pathname.startsWith(path)) &&
-      !isBlogDetailPath; // Allow blog detail routes
+      !isBlogDetailPath && // Allow blog detail routes
+      !isAnalyticsPath; // Allow analytics paths
 
     debugLog('Path analysis', {
       isAdminPath,
       isProtectedApiPath,
       isAuthenticated,
-      isBlogDetailPath: !!isBlogDetailPath
+      isBlogDetailPath: !!isBlogDetailPath,
+      isAnalyticsPath,
+      path: request.nextUrl.pathname
     });
 
     // Check authentication for protected routes
@@ -96,7 +105,11 @@ export const config = {
   matcher: [
     // Match all admin routes
     "/admin/:path*",
-    // Match protected API routes
-    "/api/v1/:path*",
+    // Match specific API routes that need protection
+    "/api/v1/users/:path*",
+    "/api/v1/contacts/:path*",
+    "/api/v1/products/admin/:path*",
+    "/api/v1/reviews/admin/:path*",
+    "/api/v1/blogs/admin/:path*",
   ],
 };
