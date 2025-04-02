@@ -15,34 +15,48 @@ debugLog('Environment check', {
 });
 
 /**
- * Minimal middleware that only logs requests without enforcing authentication
- * This is a temporary version to test if the middleware is causing authentication issues
+ * Phase 1: Basic Admin Route Logging
+ * This middleware only logs requests to admin routes without enforcing authentication
  */
 export async function middleware(request: NextRequest) {
-  // Log the request details
-  debugLog('Request received', { 
+  // Log detailed information about admin route requests
+  debugLog('Admin route request', { 
     path: request.nextUrl.pathname,
     method: request.method,
     hasAuthCookie: !!request.cookies.get('next-auth.session-token'),
-    url: request.url,
+    cookies: {
+      count: request.cookies.getAll().length,
+      names: request.cookies.getAll().map(c => c.name),
+    },
     headers: {
-      // Log important headers for debugging
-      'user-agent': request.headers.get('user-agent'),
-      'referer': request.headers.get('referer'),
-      'cookie-count': request.cookies.getAll().length,
-    }
+      referer: request.headers.get('referer'),
+      'user-agent': request.headers.get('user-agent')?.substring(0, 50) + '...',
+    },
+    url: request.url,
   });
 
+  // Log all cookies for debugging (without values for security)
+  const cookieNames = request.cookies.getAll().map(c => c.name);
+  if (cookieNames.includes('next-auth.session-token')) {
+    debugLog('Session token cookie found', {
+      cookieNames,
+    });
+  } else {
+    debugLog('No session token cookie found', {
+      cookieNames,
+    });
+  }
+
   // Allow all requests to proceed without authentication checks
-  debugLog('Middleware disabled - allowing all requests');
+  debugLog('Phase 1: No authentication enforcement - allowing all requests');
   return NextResponse.next();
 }
 
-// Empty matcher to prevent it from running on any routes
-// We'll still log requests to understand what's happening
+// Simple matcher configuration for Phase 1
+// Only target admin routes for now
 export const config = {
   matcher: [
-    // Only match admin routes for logging purposes
+    // Only match admin routes
     "/admin/:path*",
   ],
 };
