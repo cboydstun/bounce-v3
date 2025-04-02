@@ -216,11 +216,9 @@ export const authOptions: NextAuthOptions = {
       name: "next-auth.session-token",
       options: {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "none", // Changed from "lax" to "none" for cross-domain support
         path: "/",
-        // Always use secure cookies in production
-        secure: process.env.NODE_ENV === "production",
-        // Set a longer max age for cookies
+        secure: true, // Always use secure in production
         maxAge: 30 * 24 * 60 * 60, // 30 days
       },
     },
@@ -228,18 +226,18 @@ export const authOptions: NextAuthOptions = {
       name: "next-auth.callback-url",
       options: {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "none", // Changed from "lax" to "none"
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: true, // Always use secure
       },
     },
     csrfToken: {
       name: "next-auth.csrf-token",
       options: {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "none", // Changed from "lax" to "none"
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: true, // Always use secure
       },
     },
   },
