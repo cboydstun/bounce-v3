@@ -13,10 +13,14 @@
  *   node scripts/test-auth.js https://your-production-site.com
  */
 
-const https = require('https');
-const http = require('http');
-const { URL } = require('url');
-const readline = require('readline');
+// const https = require('https');
+// const http = require('http');
+// const { URL } = require('url');
+// const readline = require('readline');
+import https from 'https';
+import http from 'http';
+import { URL } from 'url';
+import readline from 'readline';
 
 // Default to localhost if no URL provided
 const baseUrl = process.argv[2] || 'http://localhost:3000';
@@ -262,7 +266,13 @@ async function testNextAuth() {
 
 // Run the tests
 testNextAuth().catch(error => {
-  log(`Unhandled error: ${error.message}`, colors.red);
-  console.error(error);
+    log(`Error: ${error.message}`, colors.red);
+    rl.close();
+    }
+);
+// Close readline interface on exit
+rl.on('SIGINT', () => {
+  log('\nExiting...', colors.yellow);
   rl.close();
+  process.exit(0);
 });

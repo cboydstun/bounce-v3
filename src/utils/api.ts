@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
-import { LoginCredentials, LoginResponse } from "@/types/user";
+import { getSession } from "next-auth/react";
 
 // Use relative URLs for API endpoints when in the browser
 // This ensures we're using the Next.js API routes
@@ -25,12 +25,18 @@ export interface ApiError {
 
 // Request interceptor for API calls
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     if (typeof window !== "undefined") {
-      // Try to get token from localStorage (for backward compatibility)
-      const token = localStorage.getItem("auth_token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      try {
+        // Get session from NextAuth.js
+        const session = await getSession();
+        
+        if (session?.user?.id) {
+          // Use session user ID for authorization
+          config.headers.Authorization = `Bearer nextauth-${session.user.id}`;
+        }
+      } catch (error) {
+        console.error("Error getting session in API interceptor:", error);
       }
     }
     return config;
@@ -50,91 +56,10 @@ api.interceptors.response.use(
   },
 );
 
-// Helper function to set a cookie
-const setCookie = (name: string, value: string, days: number = 1) => {
-  if (typeof window === "undefined") return;
-
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-
-  // Set secure and SameSite flags in production
-  const isSecure = window.location.protocol === "https:";
-  const sameSite = isSecure ? "strict" : "lax";
-
-  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; ${
-    isSecure ? "secure; " : ""
-  }samesite=${sameSite}`;
-};
-
-// Helper function to delete a cookie
-const deleteCookie = (name: string) => {
-  if (typeof window === "undefined") return;
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-};
-
-// This function is kept for backward compatibility with existing code
-// NextAuth.js will handle token storage and cookies automatically
-export const setAuthToken = (
-  token: string | null,
-  rememberMe: boolean = false,
-) => {
-  if (typeof window !== "undefined") {
-    if (token) {
-      // Set in axios headers
-      api.defaults.headers.common.Authorization = `Bearer ${token}`;
-
-      // For backward compatibility, still store in localStorage
-      // In a full migration, this would be removed as NextAuth handles tokens
-      localStorage.setItem("auth_token", token);
-    } else {
-      // Remove from axios headers
-      delete api.defaults.headers.common.Authorization;
-
-      // For backward compatibility
-      localStorage.removeItem("auth_token");
-    }
-  }
-};
-
-// Authentication API calls
-// These functions are kept for backward compatibility
-// New code should use NextAuth.js functions directly
-
-// This function is deprecated - use signIn from next-auth/react instead
-export const login = async (
-  credentials: LoginCredentials,
-): Promise<LoginResponse> => {
-  console.warn(
-    "The login function is deprecated. Use NextAuth.js signIn instead.",
-  );
-  const response = await api.post<LoginResponse>(
-    "/api/v1/users/login",
-    credentials,
-  );
-  const token = response.data.token;
-
-  // Pass the rememberMe preference to setAuthToken
-  setAuthToken(token, credentials.rememberMe);
-
-  return response.data;
-};
-
-export const register = async (userData: {
-  email: string;
-  password: string;
-}) => {
-  const response = await api.post("/api/v1/users/register", userData);
-  return response.data;
-};
-
-// This function is deprecated - use the session from useSession() instead
-export const getUserProfile = async () => {
-  console.warn(
-    "The getUserProfile function is deprecated. Use NextAuth.js session instead.",
-  );
-  const response = await api.get("/api/v1/users/profile");
-  return response.data;
-};
+// Remove any localStorage auth tokens that might exist from the old system
+if (typeof window !== "undefined") {
+  localStorage.removeItem("auth_token");
+}
 
 export const updateUserProfile = async (userData: {
   email?: string;

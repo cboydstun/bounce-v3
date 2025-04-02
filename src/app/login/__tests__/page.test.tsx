@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn, useSession } from "next-auth/react";
+import { signIn, useSession, getSession } from "next-auth/react";
 import LoginPage from "../page";
 
 // Mock the next/navigation hooks
@@ -14,6 +14,7 @@ jest.mock("next/navigation", () => ({
 jest.mock("next-auth/react", () => ({
   signIn: jest.fn(),
   useSession: jest.fn(),
+  getSession: jest.fn(),
 }));
 
 // Mock the LoadingSpinner component
@@ -100,6 +101,16 @@ describe("LoginPage", () => {
       ok: true,
       error: null,
     });
+    
+    // Mock getSession to return a valid session after login
+    (getSession as jest.Mock).mockResolvedValue({
+      user: {
+        id: "user123",
+        email: "test@example.com",
+        name: "Test User"
+      },
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    });
 
     render(<LoginPage />);
 
@@ -130,6 +141,9 @@ describe("LoginPage", () => {
         rememberMe: "true",
       });
 
+      // Verify getSession was called to check session after login
+      expect(getSession).toHaveBeenCalled();
+
       // Make sure "from" is not set for this test
       mockSearchParams.get.mockReturnValue(null);
 
@@ -144,6 +158,9 @@ describe("LoginPage", () => {
       ok: false,
       error: "Invalid credentials",
     });
+    
+    // Mock getSession to return null (no session)
+    (getSession as jest.Mock).mockResolvedValue(null);
 
     render(<LoginPage />);
 
@@ -164,6 +181,33 @@ describe("LoginPage", () => {
       expect(
         screen.getByText("Invalid email or password. Please try again."),
       ).toBeInTheDocument();
+      
+      // Verify getSession was called
+      expect(getSession).toHaveBeenCalled();
+    });
+  });
+  
+  it("handles network errors during login", async () => {
+    // Mock signIn throwing a network error
+    (signIn as jest.Mock).mockRejectedValue(new Error("Network error occurred"));
+
+    render(<LoginPage />);
+
+    // Get form elements
+    const emailInput = screen.getByLabelText(/email address/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const submitButton = screen.getByRole("button", { name: /sign in/i });
+
+    // Fill form with valid data
+    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+    fireEvent.change(passwordInput, { target: { value: "password123" } });
+
+    // Submit form
+    fireEvent.click(submitButton);
+
+    // Wait for error message
+    await waitFor(() => {
+      expect(screen.getByText("Network error occurred")).toBeInTheDocument();
     });
   });
 });

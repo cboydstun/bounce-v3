@@ -9,7 +9,6 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut, getSession } from "next-auth/react";
-import { setAuthToken } from "@/utils/api";
 import { IUser } from "@/types/user";
 
 // Debug logger function
@@ -106,20 +105,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       setUser(userObj);
 
-      // For backward compatibility with existing code
-      // Use the session token for API calls
-      if (session.user.id) {
-        // Create a JWT-like token for backward compatibility
-        const backwardCompatToken = `nextauth-${session.user.id}`;
-        setAuthToken(backwardCompatToken);
-        debugLog('Auth token set for API calls', { userId: session.user.id });
-      } else {
-        debugLog('No user ID in session, cannot set auth token');
-      }
+      // No need to set auth token manually anymore
+      // The API interceptor will use the NextAuth.js session directly
+      debugLog('User authenticated with NextAuth.js', { userId: session.user.id });
     } else {
       debugLog('User not authenticated, clearing user state');
       setUser(null);
-      setAuthToken(null);
     }
 
     setLoading(false);
@@ -128,32 +119,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     debugLog('Logout initiated');
     try {
-      // Check cookies before logout
+      // Check cookies before logout (for debugging)
       checkAuthCookies();
       
       // Call NextAuth signOut with redirect: false to prevent automatic redirect
+      // NextAuth.js will handle clearing cookies and session data
       debugLog('Calling NextAuth signOut()...');
       await signOut({ redirect: false });
       debugLog('signOut() completed');
-
-      // Clear auth token from localStorage and axios headers
-      setAuthToken(null);
-      debugLog('Auth token cleared');
 
       // Clear user state
       setUser(null);
       debugLog('User state cleared');
 
-      // Clear any cookies related to authentication
-      document.cookie =
-        "next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      document.cookie =
-        "next-auth.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      document.cookie =
-        "next-auth.callback-url=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      debugLog('Auth cookies cleared');
-
-      // Check cookies after clearing
+      // Check cookies after logout (for debugging)
       checkAuthCookies();
 
       // Redirect to login page

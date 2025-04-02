@@ -1,18 +1,7 @@
 import { Document, Model } from "mongoose";
 
-export interface LoginCredentials {
-  email: string;
-  password: string;
-  rememberMe?: boolean; // Optional property for "Remember me" functionality
-}
-
-export interface LoginResponse {
-  token: string;
-}
-
-export interface LoginError {
-  error: string;
-}
+// These interfaces are no longer needed as we're using NextAuth.js
+// They are kept for reference but should be removed in the future
 
 // Mongoose interfaces
 export interface IUser {
