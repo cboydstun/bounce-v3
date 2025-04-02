@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
 
 // Debug logger function
@@ -15,41 +16,56 @@ debugLog('Environment check', {
 });
 
 /**
- * Phase 1: Basic Admin Route Logging
- * This middleware only logs requests to admin routes without enforcing authentication
+ * Phase 2: Token Verification (Logging Only)
+ * This middleware verifies tokens but only logs the results without enforcing authentication
  */
 export async function middleware(request: NextRequest) {
-  // Log detailed information about admin route requests
-  debugLog('Admin route request', { 
+  // Log basic request information
+  debugLog('Request received', { 
     path: request.nextUrl.pathname,
     method: request.method,
     hasAuthCookie: !!request.cookies.get('next-auth.session-token'),
-    cookies: {
-      count: request.cookies.getAll().length,
-      names: request.cookies.getAll().map(c => c.name),
-    },
-    headers: {
-      referer: request.headers.get('referer'),
-      'user-agent': request.headers.get('user-agent')?.substring(0, 50) + '...',
-    },
-    url: request.url,
   });
 
-  // Log all cookies for debugging (without values for security)
-  const cookieNames = request.cookies.getAll().map(c => c.name);
-  if (cookieNames.includes('next-auth.session-token')) {
-    debugLog('Session token cookie found', {
-      cookieNames,
+  try {
+    // Get token but don't enforce authentication yet
+    debugLog('Attempting token verification...');
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
     });
-  } else {
-    debugLog('No session token cookie found', {
-      cookieNames,
+    
+    // Log detailed token verification results
+    debugLog('Token verification result', { 
+      hasToken: !!token,
+      tokenId: token?.id ? 'exists' : 'missing',
+      tokenSub: token?.sub ? 'exists' : 'missing',
+      tokenExp: typeof token?.exp === 'number' ? new Date(token.exp * 1000).toISOString() : 'missing',
+      path: request.nextUrl.pathname
     });
+    
+    // Log all cookies for debugging (without values for security)
+    const cookieNames = request.cookies.getAll().map(c => c.name);
+    debugLog('Cookies present during token verification', {
+      cookieCount: cookieNames.length,
+      cookieNames,
+      hasSessionToken: cookieNames.includes('next-auth.session-token'),
+    });
+    
+    // Allow all requests to proceed regardless of token
+    debugLog('Phase 2: Token verification complete - allowing all requests');
+    return NextResponse.next();
+  } catch (error) {
+    // Log any errors during token verification
+    debugLog('Token verification error', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    
+    // Still allow the request to proceed
+    debugLog('Phase 2: Despite token verification error - allowing request');
+    return NextResponse.next();
   }
-
-  // Allow all requests to proceed without authentication checks
-  debugLog('Phase 1: No authentication enforcement - allowing all requests');
-  return NextResponse.next();
 }
 
 // Simple matcher configuration for Phase 1
