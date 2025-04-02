@@ -33,6 +33,7 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
   - Protected routes with middleware-based access control
   - Secure password hashing with bcrypt
   - Rate limiting for login attempts
+  - NextAuth.js integration with simplified configuration for production stability
 - **Responsive Design**: Mobile-friendly interface with modern UI components
 - **Analytics**: Built-in analytics tracking with Google Analytics and Google Tag Manager
 - **SEO Optimization**: Comprehensive metadata, OpenGraph, and Twitter cards

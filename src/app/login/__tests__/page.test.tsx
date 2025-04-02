@@ -101,15 +101,15 @@ describe("LoginPage", () => {
       ok: true,
       error: null,
     });
-    
+
     // Mock getSession to return a valid session after login
     (getSession as jest.Mock).mockResolvedValue({
       user: {
         id: "user123",
         email: "test@example.com",
-        name: "Test User"
+        name: "Test User",
       },
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     });
 
     render(<LoginPage />);
@@ -158,7 +158,7 @@ describe("LoginPage", () => {
       ok: false,
       error: "Invalid credentials",
     });
-    
+
     // Mock getSession to return null (no session)
     (getSession as jest.Mock).mockResolvedValue(null);
 
@@ -181,15 +181,17 @@ describe("LoginPage", () => {
       expect(
         screen.getByText("Invalid email or password. Please try again."),
       ).toBeInTheDocument();
-      
+
       // Verify getSession was called
       expect(getSession).toHaveBeenCalled();
     });
   });
-  
+
   it("handles network errors during login", async () => {
     // Mock signIn throwing a network error
-    (signIn as jest.Mock).mockRejectedValue(new Error("Network error occurred"));
+    (signIn as jest.Mock).mockRejectedValue(
+      new Error("Network error occurred"),
+    );
 
     render(<LoginPage />);
 
