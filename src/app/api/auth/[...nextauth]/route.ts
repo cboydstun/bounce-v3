@@ -7,10 +7,25 @@ import User from "@/models/User";
 import { IUserDocument } from "@/types/user";
 import { NextRequest } from "next/server";
 
+// Debug logger function
+const debugLog = (message: string, data?: any) => {
+  console.log(`[AUTH DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
+};
+
+// Log environment variables (without exposing secrets)
+debugLog('Environment check', {
+  NODE_ENV: process.env.NODE_ENV,
+  NEXTAUTH_URL_SET: !!process.env.NEXTAUTH_URL,
+  NEXTAUTH_SECRET_SET: !!process.env.NEXTAUTH_SECRET,
+  JWT_SECRET_SET: !!process.env.JWT_SECRET,
+  MONGODB_URI_SET: !!process.env.MONGODB_URI,
+});
+
 // Rate limiting implementation (simplified version of the existing one)
 const ipThrottling = new Map<string, { count: number; timestamp: number }>();
 
 const applyRateLimit = (ip: string): boolean => {
+  debugLog(`Rate limit check for IP: ${ip}`);
   const now = Date.now();
   const windowMs = 15 * 60 * 1000; // 15 minutes
   const maxAttempts = 5; // 5 login attempts per IP in the window
@@ -34,7 +49,7 @@ const applyRateLimit = (ip: string): boolean => {
 };
 
 export const authOptions: NextAuthOptions = {
-  debug: false,
+  debug: true, // Enable NextAuth debug mode in production for troubleshooting
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -44,7 +59,13 @@ export const authOptions: NextAuthOptions = {
         rememberMe: { label: "Remember Me", type: "checkbox" },
       },
       async authorize(credentials, req): Promise<NextAuthUser | null> {
+        debugLog('authorize() called with credentials', { 
+          email: credentials?.email ? 'provided' : 'missing',
+          password: credentials?.password ? 'provided' : 'missing'
+        });
+        
         if (!credentials?.email || !credentials?.password) {
+          debugLog('Missing credentials');
           return null;
         }
 
@@ -53,40 +74,62 @@ export const authOptions: NextAuthOptions = {
         let ip = "unknown";
 
         if (req && req.headers) {
+          const headerKeys = Object.keys(req.headers);
+          debugLog('Request headers available', { headerKeys });
+          
           const forwardedFor = req.headers["x-forwarded-for"];
           ip = Array.isArray(forwardedFor)
             ? forwardedFor[0]
             : typeof forwardedFor === "string"
               ? forwardedFor.split(",")[0].trim()
               : "unknown";
+          
+          debugLog(`IP address detected: ${ip}`);
+        } else {
+          debugLog('No request or headers object available');
         }
 
         if (!applyRateLimit(ip)) {
+          debugLog('Rate limit exceeded');
           throw new Error("Too many login attempts, please try again later");
         }
 
         try {
+          debugLog('Connecting to database...');
           await dbConnect();
+          debugLog('Database connection successful');
 
           // Find user and include password for comparison
+          debugLog(`Looking up user with email: ${credentials.email}`);
           const user = (await User.findOne({ email: credentials.email }).select(
             "+password",
           )) as IUserDocument | null;
 
-          // Check if user exists and password is correct
-          if (!user || !(await user.comparePassword(credentials.password))) {
+          if (!user) {
+            debugLog('User not found');
+            return null;
+          }
+
+          // Check password
+          debugLog('Comparing password...');
+          const passwordValid = await user.comparePassword(credentials.password);
+          debugLog(`Password valid: ${passwordValid}`);
+          
+          if (!passwordValid) {
             return null;
           }
 
           // Convert Mongoose document to NextAuth user
-          return {
+          const authUser = {
             id: user._id ? user._id.toString() : user.id,
             email: user.email,
             name: user.name || undefined,
-            // Role is no longer needed for access control
-            // Add any other fields needed by NextAuth
           };
+          
+          debugLog('Authentication successful', { userId: authUser.id });
+          return authUser;
         } catch (error) {
+          debugLog('Authentication error', { error });
           console.error("Authentication error:", error);
           return null;
         }
@@ -110,26 +153,56 @@ export const authOptions: NextAuthOptions = {
       trigger?: "signIn" | "signUp" | "update";
       session?: any;
     }) {
+      debugLog('jwt() callback called', { 
+        hasUser: !!user, 
+        trigger, 
+        tokenBefore: { ...token, sub: token.sub ? 'exists' : 'missing' } 
+      });
+      
       // Initial sign in
       if (user) {
         token.id = user.id;
-        // No longer adding role to token
+        debugLog('User info added to token', { userId: user.id });
       }
 
       // Handle remember me option during sign in
       if (trigger === "signIn" && session?.rememberMe === "true") {
         // Set token expiration to 30 days if remember me is checked
         token.rememberMe = true;
+        debugLog('Remember me enabled for token');
       }
 
+      debugLog('JWT token created/updated', { 
+        tokenAfter: { ...token, sub: token.sub ? 'exists' : 'missing' } 
+      });
       return token;
     },
     async session({ session, token }: { session: Session; token: JWT }) {
+      debugLog('session() callback called', { 
+        hasToken: !!token,
+        sessionBefore: session ? { 
+          ...session, 
+          user: session.user ? { 
+            ...session.user, 
+            email: session.user.email || 'missing' 
+          } : null 
+        } : null
+      });
+      
       if (session.user) {
         session.user.id = token.id as string;
-        // No longer adding role to session
+        debugLog('User ID added to session', { userId: token.id });
       }
 
+      debugLog('Session created/updated', { 
+        sessionAfter: { 
+          ...session, 
+          user: session.user ? { 
+            ...session.user, 
+            email: session.user.email || 'missing' 
+          } : null 
+        } 
+      });
       return session;
     },
   },
@@ -151,5 +224,23 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
 };
 
+debugLog('NextAuth configuration complete', {
+  providers: ['credentials'],
+  sessionStrategy: 'jwt',
+  cookieSecure: process.env.NODE_ENV === 'production',
+});
+
 const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+
+// Wrap the handler to add logging
+const wrappedHandler = async (req: any, res: any) => {
+  debugLog(`NextAuth handler called: ${req.method} ${req.url}`);
+  try {
+    return await handler(req, res);
+  } catch (error) {
+    debugLog('NextAuth handler error', { error });
+    throw error;
+  }
+};
+
+export { wrappedHandler as GET, wrappedHandler as POST };
