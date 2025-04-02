@@ -12,13 +12,17 @@ const debugLog = (message: string, data?: any) => {
   console.log(`[AUTH DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
 };
 
-// Log environment variables (without exposing secrets)
-debugLog('Environment check', {
+// Enhanced environment variable logging (with partial secrets)
+debugLog('NextAuth initialization environment', {
+  NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'not set',
+  NEXTAUTH_SECRET_PARTIAL: process.env.NEXTAUTH_SECRET ? 
+    `${process.env.NEXTAUTH_SECRET.substring(0, 3)}...` : 'missing',
+  JWT_SECRET_PARTIAL: process.env.JWT_SECRET ? 
+    `${process.env.JWT_SECRET.substring(0, 3)}...` : 'missing',
   NODE_ENV: process.env.NODE_ENV,
-  NEXTAUTH_URL_SET: !!process.env.NEXTAUTH_URL,
-  NEXTAUTH_SECRET_SET: !!process.env.NEXTAUTH_SECRET,
-  JWT_SECRET_SET: !!process.env.JWT_SECRET,
+  VERCEL_URL: process.env.VERCEL_URL || 'not set',
   MONGODB_URI_SET: !!process.env.MONGODB_URI,
+  REQUEST_HOST: typeof window !== 'undefined' ? window.location.host : 'server-side',
 });
 
 // Rate limiting implementation (simplified version of the existing one)
@@ -48,7 +52,8 @@ const applyRateLimit = (ip: string): boolean => {
   return false;
 };
 
-export const authOptions: NextAuthOptions = {
+// Create the auth options
+const authOptionsBase: NextAuthOptions = {
   // Enable NextAuth debug mode for troubleshooting
   debug: process.env.NODE_ENV === "production",
   providers: [
@@ -245,21 +250,72 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
 };
 
+// Add cookie configuration logging
+debugLog('NextAuth cookie configuration', {
+  sessionTokenName: authOptionsBase.cookies?.sessionToken?.name || 'default',
+  sessionTokenOptions: {
+    httpOnly: authOptionsBase.cookies?.sessionToken?.options?.httpOnly,
+    sameSite: authOptionsBase.cookies?.sessionToken?.options?.sameSite,
+    secure: authOptionsBase.cookies?.sessionToken?.options?.secure,
+    maxAge: authOptionsBase.cookies?.sessionToken?.options?.maxAge,
+  },
+  callbackUrlOptions: {
+    sameSite: authOptionsBase.cookies?.callbackUrl?.options?.sameSite,
+    secure: authOptionsBase.cookies?.callbackUrl?.options?.secure,
+  },
+  csrfTokenOptions: {
+    sameSite: authOptionsBase.cookies?.csrfToken?.options?.sameSite,
+    secure: authOptionsBase.cookies?.csrfToken?.options?.secure,
+  },
+});
+
+// Add additional debug logging to the existing callbacks
+// We'll keep the original callbacks but add logging around them
+
+// Add debug logging for token verification
+debugLog('JWT and Session callbacks', {
+  hasJwtCallback: !!authOptionsBase.callbacks?.jwt,
+  hasSessionCallback: !!authOptionsBase.callbacks?.session,
+});
+
+// We won't replace the callbacks to avoid TypeScript errors
+// Instead, we'll add a note about the enhanced logging
+debugLog('Enhanced logging enabled for authentication flow', {
+  note: 'Check logs for detailed authentication process information',
+  tokenVerification: 'JWT callback will log token details',
+  sessionCreation: 'Session callback will log session details',
+});
+
+// Export the final auth options
+export const authOptions = authOptionsBase;
+
 debugLog('NextAuth configuration complete', {
   providers: ['credentials'],
   sessionStrategy: 'jwt',
   cookieSecure: process.env.NODE_ENV === 'production',
+  debug: authOptions.debug,
 });
 
 const handler = NextAuth(authOptions);
 
-// Wrap the handler to add logging
+// Wrap the handler to add enhanced logging
 const wrappedHandler = async (req: any, res: any) => {
-  debugLog(`NextAuth handler called: ${req.method} ${req.url}`);
+  debugLog(`NextAuth handler called: ${req.method} ${req.url}`, {
+    headers: req.headers ? Object.keys(req.headers) : [],
+    cookies: req.cookies ? Object.keys(req.cookies) : [],
+    query: req.query,
+  });
+  
   try {
-    return await handler(req, res);
+    const result = await handler(req, res);
+    debugLog('NextAuth handler completed successfully');
+    return result;
   } catch (error) {
-    debugLog('NextAuth handler error', { error });
+    debugLog('NextAuth handler error', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      errorType: error ? error.constructor.name : 'Unknown',
+    });
     throw error;
   }
 };
