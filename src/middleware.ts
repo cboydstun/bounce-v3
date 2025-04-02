@@ -16,8 +16,8 @@ debugLog('Environment check', {
 });
 
 /**
- * Phase 2: Token Verification (Logging Only)
- * This middleware verifies tokens but only logs the results without enforcing authentication
+ * Phase 3: Enforce Admin Authentication Only
+ * This middleware enforces authentication for admin routes only
  */
 export async function middleware(request: NextRequest) {
   // Log basic request information
@@ -28,42 +28,51 @@ export async function middleware(request: NextRequest) {
   });
 
   try {
-    // Get token but don't enforce authentication yet
-    debugLog('Attempting token verification...');
+    // Get token from NextAuth.js
+    debugLog('Verifying authentication token...');
     const token = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
     });
     
-    // Log detailed token verification results
-    debugLog('Token verification result', { 
-      hasToken: !!token,
+    // Determine authentication status
+    const isAuthenticated = !!token;
+    const isAdminPath = request.nextUrl.pathname.startsWith("/admin");
+    
+    // Log authentication status
+    debugLog('Authentication status', { 
+      isAuthenticated,
+      isAdminPath,
       tokenId: token?.id ? 'exists' : 'missing',
-      tokenSub: token?.sub ? 'exists' : 'missing',
-      tokenExp: typeof token?.exp === 'number' ? new Date(token.exp * 1000).toISOString() : 'missing',
       path: request.nextUrl.pathname
     });
     
-    // Log all cookies for debugging (without values for security)
-    const cookieNames = request.cookies.getAll().map(c => c.name);
-    debugLog('Cookies present during token verification', {
-      cookieCount: cookieNames.length,
-      cookieNames,
-      hasSessionToken: cookieNames.includes('next-auth.session-token'),
-    });
+    // Only enforce authentication for admin routes
+    if (isAdminPath && !isAuthenticated) {
+      // Redirect to login page with callback URL
+      const url = new URL(`/login`, request.url);
+      url.searchParams.set("from", request.nextUrl.pathname);
+      
+      debugLog('Redirecting to login', { 
+        from: request.nextUrl.pathname,
+        redirectUrl: url.toString()
+      });
+      
+      return NextResponse.redirect(url);
+    }
     
-    // Allow all requests to proceed regardless of token
-    debugLog('Phase 2: Token verification complete - allowing all requests');
+    // Allow all other requests to proceed
+    debugLog('Request allowed to proceed');
     return NextResponse.next();
   } catch (error) {
     // Log any errors during token verification
-    debugLog('Token verification error', { 
+    debugLog('Middleware error', { 
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
     });
     
-    // Still allow the request to proceed
-    debugLog('Phase 2: Despite token verification error - allowing request');
+    // Still allow the request to proceed on error
+    debugLog('Despite error, allowing request to proceed');
     return NextResponse.next();
   }
 }
