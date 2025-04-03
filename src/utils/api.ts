@@ -31,9 +31,30 @@ api.interceptors.request.use(
         // Get session from NextAuth.js
         const session = await getSession();
 
+        // Debug log for session
+        console.log("[API DEBUG] Session in request interceptor:", {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          hasUserId: !!session?.user?.id,
+        });
+
         if (session?.user?.id) {
           // Use session user ID for authorization
-          config.headers.Authorization = `Bearer nextauth-${session.user.id}`;
+          // Support both formats for backward compatibility
+          config.headers.Authorization = `Bearer ${session.user.id}`;
+
+          // Add a custom header for debugging
+          config.headers["X-Auth-Debug"] = "nextauth-session";
+        } else {
+          console.log("[API DEBUG] No session user ID found");
+
+          // Check if we have a token in localStorage (legacy method)
+          const token = localStorage.getItem("auth_token");
+          if (token) {
+            console.log("[API DEBUG] Using legacy token from localStorage");
+            config.headers.Authorization = `Bearer ${token}`;
+            config.headers["X-Auth-Debug"] = "legacy-token";
+          }
         }
       } catch (error) {
         console.error("Error getting session in API interceptor:", error);
@@ -50,16 +71,28 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => response,
   (error: AxiosError<ApiError>) => {
+    // Check if this is an authentication error
+    if (error.response?.status === 401) {
+      console.log("[API DEBUG] 401 Unauthorized error detected");
+
+      // Don't automatically clear the token on 401 errors
+      // This allows the app to try other authentication methods
+
+      // Return a more specific error message for authentication errors
+      return Promise.reject(new Error("Authentication failed - Please log in again"));
+    }
+
     const errorMessage =
       error.response?.data?.message || "An unexpected error occurred";
     return Promise.reject(new Error(errorMessage));
   },
 );
 
-// Remove any localStorage auth tokens that might exist from the old system
-if (typeof window !== "undefined") {
-  localStorage.removeItem("auth_token");
-}
+// Don't automatically remove auth tokens from localStorage
+// We'll keep them for backward compatibility
+// if (typeof window !== "undefined") {
+//   localStorage.removeItem("auth_token");
+// }
 
 export const updateUserProfile = async (userData: {
   email?: string;

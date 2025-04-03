@@ -117,8 +117,13 @@ export default function EditContact({ params }: PageProps) {
         });
       } catch (error) {
         // Handle authentication errors
-        if (error instanceof Error && error.message.includes("401")) {
-          localStorage.removeItem("auth_token");
+        if (
+          error instanceof Error &&
+          (error.message.includes("401") ||
+            error.message.includes("Authentication failed"))
+        ) {
+          console.error("Authentication error in fetchContact:", error);
+          // Don't remove auth_token, let the API client handle authentication
           router.push("/login");
           return;
         }
@@ -153,7 +158,7 @@ export default function EditContact({ params }: PageProps) {
       }
 
       setError(
-        error instanceof Error ? error.message : "Failed to update contact",
+        error instanceof Error ? error.message : "Failed to update contact"
       );
       console.error("Error updating contact:", error);
     } finally {
@@ -164,7 +169,7 @@ export default function EditContact({ params }: PageProps) {
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
