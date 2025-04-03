@@ -106,5 +106,5 @@ debugLog("NextAuth configuration", {
 // Create handler with minimal config
 const handler = NextAuth(authOptions);
 
-// Export handler
-export { handler as GET, handler as POST };
+// Export handler and authOptions
+export { handler as GET, handler as POST, authOptions };
