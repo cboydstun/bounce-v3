@@ -66,6 +66,18 @@ export default function VisitorsPage() {
           throw new Error(data.error || "Failed to fetch visitors");
         }
       } catch (err) {
+        // Handle authentication errors
+        if (
+          err instanceof Error &&
+          (err.message.includes("401") ||
+            err.message.includes("Authentication failed"))
+        ) {
+          console.error("Authentication error in fetchVisitors:", err);
+          // Redirect to login page
+          router.push("/login");
+          return;
+        }
+
         setError(
           err instanceof Error ? err.message : "An unknown error occurred",
         );

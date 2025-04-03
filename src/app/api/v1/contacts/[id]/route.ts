@@ -25,10 +25,12 @@ export async function GET(
     // Log session details for debugging
     debugLog("Session result", {
       hasSession: !!session,
-      user: session?.user ? {
-        id: session.user.id,
-        email: session.user.email
-      } : null
+      user: session?.user
+        ? {
+            id: session.user.id,
+            email: session.user.email,
+          }
+        : null,
     });
 
     // Check if user is authenticated
@@ -56,10 +58,7 @@ export async function GET(
     const contact = await Contact.findById(resolvedParams.id);
 
     if (!contact) {
-      return NextResponse.json(
-        { error: "Contact not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
     }
 
     return NextResponse.json(contact);
@@ -84,10 +83,12 @@ export async function PUT(
     // Log session details for debugging
     debugLog("Session result for PUT", {
       hasSession: !!session,
-      user: session?.user ? {
-        id: session.user.id,
-        email: session.user.email
-      } : null
+      user: session?.user
+        ? {
+            id: session.user.id,
+            email: session.user.email,
+          }
+        : null,
     });
 
     // Check if user is authenticated
@@ -118,10 +119,7 @@ export async function PUT(
     const contactDoc = await Contact.findById(resolvedParams.id);
 
     if (!contactDoc) {
-      return NextResponse.json(
-        { error: "Contact not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
     }
 
     // Update all fields from contactData
@@ -177,10 +175,12 @@ export async function DELETE(
     // Log session details for debugging
     debugLog("Session result for DELETE", {
       hasSession: !!session,
-      user: session?.user ? {
-        id: session.user.id,
-        email: session.user.email
-      } : null
+      user: session?.user
+        ? {
+            id: session.user.id,
+            email: session.user.email,
+          }
+        : null,
     });
 
     // Check if user is authenticated
@@ -209,10 +209,7 @@ export async function DELETE(
     const contact = await Contact.findById(resolvedParams.id);
 
     if (!contact) {
-      return NextResponse.json(
-        { error: "Contact not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
     }
 
     // Delete contact

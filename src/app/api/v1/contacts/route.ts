@@ -23,10 +23,12 @@ export async function GET(request: NextRequest) {
     // Log session details for debugging
     debugLog("Session result", {
       hasSession: !!session,
-      user: session?.user ? {
-        id: session.user.id,
-        email: session.user.email
-      } : null
+      user: session?.user
+        ? {
+            id: session.user.id,
+            email: session.user.email,
+          }
+        : null,
     });
 
     // Check if user is authenticated
@@ -112,10 +114,12 @@ export async function POST(request: NextRequest) {
     // Log session details for debugging
     debugLog("Session result for POST", {
       hasSession: !!session,
-      user: session?.user ? {
-        id: session.user.id,
-        email: session.user.email
-      } : null
+      user: session?.user
+        ? {
+            id: session.user.id,
+            email: session.user.email,
+          }
+        : null,
     });
 
     // Check if user is authenticated

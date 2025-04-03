@@ -4,10 +4,22 @@ import Visitor from "@/models/Visitor";
 import { getClientIp } from "@/utils/ip";
 import { detectDevice } from "@/utils/device";
 import { getLocationFromIp } from "@/utils/geolocation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+// Debug logger function
+const debugLog = (message: string, data?: any) => {
+  console.log(
+    `[VISITORS API DEBUG] ${message}`,
+    data ? JSON.stringify(data, null, 2) : "",
+  );
+};
 
 /**
  * POST /api/v1/visitors
  * Create or update visitor information
+ * This endpoint is public and does not require authentication
+ * as it's used to track all website visitors
  */
 export async function POST(req: NextRequest) {
   try {
@@ -362,34 +374,35 @@ export async function POST(req: NextRequest) {
 /**
  * GET /api/v1/visitors
  * Retrieve visitor information (admin only)
+ * This endpoint requires authentication as it's only for admin users
  */
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
+    // Get the session using NextAuth's recommended approach
+    debugLog("Getting server session for GET /api/v1/visitors");
+    const session = await getServerSession(authOptions);
 
-    // Only allow this endpoint in development or with proper authentication
-    // In production, you would add authentication middleware here
-    if (process.env.NODE_ENV !== "development") {
-      // Check for authentication
-      // This is a simplified example - in production, use proper auth middleware
-      const authHeader = req.headers.get("authorization");
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return NextResponse.json(
-          { success: false, error: "Unauthorized" },
-          { status: 401 },
-        );
-      }
+    // Log session details for debugging
+    debugLog("Session result", {
+      hasSession: !!session,
+      user: session?.user
+        ? {
+            id: session.user.id,
+            email: session.user.email,
+          }
+        : null,
+    });
 
-      // Verify token logic would go here
-      // const token = authHeader.split(" ")[1];
-      // const isValid = verifyToken(token);
-      // if (!isValid) {
-      //     return NextResponse.json(
-      //         { success: false, error: "Unauthorized" },
-      //         { status: 401 }
-      //     );
-      // }
+    // Check if user is authenticated
+    if (!session || !session.user) {
+      debugLog("No valid session found, returning 401");
+      return NextResponse.json(
+        { success: false, error: "Unauthorized - Not authenticated" },
+        { status: 401 },
+      );
     }
+
+    await dbConnect();
 
     // Parse query parameters
     const url = new URL(req.url);

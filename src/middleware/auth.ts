@@ -88,7 +88,7 @@ export async function withAuth(
       const authReq = req as AuthRequest;
       authReq.user = {
         id: token.id,
-        email: token.email as string || "",
+        email: (token.email as string) || "",
         role: undefined, // Role has been removed from token
       };
 
@@ -101,7 +101,7 @@ export async function withAuth(
     const authHeader = req.headers.get("Authorization");
     debugLog("Checking Authorization header", {
       hasAuthHeader: !!authHeader,
-      authHeader: authHeader || "none"
+      authHeader: authHeader || "none",
     });
 
     if (authHeader) {

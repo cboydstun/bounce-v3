@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   optimizeRoute,
   OptimizedRoute,
@@ -13,8 +14,17 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getContacts } from "../../../utils/api";
 
+// Debug logger function
+const debugLog = (message: string, data?: any) => {
+  console.log(
+    `[ROUTES PAGE DEBUG] ${message}`,
+    data ? JSON.stringify(data, null, 2) : "",
+  );
+};
+
 export default function RoutePlannerPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -34,16 +44,26 @@ export default function RoutePlannerPage() {
   const [returnToStart, setReturnToStart] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check authentication
+  // Check authentication using NextAuth.js
   useEffect(() => {
-    // Check for auth token
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
+    debugLog("Authentication check", { status, hasSession: !!session });
+
+    if (status === "loading") {
+      // Still loading session, wait
+      return;
+    }
+
+    if (status === "unauthenticated") {
+      debugLog("User not authenticated, redirecting to login");
       router.push("/login");
-    } else {
+    } else if (status === "authenticated") {
+      debugLog("User authenticated", {
+        userId: session?.user?.id,
+        email: session?.user?.email,
+      });
       setIsLoading(false);
     }
-  }, [router]);
+  }, [status, session, router]);
 
   // Fetch contacts for selected date
   useEffect(() => {
@@ -55,17 +75,35 @@ export default function RoutePlannerPage() {
         // Format date as YYYY-MM-DD
         const formattedDate = selectedDate.toISOString().split("T")[0];
 
+        debugLog("Fetching contacts for date", { formattedDate });
+
         // Use the API utility instead of direct fetch
         try {
           const data = await getContacts({ deliveryDay: formattedDate });
 
           if (data.contacts) {
+            debugLog("Contacts fetched successfully", {
+              count: data.contacts.length,
+            });
             setContacts(data.contacts);
           } else {
+            debugLog("No contacts found for date");
             setContacts([]);
           }
         } catch (error) {
           console.error("Error fetching contacts:", error);
+
+          // Handle authentication errors
+          if (
+            error instanceof Error &&
+            (error.message.includes("401") ||
+              error.message.includes("Authentication failed"))
+          ) {
+            debugLog("Authentication error in fetchContacts");
+            router.push("/login");
+            return;
+          }
+
           setError("Failed to fetch contacts. Please try again.");
           setContacts([]);
         }
@@ -77,7 +115,7 @@ export default function RoutePlannerPage() {
     }
 
     fetchContacts();
-  }, [selectedDate, isLoading]);
+  }, [selectedDate, isLoading, router]);
 
   // Optimize route
   async function handleOptimizeRoute() {
