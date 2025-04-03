@@ -2,10 +2,19 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import ProductForm from "../../ProductForm";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type { ProductFormData } from "../../ProductForm";
 import { getProductBySlug, updateProduct } from "@/utils/api";
+
+// Debug logger function
+const debugLog = (message: string, data?: any) => {
+  console.log(
+    `[PRODUCT EDIT PAGE DEBUG] ${message}`,
+    data ? JSON.stringify(data, null, 2) : "",
+  );
+};
 
 interface Product extends ProductFormData {
   slug: string;
@@ -19,25 +28,51 @@ export default function EditProductPage({
 }) {
   const unwrappedParams = use(params);
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Check authentication using NextAuth.js
   useEffect(() => {
+    debugLog("Authentication check", { status, hasSession: !!session });
+
+    if (status === "loading") {
+      // Still loading session, wait
+      return;
+    }
+
+    if (status === "unauthenticated") {
+      debugLog("User not authenticated, redirecting to login");
+      setError("Authentication required. Please log in.");
+      // We'll let the error UI handle the redirect
+    }
+  }, [status, session]);
+
+  useEffect(() => {
+    // Only fetch product if authenticated or still loading
+    if (status === "unauthenticated") return;
+
     const fetchProduct = async () => {
       try {
+        debugLog("Fetching product", { slug: unwrappedParams.id });
         setIsLoading(true);
-        const token = localStorage.getItem("auth_token");
-        if (!token) {
-          setError("Authentication required. Please log in.");
-          return;
-        }
+        setError(null);
 
         const productData = await getProductBySlug(unwrappedParams.id);
+        debugLog("Product fetched successfully", {
+          productId: productData._id,
+        });
         setProduct(productData);
       } catch (err) {
         console.error("Fetch error:", err);
-        if (err instanceof Error && err.message.includes("401")) {
+
+        // Handle authentication errors
+        if (
+          err instanceof Error &&
+          err.message.includes("Authentication failed")
+        ) {
+          debugLog("Authentication error in fetchProduct");
           setError("Authentication failed. Please log in again.");
         } else {
           setError(
@@ -46,24 +81,27 @@ export default function EditProductPage({
               : "An error occurred while fetching the product",
           );
         }
+
+        debugLog("Error fetching product", { error: err });
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProduct();
-  }, [unwrappedParams.id]);
+  }, [unwrappedParams.id, status]);
 
   const handleSubmit = async (formData: ProductFormData) => {
     try {
-      setIsLoading(true);
-      setError(null);
-
-      const token = localStorage.getItem("auth_token");
-      if (!token) {
+      // Check if authenticated
+      if (status !== "authenticated") {
         setError("Authentication required. Please log in.");
         return;
       }
+
+      debugLog("Submitting product update", { slug: product?.slug });
+      setIsLoading(true);
+      setError(null);
 
       if (!product?.slug) {
         setError("Product slug is missing");
@@ -75,16 +113,25 @@ export default function EditProductPage({
         slug: product.slug, // Preserve the slug from the original product
       });
 
+      debugLog("Product updated successfully");
       router.push("/admin/products");
     } catch (err) {
       console.error("Submit error:", err);
-      if (err instanceof Error && err.message.includes("401")) {
+
+      // Handle authentication errors
+      if (
+        err instanceof Error &&
+        err.message.includes("Authentication failed")
+      ) {
+        debugLog("Authentication error in handleSubmit");
         setError("Authentication failed. Please log in again.");
       } else {
         setError(
           err instanceof Error ? err.message : "Failed to update product",
         );
       }
+
+      debugLog("Error updating product", { error: err });
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +159,7 @@ export default function EditProductPage({
     );
   }
 
-  if (isLoading || !product) {
+  if (status === "loading" || isLoading || !product) {
     return (
       <div className="flex justify-center items-center h-64">
         <LoadingSpinner className="w-8 h-8" />

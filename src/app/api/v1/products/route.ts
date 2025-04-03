@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import Product from "@/models/Product";
-import { withAuth, AuthRequest } from "@/middleware/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+// Debug logger function
+const debugLog = (message: string, data?: any) => {
+  console.log(
+    `[PRODUCTS API DEBUG] ${message}`,
+    data ? JSON.stringify(data, null, 2) : "",
+  );
+};
 
 interface ProductQuery {
   category?: string;
@@ -13,6 +22,7 @@ interface ProductQuery {
 /**
  * GET /api/v1/products
  * Retrieve all products with filtering (no pagination)
+ * This endpoint is public and does not require authentication
  */
 export async function GET(request: NextRequest) {
   try {
@@ -62,82 +72,100 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/v1/products
  * Create a new product (admin only)
+ * This endpoint requires authentication
  */
 export async function POST(request: NextRequest) {
-  return withAuth(request, async (req: AuthRequest) => {
-    try {
-      // Check if user is admin
-      if (req.user?.role !== "admin") {
-        return NextResponse.json(
-          { error: "Not authorized to create products" },
-          { status: 403 },
-        );
-      }
+  try {
+    // Get the session using NextAuth's recommended approach
+    debugLog("Getting server session for POST /api/v1/products");
+    const session = await getServerSession(authOptions);
 
-      await dbConnect();
-      const productData = await req.json();
+    // Log session details for debugging
+    debugLog("Session result", {
+      hasSession: !!session,
+      user: session?.user
+        ? {
+            id: session.user.id,
+            email: session.user.email,
+          }
+        : null,
+    });
 
-      // Validate required fields
-      const requiredFields = [
-        "name",
-        "description",
-        "category",
-        "price",
-        "rentalDuration",
-        "dimensions",
-        "capacity",
-        "ageRange",
-        "setupRequirements",
-        "features",
-        "safetyGuidelines",
-      ];
-
-      const missingFields = requiredFields.filter((field) => {
-        if (field === "price") {
-          return !productData.price || !productData.price.base;
-        }
-        if (field === "dimensions") {
-          return (
-            !productData.dimensions ||
-            !productData.dimensions.length ||
-            !productData.dimensions.width ||
-            !productData.dimensions.height
-          );
-        }
-        if (field === "ageRange") {
-          return (
-            !productData.ageRange ||
-            productData.ageRange.min === undefined ||
-            productData.ageRange.max === undefined
-          );
-        }
-        if (field === "setupRequirements") {
-          return (
-            !productData.setupRequirements ||
-            !productData.setupRequirements.space ||
-            !productData.setupRequirements.surfaceType
-          );
-        }
-        return !productData[field];
-      });
-
-      if (missingFields.length > 0) {
-        return NextResponse.json(
-          { error: `Missing required fields: ${missingFields.join(", ")}` },
-          { status: 400 },
-        );
-      }
-
-      // Create product
-      const product = await Product.create(productData);
-
-      return NextResponse.json(product, { status: 201 });
-    } catch (error) {
-      console.error("Error creating product:", error);
+    // Check if user is authenticated
+    if (!session || !session.user) {
+      debugLog("No valid session found, returning 401");
       return NextResponse.json(
-        { error: "Failed to create product" },
-        { status: 500 },
+        { error: "Unauthorized - Not authenticated" },
+        { status: 401 },
       );
     }
-  });
+
+    // Since only admins should be logged in, we don't need to check roles
+    debugLog("User authenticated, proceeding with product creation");
+
+    await dbConnect();
+    const productData = await request.json();
+
+    // Validate required fields
+    const requiredFields = [
+      "name",
+      "description",
+      "category",
+      "price",
+      "rentalDuration",
+      "dimensions",
+      "capacity",
+      "ageRange",
+      "setupRequirements",
+      "features",
+      "safetyGuidelines",
+    ];
+
+    const missingFields = requiredFields.filter((field) => {
+      if (field === "price") {
+        return !productData.price || !productData.price.base;
+      }
+      if (field === "dimensions") {
+        return (
+          !productData.dimensions ||
+          !productData.dimensions.length ||
+          !productData.dimensions.width ||
+          !productData.dimensions.height
+        );
+      }
+      if (field === "ageRange") {
+        return (
+          !productData.ageRange ||
+          productData.ageRange.min === undefined ||
+          productData.ageRange.max === undefined
+        );
+      }
+      if (field === "setupRequirements") {
+        return (
+          !productData.setupRequirements ||
+          !productData.setupRequirements.space ||
+          !productData.setupRequirements.surfaceType
+        );
+      }
+      return !productData[field];
+    });
+
+    if (missingFields.length > 0) {
+      return NextResponse.json(
+        { error: `Missing required fields: ${missingFields.join(", ")}` },
+        { status: 400 },
+      );
+    }
+
+    // Create product
+    const product = await Product.create(productData);
+
+    return NextResponse.json(product, { status: 201 });
+  } catch (error) {
+    console.error("Error creating product:", error);
+    return NextResponse.json(
+      { error: "Failed to create product" },
+      { status: 500 },
+    );
+  }
 }

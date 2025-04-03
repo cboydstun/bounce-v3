@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { getContacts, getProducts } from "@/utils/api";
 import {
   calculateConversionRate,
@@ -19,6 +20,7 @@ import { ProductWithId } from "@/types/product";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 export default function PerformanceDashboard() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState("currentMonth");
@@ -323,6 +325,18 @@ export default function PerformanceDashboard() {
           quarterly: quarterlyTrends,
         });
       } catch (error) {
+        // Handle authentication errors
+        if (
+          error instanceof Error &&
+          (error.message.includes("401") ||
+            error.message.includes("Authentication failed"))
+        ) {
+          console.error("Authentication error in fetchData:", error);
+          // Redirect to login page
+          router.push("/login");
+          return;
+        }
+
         console.error("Error fetching performance data:", error);
         setError("Failed to load performance data. Please try again later.");
       } finally {

@@ -79,7 +79,9 @@ api.interceptors.response.use(
       // This allows the app to try other authentication methods
 
       // Return a more specific error message for authentication errors
-      return Promise.reject(new Error("Authentication failed - Please log in again"));
+      return Promise.reject(
+        new Error("Authentication failed - Please log in again"),
+      );
     }
 
     const errorMessage =
