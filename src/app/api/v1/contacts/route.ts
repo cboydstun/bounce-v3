@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
     if (!session || !session.user) {
       debugLog("No valid session found, returning 401");
       return NextResponse.json(
-        { error: "Failed to fetch contacts" },
-        { status: 500 }
+        { error: "Unauthorized - Not authenticated" },
+        { status: 401 }
       );
     }
 
