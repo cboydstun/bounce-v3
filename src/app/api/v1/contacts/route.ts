@@ -14,6 +14,10 @@ const debugLog = (message: string, data?: any) => {
   );
 };
 
+/**
+ * GET endpoint to list all contacts
+ * This endpoint is protected and requires authentication
+ */
 export async function GET(request: NextRequest) {
   try {
     // Get the session using NextAuth's recommended approach
@@ -35,8 +39,8 @@ export async function GET(request: NextRequest) {
     if (!session || !session.user) {
       debugLog("No valid session found, returning 401");
       return NextResponse.json(
-        { error: "Not authorized to view contacts" },
-        { status: 401 },
+        { error: "Failed to fetch contacts" },
+        { status: 500 }
       );
     }
 
@@ -100,11 +104,15 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching contacts:", error);
     return NextResponse.json(
       { error: "Failed to fetch contacts" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
+/**
+ * POST endpoint to create a new contact
+ * This endpoint is public and does not require authentication
+ */
 export async function POST(request: NextRequest) {
   try {
     // Get the session using NextAuth's recommended approach
@@ -147,7 +155,7 @@ export async function POST(request: NextRequest) {
     if (missingFields.length > 0) {
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(", ")}` },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -234,7 +242,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating contact:", error);
     return NextResponse.json(
       { error: "Failed to create contact" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

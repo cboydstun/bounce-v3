@@ -4,6 +4,7 @@ import Contact from "@/models/Contact";
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { withAuth, AuthRequest } from "@/middleware/auth";
 
 // Debug logger function
 const debugLog = (message: string, data?: any) => {
@@ -161,6 +162,87 @@ export async function PUT(
       { status: 500 },
     );
   }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  return withAuth(request, async (req: AuthRequest) => {
+    try {
+      // Check if user is authenticated
+      if (!req.user) {
+        return NextResponse.json(
+          { error: "Not authorized to update contacts" },
+          { status: 403 },
+        );
+      }
+
+      await dbConnect();
+
+      // Resolve the params promise
+      const resolvedParams = await params;
+
+      // Validate ID format
+      if (!mongoose.Types.ObjectId.isValid(resolvedParams.id)) {
+        return NextResponse.json(
+          { error: "Invalid contact ID format" },
+          { status: 400 },
+        );
+      }
+
+      const contactData = await request.json();
+
+      // Find the contact document and update it manually
+      const contactDoc = await Contact.findById(resolvedParams.id);
+
+      if (!contactDoc) {
+        return NextResponse.json(
+          { error: "Contact not found" },
+          { status: 404 },
+        );
+      }
+
+      // Update all fields from contactData
+      Object.keys(contactData).forEach((key) => {
+        // Special handling for the confirmed field
+        if (key === "confirmed") {
+          if (typeof contactData.confirmed === "string") {
+            // Ensure it's one of the valid enum values
+            const validValues = [
+              "Confirmed",
+              "Pending",
+              "Called / Texted",
+              "Declined",
+              "Cancelled",
+            ];
+            if (validValues.includes(contactData.confirmed)) {
+              contactDoc.confirmed = contactData.confirmed;
+            }
+          } else if (typeof contactData.confirmed === "boolean") {
+            // Convert boolean to string enum value
+            contactDoc.confirmed = contactData.confirmed
+              ? "Confirmed"
+              : "Pending";
+          }
+        } else {
+          // For all other fields, update directly
+          (contactDoc as any)[key] = contactData[key];
+        }
+      });
+
+      // Save the updated document
+      const updatedContact = await contactDoc.save();
+
+      return NextResponse.json(updatedContact);
+    } catch (error: unknown) {
+      console.error("Error updating contact:", error);
+      return NextResponse.json(
+        { error: "Failed to update contact" },
+        { status: 500 }
+      );
+    }
+  });
 }
 
 export async function DELETE(
