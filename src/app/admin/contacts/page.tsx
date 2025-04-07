@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getContacts, updateContact, deleteContact } from "@/utils/api";
 import { Contact as ApiContact, ConfirmationStatus } from "@/types/contact";
@@ -124,7 +125,20 @@ export default function AdminContacts() {
     setCurrentPage(1);
   };
 
+  // Get the NextAuth session
+  const { data: session, status } = useSession();
+
+  // Redirect to login if not authenticated
   useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    // Only fetch contacts if authenticated
+    if (status !== "authenticated") return;
+    
     const fetchContacts = async () => {
       try {
         setIsLoading(true);
@@ -152,7 +166,7 @@ export default function AdminContacts() {
         const data = await getContacts(params);
 
         // Map the contacts from the API response
-        const mappedContacts = data.contacts.map((contact: ApiContact) => ({
+        const mappedContacts = data.contacts ? data.contacts.map((contact: ApiContact) => ({
           id: contact._id,
           bouncer: contact.bouncer,
           email: contact.email,
@@ -187,7 +201,7 @@ export default function AdminContacts() {
           paymentMethod: contact.paymentMethod,
           discountComments: contact.discountComments,
           adminComments: contact.adminComments,
-        }));
+        })) : [];
 
         setContacts(mappedContacts);
       } catch (error) {
@@ -211,12 +225,18 @@ export default function AdminContacts() {
     };
 
     fetchContacts();
-  }, [router, startDate, endDate, confirmationFilter]);
+  }, [router, startDate, endDate, confirmationFilter, status]);
 
   const handleUpdateStatus = async (
     id: string,
     confirmed: ConfirmationStatus,
   ) => {
+    // Check if authenticated
+    if (status !== "authenticated") {
+      router.push("/login");
+      return;
+    }
+    
     try {
       setIsLoading(true);
 
@@ -232,7 +252,6 @@ export default function AdminContacts() {
     } catch (error) {
       // Handle authentication errors
       if (error instanceof Error && error.message.includes("401")) {
-        localStorage.removeItem("auth_token");
         router.push("/login");
         return;
       }
@@ -247,6 +266,12 @@ export default function AdminContacts() {
   };
 
   const handleDelete = async (id: string) => {
+    // Check if authenticated
+    if (status !== "authenticated") {
+      router.push("/login");
+      return;
+    }
+    
     if (
       !window.confirm("Are you sure you want to delete this contact request?")
     ) {
@@ -264,7 +289,6 @@ export default function AdminContacts() {
     } catch (error) {
       // Handle authentication errors
       if (error instanceof Error && error.message.includes("401")) {
-        localStorage.removeItem("auth_token");
         router.push("/login");
         return;
       }
@@ -366,10 +390,20 @@ export default function AdminContacts() {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  if (isLoading) {
+  // Show loading spinner when session is loading or when fetching contacts
+  if (status === "loading" || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <LoadingSpinner className="w-8 h-8" />
+      </div>
+    );
+  }
+  
+  // If not authenticated, don't render anything (will redirect in useEffect)
+  if (status !== "authenticated") {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Please log in to access this page...</p>
       </div>
     );
   }

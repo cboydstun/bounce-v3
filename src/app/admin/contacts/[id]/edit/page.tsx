@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getContactById, updateContact } from "@/utils/api";
 import { ContactFormData, ConfirmationStatus } from "@/types/contact";
@@ -52,7 +53,20 @@ export default function EditContact({ params }: PageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Get the NextAuth session
+  const { data: session, status } = useSession();
+
+  // Redirect to login if not authenticated
   useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    // Only fetch contact if authenticated
+    if (status !== "authenticated") return;
+    
     const fetchContact = async () => {
       try {
         setIsLoading(true);
@@ -136,9 +150,14 @@ export default function EditContact({ params }: PageProps) {
     };
 
     fetchContact();
-  }, [resolvedParams.id, router]);
+  }, [resolvedParams.id, router, status]);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    // Check if authenticated
+    if (status !== "authenticated") {
+      router.push("/login");
+      return;
+    }
     e.preventDefault();
     try {
       setIsLoading(true);
@@ -152,7 +171,6 @@ export default function EditContact({ params }: PageProps) {
     } catch (error) {
       // Handle authentication errors
       if (error instanceof Error && error.message.includes("401")) {
-        localStorage.removeItem("auth_token");
         router.push("/login");
         return;
       }
@@ -179,10 +197,20 @@ export default function EditContact({ params }: PageProps) {
     }));
   };
 
-  if (isLoading) {
+  // Show loading spinner when session is loading or when fetching contacts
+  if (status === "loading" || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <LoadingSpinner className="w-8 h-8" />
+      </div>
+    );
+  }
+  
+  // If not authenticated, don't render anything (will redirect in useEffect)
+  if (status !== "authenticated") {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Please log in to access this page...</p>
       </div>
     );
   }

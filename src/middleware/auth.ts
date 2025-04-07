@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
+import jwt from "jsonwebtoken";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // Debug logger function
@@ -15,19 +16,20 @@ const debugLog = (message: string, data?: any) => {
 debugLog("Environment check", {
   NODE_ENV: process.env.NODE_ENV,
   NEXTAUTH_SECRET_SET: !!process.env.NEXTAUTH_SECRET,
+  JWT_SECRET_SET: !!process.env.JWT_SECRET,
 });
 
 export interface AuthRequest extends NextRequest {
   user?: {
     id: string;
     email: string;
-    role?: string;
   };
 }
 
 /**
  * Authentication middleware for Next.js API routes
  * Verifies NextAuth.js token and adds user to request object
+ * Also supports Bearer token authentication as fallback
  */
 export async function withAuth(
   req: NextRequest,
@@ -64,7 +66,6 @@ export async function withAuth(
       authReq.user = {
         id: session.user.id,
         email: session.user.email || "",
-        role: undefined, // Role has been removed from session
       };
 
       debugLog("User added to request from server session");
@@ -89,7 +90,6 @@ export async function withAuth(
       authReq.user = {
         id: token.id,
         email: (token.email as string) || "",
-        role: undefined, // Role has been removed from token
       };
 
       debugLog("User added to request from token");
@@ -117,7 +117,6 @@ export async function withAuth(
         authReq.user = {
           id: token,
           email: "", // We don't have the email from the token
-          role: undefined,
         };
 
         debugLog("User added to request from Authorization header");
