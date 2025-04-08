@@ -7,6 +7,16 @@ import {
   phoneRegex,
 } from "../types/contact";
 
+// Custom validation function for the confirmed field
+const validateConfirmedStatus = function(this: IContactDocument) {
+  if (this.confirmed === "Confirmed") {
+    if (!this.streetAddress || !this.partyStartTime) {
+      return false;
+    }
+  }
+  return true;
+};
+
 const ContactSchema = new Schema<IContactDocument, IContactModel>(
   {
     bouncer: {
@@ -51,6 +61,10 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
         "Cancelled",
       ],
       default: "Pending",
+      validate: [
+        validateConfirmedStatus,
+        "Contact cannot be confirmed without street address and party start time"
+      ]
     },
     tablesChairs: {
       type: Boolean,

@@ -123,6 +123,28 @@ export async function PUT(
       return NextResponse.json({ error: "Contact not found" }, { status: 404 });
     }
 
+    // Check if trying to set status to Confirmed without required fields
+    if (
+      (contactData.confirmed === "Confirmed" || 
+       (typeof contactData.confirmed === "boolean" && contactData.confirmed === true))
+    ) {
+      // Get the values that will be used after update
+      const streetAddress = contactData.streetAddress !== undefined 
+        ? contactData.streetAddress 
+        : contactDoc.streetAddress;
+      
+      const partyStartTime = contactData.partyStartTime !== undefined 
+        ? contactData.partyStartTime 
+        : contactDoc.partyStartTime;
+      
+      if (!streetAddress || !partyStartTime) {
+        return NextResponse.json(
+          { error: "Contact cannot be confirmed without street address and party start time" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Update all fields from contactData
     Object.keys(contactData).forEach((key) => {
       // Special handling for the confirmed field
@@ -201,6 +223,28 @@ export async function PATCH(
           { error: "Contact not found" },
           { status: 404 },
         );
+      }
+
+      // Check if trying to set status to Confirmed without required fields
+      if (
+        (contactData.confirmed === "Confirmed" || 
+         (typeof contactData.confirmed === "boolean" && contactData.confirmed === true))
+      ) {
+        // Get the values that will be used after update
+        const streetAddress = contactData.streetAddress !== undefined 
+          ? contactData.streetAddress 
+          : contactDoc.streetAddress;
+        
+        const partyStartTime = contactData.partyStartTime !== undefined 
+          ? contactData.partyStartTime 
+          : contactDoc.partyStartTime;
+        
+        if (!streetAddress || !partyStartTime) {
+          return NextResponse.json(
+            { error: "Contact cannot be confirmed without street address and party start time" },
+            { status: 400 }
+          );
+        }
       }
 
       // Update all fields from contactData

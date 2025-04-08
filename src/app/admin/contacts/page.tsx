@@ -239,6 +239,15 @@ export default function AdminContacts() {
       return;
     }
 
+    // If trying to set to Confirmed, check if the contact has the required fields
+    if (confirmed === "Confirmed") {
+      const contact = contacts.find(c => c.id === id);
+      if (!contact?.streetAddress || !contact?.partyStartTime) {
+        setError("Contact cannot be confirmed without street address and party start time");
+        return;
+      }
+    }
+
     try {
       setIsLoading(true);
 
