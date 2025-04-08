@@ -80,7 +80,9 @@ describe("Contacts API", () => {
   // Helper function to test authentication for list endpoint
   const testListAuthProtection = async () => {
     // Test without authentication
-    const reqWithoutAuth = new NextRequest(`http://localhost:3000/api/v1/contacts`);
+    const reqWithoutAuth = new NextRequest(
+      `http://localhost:3000/api/v1/contacts`,
+    );
     const responseWithoutAuth = await GET(reqWithoutAuth);
     expect(responseWithoutAuth.status).toBe(401);
     const dataWithoutAuth = await responseWithoutAuth.json();
@@ -90,27 +92,35 @@ describe("Contacts API", () => {
     const options: { headers: HeadersInit } = {
       headers: {
         Authorization: `Bearer ${userToken}`,
-        "X-Auth-Type": "nextauth"
-      }
+        "X-Auth-Type": "nextauth",
+      },
     };
-    
-    const reqWithAuth = new NextRequest(`http://localhost:3000/api/v1/contacts`, options);
+
+    const reqWithAuth = new NextRequest(
+      `http://localhost:3000/api/v1/contacts`,
+      options,
+    );
     return { reqWithAuth };
   };
-  
+
   // Helper function to test authentication for item endpoints
   const testItemAuthProtection = async (
-    method: (req: NextRequest, params: { params: Promise<{ id: string }> }) => Promise<Response>,
+    method: (
+      req: NextRequest,
+      params: { params: Promise<{ id: string }> },
+    ) => Promise<Response>,
     id: string,
-    requestBody?: object
+    requestBody?: object,
   ) => {
     // Create params object
     const params = {
-      params: Promise.resolve({ id })
+      params: Promise.resolve({ id }),
     };
-    
+
     // Test without authentication
-    const reqWithoutAuth = new NextRequest(`http://localhost:3000/api/v1/contacts/${id}`);
+    const reqWithoutAuth = new NextRequest(
+      `http://localhost:3000/api/v1/contacts/${id}`,
+    );
     const responseWithoutAuth = await method(reqWithoutAuth, params);
     expect(responseWithoutAuth.status).toBe(401);
     const dataWithoutAuth = await responseWithoutAuth.json();
@@ -120,23 +130,26 @@ describe("Contacts API", () => {
     const options: { headers: HeadersInit; method?: string; body?: string } = {
       headers: {
         Authorization: `Bearer ${userToken}`,
-        "X-Auth-Type": "nextauth"
-      }
+        "X-Auth-Type": "nextauth",
+      },
     };
-    
+
     if (requestBody) {
       // Determine method based on the function being tested
       if (method === PATCH) {
-        options.method = 'PATCH';
+        options.method = "PATCH";
       } else if (method === PUT) {
-        options.method = 'PUT';
+        options.method = "PUT";
       } else if (method === DELETE) {
-        options.method = 'DELETE';
+        options.method = "DELETE";
       }
       options.body = JSON.stringify(requestBody);
     }
-    
-    const reqWithAuth = new NextRequest(`http://localhost:3000/api/v1/contacts/${id}`, options);
+
+    const reqWithAuth = new NextRequest(
+      `http://localhost:3000/api/v1/contacts/${id}`,
+      options,
+    );
     return { reqWithAuth, method, params };
   };
 
@@ -151,7 +164,7 @@ describe("Contacts API", () => {
 
     it("should return all contacts for authenticated user", async () => {
       const { reqWithAuth } = await testListAuthProtection();
-      
+
       const response = await GET(reqWithAuth);
       expect(response.status).toBe(200);
 
@@ -165,7 +178,7 @@ describe("Contacts API", () => {
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
-            "X-Auth-Type": "nextauth"
+            "X-Auth-Type": "nextauth",
           },
         },
       );
@@ -185,7 +198,7 @@ describe("Contacts API", () => {
         {
           headers: {
             Authorization: `Bearer ${userToken}`,
-            "X-Auth-Type": "nextauth"
+            "X-Auth-Type": "nextauth",
           },
         },
       );
@@ -210,19 +223,19 @@ describe("Contacts API", () => {
       if (!contact || !contact._id) {
         throw new Error("Test contact not found");
       }
-      
+
       const { reqWithAuth, method, params } = await testItemAuthProtection(
         PUT,
         contact._id.toString(),
         {
           bouncer: "Updated John Doe",
           confirmed: "Confirmed",
-        }
+        },
       );
-      
+
       const response = await method(reqWithAuth, params);
       expect(response.status).toBe(200);
-      
+
       const data = await response.json();
       expect(data.bouncer).toBe("Updated John Doe");
       expect(data.confirmed).toBe("Confirmed");
@@ -240,18 +253,18 @@ describe("Contacts API", () => {
       if (!contact || !contact._id) {
         throw new Error("Test contact not found");
       }
-      
+
       const { reqWithAuth, method, params } = await testItemAuthProtection(
         PATCH,
         contact._id.toString(),
         {
           confirmed: "Called / Texted",
-        }
+        },
       );
-      
+
       const response = await method(reqWithAuth, params);
       expect(response.status).toBe(200);
-      
+
       const data = await response.json();
       expect(data.bouncer).toBe("Jane Smith"); // Unchanged
       expect(data.confirmed).toBe("Called / Texted"); // Changed
@@ -269,18 +282,18 @@ describe("Contacts API", () => {
       if (!contact || !contact._id) {
         throw new Error("Test contact not found");
       }
-      
+
       const { reqWithAuth, method, params } = await testItemAuthProtection(
         DELETE,
-        contact._id.toString()
+        contact._id.toString(),
       );
-      
+
       const response = await method(reqWithAuth, params);
       expect(response.status).toBe(200);
-      
+
       const data = await response.json();
       expect(data.message).toBe("Contact deleted successfully");
-      
+
       // Verify contact was deleted
       const deletedContact = await Contact.findById(contact?._id);
       expect(deletedContact).toBeNull();

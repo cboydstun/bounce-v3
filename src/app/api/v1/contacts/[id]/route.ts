@@ -239,7 +239,7 @@ export async function PATCH(
       console.error("Error updating contact:", error);
       return NextResponse.json(
         { error: "Failed to update contact" },
-        { status: 500 }
+        { status: 500 },
       );
     }
   });

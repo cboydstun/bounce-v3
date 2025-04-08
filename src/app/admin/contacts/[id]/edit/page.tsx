@@ -66,7 +66,7 @@ export default function EditContact({ params }: PageProps) {
   useEffect(() => {
     // Only fetch contact if authenticated
     if (status !== "authenticated") return;
-    
+
     const fetchContact = async () => {
       try {
         setIsLoading(true);
@@ -205,7 +205,7 @@ export default function EditContact({ params }: PageProps) {
       </div>
     );
   }
-  
+
   // If not authenticated, don't render anything (will redirect in useEffect)
   if (status !== "authenticated") {
     return (

@@ -31,7 +31,7 @@ describe("Auth Middleware", () => {
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Setup environment variables
     process.env = { ...originalEnv };
     process.env.NEXTAUTH_SECRET = mockSecret;
@@ -90,11 +90,9 @@ describe("Auth Middleware", () => {
     (getToken as jest.Mock).mockResolvedValueOnce(null);
 
     // Create a JWT token
-    const token = jwt.sign(
-      { id: mockUserId, email: mockEmail },
-      mockSecret,
-      { expiresIn: "1d" }
-    );
+    const token = jwt.sign({ id: mockUserId, email: mockEmail }, mockSecret, {
+      expiresIn: "1d",
+    });
 
     // Create a mock request with Authorization header
     const req = new NextRequest("http://localhost:3000/api/test", {
@@ -198,7 +196,7 @@ describe("Auth Middleware", () => {
     const token = jwt.sign(
       { id: mockUserId, email: mockEmail },
       mockSecret,
-      { expiresIn: "-1h" } // Expired 1 hour ago
+      { expiresIn: "-1h" }, // Expired 1 hour ago
     );
 
     // Create a mock request with Authorization header
