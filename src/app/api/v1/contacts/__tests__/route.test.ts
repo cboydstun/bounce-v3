@@ -53,6 +53,8 @@ describe("Contacts API", () => {
         tablesChairs: true,
         generator: false,
         sourcePage: "website",
+        streetAddress: "123 Test St",
+        partyStartTime: "14:00",
       },
       {
         bouncer: "Jane Smith",
