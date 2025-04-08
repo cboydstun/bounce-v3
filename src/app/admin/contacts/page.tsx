@@ -138,7 +138,7 @@ export default function AdminContacts() {
   useEffect(() => {
     // Only fetch contacts if authenticated
     if (status !== "authenticated") return;
-    
+
     const fetchContacts = async () => {
       try {
         setIsLoading(true);
@@ -166,42 +166,44 @@ export default function AdminContacts() {
         const data = await getContacts(params);
 
         // Map the contacts from the API response
-        const mappedContacts = data.contacts ? data.contacts.map((contact: ApiContact) => ({
-          id: contact._id,
-          bouncer: contact.bouncer,
-          email: contact.email,
-          phone: contact.phone,
-          partyDate: contact.partyDate,
-          partyZipCode: contact.partyZipCode,
-          message: contact.message,
-          confirmed: contact.confirmed,
-          createdAt: contact.createdAt,
-          tablesChairs: contact.tablesChairs,
-          generator: contact.generator,
-          popcornMachine: contact.popcornMachine,
-          cottonCandyMachine: contact.cottonCandyMachine,
-          snowConeMachine: contact.snowConeMachine,
-          basketballShoot: contact.basketballShoot,
-          slushyMachine: contact.slushyMachine,
-          overnight: contact.overnight,
-          sourcePage: contact.sourcePage,
-          // Address information
-          streetAddress: contact.streetAddress,
-          city: contact.city,
-          state: contact.state,
-          // Party timing
-          partyStartTime: contact.partyStartTime,
-          partyEndTime: contact.partyEndTime,
-          // Delivery information
-          deliveryDay: contact.deliveryDay,
-          deliveryTime: contact.deliveryTime,
-          pickupDay: contact.pickupDay,
-          pickupTime: contact.pickupTime,
-          // Payment and admin information
-          paymentMethod: contact.paymentMethod,
-          discountComments: contact.discountComments,
-          adminComments: contact.adminComments,
-        })) : [];
+        const mappedContacts = data.contacts
+          ? data.contacts.map((contact: ApiContact) => ({
+              id: contact._id,
+              bouncer: contact.bouncer,
+              email: contact.email,
+              phone: contact.phone,
+              partyDate: contact.partyDate,
+              partyZipCode: contact.partyZipCode,
+              message: contact.message,
+              confirmed: contact.confirmed,
+              createdAt: contact.createdAt,
+              tablesChairs: contact.tablesChairs,
+              generator: contact.generator,
+              popcornMachine: contact.popcornMachine,
+              cottonCandyMachine: contact.cottonCandyMachine,
+              snowConeMachine: contact.snowConeMachine,
+              basketballShoot: contact.basketballShoot,
+              slushyMachine: contact.slushyMachine,
+              overnight: contact.overnight,
+              sourcePage: contact.sourcePage,
+              // Address information
+              streetAddress: contact.streetAddress,
+              city: contact.city,
+              state: contact.state,
+              // Party timing
+              partyStartTime: contact.partyStartTime,
+              partyEndTime: contact.partyEndTime,
+              // Delivery information
+              deliveryDay: contact.deliveryDay,
+              deliveryTime: contact.deliveryTime,
+              pickupDay: contact.pickupDay,
+              pickupTime: contact.pickupTime,
+              // Payment and admin information
+              paymentMethod: contact.paymentMethod,
+              discountComments: contact.discountComments,
+              adminComments: contact.adminComments,
+            }))
+          : [];
 
         setContacts(mappedContacts);
       } catch (error) {
@@ -236,7 +238,7 @@ export default function AdminContacts() {
       router.push("/login");
       return;
     }
-    
+
     try {
       setIsLoading(true);
 
@@ -271,7 +273,7 @@ export default function AdminContacts() {
       router.push("/login");
       return;
     }
-    
+
     if (
       !window.confirm("Are you sure you want to delete this contact request?")
     ) {
@@ -398,7 +400,7 @@ export default function AdminContacts() {
       </div>
     );
   }
-  
+
   // If not authenticated, don't render anything (will redirect in useEffect)
   if (status !== "authenticated") {
     return (

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       debugLog("No valid session found, returning 401");
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching contacts:", error);
     return NextResponse.json(
       { error: "Failed to fetch contacts" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
     if (missingFields.length > 0) {
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(", ")}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating contact:", error);
     return NextResponse.json(
       { error: "Failed to create contact" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
