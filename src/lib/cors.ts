@@ -5,6 +5,7 @@ const allowedOrigins = [
   'http://localhost:8100',  // Alternative Ionic port
   'capacitor://localhost',  // Capacitor
   'http://localhost',       // General localhost
+  'https://localhost',      // General localhost
   // Add production domains here
   'https://satxbounce.com'
 ];
