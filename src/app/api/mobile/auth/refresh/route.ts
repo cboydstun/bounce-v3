@@ -8,15 +8,27 @@ import {
   generateTokenId,
   verifyRefreshToken
 } from '@/lib/auth/tokens';
+import { corsHeaders, handleCors } from '@/lib/cors';
+
+export async function OPTIONS(req: NextRequest) {
+  return handleCors(req);
+}
 
 export async function POST(req: NextRequest) {
+  // Handle preflight requests
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+  
   try {
     const { refreshToken: token } = await req.json();
     
     if (!token) {
       return NextResponse.json(
         { error: 'Refresh token is required' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders(req)
+        }
       );
     }
     
@@ -25,7 +37,10 @@ export async function POST(req: NextRequest) {
     if (!payload) {
       return NextResponse.json(
         { error: 'Invalid refresh token' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders(req)
+        }
       );
     }
     
@@ -40,7 +55,10 @@ export async function POST(req: NextRequest) {
     if (!storedToken) {
       return NextResponse.json(
         { error: 'Invalid refresh token' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders(req)
+        }
       );
     }
     
@@ -49,7 +67,10 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders(req)
+        }
       );
     }
     
@@ -74,16 +95,21 @@ export async function POST(req: NextRequest) {
       isRevoked: false
     });
     
-    // Return new tokens
+    // Return new tokens with CORS headers
     return NextResponse.json({
       accessToken,
       refreshToken
+    }, {
+      headers: corsHeaders(req)
     });
   } catch (error) {
     console.error('Token refresh error:', error);
     return NextResponse.json(
       { error: 'Token refresh failed' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders(req)
+      }
     );
   }
 }

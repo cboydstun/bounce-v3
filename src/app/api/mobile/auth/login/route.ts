@@ -3,15 +3,27 @@ import dbConnect from '@/lib/db/mongoose';
 import User from '@/models/User';
 import RefreshToken from '@/models/RefreshToken';
 import { generateAccessToken, generateRefreshToken, generateTokenId } from '@/lib/auth/tokens';
+import { corsHeaders, handleCors } from '@/lib/cors';
+
+export async function OPTIONS(req: NextRequest) {
+  return handleCors(req);
+}
 
 export async function POST(req: NextRequest) {
+  // Handle preflight requests
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+  
   try {
     const { email, password } = await req.json();
     
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders(req)
+        }
       );
     }
     
@@ -22,7 +34,10 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders(req)
+        }
       );
     }
     
@@ -30,7 +45,10 @@ export async function POST(req: NextRequest) {
     if (!isValidPassword) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders(req)
+        }
       );
     }
     
@@ -50,7 +68,7 @@ export async function POST(req: NextRequest) {
       isRevoked: false
     });
     
-    // Return tokens to client
+    // Return tokens to client with CORS headers
     return NextResponse.json({
       accessToken,
       refreshToken,
@@ -59,12 +77,17 @@ export async function POST(req: NextRequest) {
         email: user.email,
         name: user.name
       }
+    }, {
+      headers: corsHeaders(req)
     });
   } catch (error) {
     console.error('Mobile login error:', error);
     return NextResponse.json(
       { error: 'Authentication failed' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders(req)
+      }
     );
   }
 }
