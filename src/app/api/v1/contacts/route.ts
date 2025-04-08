@@ -166,6 +166,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validate confirmation status with required fields
+    if (contactData.confirmed === "Confirmed") {
+      if (!contactData.streetAddress || !contactData.partyStartTime) {
+        return NextResponse.json(
+          { error: "Contact cannot be confirmed without street address and party start time" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create contact
     const contact = await Contact.create(contactData);
 

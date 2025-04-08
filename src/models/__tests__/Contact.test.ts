@@ -26,7 +26,7 @@ describe("Contact Model", () => {
     expect(contact._id).toBeDefined();
     expect(contact.bouncer).toBe("Test Bouncer");
     expect(contact.email).toBe("test@example.com");
-    expect(contact.confirmed).toBe(false); // Default value
+    expect(contact.confirmed).toBe("Pending"); // Default value
   });
 
   it("should fail validation if required fields are missing", async () => {
@@ -66,6 +66,67 @@ describe("Contact Model", () => {
     await expect(Contact.create(invalidContact)).rejects.toThrow(/valid phone/);
   });
 
+  it("should allow Confirmed status when streetAddress and partyStartTime are provided", async () => {
+    const validContact = {
+      bouncer: "Test Bouncer",
+      email: "test@example.com",
+      partyDate: new Date("2025-05-15"),
+      partyZipCode: "12345",
+      sourcePage: "website",
+      confirmed: "Confirmed",
+      streetAddress: "123 Main St",
+      partyStartTime: "14:00",
+    };
+
+    const contact = await Contact.create(validContact);
+    expect(contact.confirmed).toBe("Confirmed");
+  });
+
+  it("should fail validation when Confirmed status but missing streetAddress", async () => {
+    const invalidContact = {
+      bouncer: "Test Bouncer",
+      email: "test@example.com",
+      partyDate: new Date("2025-05-15"),
+      partyZipCode: "12345",
+      sourcePage: "website",
+      confirmed: "Confirmed",
+      // Missing streetAddress
+      partyStartTime: "14:00",
+    };
+
+    await expect(Contact.create(invalidContact)).rejects.toThrow(/cannot be confirmed without/);
+  });
+
+  it("should fail validation when Confirmed status but missing partyStartTime", async () => {
+    const invalidContact = {
+      bouncer: "Test Bouncer",
+      email: "test@example.com",
+      partyDate: new Date("2025-05-15"),
+      partyZipCode: "12345",
+      sourcePage: "website",
+      confirmed: "Confirmed",
+      streetAddress: "123 Main St",
+      // Missing partyStartTime
+    };
+
+    await expect(Contact.create(invalidContact)).rejects.toThrow(/cannot be confirmed without/);
+  });
+
+  it("should allow non-Confirmed status without streetAddress and partyStartTime", async () => {
+    const validContact = {
+      bouncer: "Test Bouncer",
+      email: "test@example.com",
+      partyDate: new Date("2025-05-15"),
+      partyZipCode: "12345",
+      sourcePage: "website",
+      confirmed: "Pending",
+      // Missing streetAddress and partyStartTime
+    };
+
+    const contact = await Contact.create(validContact);
+    expect(contact.confirmed).toBe("Pending");
+  });
+
   describe("Static Methods", () => {
     beforeEach(async () => {
       // Create test contacts
@@ -77,7 +138,9 @@ describe("Contact Model", () => {
           partyDate: new Date("2025-04-15"),
           partyZipCode: "12345",
           message: "Birthday party",
-          confirmed: true,
+          confirmed: "Confirmed",
+          streetAddress: "123 Main St",
+          partyStartTime: "14:00",
           sourcePage: "website",
         },
         {
