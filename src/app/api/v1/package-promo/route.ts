@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create promo opt-in record
+    // Create promo opt-in record directly
     const promoOptin = await PromoOptin.create(optinData);
 
     // Send email notification

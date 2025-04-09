@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
-export default function CouponFormPage() {
+// Component to handle search params
+function CouponFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [promoName, setPromoName] = useState<string>("General Promotion");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -20,6 +23,13 @@ export default function CouponFormPage() {
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  
+  useEffect(() => {
+    const promoParam = searchParams.get("promo");
+    if (promoParam) {
+      setPromoName(promoParam);
+    }
+  }, [searchParams]);
 
   const formatPhoneNumber = (value: string): string => {
     // Remove all non-digits
@@ -86,17 +96,6 @@ export default function CouponFormPage() {
       }));
     }
   };
-
-  // Get promo name from URL query parameters
-  const searchParams = useSearchParams();
-  const [promoName, setPromoName] = useState<string>("General Promotion");
-  
-  useEffect(() => {
-    const promoParam = searchParams.get("promo");
-    if (promoParam) {
-      setPromoName(promoParam);
-    }
-  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,5 +262,41 @@ export default function CouponFormPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Loading fallback component
+function FormSkeleton() {
+  return (
+    <div className="container mx-auto px-4 py-12">
+      <div className="w-full max-w-[800px] mx-auto bg-white/90 backdrop-blur-sm rounded-2xl border-2 border-secondary-blue/20 shadow-lg p-8 space-y-6">
+        <div className="h-10 bg-gray-200 rounded animate-pulse mb-6"></div>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <div className="h-6 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+            <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="space-y-2">
+            <div className="h-6 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+            <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="space-y-2">
+            <div className="h-6 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+            <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-14 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function CouponFormPage() {
+  return (
+    <Suspense fallback={<FormSkeleton />}>
+      <CouponFormContent />
+    </Suspense>
   );
 }

@@ -430,4 +430,66 @@ export const checkProductAvailability = async (
   return response.data;
 };
 
+// Promo Opt-ins API calls
+export const getPromoOptins = async (params?: {
+  email?: string;
+  promoName?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+  
+  if (params?.email) queryParams.append("email", params.email);
+  if (params?.promoName) queryParams.append("promoName", params.promoName);
+  if (params?.startDate) queryParams.append("startDate", params.startDate);
+  if (params?.endDate) queryParams.append("endDate", params.endDate);
+  if (params?.search) queryParams.append("search", params.search);
+  if (params?.page) queryParams.append("page", params.page.toString());
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
+  
+  const queryString = queryParams.toString();
+  const url = queryString ? `/api/v1/promo-optins?${queryString}` : "/api/v1/promo-optins";
+  
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getPromoOptinById = async (id: string) => {
+  const response = await api.get(`/api/v1/promo-optins/${id}`);
+  return response.data;
+};
+
+export const createPromoOptin = async (optinData: {
+  name: string;
+  email: string;
+  phone?: string;
+  promoName: string;
+  consentToContact: boolean;
+}) => {
+  const response = await api.post("/api/v1/promo-optins", optinData);
+  return response.data;
+};
+
+export const updatePromoOptin = async (
+  id: string,
+  optinData: Partial<{
+    name: string;
+    email: string;
+    phone: string;
+    promoName: string;
+    consentToContact: boolean;
+  }>
+) => {
+  const response = await api.put(`/api/v1/promo-optins/${id}`, optinData);
+  return response.data;
+};
+
+export const deletePromoOptin = async (id: string) => {
+  const response = await api.delete(`/api/v1/promo-optins/${id}`);
+  return response.data;
+};
+
 export default api;
