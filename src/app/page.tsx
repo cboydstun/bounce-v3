@@ -103,7 +103,7 @@ export default async function HomePage() {
       {/* Promo Modal */}
       <PromoModalWrapper
         holidays={promos.holidays}
-        delayInSeconds={10}
+        delayInSeconds={1}
         persistenceDays={1}
       />
       <script

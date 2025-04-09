@@ -7,6 +7,7 @@ interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
+  position?: "center" | "bottom-left";
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -14,6 +15,7 @@ const Modal: React.FC<ModalProps> = ({
   onClose,
   children,
   className = "",
+  position = "center",
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
@@ -61,7 +63,11 @@ const Modal: React.FC<ModalProps> = ({
       role="dialog"
       aria-modal="true"
     >
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <div className={`
+        ${position === "center" 
+          ? "flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0" 
+          : "flex items-end justify-start min-h-screen p-4"}
+      `}>
         {/* Background overlay */}
         <div
           className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity ${
@@ -82,8 +88,14 @@ const Modal: React.FC<ModalProps> = ({
         {/* Modal panel */}
         <div
           ref={modalRef}
-          className={`inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg ${
-            isAnimatingOut ? "animate-slide-down" : "animate-slide-up"
+          className={`inline-block bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all ${
+            position === "center"
+              ? `align-bottom sm:my-8 sm:align-middle sm:max-w-lg ${
+                  isAnimatingOut ? "animate-slide-down" : "animate-slide-up"
+                }`
+              : `${
+                  isAnimatingOut ? "animate-slide-out-bottom-left" : "animate-slide-in-bottom-left"
+                }`
           } ${className}`}
         >
           <button

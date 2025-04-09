@@ -83,7 +83,7 @@ const PromoModal: React.FC<PromoModalProps> = ({
   if (!isClient || !currentPromo) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} className="w-full max-w-md">
+    <Modal isOpen={isOpen} onClose={handleClose} className="w-full max-w-md" position="bottom-left">
       <Card className="border-0 shadow-none">
         <CardHeader className="pb-2">
           <CardTitle className="text-primary-purple text-2xl">
