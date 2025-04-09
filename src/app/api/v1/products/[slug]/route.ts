@@ -44,15 +44,18 @@ export async function PUT(
 ) {
   try {
     // Get the session using NextAuth's recommended approach
+
     const session = await getServerSession(authOptions);
 
     // Check if user is authenticated
     if (!session || !session.user) {
+
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
       );
     }
+
 
     await dbConnect();
 
@@ -94,15 +97,18 @@ export async function DELETE(
 ) {
   try {
     // Get the session using NextAuth's recommended approach
+
     const session = await getServerSession(authOptions);
 
     // Check if user is authenticated
     if (!session || !session.user) {
+
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
       );
     }
+
 
     await dbConnect();
     const resolvedParams = await params;

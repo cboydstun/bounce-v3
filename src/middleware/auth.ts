@@ -20,17 +20,23 @@ export async function withAuth(
   req: NextRequest,
   handler: (req: AuthRequest) => Promise<NextResponse>,
 ) {
+  debugLog("withAuth middleware called", {
+    path: req.nextUrl.pathname,
+    method: req.method,
+  });
+
   try {
     // Check if user is already set (for testing purposes)
     if ((req as AuthRequest).user) {
+      debugLog("User already set on request (test mode)");
       return await handler(req as AuthRequest);
     }
 
-    // Method 1: Try to get the session from the server session
     const session = await getServerSession(authOptions);
 
     // If we have a valid session, use it
     if (session?.user?.id) {
+
       // Add user to request
       const authReq = req as AuthRequest;
       authReq.user = {
@@ -42,12 +48,14 @@ export async function withAuth(
     }
 
     // Method 2: Try to get the token directly from the request cookies
+
     const token = await getToken({
       req,
       secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
     });
 
     if (token?.id) {
+
       // Add user to request
       const authReq = req as AuthRequest;
       authReq.user = {
@@ -60,18 +68,21 @@ export async function withAuth(
 
     const authHeader = req.headers.get("Authorization");
 
+
     if (authHeader) {
       // Extract the token from the Authorization header
       // Format: "Bearer <userId>"
       const token = authHeader.replace("Bearer ", "");
 
       if (token) {
+
         // Add user to request
         const authReq = req as AuthRequest;
         authReq.user = {
           id: token,
           email: "", // We don't have the email from the token
         };
+
 
         return await handler(authReq);
       }
@@ -83,6 +94,7 @@ export async function withAuth(
       { status: 401 },
     );
   } catch (error) {
+    debugLog("Auth middleware error", { error });
     console.error("Auth middleware error:", error);
     return NextResponse.json(
       { error: "Unauthorized - Authentication error" },

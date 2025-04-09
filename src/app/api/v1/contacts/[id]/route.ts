@@ -6,12 +6,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { withAuth, AuthRequest } from "@/middleware/auth";
 
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // Get the session using NextAuth's recommended approach
+
     const session = await getServerSession(authOptions);
 
     // Check if user is authenticated
@@ -57,10 +59,12 @@ export async function PUT(
 ) {
   try {
     // Get the session using NextAuth's recommended approach
+
     const session = await getServerSession(authOptions);
 
     // Check if user is authenticated
     if (!session || !session.user) {
+
       return NextResponse.json(
         { error: "Not authorized to update contacts" },
         { status: 401 },
@@ -285,6 +289,7 @@ export async function DELETE(
 ) {
   try {
     // Get the session using NextAuth's recommended approach
+
     const session = await getServerSession(authOptions);
 
     // Check if user is authenticated
@@ -299,6 +304,7 @@ export async function DELETE(
 
     // Resolve the params promise
     const resolvedParams = await params;
+
 
     // Validate ID format
     if (!mongoose.Types.ObjectId.isValid(resolvedParams.id)) {

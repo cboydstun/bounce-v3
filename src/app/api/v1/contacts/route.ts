@@ -76,6 +76,7 @@ export async function GET(request: NextRequest) {
     // Execute query without pagination to allow client-side filtering and pagination
     const contacts = await Contact.find(query).sort({ partyDate: 1 });
 
+
     return NextResponse.json({
       contacts,
     });
@@ -94,6 +95,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Debug log for tracking
+    debugLog("Processing contact form submission");
+
     await dbConnect();
     const contactData = await request.json();
 

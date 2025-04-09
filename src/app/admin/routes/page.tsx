@@ -14,6 +14,14 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getContacts } from "../../../utils/api";
 
+// Debug logger function
+const debugLog = (message: string, data?: any) => {
+  console.log(
+    `[ROUTES PAGE DEBUG] ${message}`,
+    data ? JSON.stringify(data, null, 2) : "",
+  );
+};
+
 export default function RoutePlannerPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -44,8 +52,10 @@ export default function RoutePlannerPage() {
     }
 
     if (status === "unauthenticated") {
+
       router.push("/login");
     } else if (status === "authenticated") {
+
       setIsLoading(false);
     }
   }, [status, session, router]);
@@ -69,8 +79,12 @@ export default function RoutePlannerPage() {
           const data = await getContacts({ deliveryDay: formattedDate });
 
           if (data.contacts) {
+            debugLog("Contacts fetched successfully", {
+              count: data.contacts.length,
+            });
             setContacts(data.contacts);
           } else {
+            debugLog("No contacts found for date");
             setContacts([]);
           }
         } catch (error) {
@@ -82,6 +96,7 @@ export default function RoutePlannerPage() {
             (error.message.includes("401") ||
               error.message.includes("Authentication failed"))
           ) {
+
             router.push("/login");
             return;
           }
@@ -162,6 +177,8 @@ export default function RoutePlannerPage() {
       </div>
     );
   }
+
+  console.log("// admin routes page `selectedDate` //", selectedDate);
 
   return (
     <div className="container mx-auto p-4">

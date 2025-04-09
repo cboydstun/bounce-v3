@@ -399,7 +399,7 @@ const ProductSchema = new Schema<IProductDocument, IProductModel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 ```
 
@@ -533,7 +533,7 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 ```
 
@@ -581,7 +581,7 @@ export interface IContactModel extends Model<IContactDocument> {
   findByPartyDate(date: string): Promise<IContactDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<IContactDocument[]>;
 }
 ```
@@ -1049,7 +1049,7 @@ const ReviewSchema = new Schema<IReviewDocument, IReviewModel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 ```
 

@@ -56,6 +56,7 @@ export default function EditReview({
         }
 
         setError(error instanceof Error ? error.message : "An error occurred");
+        debugLog("Error fetching review", { error });
         console.error("Error fetching review:", error);
       } finally {
         setIsLoading(false);

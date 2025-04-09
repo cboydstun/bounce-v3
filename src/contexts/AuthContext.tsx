@@ -11,6 +11,19 @@ import { useRouter } from "next/navigation";
 import { useSession, signOut, getSession } from "next-auth/react";
 import { IUser } from "@/types/user";
 
+// Debug logger function
+const debugLog = (message: string, data?: any) => {
+  console.log(
+    `[AUTH CONTEXT DEBUG] ${message}`,
+    data ? JSON.stringify(data, null, 2) : "",
+  );
+};
+
+// Log environment info
+debugLog("Environment", {
+  NODE_ENV: process.env.NODE_ENV,
+});
+
 interface AuthContextType {
   user: IUser | null;
   loading: boolean;
@@ -46,6 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
       {} as Record<string, string>,
     );
+
   };
 
   useEffect(() => {
@@ -90,6 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Redirect to login page
       router.push("/login");
     } catch (error) {
+
       console.error("Logout error:", error);
       // Still attempt to redirect even if there was an error
       router.push("/login");

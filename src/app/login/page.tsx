@@ -22,6 +22,7 @@ const LoginForm = () => {
     const from = searchParams.get("from");
     if (from) {
       setError(`You need to be logged in to access ${from}`);
+      debugLog("Redirected from protected page", { from });
     }
 
     // If already authenticated, redirect
@@ -33,9 +34,11 @@ const LoginForm = () => {
     const checkSession = async () => {
       try {
         const sessionData = await getSession();
+
       } catch (err) {
         console.error("Error fetching session:", err);
         setError("Failed to fetch session data");
+
       }
     };
 
@@ -46,33 +49,39 @@ const LoginForm = () => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
+    debugLog("Login form submitted", { email });
 
     // Enhanced validation
     if (!email) {
       setError("Please provide an email address");
       setIsLoading(false);
+      debugLog("Validation failed: missing email");
       return;
     }
 
     if (!email.match(/^\S+@\S+\.\S+$/)) {
       setError("Please provide a valid email address");
       setIsLoading(false);
+      debugLog("Validation failed: invalid email format");
       return;
     }
 
     if (!password) {
       setError("Please provide a password");
       setIsLoading(false);
+      debugLog("Validation failed: missing password");
       return;
     }
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters long");
       setIsLoading(false);
+      debugLog("Validation failed: password too short");
       return;
     }
 
     try {
+
       // Call NextAuth.js signIn
       const result = await signIn("credentials", {
         redirect: false,
@@ -80,6 +89,7 @@ const LoginForm = () => {
         password,
         rememberMe: rememberMe.toString(),
       });
+
 
       if (result?.error) {
         console.error("Login error:", result.error);
@@ -91,13 +101,16 @@ const LoginForm = () => {
           setError("Invalid email or password. Please try again.");
         }
       } else if (result?.ok) {
+
         // Redirect to admin dashboard or the page they were trying to access
         const from = searchParams.get("from");
+
 
         router.push(from || "/admin");
       }
     } catch (err) {
       console.error("Login error:", err);
+      debugLog("Login exception", { error: err });
 
       // Improved error handling with more specific messages
       if (err instanceof Error) {

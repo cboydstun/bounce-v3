@@ -42,6 +42,7 @@ export async function PUT(
 
     // Check if user is authenticated
     if (!session || !session.user) {
+
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
@@ -98,6 +99,7 @@ export async function DELETE(
 ) {
   try {
     // Get the session using NextAuth's recommended approach
+
     const session = await getServerSession(authOptions);
 
     // Check if user is authenticated
@@ -126,6 +128,7 @@ export async function DELETE(
         { status: 403 },
       );
     }
+
 
     // Delete review
     await Review.findByIdAndDelete(resolvedParams.id);
