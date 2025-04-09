@@ -9,6 +9,8 @@ import { GoogleTagManager } from "@next/third-parties/google";
 import Fingerprint from "../components/Fingerprint";
 import { setupErrorTracking } from "../utils/trackInteraction";
 import { Providers } from "./providers";
+import ClientPromoContainer from "../components/ClientPromoContainer";
+import promos from "../../promos.json";
 
 import "./globals.css";
 
@@ -202,11 +204,7 @@ export default function RootLayout({
             <main className="flex-grow">{children}</main>
             <Footer />
             <Fingerprint />
-            <PromoModalWrapper
-                    holidays={promos.holidays}
-                    delayInSeconds={3}
-                    persistenceDays={0}
-                  />
+            <ClientPromoContainer holidays={promos.holidays} />
           </PackageDealsProvider>
 
         </Providers>

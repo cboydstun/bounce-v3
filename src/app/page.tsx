@@ -96,12 +96,6 @@ const localBusinessSchema = {
 export default async function HomePage() {
   return (
     <>
-      {/* Promo Modal */}
-      {/* <PromoModalWrapper
-        holidays={promos.holidays}
-        delayInSeconds={3}
-        persistenceDays={0}
-      /> */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
