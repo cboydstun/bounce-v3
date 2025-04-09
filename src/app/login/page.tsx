@@ -5,27 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession, getSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
-// Debug logger function
-const debugLog = (message: string, data?: any) => {
-  console.log(
-    `[LOGIN DEBUG] ${message}`,
-    data ? JSON.stringify(data, null, 2) : "",
-  );
-};
-
-// Log environment info
-debugLog("Environment", {
-  NODE_ENV: process.env.NODE_ENV,
-  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-});
-
 // Create a separate client component for the login form
 const LoginForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
 
-  debugLog("Session status", { status, hasSession: !!session });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -42,15 +27,6 @@ const LoginForm = () => {
 
     // If already authenticated, redirect
     if (status === "authenticated") {
-      debugLog("User is authenticated, redirecting", {
-        destination: from || "/admin",
-        sessionUser: session?.user
-          ? {
-              id: session.user.id,
-              email: session.user.email,
-            }
-          : null,
-      });
       router.push(from || "/admin");
     }
 
@@ -58,17 +34,11 @@ const LoginForm = () => {
     const checkSession = async () => {
       try {
         const sessionData = await getSession();
-        debugLog("getSession() result", {
-          hasSession: !!sessionData,
-          user: sessionData?.user
-            ? {
-                id: sessionData.user.id,
-                email: sessionData.user.email,
-              }
-            : null,
-        });
+
       } catch (err) {
-        debugLog("getSession() error", { error: err });
+        console.error("Error fetching session:", err);
+        setError("Failed to fetch session data");
+
       }
     };
 
@@ -111,7 +81,6 @@ const LoginForm = () => {
     }
 
     try {
-      debugLog("Calling NextAuth signIn()...");
 
       // Call NextAuth.js signIn
       const result = await signIn("credentials", {
@@ -121,12 +90,6 @@ const LoginForm = () => {
         rememberMe: rememberMe.toString(),
       });
 
-      debugLog("signIn() result", {
-        ok: result?.ok,
-        hasError: !!result?.error,
-        error: result?.error,
-        url: result?.url,
-      });
 
       if (result?.error) {
         console.error("Login error:", result.error);
@@ -138,23 +101,11 @@ const LoginForm = () => {
           setError("Invalid email or password. Please try again.");
         }
       } else if (result?.ok) {
-        // Check session after successful login
-        const sessionAfterLogin = await getSession();
-        debugLog("Session after login", {
-          hasSession: !!sessionAfterLogin,
-          user: sessionAfterLogin?.user
-            ? {
-                id: sessionAfterLogin.user.id,
-                email: sessionAfterLogin.user.email,
-              }
-            : null,
-        });
 
         // Redirect to admin dashboard or the page they were trying to access
         const from = searchParams.get("from");
-        debugLog("Login successful, redirecting", {
-          destination: from || "/admin",
-        });
+
+
         router.push(from || "/admin");
       }
     } catch (err) {

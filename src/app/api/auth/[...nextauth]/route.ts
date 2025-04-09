@@ -5,23 +5,6 @@ import dbConnect from "@/lib/db/mongoose";
 import User from "@/models/User";
 import { IUserDocument } from "@/types/user";
 
-// Debug logger function
-const debugLog = (message: string, data?: any) => {
-  console.log(
-    `[AUTH DEBUG] ${message}`,
-    data ? JSON.stringify(data, null, 2) : "",
-  );
-};
-
-// Log environment variables
-debugLog("Environment variables", {
-  NEXTAUTH_URL: process.env.NEXTAUTH_URL || "not set",
-  NEXTAUTH_SECRET_SET: !!process.env.NEXTAUTH_SECRET,
-  JWT_SECRET_SET: !!process.env.JWT_SECRET,
-  NODE_ENV: process.env.NODE_ENV,
-  VERCEL_URL: process.env.VERCEL_URL || "not set",
-});
-
 // Create minimal auth options
 const authOptions: NextAuthOptions = {
   providers: [
@@ -32,18 +15,14 @@ const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        debugLog("authorize() called", {
-          hasEmail: !!credentials?.email,
-          hasPassword: !!credentials?.password,
-        });
 
         if (!credentials?.email || !credentials?.password) {
-          debugLog("Missing credentials");
+
           return null;
         }
 
         try {
-          debugLog("Connecting to database...");
+
           await dbConnect();
 
           const user = (await User.findOne({ email: credentials.email }).select(
@@ -51,14 +30,14 @@ const authOptions: NextAuthOptions = {
           )) as IUserDocument | null;
 
           if (!user) {
-            debugLog("User not found");
+
             return null;
           }
 
           const passwordValid = await user.comparePassword(
             credentials.password,
           );
-          debugLog("Password validation", { valid: passwordValid });
+
 
           if (!passwordValid) {
             return null;
@@ -70,10 +49,10 @@ const authOptions: NextAuthOptions = {
             name: user.name || undefined,
           };
 
-          debugLog("Authentication successful", { userId: authUser.id });
+
           return authUser;
         } catch (error) {
-          debugLog("Authentication error", { error });
+
           console.error("Auth error:", error);
           return null;
         }
@@ -95,13 +74,6 @@ const authOptions: NextAuthOptions = {
     error: "/login",
   },
 };
-
-debugLog("NextAuth configuration", {
-  providers: ["credentials"],
-  sessionStrategy: "jwt",
-  debug: true,
-  pagesConfigured: !!authOptions.pages,
-});
 
 // Create handler with minimal config
 const handler = NextAuth(authOptions);

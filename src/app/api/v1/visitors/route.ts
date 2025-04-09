@@ -7,14 +7,6 @@ import { getLocationFromIp } from "@/utils/geolocation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// Debug logger function
-const debugLog = (message: string, data?: any) => {
-  console.log(
-    `[VISITORS API DEBUG] ${message}`,
-    data ? JSON.stringify(data, null, 2) : "",
-  );
-};
-
 /**
  * POST /api/v1/visitors
  * Create or update visitor information
@@ -379,23 +371,12 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     // Get the session using NextAuth's recommended approach
-    debugLog("Getting server session for GET /api/v1/visitors");
-    const session = await getServerSession(authOptions);
 
-    // Log session details for debugging
-    debugLog("Session result", {
-      hasSession: !!session,
-      user: session?.user
-        ? {
-            id: session.user.id,
-            email: session.user.email,
-          }
-        : null,
-    });
+    const session = await getServerSession(authOptions);
 
     // Check if user is authenticated
     if (!session || !session.user) {
-      debugLog("No valid session found, returning 401");
+
       return NextResponse.json(
         { success: false, error: "Unauthorized - Not authenticated" },
         { status: 401 },

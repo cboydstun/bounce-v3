@@ -35,15 +35,12 @@ export default function EditProductPage({
 
   // Check authentication using NextAuth.js
   useEffect(() => {
-    debugLog("Authentication check", { status, hasSession: !!session });
-
     if (status === "loading") {
       // Still loading session, wait
       return;
     }
 
     if (status === "unauthenticated") {
-      debugLog("User not authenticated, redirecting to login");
       setError("Authentication required. Please log in.");
       // We'll let the error UI handle the redirect
     }
@@ -60,9 +57,6 @@ export default function EditProductPage({
         setError(null);
 
         const productData = await getProductBySlug(unwrappedParams.id);
-        debugLog("Product fetched successfully", {
-          productId: productData._id,
-        });
         setProduct(productData);
       } catch (err) {
         console.error("Fetch error:", err);
@@ -72,7 +66,6 @@ export default function EditProductPage({
           err instanceof Error &&
           err.message.includes("Authentication failed")
         ) {
-          debugLog("Authentication error in fetchProduct");
           setError("Authentication failed. Please log in again.");
         } else {
           setError(
@@ -98,8 +91,6 @@ export default function EditProductPage({
         setError("Authentication required. Please log in.");
         return;
       }
-
-      debugLog("Submitting product update", { slug: product?.slug });
       setIsLoading(true);
       setError(null);
 
@@ -123,7 +114,6 @@ export default function EditProductPage({
         err instanceof Error &&
         err.message.includes("Authentication failed")
       ) {
-        debugLog("Authentication error in handleSubmit");
         setError("Authentication failed. Please log in again.");
       } else {
         setError(

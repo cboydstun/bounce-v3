@@ -28,6 +28,7 @@ export default function AdminDashboard() {
     { name: "Total Products", stat: "...", href: "/admin/products" },
     { name: "Contact Requests", stat: "...", href: "/admin/contacts" },
     { name: "Customer Reviews", stat: "...", href: "/admin/reviews" },
+    { name: "Promo Opt-ins", stat: "...", href: "/admin/promo-optins" },
   ]);
   const [analyticsPeriod, setAnalyticsPeriod] = useState("currentMonth");
 
@@ -113,6 +114,19 @@ export default function AdminDashboard() {
         totalReviews,
       });
 
+      // Fetch promo opt-ins count
+      let promoOptinsCount = 0;
+      try {
+        const promoOptinsRes = await api.get("/api/v1/promo-optins");
+        const promoOptinsData = promoOptinsRes.data;
+        promoOptinsCount =
+          promoOptinsData.pagination?.total ||
+          promoOptinsData.promoOptins?.length ||
+          0;
+      } catch (error) {
+        console.error("Failed to fetch promo opt-ins:", error);
+      }
+
       setStats([
         {
           name: "Total Blogs",
@@ -133,6 +147,11 @@ export default function AdminDashboard() {
           name: "Customer Reviews",
           stat: String(totalReviews),
           href: "/admin/reviews",
+        },
+        {
+          name: "Promo Opt-ins",
+          stat: String(promoOptinsCount),
+          href: "/admin/promo-optins",
         },
       ]);
     };
@@ -219,6 +238,12 @@ export default function AdminDashboard() {
               className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 w-full justify-center"
             >
               Add New Review
+            </Link>
+            <Link
+              href="/admin/promo-optins/new"
+              className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 w-full justify-center"
+            >
+              Add Promo Opt-in
             </Link>
           </div>
         </div>

@@ -39,6 +39,11 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 - **SEO Optimization**: Comprehensive metadata, OpenGraph, and Twitter cards
 - **Structured Data**: JsonLd implementation for improved search engine visibility
 - **Legal Pages**: Privacy Policy and Terms of Service
+- **Package Deals Visibility**: First-time visitors don't see "Package Deals" in navigation until they interact with a promotional popup:
+  - Context-based state management for immediate UI updates without page refresh
+  - Cookie-based persistence for returning visitors
+  - Promotional popup with form submission to unlock Package Deals
+  - Comprehensive test coverage for visibility conditions
 
 ## API Routes
 
@@ -211,6 +216,111 @@ node scripts/create-dev-blog.js
   - Optional fields: `authorUrl`, `profilePhotoUrl`, `language`, `isLocalGuide`
 - `PUT /api/v1/reviews/:id` - Update a customer review by ID (owner or admin only)
 - `DELETE /api/v1/reviews/:id` - Delete a customer review by ID (owner or admin only)
+
+### Party Packages API
+
+- `GET /api/v1/partypackages` - Retrieve all party packages
+  - Query parameters:
+    - `search`: Search packages by text
+    - `limit`: Number of packages per page (default: 10)
+    - `page`: Page number for pagination (default: 1)
+  - Response format:
+    ```json
+    {
+      "packages": [
+        {
+          "_id": "67e4e8139915f2580aa94478",
+          "id": "dual-waterslide-extravaganza",
+          "slug": "dual-waterslide-extravaganza",
+          "name": "Dual Waterslide Extravaganza",
+          "description": "Double the slides, double the fun! Perfect for larger water parties",
+          "items": [
+            {
+              "id": "67e4bfd24af754a5a42bfcf1",
+              "name": "Blue Double Lane Waterslide",
+              "quantity": 1
+            },
+            {
+              "id": "67e4bfd24af754a5a42bfcf2",
+              "name": "Pink Waterslide",
+              "quantity": 1
+            },
+            {
+              "id": "67e4bfd24af754a5a42bfcf6",
+              "name": "Tables and Chairs",
+              "quantity": 3
+            }
+          ],
+          "totalRetailPrice": 859.7,
+          "packagePrice": 649.95,
+          "savings": 209.75,
+          "savingsPercentage": 24,
+          "recommendedPartySize": {
+            "min": 20,
+            "max": 50
+          },
+          "ageRange": {
+            "min": 5,
+            "max": 99
+          },
+          "duration": "full-day",
+          "spaceRequired": "70x40 feet minimum",
+          "powerRequired": true,
+          "seasonalRestrictions": "Temperature must be above 75°F",
+          "createdAt": "2025-03-27T05:54:27.153Z",
+          "updatedAt": "2025-03-27T05:54:27.153Z"
+        }
+      ],
+      "total": 5
+    }
+    ```
+- `GET /api/v1/partypackages/:slug` - Retrieve a specific party package by slug
+- `POST /api/v1/partypackages` - Create a new party package (admin only)
+  - Required fields: `id`, `name`, `description`, `items`, `totalRetailPrice`, `packagePrice`, `savings`, `savingsPercentage`, `recommendedPartySize`, `ageRange`, `duration`, `spaceRequired`, `powerRequired`
+  - Optional fields: `seasonalRestrictions`
+- `PUT /api/v1/partypackages/:id` - Update a party package by ID (admin only)
+- `DELETE /api/v1/partypackages/:id` - Delete a party package by ID (admin only)
+
+### Promo Opt-ins API
+
+- `GET /api/v1/promo-optins` - Retrieve all promotional opt-ins (authenticated users only)
+  - Query parameters:
+    - `email`: Filter by email address
+    - `promoName`: Filter by promotion name
+    - `startDate`: Filter by start date
+    - `endDate`: Filter by end date
+    - `search`: Search by name or email
+    - `limit`: Number of opt-ins per page (default: 25)
+    - `page`: Page number for pagination (default: 1)
+  - Response format:
+    ```json
+    {
+      "promoOptins": [
+        {
+          "_id": "67d9dcc99a94b06936b304c8",
+          "name": "John Doe",
+          "email": "john@example.com",
+          "phone": "555-123-4567",
+          "promoName": "Summer Special",
+          "consentToContact": true,
+          "createdAt": "2025-04-08T15:30:00.000Z",
+          "updatedAt": "2025-04-08T15:30:00.000Z"
+        }
+      ],
+      "pagination": {
+        "total": 42,
+        "page": 1,
+        "limit": 25,
+        "pages": 2
+      }
+    }
+    ```
+- `GET /api/v1/promo-optins/:id` - Retrieve a specific promo opt-in by ID (authenticated users only)
+- `POST /api/v1/promo-optins` - Create a new promo opt-in (public)
+  - Required fields: `name`, `email`, `promoName`, `consentToContact`
+  - Optional fields: `phone`
+- `PUT /api/v1/promo-optins/:id` - Update a promo opt-in by ID (authenticated users only)
+- `DELETE /api/v1/promo-optins/:id` - Delete a promo opt-in by ID (authenticated users only)
 
 ## Products Implementation
 
@@ -550,6 +660,313 @@ The application includes a comprehensive analytics dashboard that provides insig
 - `BookingsTrend.tsx`: Bar chart component for booking trend analysis
 - `ProductPopularity.tsx`: Horizontal bar chart for product popularity
 - `ContactCalendar.tsx`: Calendar component for visualizing bookings
+
+## Promo Opt-ins Implementation
+
+The Promo Opt-ins API is implemented using MongoDB and Mongoose with TypeScript. It provides a comprehensive system for managing promotional opt-ins with filtering, pagination, and authentication.
+
+### MongoDB Schema
+
+```typescript
+const PromoOptinSchema = new Schema<IPromoOptinDocument, IPromoOptinModel>(
+  {
+    name: {
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      trim: true,
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, "Please use a valid email address"],
+      index: true,
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    promoName: {
+      type: String,
+      required: [true, "Promotion name is required"],
+      trim: true,
+      index: true,
+    },
+    consentToContact: {
+      type: Boolean,
+      required: [true, "Consent to contact is required"],
+      default: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+```
+
+### Features
+
+- **Email Filtering**: Filter opt-ins by email address
+- **Promotion Filtering**: Filter opt-ins by promotion name
+- **Date Range Filtering**: Filter opt-ins by creation date range
+- **Text Search**: Search opt-ins by name or email
+- **Pagination**: Server-side pagination for efficient data loading
+- **Authentication**: Protected routes for sensitive operations
+- **Email Validation**: Built-in validation for email addresses
+
+### TypeScript Interfaces
+
+The promo opt-in model uses TypeScript interfaces to ensure type safety:
+
+```typescript
+export interface PromoOptin {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  promoName: string;
+  consentToContact: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface IPromoOptinDocument
+  extends Omit<PromoOptin, "_id">,
+    Document {}
+
+export interface IPromoOptinModel extends Model<IPromoOptinDocument> {
+  findByEmail(email: string): Promise<IPromoOptinDocument[]>;
+  findByPromoName(promoName: string): Promise<IPromoOptinDocument[]>;
+  findByDateRange(
+    startDate: string,
+    endDate: string
+  ): Promise<IPromoOptinDocument[]>;
+}
+```
+
+### API Endpoints
+
+The Promo Opt-ins API provides comprehensive endpoints with filtering, pagination, and authentication:
+
+- **GET /api/v1/promo-optins**: List all promo opt-ins with filtering and pagination (authenticated users only)
+- **GET /api/v1/promo-optins/:id**: Get a specific promo opt-in by ID (authenticated users only)
+- **POST /api/v1/promo-optins**: Create a new promo opt-in (public)
+- **PUT /api/v1/promo-optins/:id**: Update a promo opt-in (authenticated users only)
+- **DELETE /api/v1/promo-optins/:id**: Delete a promo opt-in (authenticated users only)
+
+### Frontend Components
+
+- `PromoModal.tsx`: Modal component for displaying promotional offers
+- `PromoModalWrapper.tsx`: Wrapper component for the promo modal with client-side logic
+- Admin interface for managing promo opt-ins with filtering and pagination
+
+## Package Deals Visibility Implementation
+
+The Package Deals Visibility feature is implemented using React Context API and browser cookies to provide a seamless user experience where first-time visitors are encouraged to engage with promotional content before accessing package deals.
+
+### Context-Based State Management
+
+```typescript
+// src/contexts/PackageDealsContext.tsx
+"use client";
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { isPackageDealsVisible, setPackageDealsVisible as setCookie } from '../utils/cookieUtils';
+
+// Define the context shape
+type PackageDealsContextType = {
+  isVisible: boolean;
+  setVisible: () => void;
+};
+
+// Create the context with default values
+const PackageDealsContext = createContext<PackageDealsContextType>({
+  isVisible: false,
+  setVisible: () => {},
+});
+
+// Provider component
+export function PackageDealsProvider({ children }: { children: React.ReactNode }) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Check cookie on initial client-side render
+  useEffect(() => {
+    setIsVisible(isPackageDealsVisible());
+  }, []);
+
+  // Function to set visibility
+  const setVisible = () => {
+    setCookie();
+    setIsVisible(true);
+  };
+
+  return (
+    <PackageDealsContext.Provider value={{ isVisible, setVisible }}>
+      {children}
+    </PackageDealsContext.Provider>
+  );
+}
+
+// Custom hook for using the context
+export function usePackageDeals() {
+  return useContext(PackageDealsContext);
+}
+```
+
+### Cookie-Based Persistence
+
+```typescript
+// src/utils/cookieUtils.ts
+const PACKAGE_DEALS_COOKIE = "package_deals_visible";
+
+export const isPackageDealsVisible = (): boolean => {
+  // Only run on client side
+  if (typeof window === "undefined") return false;
+
+  return document.cookie.includes(`${PACKAGE_DEALS_COOKIE}=true`);
+};
+
+export const setPackageDealsVisible = (days: number = 365): void => {
+  // Only run on client side
+  if (typeof window === "undefined") return;
+
+  const expiryDate = new Date();
+  expiryDate.setDate(expiryDate.getDate() + days);
+
+  document.cookie = `${PACKAGE_DEALS_COOKIE}=true; expires=${expiryDate.toUTCString()}; path=/; SameSite=Strict`;
+};
+```
+
+### Conditional Rendering in Navigation
+
+The Navigation component uses the context to conditionally render the Package Deals link:
+
+```typescript
+const Navigation = () => {
+  const { isVisible } = usePackageDeals();
+
+  const navLinks = [
+    { path: "/", label: "Home" },
+    { path: "/products", label: "Products" },
+    { path: "/about", label: "About" },
+    { path: "/blogs", label: "Blog" },
+    { path: "/faq", label: "FAQ" },
+  ];
+
+  // Conditionally add Package Deals to navigation
+  if (isVisible) {
+    navLinks.push({ path: "/party-packages", label: "Package Deals" });
+  }
+
+  // Rest of the component...
+};
+```
+
+### Promotional Modal Integration
+
+The PromoModal component sets the visibility cookie when users interact with it:
+
+```typescript
+const handleGetCoupon = () => {
+  // Close the modal
+  setIsOpen(false);
+
+  // Store timestamp in localStorage
+  if (isClient && currentPromo) {
+    const storageKey = `promo_modal_${currentPromo.name
+      .replace(/\s+/g, "_")
+      .toLowerCase()}`;
+    localStorage.setItem(storageKey, Date.now().toString());
+  }
+
+  // Set the cookie to make package deals visible
+  setPackageDealsVisible();
+
+  // Navigate to the coupon form
+  router.push(
+    `/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`
+  );
+};
+```
+
+### Form Submission Integration
+
+The coupon form sets the visibility cookie upon successful submission:
+
+```typescript
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!validateForm() || !formData.consentToContact) return;
+
+  setIsSubmitting(true);
+
+  try {
+    // Send data to our API
+    const response = await fetch("/api/v1/package-promo", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...formData,
+        promoName,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to submit form");
+    }
+
+    // Set the cookie to make package deals visible
+    setPackageDealsVisible();
+
+    // Redirect to the party-packages page
+    router.push("/party-packages");
+  } catch (error) {
+    console.error("Error submitting form:", error);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+```
+
+### Testing
+
+The feature includes comprehensive tests to verify visibility conditions:
+
+```typescript
+describe('Package Deals Visibility', () => {
+  describe('Navigation Component', () => {
+    it('should not show Package Deals link when visibility is false', () => {
+      // Mock the context to return false for isVisible
+      (usePackageDeals as jest.Mock).mockReturnValue({
+        isVisible: false,
+        setVisible: jest.fn(),
+      });
+
+      render(<Navigation />);
+
+      // Verify Package Deals link is not present
+      expect(screen.queryByText('Package Deals')).not.toBeInTheDocument();
+    });
+
+    it('should show Package Deals link when visibility is true', () => {
+      // Mock the context to return true for isVisible
+      (usePackageDeals as jest.Mock).mockReturnValue({
+        isVisible: true,
+        setVisible: jest.fn(),
+      });
+
+      render(<Navigation />);
+
+      // Verify Package Deals link is present
+      expect(screen.getByText('Package Deals')).toBeInTheDocument();
+    });
+  });
+});
+```
 
 ## Reviews Implementation
 

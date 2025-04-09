@@ -38,9 +38,6 @@ describe("Mobile Auth Middleware", () => {
     // Create a request without Authorization header
     const req = new NextRequest("https://example.com/api/protected");
 
-    // Debug: Log the request headers
-    console.log("Request headers:", req.headers.get("authorization"));
-
     // Apply the middleware
     const middleware = withMobileAuth(mockHandler);
     const response = await middleware(req);
@@ -49,8 +46,6 @@ describe("Mobile Auth Middleware", () => {
     expect(response.status).toBe(401);
     const data = await response.json();
 
-    // Debug: Log the actual response data
-    console.log("Response data:", data);
 
     expect(data).toEqual({ error: "Invalid or expired token" });
 
@@ -74,11 +69,6 @@ describe("Mobile Auth Middleware", () => {
       headers,
     });
 
-    // Debug: Log the request headers
-    console.log(
-      "Request headers (invalid format):",
-      req.headers.get("authorization"),
-    );
 
     // Apply the middleware
     const middleware = withMobileAuth(mockHandler);
@@ -87,9 +77,6 @@ describe("Mobile Auth Middleware", () => {
     // Check response
     expect(response.status).toBe(401);
     const data = await response.json();
-
-    // Debug: Log the actual response data
-    console.log("Response data (invalid format):", data);
 
     expect(data).toEqual({ error: "Invalid or expired token" });
 

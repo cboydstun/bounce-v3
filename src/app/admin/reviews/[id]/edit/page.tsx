@@ -8,14 +8,6 @@ import ReviewForm from "../../ReviewForm";
 import { Review } from "@/types/review";
 import { getReviewById } from "@/utils/api";
 
-// Debug logger function
-const debugLog = (message: string, data?: any) => {
-  console.log(
-    `[REVIEW EDIT PAGE DEBUG] ${message}`,
-    data ? JSON.stringify(data, null, 2) : "",
-  );
-};
-
 export default function EditReview({
   params,
 }: {
@@ -30,15 +22,12 @@ export default function EditReview({
 
   // Check authentication using NextAuth.js
   useEffect(() => {
-    debugLog("Authentication check", { status, hasSession: !!session });
-
     if (status === "loading") {
       // Still loading session, wait
       return;
     }
 
     if (status === "unauthenticated") {
-      debugLog("User not authenticated, redirecting to login");
       router.push("/login");
     }
   }, [status, session, router]);
@@ -49,13 +38,11 @@ export default function EditReview({
 
     const fetchReview = async () => {
       try {
-        debugLog("Fetching review", { id });
         setIsLoading(true);
         setError(null);
 
         // Use the API utility function instead of direct fetch
         const data = await getReviewById(id);
-        debugLog("Review fetched successfully", { reviewId: data._id });
         setReview(data);
       } catch (error) {
         // Handle authentication errors
@@ -64,7 +51,6 @@ export default function EditReview({
           (error.message.includes("401") ||
             error.message.includes("Authentication failed"))
         ) {
-          debugLog("Authentication error in fetchReview");
           router.push("/login");
           return;
         }

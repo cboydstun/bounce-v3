@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePackageDeals } from "../contexts/PackageDealsContext";
 import {
   Phone,
   Mail,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 
 const Footer = () => {
+  const { isVisible: showPackageDeals } = usePackageDeals();
   return (
     <footer className="bg-white border-t border-gray-100">
       <div className="container mx-auto px-4 py-16">
@@ -48,6 +50,8 @@ const Footer = () => {
                 { href: "/blogs", label: "Blog" },
                 { href: "/products", label: "Products" },
                 { href: "/about", label: "About" },
+                { href: "/faq", label: "FAQ" },
+                ...(showPackageDeals ? [{ href: "/party-packages", label: "Package Deals" }] : []),
               ].map((link) => (
                 <li key={link.href}>
                   <Link

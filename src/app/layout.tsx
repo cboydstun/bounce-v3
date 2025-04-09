@@ -2,12 +2,15 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { PackageDealsProvider } from "../contexts/PackageDealsContext";
 import JsonLd from "../components/JsonLd";
 import GoogleAnalytics from "../components/GoogleAnalytics";
 import { GoogleTagManager } from "@next/third-parties/google";
 import Fingerprint from "../components/Fingerprint";
 import { setupErrorTracking } from "../utils/trackInteraction";
 import { Providers } from "./providers";
+import ClientPromoContainer from "../components/ClientPromoContainer";
+import promos from "../../promos.json";
 
 import "./globals.css";
 
@@ -195,10 +198,15 @@ export default function RootLayout({
           }}
         />
         <Providers>
-          <Navigation />
-          <main className="flex-grow">{children}</main>
-          <Footer />
-          <Fingerprint />
+
+          <PackageDealsProvider>
+            <Navigation />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+            <Fingerprint />
+            <ClientPromoContainer holidays={promos.holidays} />
+          </PackageDealsProvider>
+
         </Providers>
       </body>
       <GoogleTagManager gtmId={process.env.NEXT_GTM_ID!} />

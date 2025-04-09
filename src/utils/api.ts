@@ -31,13 +31,6 @@ api.interceptors.request.use(
         // Get session from NextAuth.js
         const session = await getSession();
 
-        // Debug log for session
-        console.log("[API DEBUG] Session in request interceptor:", {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          hasUserId: !!session?.user?.id,
-        });
-
         if (session?.user?.id) {
           // Use session user ID for authorization
           // Support both formats for backward compatibility
@@ -46,12 +39,11 @@ api.interceptors.request.use(
           // Add a custom header for debugging
           config.headers["X-Auth-Debug"] = "nextauth-session";
         } else {
-          console.log("[API DEBUG] No session user ID found");
 
           // Check if we have a token in localStorage (legacy method)
           const token = localStorage.getItem("auth_token");
           if (token) {
-            console.log("[API DEBUG] Using legacy token from localStorage");
+
             config.headers.Authorization = `Bearer ${token}`;
             config.headers["X-Auth-Debug"] = "legacy-token";
           }
@@ -73,8 +65,6 @@ api.interceptors.response.use(
   (error: AxiosError<ApiError>) => {
     // Check if this is an authentication error
     if (error.response?.status === 401) {
-      console.log("[API DEBUG] 401 Unauthorized error detected");
-
       // Don't automatically clear the token on 401 errors
       // This allows the app to try other authentication methods
 
@@ -89,6 +79,7 @@ api.interceptors.response.use(
     return Promise.reject(new Error(errorMessage));
   },
 );
+
 
 // Don't automatically remove auth tokens from localStorage
 // We'll keep them for backward compatibility
@@ -428,6 +419,103 @@ export const checkProductAvailability = async (
     `/api/v1/products/availability?slug=${productSlug}&date=${date}`,
   );
   return response.data;
+};
+
+// Promo Opt-ins API calls
+export const getPromoOptins = async (params?: {
+  email?: string;
+  promoName?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.email) queryParams.append("email", params.email);
+  if (params?.promoName) queryParams.append("promoName", params.promoName);
+  if (params?.startDate) queryParams.append("startDate", params.startDate);
+  if (params?.endDate) queryParams.append("endDate", params.endDate);
+  if (params?.search) queryParams.append("search", params.search);
+  if (params?.page) queryParams.append("page", params.page.toString());
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
+
+  const queryString = queryParams.toString();
+  const url = queryString
+    ? `/api/v1/promo-optins?${queryString}`
+    : "/api/v1/promo-optins";
+
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getPromoOptinById = async (id: string) => {
+  const response = await api.get(`/api/v1/promo-optins/${id}`);
+  return response.data;
+};
+
+export const createPromoOptin = async (optinData: {
+  name: string;
+  email: string;
+  phone?: string;
+  promoName: string;
+  consentToContact: boolean;
+}) => {
+  const response = await api.post("/api/v1/promo-optins", optinData);
+  return response.data;
+};
+
+export const updatePromoOptin = async (
+  id: string,
+  optinData: Partial<{
+    name: string;
+    email: string;
+    phone: string;
+    promoName: string;
+    consentToContact: boolean;
+  }>,
+) => {
+  const response = await api.put(`/api/v1/promo-optins/${id}`, optinData);
+  return response.data;
+};
+
+export const deletePromoOptin = async (id: string) => {
+  const response = await api.delete(`/api/v1/promo-optins/${id}`);
+  return response.data;
+};
+
+// Party Packages API calls
+export const getPartyPackages = async (params?: { search?: string }) => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.search) {
+    queryParams.append("search", params.search);
+  }
+
+  const queryString = queryParams.toString();
+  const url = queryString
+    ? `/api/v1/partypackages?${queryString}`
+    : "/api/v1/partypackages";
+
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getPartyPackageBySlug = async (slug: string) => {
+  try {
+    const response = await api.get(`/api/v1/partypackages/${slug}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching party package with slug ${slug}:`, error);
+    if (axios.isAxiosError(error)) {
+      console.error(
+        `Status: ${error.response?.status}, Data:`,
+        error.response?.data,
+      );
+    }
+    throw error;
+  }
 };
 
 export default api;
