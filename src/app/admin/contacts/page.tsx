@@ -165,6 +165,15 @@ export default function AdminContacts() {
         // Call the API with filters
         const data = await getContacts(params);
 
+        // Debug: Log the date format from the API
+        if (data.contacts && data.contacts.length > 0) {
+          console.log("Date format from API:", {
+            partyDate: data.contacts[0].partyDate,
+            type: typeof data.contacts[0].partyDate,
+            isDate: data.contacts[0].partyDate instanceof Date,
+          });
+        }
+        
         // Map the contacts from the API response
         const mappedContacts = data.contacts
           ? data.contacts.map((contact: ApiContact) => ({
@@ -343,8 +352,14 @@ export default function AdminContacts() {
     const dateStr = contact.partyDate;
     let partyDate;
     
+    // Handle MM/DD/YYYY format (e.g., "4/13/2025")
+    if (typeof dateStr === 'string' && dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+      // For MM/DD/YYYY format, parse directly without timezone conversion
+      const [month, day, year] = dateStr.split('/').map(Number);
+      partyDate = new Date(year, month - 1, day);
+    }
     // Handle ISO format dates (YYYY-MM-DD)
-    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    else if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
       partyDate = new Date(`${dateStr}T12:00:00`);
     } else {
       // For dates with time component, create a date object in local timezone
@@ -427,9 +442,17 @@ export default function AdminContacts() {
     if (sortColumn === "partyDate") {
       // Use consistent date handling for sorting
       const getConsistentDate = (dateStr: string) => {
-        if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Handle MM/DD/YYYY format (e.g., "4/13/2025")
+        if (typeof dateStr === 'string' && dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+          // For MM/DD/YYYY format, parse directly without timezone conversion
+          const [month, day, year] = dateStr.split('/').map(Number);
+          return new Date(year, month - 1, day).getTime();
+        }
+        // Handle ISO format dates (YYYY-MM-DD)
+        else if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
           return new Date(`${dateStr}T12:00:00`).getTime();
         } else {
+          // For dates with time component or Date objects
           const date = new Date(dateStr);
           return new Date(
             date.getFullYear(),
@@ -767,16 +790,25 @@ export default function AdminContacts() {
                         {(() => {
                           // Fix timezone issue by parsing the date and preserving the day
                           const dateStr = contact.partyDate;
+                          
+                          // Handle MM/DD/YYYY format (e.g., "4/13/2025")
+                          if (typeof dateStr === 'string' && dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+                            // For MM/DD/YYYY format, parse directly without timezone conversion
+                            const [month, day, year] = dateStr.split('/').map(Number);
+                            return new Date(year, month - 1, day).toLocaleDateString();
+                          }
+                          
                           // If the date is in ISO format (YYYY-MM-DD), add time to ensure correct day
-                          if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                          if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
                             return new Date(`${dateStr}T12:00:00`).toLocaleDateString();
                           }
-                          // For dates with time component, create a date object in local timezone
+                          
+                          // For dates with time component or Date objects
                           const date = new Date(dateStr);
                           const localDate = new Date(
                             date.getFullYear(),
                             date.getMonth(),
-                            date.getDate()
+                            date.getDate()+1 // Add 1 day to ensure correct day
                           );
                           return localDate.toLocaleDateString();
                         })()}
