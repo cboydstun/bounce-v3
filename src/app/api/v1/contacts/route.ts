@@ -6,14 +6,6 @@ import twilio from "twilio";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// Debug logger function
-const debugLog = (message: string, data?: any) => {
-  console.log(
-    `[CONTACTS API DEBUG] ${message}`,
-    data ? JSON.stringify(data, null, 2) : "",
-  );
-};
-
 /**
  * GET endpoint to list all contacts
  * This endpoint is protected and requires authentication
@@ -21,23 +13,10 @@ const debugLog = (message: string, data?: any) => {
 export async function GET(request: NextRequest) {
   try {
     // Get the session using NextAuth's recommended approach
-    debugLog("Getting server session");
     const session = await getServerSession(authOptions);
-
-    // Log session details for debugging
-    debugLog("Session result", {
-      hasSession: !!session,
-      user: session?.user
-        ? {
-            id: session.user.id,
-            email: session.user.email,
-          }
-        : null,
-    });
 
     // Check if user is authenticated
     if (!session || !session.user) {
-      debugLog("No valid session found, returning 401");
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
@@ -115,9 +94,6 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Debug log for tracking
-    debugLog("Processing contact form submission");
-
     await dbConnect();
     const contactData = await request.json();
 

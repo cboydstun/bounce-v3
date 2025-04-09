@@ -8,14 +8,6 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type { ProductFormData } from "../../ProductForm";
 import { getProductBySlug, updateProduct } from "@/utils/api";
 
-// Debug logger function
-const debugLog = (message: string, data?: any) => {
-  console.log(
-    `[PRODUCT EDIT PAGE DEBUG] ${message}`,
-    data ? JSON.stringify(data, null, 2) : "",
-  );
-};
-
 interface Product extends ProductFormData {
   slug: string;
   _id: string;
@@ -35,15 +27,12 @@ export default function EditProductPage({
 
   // Check authentication using NextAuth.js
   useEffect(() => {
-    debugLog("Authentication check", { status, hasSession: !!session });
-
     if (status === "loading") {
       // Still loading session, wait
       return;
     }
 
     if (status === "unauthenticated") {
-      debugLog("User not authenticated, redirecting to login");
       setError("Authentication required. Please log in.");
       // We'll let the error UI handle the redirect
     }
@@ -55,14 +44,11 @@ export default function EditProductPage({
 
     const fetchProduct = async () => {
       try {
-        debugLog("Fetching product", { slug: unwrappedParams.id });
         setIsLoading(true);
         setError(null);
 
         const productData = await getProductBySlug(unwrappedParams.id);
-        debugLog("Product fetched successfully", {
-          productId: productData._id,
-        });
+
         setProduct(productData);
       } catch (err) {
         console.error("Fetch error:", err);
@@ -72,7 +58,6 @@ export default function EditProductPage({
           err instanceof Error &&
           err.message.includes("Authentication failed")
         ) {
-          debugLog("Authentication error in fetchProduct");
           setError("Authentication failed. Please log in again.");
         } else {
           setError(
@@ -81,8 +66,6 @@ export default function EditProductPage({
               : "An error occurred while fetching the product",
           );
         }
-
-        debugLog("Error fetching product", { error: err });
       } finally {
         setIsLoading(false);
       }
@@ -99,7 +82,6 @@ export default function EditProductPage({
         return;
       }
 
-      debugLog("Submitting product update", { slug: product?.slug });
       setIsLoading(true);
       setError(null);
 
@@ -113,7 +95,6 @@ export default function EditProductPage({
         slug: product.slug, // Preserve the slug from the original product
       });
 
-      debugLog("Product updated successfully");
       router.push("/admin/products");
     } catch (err) {
       console.error("Submit error:", err);
@@ -123,15 +104,12 @@ export default function EditProductPage({
         err instanceof Error &&
         err.message.includes("Authentication failed")
       ) {
-        debugLog("Authentication error in handleSubmit");
         setError("Authentication failed. Please log in again.");
       } else {
         setError(
           err instanceof Error ? err.message : "Failed to update product",
         );
       }
-
-      debugLog("Error updating product", { error: err });
     } finally {
       setIsLoading(false);
     }

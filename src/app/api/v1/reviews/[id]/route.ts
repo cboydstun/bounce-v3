@@ -5,14 +5,6 @@ import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// Debug logger function
-const debugLog = (message: string, data?: any) => {
-  console.log(
-    `[REVIEW ID API DEBUG] ${message}`,
-    data ? JSON.stringify(data, null, 2) : "",
-  );
-};
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -46,23 +38,10 @@ export async function PUT(
 ) {
   try {
     // Get the session using NextAuth's recommended approach
-    debugLog("Getting server session for PUT /api/v1/reviews/[id]");
     const session = await getServerSession(authOptions);
-
-    // Log session details for debugging
-    debugLog("Session result", {
-      hasSession: !!session,
-      user: session?.user
-        ? {
-            id: session.user.id,
-            email: session.user.email,
-          }
-        : null,
-    });
 
     // Check if user is authenticated
     if (!session || !session.user) {
-      debugLog("No valid session found, returning 401");
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
@@ -84,10 +63,6 @@ export async function PUT(
     // Check if user is authorized to update this review
     // Since we don't have roles in the session, we'll just check if the user is the owner
     if (review.user && review.user.toString() !== session.user.id) {
-      debugLog("User not authorized to update review", {
-        reviewUserId: review.user.toString(),
-        sessionUserId: session.user.id,
-      });
       return NextResponse.json(
         { error: "Not authorized to update this review" },
         { status: 403 },
@@ -123,23 +98,10 @@ export async function DELETE(
 ) {
   try {
     // Get the session using NextAuth's recommended approach
-    debugLog("Getting server session for DELETE /api/v1/reviews/[id]");
     const session = await getServerSession(authOptions);
-
-    // Log session details for debugging
-    debugLog("Session result", {
-      hasSession: !!session,
-      user: session?.user
-        ? {
-            id: session.user.id,
-            email: session.user.email,
-          }
-        : null,
-    });
 
     // Check if user is authenticated
     if (!session || !session.user) {
-      debugLog("No valid session found, returning 401");
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
@@ -159,10 +121,6 @@ export async function DELETE(
     // Check if user is authorized to delete this review
     // Since we don't have roles in the session, we'll just check if the user is the owner
     if (review.user && review.user.toString() !== session.user.id) {
-      debugLog("User not authorized to delete review", {
-        reviewUserId: review.user.toString(),
-        sessionUserId: session.user.id,
-      });
       return NextResponse.json(
         { error: "Not authorized to delete this review" },
         { status: 403 },

@@ -4,14 +4,6 @@ import Product from "@/models/Product";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// Debug logger function
-const debugLog = (message: string, data?: any) => {
-  console.log(
-    `[PRODUCTS API DEBUG] ${message}`,
-    data ? JSON.stringify(data, null, 2) : "",
-  );
-};
-
 interface ProductQuery {
   category?: string;
   availability?: string;
@@ -77,31 +69,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Get the session using NextAuth's recommended approach
-    debugLog("Getting server session for POST /api/v1/products");
     const session = await getServerSession(authOptions);
-
-    // Log session details for debugging
-    debugLog("Session result", {
-      hasSession: !!session,
-      user: session?.user
-        ? {
-            id: session.user.id,
-            email: session.user.email,
-          }
-        : null,
-    });
 
     // Check if user is authenticated
     if (!session || !session.user) {
-      debugLog("No valid session found, returning 401");
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
       );
     }
-
-    // Since only admins should be logged in, we don't need to check roles
-    debugLog("User authenticated, proceeding with product creation");
 
     await dbConnect();
     const productData = await request.json();

@@ -43,13 +43,6 @@
   </url>
 
   <url>
-    <loc>https://satxbounce.com/debug-auth</loc>
-    <lastmod>2025-04-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
     <loc>https://satxbounce.com/coupon-form</loc>
     <lastmod>2025-04-09</lastmod>
     <changefreq>weekly</changefreq>
@@ -57,7 +50,21 @@
   </url>
 
   <url>
+    <loc>https://satxbounce.com/debug-auth</loc>
+    <lastmod>2025-04-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
     <loc>https://satxbounce.com/login</loc>
+    <lastmod>2025-04-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://satxbounce.com/party-packages</loc>
     <lastmod>2025-04-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

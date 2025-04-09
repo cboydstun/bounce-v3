@@ -26,32 +26,32 @@ export default function AdminPromoOptins() {
   const [pageSize, setPageSize] = useState(25);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  
+
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [promoNameFilter, setPromoNameFilter] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  
+
   // Get the NextAuth session
   const { data: session, status } = useSession();
-  
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     }
   }, [status, router]);
-  
+
   useEffect(() => {
     // Only fetch data if authenticated
     if (status !== "authenticated") return;
-    
+
     const fetchPromoOptins = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // Prepare query parameters
         const params: {
           email?: string;
@@ -63,17 +63,17 @@ export default function AdminPromoOptins() {
           limit: number;
         } = {
           page: currentPage,
-          limit: pageSize
+          limit: pageSize,
         };
-        
+
         if (searchTerm) params.search = searchTerm;
         if (promoNameFilter) params.promoName = promoNameFilter;
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
-        
+
         // Call the API
         const data = await getPromoOptins(params);
-        
+
         // Map the data
         const mappedOptins = data.promoOptins.map((optin: any) => ({
           id: optin._id,
@@ -82,9 +82,9 @@ export default function AdminPromoOptins() {
           phone: optin.phone,
           promoName: optin.promoName,
           consentToContact: optin.consentToContact,
-          createdAt: optin.createdAt
+          createdAt: optin.createdAt,
         }));
-        
+
         setPromoOptins(mappedOptins);
         setTotalItems(data.pagination.total);
         setTotalPages(data.pagination.pages);
@@ -93,44 +93,57 @@ export default function AdminPromoOptins() {
           router.push("/login");
           return;
         }
-        
+
         setError(error instanceof Error ? error.message : "An error occurred");
         console.error("Error fetching promo opt-ins:", error);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchPromoOptins();
-  }, [router, currentPage, pageSize, searchTerm, promoNameFilter, startDate, endDate, status]);
-  
+  }, [
+    router,
+    currentPage,
+    pageSize,
+    searchTerm,
+    promoNameFilter,
+    startDate,
+    endDate,
+    status,
+  ]);
+
   const handleDelete = async (id: string) => {
     if (status !== "authenticated") {
       router.push("/login");
       return;
     }
-    
+
     if (!window.confirm("Are you sure you want to delete this promo opt-in?")) {
       return;
     }
-    
+
     try {
       setIsLoading(true);
       await deletePromoOptin(id);
-      setPromoOptins(promoOptins.filter(optin => optin.id !== id));
+      setPromoOptins(promoOptins.filter((optin) => optin.id !== id));
     } catch (error) {
       if (error instanceof Error && error.message.includes("401")) {
         router.push("/login");
         return;
       }
-      
-      setError(error instanceof Error ? error.message : "Failed to delete promo opt-in");
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete promo opt-in",
+      );
       console.error("Error deleting promo opt-in:", error);
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   // Show loading spinner when session is loading or when fetching data
   if (status === "loading" || isLoading) {
     return (
@@ -139,7 +152,7 @@ export default function AdminPromoOptins() {
       </div>
     );
   }
-  
+
   // If not authenticated, don't render anything (will redirect in useEffect)
   if (status !== "authenticated") {
     return (
@@ -148,14 +161,17 @@ export default function AdminPromoOptins() {
       </div>
     );
   }
-  
+
   return (
     <div>
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold leading-6 text-gray-900">Promo Opt-ins</h1>
+          <h1 className="text-2xl font-semibold leading-6 text-gray-900">
+            Promo Opt-ins
+          </h1>
           <p className="mt-2 text-sm text-gray-700">
-            A list of all promotional opt-ins from customers interested in special offers.
+            A list of all promotional opt-ins from customers interested in
+            special offers.
           </p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0">
@@ -167,18 +183,21 @@ export default function AdminPromoOptins() {
           </Link>
         </div>
       </div>
-      
+
       {error && (
         <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
           {error}
         </div>
       )}
-      
+
       {/* Filters */}
       <div className="mt-4 space-y-4">
         <div className="flex flex-wrap items-end gap-4">
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="search"
+              className="block text-sm font-medium text-gray-700"
+            >
               Search
             </label>
             <input
@@ -190,9 +209,12 @@ export default function AdminPromoOptins() {
               placeholder="Search by name or email"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="promo-name" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="promo-name"
+              className="block text-sm font-medium text-gray-700"
+            >
               Promotion
             </label>
             <input
@@ -204,9 +226,12 @@ export default function AdminPromoOptins() {
               placeholder="Filter by promotion"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="start-date" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="start-date"
+              className="block text-sm font-medium text-gray-700"
+            >
               Start Date
             </label>
             <input
@@ -217,9 +242,12 @@ export default function AdminPromoOptins() {
               className="mt-1 block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="end-date" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="end-date"
+              className="block text-sm font-medium text-gray-700"
+            >
               End Date
             </label>
             <input
@@ -230,7 +258,7 @@ export default function AdminPromoOptins() {
               className="mt-1 block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
-          
+
           <button
             onClick={() => {
               setSearchTerm("");
@@ -243,7 +271,7 @@ export default function AdminPromoOptins() {
           >
             Reset Filters
           </button>
-          
+
           <button
             onClick={() => {
               setCurrentPage(1);
@@ -254,7 +282,7 @@ export default function AdminPromoOptins() {
           </button>
         </div>
       </div>
-      
+
       {/* Pagination */}
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
@@ -274,7 +302,7 @@ export default function AdminPromoOptins() {
           </select>
           <span className="text-sm text-gray-700">entries</span>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
@@ -287,7 +315,9 @@ export default function AdminPromoOptins() {
             Page {currentPage} of {totalPages}
           </span>
           <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            onClick={() =>
+              setCurrentPage(Math.min(totalPages, currentPage + 1))
+            }
             disabled={currentPage === totalPages}
             className="rounded px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
@@ -295,7 +325,7 @@ export default function AdminPromoOptins() {
           </button>
         </div>
       </div>
-      
+
       {/* Table */}
       <div className="mt-4 flow-root">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -304,22 +334,40 @@ export default function AdminPromoOptins() {
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                    <th
+                      scope="col"
+                      className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                    >
                       Name
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
                       Email
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
                       Phone
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
                       Promotion
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
                       Date
                     </th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <th
+                      scope="col"
+                      className="relative py-3.5 pl-3 pr-4 sm:pr-6"
+                    >
                       <span className="sr-only">Actions</span>
                     </th>
                   </tr>

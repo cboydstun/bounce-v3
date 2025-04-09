@@ -7,7 +7,7 @@ export interface IPromoOptinDocument extends Document {
   name: string;
   email: string;
   phone?: string;
-  promoName: string;  // Store which promotion they signed up from
+  promoName: string; // Store which promotion they signed up from
   consentToContact: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -50,16 +50,19 @@ const PromoOptinSchema = new Schema<IPromoOptinDocument>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Static methods
-PromoOptinSchema.statics.findByEmail = function(email: string) {
+PromoOptinSchema.statics.findByEmail = function (email: string) {
   return this.find({ email });
 };
 
 // Create text index for searching
 PromoOptinSchema.index({ name: "text", email: "text", promoName: "text" });
 
-export default (mongoose.models.PromoOptin as IPromoOptinModel) || 
-  mongoose.model<IPromoOptinDocument, IPromoOptinModel>("PromoOptin", PromoOptinSchema);
+export default (mongoose.models.PromoOptin as IPromoOptinModel) ||
+  mongoose.model<IPromoOptinDocument, IPromoOptinModel>(
+    "PromoOptin",
+    PromoOptinSchema,
+  );

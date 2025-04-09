@@ -119,7 +119,10 @@ export default function AdminDashboard() {
       try {
         const promoOptinsRes = await api.get("/api/v1/promo-optins");
         const promoOptinsData = promoOptinsRes.data;
-        promoOptinsCount = promoOptinsData.pagination?.total || promoOptinsData.promoOptins?.length || 0;
+        promoOptinsCount =
+          promoOptinsData.pagination?.total ||
+          promoOptinsData.promoOptins?.length ||
+          0;
       } catch (error) {
         console.error("Failed to fetch promo opt-ins:", error);
       }

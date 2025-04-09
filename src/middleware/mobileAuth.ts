@@ -16,11 +16,9 @@ export function withMobileAuth(
     try {
       // Get token from Authorization header
       const authHeader = req.headers.get("authorization");
-      console.log("Middleware - Authorization header:", authHeader);
 
       // Check if Authorization header exists and has correct format
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        console.log("Middleware - Returning Unauthorized");
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
 

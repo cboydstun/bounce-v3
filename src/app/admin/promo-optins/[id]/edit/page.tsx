@@ -7,11 +7,15 @@ import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getPromoOptinById, updatePromoOptin } from "@/utils/api";
 
-export default function EditPromoOptin({ params }: { params: Promise<{ id: string }> }) {
+export default function EditPromoOptin({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
   const resolvedParams = use(params);
   const { id } = resolvedParams;
-  
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -19,32 +23,32 @@ export default function EditPromoOptin({ params }: { params: Promise<{ id: strin
     promoName: "",
     consentToContact: false,
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   // Get the NextAuth session
   const { data: session, status } = useSession();
-  
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     }
   }, [status, router]);
-  
+
   useEffect(() => {
     // Only fetch data if authenticated
     if (status !== "authenticated") return;
-    
+
     const fetchPromoOptin = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const data = await getPromoOptinById(id);
-        
+
         setFormData({
           name: data.name,
           email: data.email,
@@ -57,55 +61,62 @@ export default function EditPromoOptin({ params }: { params: Promise<{ id: strin
           router.push("/login");
           return;
         }
-        
+
         setError(error instanceof Error ? error.message : "An error occurred");
         console.error("Error fetching promo opt-in:", error);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchPromoOptin();
   }, [id, router, status]);
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value, type } = e.target;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (status !== "authenticated") {
       router.push("/login");
       return;
     }
-    
+
     try {
       setIsLoading(true);
       setError(null);
       setSuccess(null);
-      
+
       await updatePromoOptin(id, formData);
-      
+
       setSuccess("Promo opt-in updated successfully!");
     } catch (error) {
       if (error instanceof Error && error.message.includes("401")) {
         router.push("/login");
         return;
       }
-      
-      setError(error instanceof Error ? error.message : "Failed to update promo opt-in");
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update promo opt-in",
+      );
       console.error("Error updating promo opt-in:", error);
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   // Show loading spinner when session is loading or when fetching data
   if (status === "loading" || isLoading) {
     return (
@@ -114,7 +125,7 @@ export default function EditPromoOptin({ params }: { params: Promise<{ id: strin
       </div>
     );
   }
-  
+
   // If not authenticated, don't render anything (will redirect in useEffect)
   if (status !== "authenticated") {
     return (
@@ -123,12 +134,14 @@ export default function EditPromoOptin({ params }: { params: Promise<{ id: strin
       </div>
     );
   }
-  
+
   return (
     <div>
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold leading-6 text-gray-900">Edit Promo Opt-in</h1>
+          <h1 className="text-2xl font-semibold leading-6 text-gray-900">
+            Edit Promo Opt-in
+          </h1>
           <p className="mt-2 text-sm text-gray-700">
             Update the details of this promotional opt-in.
           </p>
@@ -142,23 +155,26 @@ export default function EditPromoOptin({ params }: { params: Promise<{ id: strin
           </Link>
         </div>
       </div>
-      
+
       {error && (
         <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
           {error}
         </div>
       )}
-      
+
       {success && (
         <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-md">
           {success}
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit} className="mt-8 space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700"
+            >
               Name
             </label>
             <input
@@ -171,9 +187,12 @@ export default function EditPromoOptin({ params }: { params: Promise<{ id: strin
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email
             </label>
             <input
@@ -186,9 +205,12 @@ export default function EditPromoOptin({ params }: { params: Promise<{ id: strin
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="phone"
+              className="block text-sm font-medium text-gray-700"
+            >
               Phone
             </label>
             <input
@@ -200,9 +222,12 @@ export default function EditPromoOptin({ params }: { params: Promise<{ id: strin
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="promoName" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="promoName"
+              className="block text-sm font-medium text-gray-700"
+            >
               Promotion
             </label>
             <input
@@ -215,7 +240,7 @@ export default function EditPromoOptin({ params }: { params: Promise<{ id: strin
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
-          
+
           <div className="sm:col-span-2">
             <div className="flex items-center">
               <input
@@ -226,13 +251,16 @@ export default function EditPromoOptin({ params }: { params: Promise<{ id: strin
                 onChange={handleChange}
                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <label htmlFor="consentToContact" className="ml-2 block text-sm text-gray-700">
+              <label
+                htmlFor="consentToContact"
+                className="ml-2 block text-sm text-gray-700"
+              >
                 Consent to Contact
               </label>
             </div>
           </div>
         </div>
-        
+
         <div className="flex justify-end space-x-3">
           <Link
             href="/admin/promo-optins"
@@ -245,7 +273,11 @@ export default function EditPromoOptin({ params }: { params: Promise<{ id: strin
             disabled={isLoading}
             className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           >
-            {isLoading ? <LoadingSpinner className="w-4 h-4" /> : "Save Changes"}
+            {isLoading ? (
+              <LoadingSpinner className="w-4 h-4" />
+            ) : (
+              "Save Changes"
+            )}
           </button>
         </div>
       </form>

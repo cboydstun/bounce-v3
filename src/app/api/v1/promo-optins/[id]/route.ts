@@ -4,14 +4,6 @@ import PromoOptin from "@/models/PromoOptin";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// Debug logger function
-const debugLog = (message: string, data?: any) => {
-  console.log(
-    `[PROMO OPTINS API DEBUG] ${message}`,
-    data ? JSON.stringify(data, null, 2) : "",
-  );
-};
-
 // Helper function to check authentication
 async function checkAuth() {
   const session = await getServerSession(authOptions);
@@ -27,41 +19,37 @@ async function checkAuth() {
  */
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: { id: string } },
 ) {
   const { params } = context;
-  
+
   try {
     // Authentication check
-    debugLog("Checking authentication");
     const isAuthenticated = await checkAuth();
     if (!isAuthenticated) {
-      debugLog("No valid session found, returning 401");
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     await dbConnect();
-    
-    debugLog(`Fetching promo opt-in with ID: ${params.id}`);
+
     const promoOptin = await PromoOptin.findById(params.id);
-    
+
     if (!promoOptin) {
-      debugLog(`Promo opt-in with ID ${params.id} not found`);
       return NextResponse.json(
         { error: "Promo opt-in not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    
+
     return NextResponse.json(promoOptin);
   } catch (error) {
     console.error("Error fetching promo opt-in:", error);
     return NextResponse.json(
       { error: "Failed to fetch promo opt-in" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -72,48 +60,44 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: { id: string } },
 ) {
   const { params } = context;
-  
+
   try {
     // Authentication check
-    debugLog("Checking authentication");
     const isAuthenticated = await checkAuth();
     if (!isAuthenticated) {
-      debugLog("No valid session found, returning 401");
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     await dbConnect();
-    
+
     const data = await request.json();
-    debugLog(`Updating promo opt-in with ID: ${params.id}`, data);
-    
+
     // Find and update the promo opt-in
     const updatedPromoOptin = await PromoOptin.findByIdAndUpdate(
       params.id,
       data,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
-    
+
     if (!updatedPromoOptin) {
-      debugLog(`Promo opt-in with ID ${params.id} not found`);
       return NextResponse.json(
         { error: "Promo opt-in not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    
+
     return NextResponse.json(updatedPromoOptin);
   } catch (error) {
     console.error("Error updating promo opt-in:", error);
     return NextResponse.json(
       { error: "Failed to update promo opt-in" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -124,44 +108,40 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: { id: string } },
 ) {
   const { params } = context;
-  
+
   try {
     // Authentication check
-    debugLog("Checking authentication");
     const isAuthenticated = await checkAuth();
     if (!isAuthenticated) {
-      debugLog("No valid session found, returning 401");
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     await dbConnect();
-    
-    debugLog(`Deleting promo opt-in with ID: ${params.id}`);
+
     const deletedPromoOptin = await PromoOptin.findByIdAndDelete(params.id);
-    
+
     if (!deletedPromoOptin) {
-      debugLog(`Promo opt-in with ID ${params.id} not found`);
       return NextResponse.json(
         { error: "Promo opt-in not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    
+
     return NextResponse.json(
       { message: "Promo opt-in deleted successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error deleting promo opt-in:", error);
     return NextResponse.json(
       { error: "Failed to delete promo opt-in" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

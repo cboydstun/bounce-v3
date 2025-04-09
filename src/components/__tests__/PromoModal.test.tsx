@@ -75,7 +75,7 @@ describe("PromoModal", () => {
         holidays={mockHolidays}
         delayInSeconds={10}
         persistenceDays={1}
-      />
+      />,
     );
 
     // Fast-forward time
@@ -98,7 +98,7 @@ describe("PromoModal", () => {
         holidays={mockHolidays}
         delayInSeconds={10}
         persistenceDays={1}
-      />
+      />,
     );
 
     // Fast-forward time
@@ -131,7 +131,7 @@ describe("PromoModal", () => {
     const storageKey = "promo_modal_test_holiday";
     expect(localStorageMock.setItem).toHaveBeenCalledWith(
       storageKey,
-      expect.any(String)
+      expect.any(String),
     );
   });
 });

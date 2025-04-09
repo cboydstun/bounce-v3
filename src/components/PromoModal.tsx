@@ -85,7 +85,7 @@ const PromoModal: React.FC<PromoModalProps> = ({
   const handleGetCoupon = () => {
     // Close the modal
     setIsOpen(false);
-    
+
     // Store the timestamp as we do in handleClose
     if (isClient && currentPromo) {
       const storageKey = `promo_modal_${currentPromo.name
@@ -93,15 +93,22 @@ const PromoModal: React.FC<PromoModalProps> = ({
         .toLowerCase()}`;
       localStorage.setItem(storageKey, Date.now().toString());
     }
-    
+
     // Navigate to the coupon form page with the promo name as a query parameter
-    router.push(`/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`);
+    router.push(
+      `/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`,
+    );
   };
 
   if (!isClient || !currentPromo) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} className="w-full max-w-md" position="bottom-left">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      className="w-full max-w-md"
+      position="bottom-left"
+    >
       <Card className="border-0 shadow-none">
         <CardHeader className="pb-2">
           <CardTitle className="text-primary-purple text-2xl">

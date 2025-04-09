@@ -46,8 +46,6 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    console.log(`Found ${visitors.length} visitors without location data`);
-
     // Process visitors in batches to avoid rate limits (45 requests per minute for IP-API)
     const batchSize = 40;
     let updatedCount = 0;
@@ -57,9 +55,6 @@ export async function POST(req: NextRequest) {
     // Process each visitor
     for (let i = 0; i < visitors.length; i += batchSize) {
       const batch = visitors.slice(i, i + batchSize);
-      console.log(
-        `Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(visitors.length / batchSize)}`,
-      );
 
       // Process each visitor in the batch
       const promises = batch.map(async (visitor) => {
@@ -67,29 +62,17 @@ export async function POST(req: NextRequest) {
           const ipAddress = visitor.ipAddress;
 
           if (!ipAddress || ipAddress === "unknown") {
-            console.log(
-              `Skipping visitor ${visitor._id} with invalid IP: ${ipAddress}`,
-            );
             skippedCount++;
             return;
           }
 
-          console.log(
-            `Getting location for visitor ${visitor._id} with IP: ${ipAddress}`,
-          );
           const locationData = await getLocationFromIp(ipAddress);
 
           if (locationData) {
-            console.log(
-              `Updating visitor ${visitor._id} with location: ${locationData.city}, ${locationData.region}, ${locationData.country}`,
-            );
             visitor.location = locationData;
             await visitor.save();
             updatedCount++;
           } else {
-            console.log(
-              `No location data found for visitor ${visitor._id} with IP: ${ipAddress}`,
-            );
             skippedCount++;
           }
         } catch (error) {
@@ -103,7 +86,6 @@ export async function POST(req: NextRequest) {
 
       // If there are more batches to process, wait before continuing
       if (i + batchSize < visitors.length) {
-        console.log(`Waiting 2 seconds before processing next batch...`);
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }

@@ -23,7 +23,7 @@ function CouponFormContent() {
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  
+
   useEffect(() => {
     const promoParam = searchParams.get("promo");
     if (promoParam) {
@@ -99,17 +99,17 @@ function CouponFormContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm() || !formData.consentToContact) return;
-    
+
     setIsSubmitting(true);
 
     try {
       // Send data to our API
-      const response = await fetch('/api/v1/package-promo', {
-        method: 'POST',
+      const response = await fetch("/api/v1/package-promo", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...formData,
@@ -118,12 +118,12 @@ function CouponFormContent() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit form');
+        throw new Error("Failed to submit form");
       }
-      
+
       // Set submitted state to show success message
       setIsSubmitted(true);
-      
+
       // Reset form
       setFormData({
         name: "",
@@ -144,14 +144,15 @@ function CouponFormContent() {
         <h1 className="text-3xl font-bold text-primary-purple mb-6 text-center">
           Get Your Special Coupon
         </h1>
-        
+
         {isSubmitted ? (
           <div className="text-center py-8 bg-green-100 text-green-700 p-4 rounded-xl animate-fade-in">
             <h2 className="text-2xl font-semibold text-primary-blue mb-4">
               Thank You! 🎉
             </h2>
             <p className="text-gray-700 mb-6">
-              Your coupon has been sent to your email. Check your inbox for your special discount!
+              Your coupon has been sent to your email. Check your inbox for your
+              special discount!
             </p>
             <Link
               href="/"
@@ -163,7 +164,10 @@ function CouponFormContent() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="name" className="block text-lg font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="name"
+                className="block text-lg font-medium text-gray-700 mb-2"
+              >
                 👤 Full Name
               </label>
               <input
@@ -180,9 +184,12 @@ function CouponFormContent() {
                 <p className="text-red-500 text-sm mt-1">{errors.name}</p>
               )}
             </div>
-            
+
             <div>
-              <label htmlFor="email" className="block text-lg font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-lg font-medium text-gray-700 mb-2"
+              >
                 📧 Email Address
               </label>
               <input
@@ -200,9 +207,12 @@ function CouponFormContent() {
                 <p className="text-red-500 text-sm mt-1">{errors.email}</p>
               )}
             </div>
-            
+
             <div>
-              <label htmlFor="phone" className="block text-lg font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="phone"
+                className="block text-lg font-medium text-gray-700 mb-2"
+              >
                 📞 Phone Number
               </label>
               <input
@@ -219,7 +229,7 @@ function CouponFormContent() {
                 <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
               )}
             </div>
-            
+
             {/* Consent Checkbox */}
             <div className="bg-secondary-blue/5 p-4 rounded-lg">
               <label className="flex items-start space-x-3 cursor-pointer">
@@ -232,11 +242,12 @@ function CouponFormContent() {
                   className="mt-1 rounded border-2 border-secondary-blue/20 text-primary-purple focus:ring-primary-purple"
                 />
                 <span className="text-sm text-gray-700">
-                  I agree to calls, texts, and emails about my party rental inquiry 📱
+                  I agree to calls, texts, and emails about my party rental
+                  inquiry 📱
                 </span>
               </label>
             </div>
-            
+
             <button
               type="submit"
               disabled={isSubmitting || !formData.consentToContact}
@@ -254,9 +265,17 @@ function CouponFormContent() {
                 "Get My Coupon 🎟️"
               )}
             </button>
-            
+
             <p className="text-sm text-gray-600 mt-4 text-center">
-            By submitting this form, I agree to the privacy policy and terms and conditions and give my express written consent to SATX Bounce to be contacted via text and phone call, even if this number is a wireless number or if I am presently listed on a Do Not Call list. I understand that I may be contacted by telephone, email, text message or mail regarding marketing services and that I may be called using automatic dialing equipment. I understand that I can reply STOP to STOP communications at any time. Message and data rates may apply. My consent does not require purchase.
+              By submitting this form, I agree to the privacy policy and terms
+              and conditions and give my express written consent to SATX Bounce
+              to be contacted via text and phone call, even if this number is a
+              wireless number or if I am presently listed on a Do Not Call list.
+              I understand that I may be contacted by telephone, email, text
+              message or mail regarding marketing services and that I may be
+              called using automatic dialing equipment. I understand that I can
+              reply STOP to STOP communications at any time. Message and data
+              rates may apply. My consent does not require purchase.
             </p>
           </form>
         )}

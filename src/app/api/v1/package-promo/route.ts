@@ -5,22 +5,12 @@ import nodemailer from "nodemailer";
 import twilio from "twilio";
 import { getCurrentPromotion } from "@/utils/promoUtils";
 
-// Debug logger function
-const debugLog = (message: string, data?: any) => {
-  console.log(
-    `[PROMO API DEBUG] ${message}`,
-    data ? JSON.stringify(data, null, 2) : "",
-  );
-};
-
 /**
  * POST endpoint to handle promo opt-in submissions
  * This endpoint is public and does not require authentication
  */
 export async function POST(request: NextRequest) {
   try {
-    debugLog("Processing promo opt-in submission");
-
     await dbConnect();
     const optinData = await request.json();
 
