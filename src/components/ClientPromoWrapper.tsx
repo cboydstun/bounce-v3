@@ -15,7 +15,7 @@ export default function ClientPromoWrapper({
     <PromoModalWrapper
       holidays={holidays}
       delayInSeconds={3}
-      persistenceDays={0}
+      persistenceDays={1}
     />
   );
 }

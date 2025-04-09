@@ -91,8 +91,6 @@ const localBusinessSchema = {
   },
 };
 
-// import PromoModalWrapper from "../components/PromoModalWrapper";
-
 export default async function HomePage() {
   return (
     <>
