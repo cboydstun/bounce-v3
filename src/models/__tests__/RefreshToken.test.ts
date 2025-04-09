@@ -1,8 +1,8 @@
-import mongoose from 'mongoose';
-import RefreshToken, { IRefreshToken } from '../RefreshToken';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import mongoose from "mongoose";
+import RefreshToken, { IRefreshToken } from "../RefreshToken";
+import { MongoMemoryServer } from "mongodb-memory-server";
 
-describe('RefreshToken Model', () => {
+describe("RefreshToken Model", () => {
   let mongoServer: MongoMemoryServer;
 
   // Connect to a new in-memory database before running any tests
@@ -26,16 +26,16 @@ describe('RefreshToken Model', () => {
     await mongoServer.stop();
   });
 
-  it('should create a new refresh token', async () => {
+  it("should create a new refresh token", async () => {
     const userId = new mongoose.Types.ObjectId();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30); // 30 days from now
 
     const refreshTokenData = {
       userId,
-      tokenId: 'test-token-id',
+      tokenId: "test-token-id",
       expiresAt,
-      isRevoked: false
+      isRevoked: false,
     };
 
     const refreshToken = await RefreshToken.create(refreshTokenData);
@@ -43,20 +43,20 @@ describe('RefreshToken Model', () => {
     // Check that the refresh token was created correctly
     expect(refreshToken).toBeDefined();
     expect(refreshToken.userId.toString()).toBe(userId.toString());
-    expect(refreshToken.tokenId).toBe('test-token-id');
+    expect(refreshToken.tokenId).toBe("test-token-id");
     expect(refreshToken.expiresAt.getTime()).toBe(expiresAt.getTime());
     expect(refreshToken.isRevoked).toBe(false);
     expect(refreshToken.createdAt).toBeDefined();
   });
 
-  it('should require userId', async () => {
+  it("should require userId", async () => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
     const refreshTokenData = {
-      tokenId: 'test-token-id',
+      tokenId: "test-token-id",
       expiresAt,
-      isRevoked: false
+      isRevoked: false,
     };
 
     // Attempt to create a refresh token without userId
@@ -68,11 +68,11 @@ describe('RefreshToken Model', () => {
     }
 
     expect(error).toBeDefined();
-    expect((error as Error).name).toBe('ValidationError');
-    expect(error as Error).toHaveProperty('errors.userId');
+    expect((error as Error).name).toBe("ValidationError");
+    expect(error as Error).toHaveProperty("errors.userId");
   });
 
-  it('should require tokenId', async () => {
+  it("should require tokenId", async () => {
     const userId = new mongoose.Types.ObjectId();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
@@ -80,7 +80,7 @@ describe('RefreshToken Model', () => {
     const refreshTokenData = {
       userId,
       expiresAt,
-      isRevoked: false
+      isRevoked: false,
     };
 
     // Attempt to create a refresh token without tokenId
@@ -92,17 +92,17 @@ describe('RefreshToken Model', () => {
     }
 
     expect(error).toBeDefined();
-    expect(error as Error).toHaveProperty('name', 'ValidationError');
-    expect(error as Error).toHaveProperty('errors.tokenId');
+    expect(error as Error).toHaveProperty("name", "ValidationError");
+    expect(error as Error).toHaveProperty("errors.tokenId");
   });
 
-  it('should require expiresAt', async () => {
+  it("should require expiresAt", async () => {
     const userId = new mongoose.Types.ObjectId();
 
     const refreshTokenData = {
       userId,
-      tokenId: 'test-token-id',
-      isRevoked: false
+      tokenId: "test-token-id",
+      isRevoked: false,
     };
 
     // Attempt to create a refresh token without expiresAt
@@ -114,19 +114,19 @@ describe('RefreshToken Model', () => {
     }
 
     expect(error).toBeDefined();
-    expect(error as Error).toHaveProperty('name', 'ValidationError');
-    expect(error as Error).toHaveProperty('errors.expiresAt');
+    expect(error as Error).toHaveProperty("name", "ValidationError");
+    expect(error as Error).toHaveProperty("errors.expiresAt");
   });
 
-  it('should default isRevoked to false', async () => {
+  it("should default isRevoked to false", async () => {
     const userId = new mongoose.Types.ObjectId();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
     const refreshTokenData = {
       userId,
-      tokenId: 'test-token-id',
-      expiresAt
+      tokenId: "test-token-id",
+      expiresAt,
       // isRevoked is not provided
     };
 
@@ -135,7 +135,7 @@ describe('RefreshToken Model', () => {
     expect(refreshToken.isRevoked).toBe(false);
   });
 
-  it('should enforce unique tokenId', async () => {
+  it("should enforce unique tokenId", async () => {
     const userId = new mongoose.Types.ObjectId();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
@@ -143,8 +143,8 @@ describe('RefreshToken Model', () => {
     // Create first token
     await RefreshToken.create({
       userId,
-      tokenId: 'duplicate-token-id',
-      expiresAt
+      tokenId: "duplicate-token-id",
+      expiresAt,
     });
 
     // Try to create second token with same tokenId
@@ -152,8 +152,8 @@ describe('RefreshToken Model', () => {
     try {
       await RefreshToken.create({
         userId,
-        tokenId: 'duplicate-token-id',
-        expiresAt
+        tokenId: "duplicate-token-id",
+        expiresAt,
       });
     } catch (err) {
       error = err;
@@ -161,10 +161,10 @@ describe('RefreshToken Model', () => {
 
     expect(error).toBeDefined();
     // MongoDB duplicate key error code
-    expect(error as Error).toHaveProperty('code', 11000);
+    expect(error as Error).toHaveProperty("code", 11000);
   });
 
-  it('should find a token by tokenId', async () => {
+  it("should find a token by tokenId", async () => {
     const userId = new mongoose.Types.ObjectId();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
@@ -172,18 +172,20 @@ describe('RefreshToken Model', () => {
     // Create a token
     await RefreshToken.create({
       userId,
-      tokenId: 'findable-token-id',
-      expiresAt
+      tokenId: "findable-token-id",
+      expiresAt,
     });
 
     // Find the token
-    const foundToken = await RefreshToken.findOne({ tokenId: 'findable-token-id' });
+    const foundToken = await RefreshToken.findOne({
+      tokenId: "findable-token-id",
+    });
 
     expect(foundToken).toBeDefined();
-    expect(foundToken!.tokenId).toBe('findable-token-id');
+    expect(foundToken!.tokenId).toBe("findable-token-id");
   });
 
-  it('should update a token to revoked', async () => {
+  it("should update a token to revoked", async () => {
     const userId = new mongoose.Types.ObjectId();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
@@ -191,13 +193,13 @@ describe('RefreshToken Model', () => {
     // Create a token
     const token = await RefreshToken.create({
       userId,
-      tokenId: 'revokable-token-id',
-      expiresAt
+      tokenId: "revokable-token-id",
+      expiresAt,
     });
 
     // Update to revoked
     await RefreshToken.findByIdAndUpdate(token._id, {
-      isRevoked: true
+      isRevoked: true,
     });
 
     // Find the token again
