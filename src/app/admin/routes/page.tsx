@@ -76,7 +76,7 @@ export default function RoutePlannerPage() {
         const formattedDate = new Date(
           selectedDate.getFullYear(),
           selectedDate.getMonth(),
-          selectedDate.getDate() -1 // Adjust for timezone offset
+          selectedDate.getDate()
         ).toLocaleDateString('en-US');
 
         debugLog("Fetching contacts for date", { formattedDate });
