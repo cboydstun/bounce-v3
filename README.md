@@ -212,6 +212,47 @@ node scripts/create-dev-blog.js
 - `PUT /api/v1/reviews/:id` - Update a customer review by ID (owner or admin only)
 - `DELETE /api/v1/reviews/:id` - Delete a customer review by ID (owner or admin only)
 
+### Promo Opt-ins API
+
+- `GET /api/v1/promo-optins` - Retrieve all promotional opt-ins (authenticated users only)
+  - Query parameters:
+    - `email`: Filter by email address
+    - `promoName`: Filter by promotion name
+    - `startDate`: Filter by start date
+    - `endDate`: Filter by end date
+    - `search`: Search by name or email
+    - `limit`: Number of opt-ins per page (default: 25)
+    - `page`: Page number for pagination (default: 1)
+  - Response format:
+    ```json
+    {
+      "promoOptins": [
+        {
+          "_id": "67d9dcc99a94b06936b304c8",
+          "name": "John Doe",
+          "email": "john@example.com",
+          "phone": "555-123-4567",
+          "promoName": "Summer Special",
+          "consentToContact": true,
+          "createdAt": "2025-04-08T15:30:00.000Z",
+          "updatedAt": "2025-04-08T15:30:00.000Z"
+        }
+      ],
+      "pagination": {
+        "total": 42,
+        "page": 1,
+        "limit": 25,
+        "pages": 2
+      }
+    }
+    ```
+- `GET /api/v1/promo-optins/:id` - Retrieve a specific promo opt-in by ID (authenticated users only)
+- `POST /api/v1/promo-optins` - Create a new promo opt-in (public)
+  - Required fields: `name`, `email`, `promoName`, `consentToContact`
+  - Optional fields: `phone`
+- `PUT /api/v1/promo-optins/:id` - Update a promo opt-in by ID (authenticated users only)
+- `DELETE /api/v1/promo-optins/:id` - Delete a promo opt-in by ID (authenticated users only)
+
 ## Products Implementation
 
 The Products API is implemented using MongoDB and Mongoose with TypeScript. It provides a comprehensive system for managing product data with advanced features like slug generation, text search, and category filtering.
@@ -289,7 +330,7 @@ const ProductSchema = new Schema<IProductDocument, IProductModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -423,7 +464,7 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -471,7 +512,7 @@ export interface IContactModel extends Model<IContactDocument> {
   findByPartyDate(date: string): Promise<IContactDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string,
+    endDate: string
   ): Promise<IContactDocument[]>;
 }
 ```
@@ -550,6 +591,106 @@ The application includes a comprehensive analytics dashboard that provides insig
 - `BookingsTrend.tsx`: Bar chart component for booking trend analysis
 - `ProductPopularity.tsx`: Horizontal bar chart for product popularity
 - `ContactCalendar.tsx`: Calendar component for visualizing bookings
+
+## Promo Opt-ins Implementation
+
+The Promo Opt-ins API is implemented using MongoDB and Mongoose with TypeScript. It provides a comprehensive system for managing promotional opt-ins with filtering, pagination, and authentication.
+
+### MongoDB Schema
+
+```typescript
+const PromoOptinSchema = new Schema<IPromoOptinDocument, IPromoOptinModel>(
+  {
+    name: {
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      trim: true,
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, "Please use a valid email address"],
+      index: true,
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    promoName: {
+      type: String,
+      required: [true, "Promotion name is required"],
+      trim: true,
+      index: true,
+    },
+    consentToContact: {
+      type: Boolean,
+      required: [true, "Consent to contact is required"],
+      default: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+```
+
+### Features
+
+- **Email Filtering**: Filter opt-ins by email address
+- **Promotion Filtering**: Filter opt-ins by promotion name
+- **Date Range Filtering**: Filter opt-ins by creation date range
+- **Text Search**: Search opt-ins by name or email
+- **Pagination**: Server-side pagination for efficient data loading
+- **Authentication**: Protected routes for sensitive operations
+- **Email Validation**: Built-in validation for email addresses
+
+### TypeScript Interfaces
+
+The promo opt-in model uses TypeScript interfaces to ensure type safety:
+
+```typescript
+export interface PromoOptin {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  promoName: string;
+  consentToContact: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface IPromoOptinDocument
+  extends Omit<PromoOptin, "_id">,
+    Document {}
+
+export interface IPromoOptinModel extends Model<IPromoOptinDocument> {
+  findByEmail(email: string): Promise<IPromoOptinDocument[]>;
+  findByPromoName(promoName: string): Promise<IPromoOptinDocument[]>;
+  findByDateRange(
+    startDate: string,
+    endDate: string
+  ): Promise<IPromoOptinDocument[]>;
+}
+```
+
+### API Endpoints
+
+The Promo Opt-ins API provides comprehensive endpoints with filtering, pagination, and authentication:
+
+- **GET /api/v1/promo-optins**: List all promo opt-ins with filtering and pagination (authenticated users only)
+- **GET /api/v1/promo-optins/:id**: Get a specific promo opt-in by ID (authenticated users only)
+- **POST /api/v1/promo-optins**: Create a new promo opt-in (public)
+- **PUT /api/v1/promo-optins/:id**: Update a promo opt-in (authenticated users only)
+- **DELETE /api/v1/promo-optins/:id**: Delete a promo opt-in (authenticated users only)
+
+### Frontend Components
+
+- `PromoModal.tsx`: Modal component for displaying promotional offers
+- `PromoModalWrapper.tsx`: Wrapper component for the promo modal with client-side logic
+- Admin interface for managing promo opt-ins with filtering and pagination
 
 ## Reviews Implementation
 
@@ -632,7 +773,7 @@ const ReviewSchema = new Schema<IReviewDocument, IReviewModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
