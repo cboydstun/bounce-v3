@@ -10,7 +10,9 @@ import {
 // Custom validation function for the confirmed field
 const validateConfirmedStatus = function(this: IContactDocument) {
   if (this.confirmed === "Confirmed") {
-    if (!this.streetAddress || !this.partyStartTime) {
+    // Check for null, undefined, or empty strings
+    if (!this.streetAddress || this.streetAddress.trim() === '' || 
+        !this.partyStartTime || this.partyStartTime.trim() === '') {
       return false;
     }
   }
