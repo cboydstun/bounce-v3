@@ -76,7 +76,6 @@ export async function GET(request: NextRequest) {
     // Execute query without pagination to allow client-side filtering and pagination
     const contacts = await Contact.find(query).sort({ partyDate: 1 });
 
-
     return NextResponse.json({
       contacts,
     });

@@ -39,11 +39,9 @@ api.interceptors.request.use(
           // Add a custom header for debugging
           config.headers["X-Auth-Debug"] = "nextauth-session";
         } else {
-
           // Check if we have a token in localStorage (legacy method)
           const token = localStorage.getItem("auth_token");
           if (token) {
-
             config.headers.Authorization = `Bearer ${token}`;
             config.headers["X-Auth-Debug"] = "legacy-token";
           }
@@ -79,7 +77,6 @@ api.interceptors.response.use(
     return Promise.reject(new Error(errorMessage));
   },
 );
-
 
 // Don't automatically remove auth tokens from localStorage
 // We'll keep them for backward compatibility

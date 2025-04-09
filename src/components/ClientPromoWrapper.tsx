@@ -8,7 +8,9 @@ interface ClientPromoWrapperProps {
   holidays: Holiday[];
 }
 
-export default function ClientPromoWrapper({ holidays }: ClientPromoWrapperProps) {
+export default function ClientPromoWrapper({
+  holidays,
+}: ClientPromoWrapperProps) {
   return (
     <PromoModalWrapper
       holidays={holidays}

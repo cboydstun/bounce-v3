@@ -49,13 +49,11 @@ export async function PUT(
 
     // Check if user is authenticated
     if (!session || !session.user) {
-
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
       );
     }
-
 
     await dbConnect();
 
@@ -102,13 +100,11 @@ export async function DELETE(
 
     // Check if user is authenticated
     if (!session || !session.user) {
-
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
       );
     }
-
 
     await dbConnect();
     const resolvedParams = await params;

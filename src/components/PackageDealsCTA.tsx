@@ -14,18 +14,8 @@ const PackageDealsCTA: React.FC<PackageDealsCTAProps> = ({
   href,
   className = "",
 }) => {
-  const { setVisible } = usePackageDeals();
-  
-  const handleClick = () => {
-    setVisible();
-  };
-
   return (
-    <Link
-      href={href}
-      className={className}
-      onClick={handleClick}
-    >
+    <Link href={href} className={className}>
       See Package Deals
       <ArrowRight className="w-5 h-5" />
     </Link>

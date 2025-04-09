@@ -46,7 +46,6 @@ describe("Mobile Auth Middleware", () => {
     expect(response.status).toBe(401);
     const data = await response.json();
 
-
     expect(data).toEqual({ error: "Invalid or expired token" });
 
     // Verify verifyAccessToken was not called
@@ -68,7 +67,6 @@ describe("Mobile Auth Middleware", () => {
     const req = new NextRequest("https://example.com/api/protected", {
       headers,
     });
-
 
     // Apply the middleware
     const middleware = withMobileAuth(mockHandler);

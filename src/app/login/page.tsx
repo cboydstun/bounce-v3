@@ -34,11 +34,9 @@ const LoginForm = () => {
     const checkSession = async () => {
       try {
         const sessionData = await getSession();
-
       } catch (err) {
         console.error("Error fetching session:", err);
         setError("Failed to fetch session data");
-
       }
     };
 
@@ -81,7 +79,6 @@ const LoginForm = () => {
     }
 
     try {
-
       // Call NextAuth.js signIn
       const result = await signIn("credentials", {
         redirect: false,
@@ -89,7 +86,6 @@ const LoginForm = () => {
         password,
         rememberMe: rememberMe.toString(),
       });
-
 
       if (result?.error) {
         console.error("Login error:", result.error);
@@ -101,10 +97,8 @@ const LoginForm = () => {
           setError("Invalid email or password. Please try again.");
         }
       } else if (result?.ok) {
-
         // Redirect to admin dashboard or the page they were trying to access
         const from = searchParams.get("from");
-
 
         router.push(from || "/admin");
       }

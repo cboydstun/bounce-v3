@@ -11,7 +11,6 @@ export async function GET(request: NextRequest) {
 
     // Check if user is authenticated
     if (!session || !session.user) {
-
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
@@ -43,7 +42,6 @@ export async function PUT(request: NextRequest) {
 
     // Check if user is authenticated
     if (!session || !session.user) {
-
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },

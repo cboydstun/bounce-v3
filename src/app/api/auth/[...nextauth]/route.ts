@@ -15,14 +15,11 @@ const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-
         if (!credentials?.email || !credentials?.password) {
-
           return null;
         }
 
         try {
-
           await dbConnect();
 
           const user = (await User.findOne({ email: credentials.email }).select(
@@ -30,14 +27,12 @@ const authOptions: NextAuthOptions = {
           )) as IUserDocument | null;
 
           if (!user) {
-
             return null;
           }
 
           const passwordValid = await user.comparePassword(
             credentials.password,
           );
-
 
           if (!passwordValid) {
             return null;
@@ -49,10 +44,8 @@ const authOptions: NextAuthOptions = {
             name: user.name || undefined,
           };
 
-
           return authUser;
         } catch (error) {
-
           console.error("Auth error:", error);
           return null;
         }

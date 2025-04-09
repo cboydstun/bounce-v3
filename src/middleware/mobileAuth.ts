@@ -19,7 +19,6 @@ export function withMobileAuth(
 
       // Check if Authorization header exists and has correct format
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
-
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
 

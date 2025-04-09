@@ -59,7 +59,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
       {} as Record<string, string>,
     );
-
   };
 
   useEffect(() => {
@@ -104,7 +103,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Redirect to login page
       router.push("/login");
     } catch (error) {
-
       console.error("Logout error:", error);
       // Still attempt to redirect even if there was an error
       router.push("/login");

@@ -69,8 +69,8 @@ const Modal: React.FC<ModalProps> = ({
           position === "center"
             ? "flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
             : position === "sticky"
-            ? "flex items-end justify-start fixed bottom-0 right-0 p-4" // Fixed positioning for sticky
-            : "flex items-end justify-start min-h-screen p-4"
+              ? "flex items-end justify-start fixed bottom-0 right-0 p-4" // Fixed positioning for sticky
+              : "flex items-end justify-start min-h-screen p-4"
         }
       `}
       >
@@ -100,16 +100,14 @@ const Modal: React.FC<ModalProps> = ({
                   isAnimatingOut ? "animate-slide-down" : "animate-slide-up"
                 }`
               : position === "sticky"
-              ? `fixed bottom-4 right-4 ${
-                  isAnimatingOut
-                    ? "animate-fade-out"
-                    : "animate-fade-in"
-                }`
-              : `${
-                  isAnimatingOut
-                    ? "animate-slide-out-bottom-left"
-                    : "animate-slide-in-bottom-left"
-                }`
+                ? `fixed bottom-4 right-4 ${
+                    isAnimatingOut ? "animate-fade-out" : "animate-fade-in"
+                  }`
+                : `${
+                    isAnimatingOut
+                      ? "animate-slide-out-bottom-left"
+                      : "animate-slide-in-bottom-left"
+                  }`
           } ${className}`}
         >
           <button

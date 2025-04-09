@@ -52,10 +52,8 @@ export default function RoutePlannerPage() {
     }
 
     if (status === "unauthenticated") {
-
       router.push("/login");
     } else if (status === "authenticated") {
-
       setIsLoading(false);
     }
   }, [status, session, router]);
@@ -96,7 +94,6 @@ export default function RoutePlannerPage() {
             (error.message.includes("401") ||
               error.message.includes("Authentication failed"))
           ) {
-
             router.push("/login");
             return;
           }

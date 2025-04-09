@@ -376,7 +376,6 @@ export async function GET(req: NextRequest) {
 
     // Check if user is authenticated
     if (!session || !session.user) {
-
       return NextResponse.json(
         { success: false, error: "Unauthorized - Not authenticated" },
         { status: 401 },

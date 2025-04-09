@@ -125,7 +125,7 @@ function CouponFormContent() {
 
       // Use the context method to set visibility
       setPackageDealsVisible();
-      
+
       // Redirect to the party-packages page
       router.push("/party-packages");
     } catch (error) {
@@ -143,120 +143,120 @@ function CouponFormContent() {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-lg font-medium text-gray-700 mb-2"
-              >
-                👤 Full Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
-                placeholder="Enter your full name"
-              />
-              {errors.name && (
-                <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-              )}
-            </div>
-
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-lg font-medium text-gray-700 mb-2"
-              >
-                📧 Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
-                placeholder="your@email.com"
-                autoComplete="email"
-              />
-              {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-              )}
-            </div>
-
-            <div>
-              <label
-                htmlFor="phone"
-                className="block text-lg font-medium text-gray-700 mb-2"
-              >
-                📞 Phone Number
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
-                placeholder="(###)-###-####"
-                autoComplete="tel"
-              />
-              {errors.phone && (
-                <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
-              )}
-            </div>
-
-            {/* Consent Checkbox */}
-            <div className="bg-secondary-blue/5 p-4 rounded-lg">
-              <label className="flex items-start space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="consentToContact"
-                  name="consentToContact"
-                  checked={formData.consentToContact}
-                  onChange={handleChange}
-                  className="mt-1 rounded border-2 border-secondary-blue/20 text-primary-purple focus:ring-primary-purple"
-                />
-                <span className="text-sm text-gray-700">
-                  I agree to calls, texts, and emails about my party rental
-                  inquiry 📱
-                </span>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting || !formData.consentToContact}
-              className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 ${
-                formData.consentToContact
-                  ? "bg-gradient-to-r from-blue-400 to-purple-600 text-white hover:from-blue-500 hover:to-purple-700 shadow-md hover:shadow-lg"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+          <div>
+            <label
+              htmlFor="name"
+              className="block text-lg font-medium text-gray-700 mb-2"
             >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center">
-                  <LoadingSpinner /> Processing...
-                </span>
-              ) : (
-                "See Package Deals 🎉"
-              )}
-            </button>
+              👤 Full Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
+              placeholder="Enter your full name"
+            />
+            {errors.name && (
+              <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+            )}
+          </div>
 
-            <p className="text-sm text-gray-600 mt-4 text-center">
-              By submitting this form, I agree to the privacy policy and terms
-              and conditions and give my express written consent to SATX Bounce
-              to be contacted via text and phone call, even if this number is a
-              wireless number or if I am presently listed on a Do Not Call list.
-              I understand that I may be contacted by telephone, email, text
-              message or mail regarding marketing services and that I may be
-              called using automatic dialing equipment. I understand that I can
-              reply STOP to STOP communications at any time. Message and data
-              rates may apply. My consent does not require purchase.
-            </p>
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-lg font-medium text-gray-700 mb-2"
+            >
+              📧 Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
+              placeholder="your@email.com"
+              autoComplete="email"
+            />
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="phone"
+              className="block text-lg font-medium text-gray-700 mb-2"
+            >
+              📞 Phone Number
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
+              placeholder="(###)-###-####"
+              autoComplete="tel"
+            />
+            {errors.phone && (
+              <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+            )}
+          </div>
+
+          {/* Consent Checkbox */}
+          <div className="bg-secondary-blue/5 p-4 rounded-lg">
+            <label className="flex items-start space-x-3 cursor-pointer">
+              <input
+                type="checkbox"
+                id="consentToContact"
+                name="consentToContact"
+                checked={formData.consentToContact}
+                onChange={handleChange}
+                className="mt-1 rounded border-2 border-secondary-blue/20 text-primary-purple focus:ring-primary-purple"
+              />
+              <span className="text-sm text-gray-700">
+                I agree to calls, texts, and emails about my party rental
+                inquiry 📱
+              </span>
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting || !formData.consentToContact}
+            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 ${
+              formData.consentToContact
+                ? "bg-gradient-to-r from-blue-400 to-purple-600 text-white hover:from-blue-500 hover:to-purple-700 shadow-md hover:shadow-lg"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center">
+                <LoadingSpinner /> Processing...
+              </span>
+            ) : (
+              "See Package Deals 🎉"
+            )}
+          </button>
+
+          <p className="text-sm text-gray-600 mt-4 text-center">
+            By submitting this form, I agree to the privacy policy and terms and
+            conditions and give my express written consent to SATX Bounce to be
+            contacted via text and phone call, even if this number is a wireless
+            number or if I am presently listed on a Do Not Call list. I
+            understand that I may be contacted by telephone, email, text message
+            or mail regarding marketing services and that I may be called using
+            automatic dialing equipment. I understand that I can reply STOP to
+            STOP communications at any time. Message and data rates may apply.
+            My consent does not require purchase.
+          </p>
         </form>
       </div>
     </div>

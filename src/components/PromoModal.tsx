@@ -30,11 +30,12 @@ const PromoModal: React.FC<PromoModalProps> = ({
     setIsClient(true);
   }, []);
 
-  const { isVisible: packageDealsVisible, setVisible: setPackageDealsVisible } = usePackageDeals();
+  const { isVisible: packageDealsVisible, setVisible: setPackageDealsVisible } =
+    usePackageDeals();
 
   useEffect(() => {
     if (!isClient) return; // Only run on client
-    
+
     // If package deals are already visible, don't show the modal
     if (packageDealsVisible) return;
 

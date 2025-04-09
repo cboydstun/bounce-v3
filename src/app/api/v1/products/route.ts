@@ -74,13 +74,11 @@ export async function POST(request: NextRequest) {
 
     // Check if user is authenticated
     if (!session || !session.user) {
-
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
       );
     }
-
 
     await dbConnect();
     const productData = await request.json();

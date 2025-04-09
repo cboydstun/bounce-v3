@@ -198,7 +198,6 @@ export default function RootLayout({
           }}
         />
         <Providers>
-
           <PackageDealsProvider>
             <Navigation />
             <main className="flex-grow">{children}</main>
@@ -206,7 +205,6 @@ export default function RootLayout({
             <Fingerprint />
             <ClientPromoContainer holidays={promos.holidays} />
           </PackageDealsProvider>
-
         </Providers>
       </body>
       <GoogleTagManager gtmId={process.env.NEXT_GTM_ID!} />

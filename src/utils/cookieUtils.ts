@@ -2,7 +2,7 @@
  * Utility functions for managing cookies related to feature visibility
  */
 
-const PACKAGE_DEALS_COOKIE = 'package_deals_visible';
+const PACKAGE_DEALS_COOKIE = "package_deals_visible";
 
 /**
  * Check if the package deals should be visible based on cookie
@@ -10,8 +10,8 @@ const PACKAGE_DEALS_COOKIE = 'package_deals_visible';
  */
 export const isPackageDealsVisible = (): boolean => {
   // Only run on client side
-  if (typeof window === 'undefined') return false;
-  
+  if (typeof window === "undefined") return false;
+
   return document.cookie.includes(`${PACKAGE_DEALS_COOKIE}=true`);
 };
 
@@ -21,10 +21,10 @@ export const isPackageDealsVisible = (): boolean => {
  */
 export const setPackageDealsVisible = (days: number = 365): void => {
   // Only run on client side
-  if (typeof window === 'undefined') return;
-  
+  if (typeof window === "undefined") return;
+
   const expiryDate = new Date();
   expiryDate.setDate(expiryDate.getDate() + days);
-  
+
   document.cookie = `${PACKAGE_DEALS_COOKIE}=true; expires=${expiryDate.toUTCString()}; path=/; SameSite=Strict`;
 };

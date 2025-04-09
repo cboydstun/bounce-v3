@@ -701,7 +701,7 @@ const PromoOptinSchema = new Schema<IPromoOptinDocument, IPromoOptinModel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 ```
 
@@ -740,7 +740,7 @@ export interface IPromoOptinModel extends Model<IPromoOptinDocument> {
   findByPromoName(promoName: string): Promise<IPromoOptinDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<IPromoOptinDocument[]>;
 }
 ```
@@ -885,7 +885,7 @@ const handleGetCoupon = () => {
 
   // Navigate to the coupon form
   router.push(
-    `/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`
+    `/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`,
   );
 };
 ```

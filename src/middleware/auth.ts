@@ -36,7 +36,6 @@ export async function withAuth(
 
     // If we have a valid session, use it
     if (session?.user?.id) {
-
       // Add user to request
       const authReq = req as AuthRequest;
       authReq.user = {
@@ -55,7 +54,6 @@ export async function withAuth(
     });
 
     if (token?.id) {
-
       // Add user to request
       const authReq = req as AuthRequest;
       authReq.user = {
@@ -68,21 +66,18 @@ export async function withAuth(
 
     const authHeader = req.headers.get("Authorization");
 
-
     if (authHeader) {
       // Extract the token from the Authorization header
       // Format: "Bearer <userId>"
       const token = authHeader.replace("Bearer ", "");
 
       if (token) {
-
         // Add user to request
         const authReq = req as AuthRequest;
         authReq.user = {
           id: token,
           email: "", // We don't have the email from the token
         };
-
 
         return await handler(authReq);
       }

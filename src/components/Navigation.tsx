@@ -23,7 +23,7 @@ const Navigation = () => {
     { path: "/blogs", label: "Blog" },
     { path: "/faq", label: "FAQ" },
   ];
-  
+
   // Conditionally add Package Deals to navigation
   if (showPackageDeals) {
     navLinks.push({ path: "/party-packages", label: "Package Deals" });
