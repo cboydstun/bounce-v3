@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Modal from "./ui/Modal";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { getCurrentPromotion } from "../utils/promoUtils";
@@ -18,6 +19,7 @@ const PromoModal: React.FC<PromoModalProps> = ({
   delayInSeconds = 10,
   persistenceDays = 1,
 }) => {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [currentPromo, setCurrentPromo] = useState<Holiday | null>(null);
   const [isClient, setIsClient] = useState<boolean>(false);
@@ -80,6 +82,22 @@ const PromoModal: React.FC<PromoModalProps> = ({
     setIsOpen(false);
   };
 
+  const handleGetCoupon = () => {
+    // Close the modal
+    setIsOpen(false);
+    
+    // Store the timestamp as we do in handleClose
+    if (isClient && currentPromo) {
+      const storageKey = `promo_modal_${currentPromo.name
+        .replace(/\s+/g, "_")
+        .toLowerCase()}`;
+      localStorage.setItem(storageKey, Date.now().toString());
+    }
+    
+    // Navigate to the coupon form page with the promo name as a query parameter
+    router.push(`/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`);
+  };
+
   if (!isClient || !currentPromo) return null;
 
   return (
@@ -94,10 +112,10 @@ const PromoModal: React.FC<PromoModalProps> = ({
           <p className="text-gray-700 mb-6">{currentPromo.message}</p>
           <div className="flex justify-end">
             <button
-              onClick={handleClose}
+              onClick={handleGetCoupon}
               className="bg-primary-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-primary-purple transition-colors duration-300"
             >
-              Got it!
+              Get My Coupon
             </button>
           </div>
         </CardContent>
