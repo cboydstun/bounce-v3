@@ -73,7 +73,11 @@ export default function RoutePlannerPage() {
       try {
         setError(null);
         // Format date as YYYY-MM-DD
-        const formattedDate = selectedDate.toISOString().split("T")[0];
+        const formattedDate = new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate() -1 // Adjust for timezone offset
+        ).toLocaleDateString('en-US');
 
         debugLog("Fetching contacts for date", { formattedDate });
 
@@ -180,6 +184,8 @@ export default function RoutePlannerPage() {
       </div>
     );
   }
+
+  console.log("// admin routes page `selectedDate` //", selectedDate)
 
   return (
     <div className="container mx-auto p-4">
