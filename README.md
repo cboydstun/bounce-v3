@@ -212,6 +212,70 @@ node scripts/create-dev-blog.js
 - `PUT /api/v1/reviews/:id` - Update a customer review by ID (owner or admin only)
 - `DELETE /api/v1/reviews/:id` - Delete a customer review by ID (owner or admin only)
 
+### Party Packages API
+
+- `GET /api/v1/partypackages` - Retrieve all party packages
+  - Query parameters:
+    - `search`: Search packages by text
+    - `limit`: Number of packages per page (default: 10)
+    - `page`: Page number for pagination (default: 1)
+  - Response format:
+    ```json
+    {
+      "packages": [
+        {
+          "_id": "67e4e8139915f2580aa94478",
+          "id": "dual-waterslide-extravaganza",
+          "slug": "dual-waterslide-extravaganza",
+          "name": "Dual Waterslide Extravaganza",
+          "description": "Double the slides, double the fun! Perfect for larger water parties",
+          "items": [
+            {
+              "id": "67e4bfd24af754a5a42bfcf1",
+              "name": "Blue Double Lane Waterslide",
+              "quantity": 1
+            },
+            {
+              "id": "67e4bfd24af754a5a42bfcf2",
+              "name": "Pink Waterslide",
+              "quantity": 1
+            },
+            {
+              "id": "67e4bfd24af754a5a42bfcf6",
+              "name": "Tables and Chairs",
+              "quantity": 3
+            }
+          ],
+          "totalRetailPrice": 859.7,
+          "packagePrice": 649.95,
+          "savings": 209.75,
+          "savingsPercentage": 24,
+          "recommendedPartySize": {
+            "min": 20,
+            "max": 50
+          },
+          "ageRange": {
+            "min": 5,
+            "max": 99
+          },
+          "duration": "full-day",
+          "spaceRequired": "70x40 feet minimum",
+          "powerRequired": true,
+          "seasonalRestrictions": "Temperature must be above 75°F",
+          "createdAt": "2025-03-27T05:54:27.153Z",
+          "updatedAt": "2025-03-27T05:54:27.153Z"
+        }
+      ],
+      "total": 5
+    }
+    ```
+- `GET /api/v1/partypackages/:slug` - Retrieve a specific party package by slug
+- `POST /api/v1/partypackages` - Create a new party package (admin only)
+  - Required fields: `id`, `name`, `description`, `items`, `totalRetailPrice`, `packagePrice`, `savings`, `savingsPercentage`, `recommendedPartySize`, `ageRange`, `duration`, `spaceRequired`, `powerRequired`
+  - Optional fields: `seasonalRestrictions`
+- `PUT /api/v1/partypackages/:id` - Update a party package by ID (admin only)
+- `DELETE /api/v1/partypackages/:id` - Delete a party package by ID (admin only)
+
 ### Promo Opt-ins API
 
 - `GET /api/v1/promo-optins` - Retrieve all promotional opt-ins (authenticated users only)
@@ -330,7 +394,7 @@ const ProductSchema = new Schema<IProductDocument, IProductModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -464,7 +528,7 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -512,7 +576,7 @@ export interface IContactModel extends Model<IContactDocument> {
   findByPartyDate(date: string): Promise<IContactDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string,
+    endDate: string
   ): Promise<IContactDocument[]>;
 }
 ```
@@ -632,7 +696,7 @@ const PromoOptinSchema = new Schema<IPromoOptinDocument, IPromoOptinModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -671,7 +735,7 @@ export interface IPromoOptinModel extends Model<IPromoOptinDocument> {
   findByPromoName(promoName: string): Promise<IPromoOptinDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string,
+    endDate: string
   ): Promise<IPromoOptinDocument[]>;
 }
 ```
@@ -773,7 +837,7 @@ const ReviewSchema = new Schema<IReviewDocument, IReviewModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
