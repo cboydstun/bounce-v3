@@ -17,7 +17,7 @@ interface PromoModalProps {
 
 const PromoModal: React.FC<PromoModalProps> = ({
   holidays,
-  delayInSeconds = 10,
+  delayInSeconds = 5,
   persistenceDays = 1,
 }) => {
   const router = useRouter();
@@ -114,9 +114,16 @@ const PromoModal: React.FC<PromoModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       className="w-full max-w-md"
-      position="center"
+      position="follow-scroll"
     >
-      <Card className="border-0 shadow-none">
+      <Card className="border-0 shadow-none relative">
+        <button
+          onClick={handleClose}
+          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="Close"
+        >
+          ✕
+        </button>
         <CardHeader className="pb-2">
           <CardTitle className="text-primary-purple text-2xl">
             {currentPromo.name} Special!
