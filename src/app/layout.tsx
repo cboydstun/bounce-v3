@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { PackageDealsProvider } from "../contexts/PackageDealsContext";
 import JsonLd from "../components/JsonLd";
 import GoogleAnalytics from "../components/GoogleAnalytics";
 import { GoogleTagManager } from "@next/third-parties/google";
@@ -195,10 +196,12 @@ export default function RootLayout({
           }}
         />
         <Providers>
-          <Navigation />
-          <main className="flex-grow">{children}</main>
-          <Footer />
-          <Fingerprint />
+          <PackageDealsProvider>
+            <Navigation />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+            <Fingerprint />
+          </PackageDealsProvider>
         </Providers>
       </body>
       <GoogleTagManager gtmId={process.env.NEXT_GTM_ID!} />

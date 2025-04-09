@@ -4,9 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
+import path from "path";
+import { usePackageDeals } from "../contexts/PackageDealsContext";
 
 const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isVisible: showPackageDeals } = usePackageDeals();
   const pathname = usePathname();
 
   const isActiveLink = (path: string) => {
@@ -20,6 +23,11 @@ const Navigation = () => {
     { path: "/blogs", label: "Blog" },
     { path: "/faq", label: "FAQ" },
   ];
+  
+  // Conditionally add Package Deals to navigation
+  if (showPackageDeals) {
+    navLinks.push({ path: "/party-packages", label: "Package Deals" });
+  }
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">

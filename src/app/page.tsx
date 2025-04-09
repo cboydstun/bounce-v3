@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ArrowRight } from "lucide-react";
+import PackageDealsCTA from "../components/PackageDealsCTA";
 import CustomerReviews from "../components/CustomerReviews";
 import ContactForm from "../components/ContactForm";
 import ProductCarousel from "../components/ProductCarousel";
@@ -103,8 +104,8 @@ export default async function HomePage() {
       {/* Promo Modal */}
       <PromoModalWrapper
         holidays={promos.holidays}
-        delayInSeconds={1}
-        persistenceDays={1}
+        delayInSeconds={3}
+        persistenceDays={0}
       />
       <script
         type="application/ld+json"
@@ -156,13 +157,10 @@ export default async function HomePage() {
           <p className="text-xl mb-8 text-primary-blue">
             Book now and get free delivery within Loop 1604!
           </p>
-          <Link
-            href="/contact"
+          <PackageDealsCTA
+            href="/coupon-form?promo=homepage"
             className="bg-primary-blue text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary-purple hover:text-white transition inline-flex items-center gap-2"
-          >
-            Contact Now
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+          />
         </div>
       </div>
     </>

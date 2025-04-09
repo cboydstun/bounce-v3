@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Modal from "./ui/Modal";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { getCurrentPromotion } from "../utils/promoUtils";
+import { usePackageDeals } from "../contexts/PackageDealsContext";
 import { Holiday } from "../types/promo";
 
 interface PromoModalProps {
@@ -29,8 +30,13 @@ const PromoModal: React.FC<PromoModalProps> = ({
     setIsClient(true);
   }, []);
 
+  const { isVisible: packageDealsVisible, setVisible: setPackageDealsVisible } = usePackageDeals();
+
   useEffect(() => {
     if (!isClient) return; // Only run on client
+    
+    // If package deals are already visible, don't show the modal
+    if (packageDealsVisible) return;
 
     // Find the current promotion based on today's date
     const promo = getCurrentPromotion(holidays);
@@ -122,7 +128,7 @@ const PromoModal: React.FC<PromoModalProps> = ({
               onClick={handleGetCoupon}
               className="bg-primary-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-primary-purple transition-colors duration-300"
             >
-              Get My Coupon
+              See Package Deals
             </button>
           </div>
         </CardContent>

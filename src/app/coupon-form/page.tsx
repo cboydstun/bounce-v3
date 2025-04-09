@@ -4,11 +4,13 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { usePackageDeals } from "@/contexts/PackageDealsContext";
 
 // Component to handle search params
 function CouponFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setVisible: setPackageDealsVisible } = usePackageDeals();
   const [promoName, setPromoName] = useState<string>("General Promotion");
   const [formData, setFormData] = useState({
     name: "",
@@ -121,16 +123,11 @@ function CouponFormContent() {
         throw new Error("Failed to submit form");
       }
 
-      // Set submitted state to show success message
-      setIsSubmitted(true);
-
-      // Reset form
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        consentToContact: false,
-      });
+      // Use the context method to set visibility
+      setPackageDealsVisible();
+      
+      // Redirect to the party-packages page
+      router.push("/party-packages");
     } catch (error) {
       console.error("Error submitting form:", error);
     } finally {
@@ -142,27 +139,10 @@ function CouponFormContent() {
     <div className="container mx-auto px-4 py-12">
       <div className="w-full max-w-[800px] mx-auto bg-white/90 backdrop-blur-sm rounded-2xl border-2 border-secondary-blue/20 shadow-lg p-8 space-y-6">
         <h1 className="text-3xl font-bold text-primary-purple mb-6 text-center">
-          Get Your Special Coupon
+          See Our Party Package Deals
         </h1>
 
-        {isSubmitted ? (
-          <div className="text-center py-8 bg-green-100 text-green-700 p-4 rounded-xl animate-fade-in">
-            <h2 className="text-2xl font-semibold text-primary-blue mb-4">
-              Thank You! 🎉
-            </h2>
-            <p className="text-gray-700 mb-6">
-              Your coupon has been sent to your email. Check your inbox for your
-              special discount!
-            </p>
-            <Link
-              href="/"
-              className="bg-gradient-to-r from-blue-400 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-500 hover:to-purple-700 transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
-            >
-              Return Home
-            </Link>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
                 htmlFor="name"
@@ -262,7 +242,7 @@ function CouponFormContent() {
                   <LoadingSpinner /> Processing...
                 </span>
               ) : (
-                "Get My Coupon 🎟️"
+                "See Package Deals 🎉"
               )}
             </button>
 
@@ -277,8 +257,7 @@ function CouponFormContent() {
               reply STOP to STOP communications at any time. Message and data
               rates may apply. My consent does not require purchase.
             </p>
-          </form>
-        )}
+        </form>
       </div>
     </div>
   );

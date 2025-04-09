@@ -78,36 +78,6 @@ export async function POST(request: NextRequest) {
       };
 
       await transporter.sendMail(adminMailOptions);
-
-      // Email to customer with coupon
-      const customerMailOptions = {
-        from: process.env.EMAIL,
-        to: optinData.email,
-        subject: `Your Special Coupon from SATX Bounce!`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-            <h1 style="color: #663399; text-align: center;">Your Special Coupon</h1>
-            <p>Hello ${optinData.name},</p>
-            <p>Thank you for your interest in SATX Bounce! Here's your special coupon code:</p>
-            
-            <div style="background-color: #f8f5fa; border: 2px dashed #2563eb; padding: 15px; text-align: center; margin: 20px 0; border-radius: 5px;">
-              <h2 style="color: #2563eb; margin: 0;">BOUNCE25</h2>
-              <p style="margin: 10px 0 0 0;">25% off your next bounce house rental!</p>
-            </div>
-            
-            <p>To redeem this coupon, simply mention this code when you book your next party rental.</p>
-            <p>This offer is valid for 30 days.</p>
-            
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; font-size: 12px; color: #666;">
-              <p>SATX Bounce House Rentals</p>
-              <p>San Antonio's Premier Party Rental Service</p>
-              <p><a href="https://satxbounce.com" style="color: #2563eb;">satxbounce.com</a> | (512) 210-0194</p>
-            </div>
-          </div>
-        `,
-      };
-
-      await transporter.sendMail(customerMailOptions);
     } catch (emailError) {
       console.error("Error sending email notification:", emailError);
       // Continue execution even if email fails
