@@ -159,16 +159,22 @@ export default function EditContact({ params }: PageProps) {
       return;
     }
     e.preventDefault();
-    
+
     // Add client-side validation
     if (formData.confirmed === "Confirmed") {
-      if (!formData.streetAddress || formData.streetAddress.trim() === '' || 
-          !formData.partyStartTime || formData.partyStartTime.trim() === '') {
-        setError("Contact cannot be confirmed without street address and party start time");
+      if (
+        !formData.streetAddress ||
+        formData.streetAddress.trim() === "" ||
+        !formData.partyStartTime ||
+        formData.partyStartTime.trim() === ""
+      ) {
+        setError(
+          "Contact cannot be confirmed without street address and party start time",
+        );
         return;
       }
     }
-    
+
     try {
       setIsLoading(true);
 

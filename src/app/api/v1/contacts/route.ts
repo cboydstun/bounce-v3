@@ -149,8 +149,11 @@ export async function POST(request: NextRequest) {
     if (contactData.confirmed === "Confirmed") {
       if (!contactData.streetAddress || !contactData.partyStartTime) {
         return NextResponse.json(
-          { error: "Contact cannot be confirmed without street address and party start time" },
-          { status: 400 }
+          {
+            error:
+              "Contact cannot be confirmed without street address and party start time",
+          },
+          { status: 400 },
         );
       }
     }

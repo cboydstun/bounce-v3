@@ -72,7 +72,7 @@ const response = await fetch(
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-  }
+  },
 );
 
 const data = await response.json();

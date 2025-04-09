@@ -94,7 +94,9 @@ describe("Contact Model", () => {
       partyStartTime: "14:00",
     };
 
-    await expect(Contact.create(invalidContact)).rejects.toThrow(/cannot be confirmed without/);
+    await expect(Contact.create(invalidContact)).rejects.toThrow(
+      /cannot be confirmed without/,
+    );
   });
 
   it("should fail validation when Confirmed status but missing partyStartTime", async () => {
@@ -109,7 +111,9 @@ describe("Contact Model", () => {
       // Missing partyStartTime
     };
 
-    await expect(Contact.create(invalidContact)).rejects.toThrow(/cannot be confirmed without/);
+    await expect(Contact.create(invalidContact)).rejects.toThrow(
+      /cannot be confirmed without/,
+    );
   });
 
   it("should allow non-Confirmed status without streetAddress and partyStartTime", async () => {

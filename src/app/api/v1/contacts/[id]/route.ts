@@ -125,24 +125,34 @@ export async function PUT(
 
     // Check if trying to set status to Confirmed without required fields
     if (
-      (contactData.confirmed === "Confirmed" || 
-       (typeof contactData.confirmed === "boolean" && contactData.confirmed === true))
+      contactData.confirmed === "Confirmed" ||
+      (typeof contactData.confirmed === "boolean" &&
+        contactData.confirmed === true)
     ) {
       // Get the values that will be used after update
-      const streetAddress = contactData.streetAddress !== undefined 
-        ? contactData.streetAddress 
-        : contactDoc.streetAddress;
-      
-      const partyStartTime = contactData.partyStartTime !== undefined 
-        ? contactData.partyStartTime 
-        : contactDoc.partyStartTime;
-      
+      const streetAddress =
+        contactData.streetAddress !== undefined
+          ? contactData.streetAddress
+          : contactDoc.streetAddress;
+
+      const partyStartTime =
+        contactData.partyStartTime !== undefined
+          ? contactData.partyStartTime
+          : contactDoc.partyStartTime;
+
       // Check for null, undefined, or empty strings
-      if (!streetAddress || streetAddress.trim() === '' || 
-          !partyStartTime || partyStartTime.trim() === '') {
+      if (
+        !streetAddress ||
+        streetAddress.trim() === "" ||
+        !partyStartTime ||
+        partyStartTime.trim() === ""
+      ) {
         return NextResponse.json(
-          { error: "Contact cannot be confirmed without street address and party start time" },
-          { status: 400 }
+          {
+            error:
+              "Contact cannot be confirmed without street address and party start time",
+          },
+          { status: 400 },
         );
       }
     }
@@ -229,24 +239,34 @@ export async function PATCH(
 
       // Check if trying to set status to Confirmed without required fields
       if (
-        (contactData.confirmed === "Confirmed" || 
-         (typeof contactData.confirmed === "boolean" && contactData.confirmed === true))
+        contactData.confirmed === "Confirmed" ||
+        (typeof contactData.confirmed === "boolean" &&
+          contactData.confirmed === true)
       ) {
         // Get the values that will be used after update
-        const streetAddress = contactData.streetAddress !== undefined 
-          ? contactData.streetAddress 
-          : contactDoc.streetAddress;
-        
-        const partyStartTime = contactData.partyStartTime !== undefined 
-          ? contactData.partyStartTime 
-          : contactDoc.partyStartTime;
-        
+        const streetAddress =
+          contactData.streetAddress !== undefined
+            ? contactData.streetAddress
+            : contactDoc.streetAddress;
+
+        const partyStartTime =
+          contactData.partyStartTime !== undefined
+            ? contactData.partyStartTime
+            : contactDoc.partyStartTime;
+
         // Check for null, undefined, or empty strings
-        if (!streetAddress || streetAddress.trim() === '' || 
-            !partyStartTime || partyStartTime.trim() === '') {
+        if (
+          !streetAddress ||
+          streetAddress.trim() === "" ||
+          !partyStartTime ||
+          partyStartTime.trim() === ""
+        ) {
           return NextResponse.json(
-            { error: "Contact cannot be confirmed without street address and party start time" },
-            { status: 400 }
+            {
+              error:
+                "Contact cannot be confirmed without street address and party start time",
+            },
+            { status: 400 },
           );
         }
       }

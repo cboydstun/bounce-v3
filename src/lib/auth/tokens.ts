@@ -1,6 +1,6 @@
-import jwt from 'jsonwebtoken';
-import { IUserDocument } from '@/types/user';
-import crypto from 'crypto';
+import jwt from "jsonwebtoken";
+import { IUserDocument } from "@/types/user";
+import crypto from "crypto";
 
 // Token types
 export interface AccessToken {
@@ -16,33 +16,34 @@ export interface RefreshToken {
 
 // Generate a random token ID for refresh tokens
 export function generateTokenId(): string {
-  return crypto.randomBytes(32).toString('hex');
+  return crypto.randomBytes(32).toString("hex");
 }
 
 // Generate an access token (short-lived, 15 minutes)
 export function generateAccessToken(user: IUserDocument | AccessToken): string {
   const payload: AccessToken = {
-    userId: 'userId' in user 
-      ? user.userId 
-      : (user._id?.toString() || ''),
+    userId: "userId" in user ? user.userId : user._id?.toString() || "",
     email: user.email,
-    name: user.name
+    name: user.name,
   };
-  
+
   return jwt.sign(payload, process.env.JWT_SECRET!, {
-    expiresIn: '15m'
+    expiresIn: "15m",
   });
 }
 
 // Generate a refresh token (long-lived, 30 days)
-export function generateRefreshToken(user: IUserDocument, tokenId: string): string {
+export function generateRefreshToken(
+  user: IUserDocument,
+  tokenId: string,
+): string {
   const payload: RefreshToken = {
-    userId: user._id?.toString() || '',
-    tokenId
+    userId: user._id?.toString() || "",
+    tokenId,
   };
-  
+
   return jwt.sign(payload, process.env.JWT_SECRET!, {
-    expiresIn: '30d'
+    expiresIn: "30d",
   });
 }
 

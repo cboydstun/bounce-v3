@@ -8,11 +8,15 @@ import {
 } from "../types/contact";
 
 // Custom validation function for the confirmed field
-const validateConfirmedStatus = function(this: IContactDocument) {
+const validateConfirmedStatus = function (this: IContactDocument) {
   if (this.confirmed === "Confirmed") {
     // Check for null, undefined, or empty strings
-    if (!this.streetAddress || this.streetAddress.trim() === '' || 
-        !this.partyStartTime || this.partyStartTime.trim() === '') {
+    if (
+      !this.streetAddress ||
+      this.streetAddress.trim() === "" ||
+      !this.partyStartTime ||
+      this.partyStartTime.trim() === ""
+    ) {
       return false;
     }
   }
@@ -65,8 +69,8 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
       default: "Pending",
       validate: [
         validateConfirmedStatus,
-        "Contact cannot be confirmed without street address and party start time"
-      ]
+        "Contact cannot be confirmed without street address and party start time",
+      ],
     },
     tablesChairs: {
       type: Boolean,

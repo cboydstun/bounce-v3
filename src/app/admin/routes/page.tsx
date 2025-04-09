@@ -76,8 +76,8 @@ export default function RoutePlannerPage() {
         const formattedDate = new Date(
           selectedDate.getFullYear(),
           selectedDate.getMonth(),
-          selectedDate.getDate()
-        ).toLocaleDateString('en-US');
+          selectedDate.getDate(),
+        ).toLocaleDateString("en-US");
 
         debugLog("Fetching contacts for date", { formattedDate });
 
@@ -185,7 +185,7 @@ export default function RoutePlannerPage() {
     );
   }
 
-  console.log("// admin routes page `selectedDate` //", selectedDate)
+  console.log("// admin routes page `selectedDate` //", selectedDate);
 
   return (
     <div className="container mx-auto p-4">

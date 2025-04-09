@@ -212,7 +212,7 @@ describe("Single Contact API", () => {
             streetAddress: "",
             partyStartTime: "",
           }),
-        }
+        },
       );
 
       const response = await PUT(req, {
@@ -221,7 +221,9 @@ describe("Single Contact API", () => {
       expect(response.status).toBe(400);
 
       const data = await response.json();
-      expect(data.error).toBe("Contact cannot be confirmed without street address and party start time");
+      expect(data.error).toBe(
+        "Contact cannot be confirmed without street address and party start time",
+      );
     });
 
     it("should accept confirmation with required fields", async () => {
@@ -237,7 +239,7 @@ describe("Single Contact API", () => {
             streetAddress: "123 Main St",
             partyStartTime: "14:00",
           }),
-        }
+        },
       );
 
       const response = await PUT(req, {
