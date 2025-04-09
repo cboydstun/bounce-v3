@@ -198,6 +198,58 @@ describe("Single Contact API", () => {
       expect(contact?.confirmed).toBe(true);
       expect(contact?.message).toBe("Updated message");
     });
+
+    it("should reject confirmation without required fields", async () => {
+      const req = new NextRequest(
+        `http://localhost:3000/api/v1/contacts/${contactId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+          body: JSON.stringify({
+            confirmed: "Confirmed",
+            streetAddress: "",
+            partyStartTime: "",
+          }),
+        }
+      );
+
+      const response = await PUT(req, {
+        params: Promise.resolve({ id: contactId }),
+      });
+      expect(response.status).toBe(400);
+
+      const data = await response.json();
+      expect(data.error).toBe("Contact cannot be confirmed without street address and party start time");
+    });
+
+    it("should accept confirmation with required fields", async () => {
+      const req = new NextRequest(
+        `http://localhost:3000/api/v1/contacts/${contactId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+          body: JSON.stringify({
+            confirmed: "Confirmed",
+            streetAddress: "123 Main St",
+            partyStartTime: "14:00",
+          }),
+        }
+      );
+
+      const response = await PUT(req, {
+        params: Promise.resolve({ id: contactId }),
+      });
+      expect(response.status).toBe(200);
+
+      const data = await response.json();
+      expect(data.confirmed).toBe("Confirmed");
+      expect(data.streetAddress).toBe("123 Main St");
+      expect(data.partyStartTime).toBe("14:00");
+    });
   });
 
   describe("DELETE /api/v1/contacts/[id]", () => {

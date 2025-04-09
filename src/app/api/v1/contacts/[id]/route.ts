@@ -137,7 +137,9 @@ export async function PUT(
         ? contactData.partyStartTime 
         : contactDoc.partyStartTime;
       
-      if (!streetAddress || !partyStartTime) {
+      // Check for null, undefined, or empty strings
+      if (!streetAddress || streetAddress.trim() === '' || 
+          !partyStartTime || partyStartTime.trim() === '') {
         return NextResponse.json(
           { error: "Contact cannot be confirmed without street address and party start time" },
           { status: 400 }
@@ -239,7 +241,9 @@ export async function PATCH(
           ? contactData.partyStartTime 
           : contactDoc.partyStartTime;
         
-        if (!streetAddress || !partyStartTime) {
+        // Check for null, undefined, or empty strings
+        if (!streetAddress || streetAddress.trim() === '' || 
+            !partyStartTime || partyStartTime.trim() === '') {
           return NextResponse.json(
             { error: "Contact cannot be confirmed without street address and party start time" },
             { status: 400 }
