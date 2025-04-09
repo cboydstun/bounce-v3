@@ -39,6 +39,11 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 - **SEO Optimization**: Comprehensive metadata, OpenGraph, and Twitter cards
 - **Structured Data**: JsonLd implementation for improved search engine visibility
 - **Legal Pages**: Privacy Policy and Terms of Service
+- **Package Deals Visibility**: First-time visitors don't see "Package Deals" in navigation until they interact with a promotional popup:
+  - Context-based state management for immediate UI updates without page refresh
+  - Cookie-based persistence for returning visitors
+  - Promotional popup with form submission to unlock Package Deals
+  - Comprehensive test coverage for visibility conditions
 
 ## API Routes
 
@@ -755,6 +760,213 @@ The Promo Opt-ins API provides comprehensive endpoints with filtering, paginatio
 - `PromoModal.tsx`: Modal component for displaying promotional offers
 - `PromoModalWrapper.tsx`: Wrapper component for the promo modal with client-side logic
 - Admin interface for managing promo opt-ins with filtering and pagination
+
+## Package Deals Visibility Implementation
+
+The Package Deals Visibility feature is implemented using React Context API and browser cookies to provide a seamless user experience where first-time visitors are encouraged to engage with promotional content before accessing package deals.
+
+### Context-Based State Management
+
+```typescript
+// src/contexts/PackageDealsContext.tsx
+"use client";
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { isPackageDealsVisible, setPackageDealsVisible as setCookie } from '../utils/cookieUtils';
+
+// Define the context shape
+type PackageDealsContextType = {
+  isVisible: boolean;
+  setVisible: () => void;
+};
+
+// Create the context with default values
+const PackageDealsContext = createContext<PackageDealsContextType>({
+  isVisible: false,
+  setVisible: () => {},
+});
+
+// Provider component
+export function PackageDealsProvider({ children }: { children: React.ReactNode }) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Check cookie on initial client-side render
+  useEffect(() => {
+    setIsVisible(isPackageDealsVisible());
+  }, []);
+
+  // Function to set visibility
+  const setVisible = () => {
+    setCookie();
+    setIsVisible(true);
+  };
+
+  return (
+    <PackageDealsContext.Provider value={{ isVisible, setVisible }}>
+      {children}
+    </PackageDealsContext.Provider>
+  );
+}
+
+// Custom hook for using the context
+export function usePackageDeals() {
+  return useContext(PackageDealsContext);
+}
+```
+
+### Cookie-Based Persistence
+
+```typescript
+// src/utils/cookieUtils.ts
+const PACKAGE_DEALS_COOKIE = "package_deals_visible";
+
+export const isPackageDealsVisible = (): boolean => {
+  // Only run on client side
+  if (typeof window === "undefined") return false;
+
+  return document.cookie.includes(`${PACKAGE_DEALS_COOKIE}=true`);
+};
+
+export const setPackageDealsVisible = (days: number = 365): void => {
+  // Only run on client side
+  if (typeof window === "undefined") return;
+
+  const expiryDate = new Date();
+  expiryDate.setDate(expiryDate.getDate() + days);
+
+  document.cookie = `${PACKAGE_DEALS_COOKIE}=true; expires=${expiryDate.toUTCString()}; path=/; SameSite=Strict`;
+};
+```
+
+### Conditional Rendering in Navigation
+
+The Navigation component uses the context to conditionally render the Package Deals link:
+
+```typescript
+const Navigation = () => {
+  const { isVisible } = usePackageDeals();
+
+  const navLinks = [
+    { path: "/", label: "Home" },
+    { path: "/products", label: "Products" },
+    { path: "/about", label: "About" },
+    { path: "/blogs", label: "Blog" },
+    { path: "/faq", label: "FAQ" },
+  ];
+
+  // Conditionally add Package Deals to navigation
+  if (isVisible) {
+    navLinks.push({ path: "/party-packages", label: "Package Deals" });
+  }
+
+  // Rest of the component...
+};
+```
+
+### Promotional Modal Integration
+
+The PromoModal component sets the visibility cookie when users interact with it:
+
+```typescript
+const handleGetCoupon = () => {
+  // Close the modal
+  setIsOpen(false);
+
+  // Store timestamp in localStorage
+  if (isClient && currentPromo) {
+    const storageKey = `promo_modal_${currentPromo.name
+      .replace(/\s+/g, "_")
+      .toLowerCase()}`;
+    localStorage.setItem(storageKey, Date.now().toString());
+  }
+
+  // Set the cookie to make package deals visible
+  setPackageDealsVisible();
+
+  // Navigate to the coupon form
+  router.push(
+    `/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`
+  );
+};
+```
+
+### Form Submission Integration
+
+The coupon form sets the visibility cookie upon successful submission:
+
+```typescript
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!validateForm() || !formData.consentToContact) return;
+
+  setIsSubmitting(true);
+
+  try {
+    // Send data to our API
+    const response = await fetch("/api/v1/package-promo", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...formData,
+        promoName,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to submit form");
+    }
+
+    // Set the cookie to make package deals visible
+    setPackageDealsVisible();
+
+    // Redirect to the party-packages page
+    router.push("/party-packages");
+  } catch (error) {
+    console.error("Error submitting form:", error);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+```
+
+### Testing
+
+The feature includes comprehensive tests to verify visibility conditions:
+
+```typescript
+describe('Package Deals Visibility', () => {
+  describe('Navigation Component', () => {
+    it('should not show Package Deals link when visibility is false', () => {
+      // Mock the context to return false for isVisible
+      (usePackageDeals as jest.Mock).mockReturnValue({
+        isVisible: false,
+        setVisible: jest.fn(),
+      });
+
+      render(<Navigation />);
+
+      // Verify Package Deals link is not present
+      expect(screen.queryByText('Package Deals')).not.toBeInTheDocument();
+    });
+
+    it('should show Package Deals link when visibility is true', () => {
+      // Mock the context to return true for isVisible
+      (usePackageDeals as jest.Mock).mockReturnValue({
+        isVisible: true,
+        setVisible: jest.fn(),
+      });
+
+      render(<Navigation />);
+
+      // Verify Package Deals link is present
+      expect(screen.getByText('Package Deals')).toBeInTheDocument();
+    });
+  });
+});
+```
 
 ## Reviews Implementation
 

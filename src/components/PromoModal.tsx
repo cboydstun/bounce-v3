@@ -113,7 +113,7 @@ const PromoModal: React.FC<PromoModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       className="w-full max-w-md"
-      position="bottom-left"
+      position="center"
     >
       <Card className="border-0 shadow-none">
         <CardHeader className="pb-2">

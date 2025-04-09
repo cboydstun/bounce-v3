@@ -7,7 +7,7 @@ interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
-  position?: "center" | "bottom-left";
+  position?: "center" | "bottom-left" | "sticky";
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -68,6 +68,8 @@ const Modal: React.FC<ModalProps> = ({
         ${
           position === "center"
             ? "flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+            : position === "sticky"
+            ? "flex items-end justify-start fixed bottom-0 right-0 p-4" // Fixed positioning for sticky
             : "flex items-end justify-start min-h-screen p-4"
         }
       `}
@@ -96,6 +98,12 @@ const Modal: React.FC<ModalProps> = ({
             position === "center"
               ? `align-bottom sm:my-8 sm:align-middle sm:max-w-lg ${
                   isAnimatingOut ? "animate-slide-down" : "animate-slide-up"
+                }`
+              : position === "sticky"
+              ? `fixed bottom-4 right-4 ${
+                  isAnimatingOut
+                    ? "animate-fade-out"
+                    : "animate-fade-in"
                 }`
               : `${
                   isAnimatingOut
