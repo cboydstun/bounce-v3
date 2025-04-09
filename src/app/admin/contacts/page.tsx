@@ -339,10 +339,52 @@ export default function AdminContacts() {
 
   // Filter contacts by date range and confirmation status
   const filteredContacts = contacts.filter((contact) => {
-    // Date filter
-    const partyDate = new Date(contact.partyDate);
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
+    // Date filter - Fix timezone issues by using consistent date handling
+    const dateStr = contact.partyDate;
+    let partyDate;
+    
+    // Handle ISO format dates (YYYY-MM-DD)
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      partyDate = new Date(`${dateStr}T12:00:00`);
+    } else {
+      // For dates with time component, create a date object in local timezone
+      const date = new Date(dateStr);
+      partyDate = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      );
+    }
+    
+    // Apply same handling to start/end dates
+    let start = null;
+    if (startDate) {
+      if (startDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        start = new Date(`${startDate}T00:00:00`);
+      } else {
+        const sDate = new Date(startDate);
+        start = new Date(
+          sDate.getFullYear(),
+          sDate.getMonth(),
+          sDate.getDate()
+        );
+      }
+    }
+    
+    let end = null;
+    if (endDate) {
+      if (endDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        end = new Date(`${endDate}T23:59:59`);
+      } else {
+        const eDate = new Date(endDate);
+        end = new Date(
+          eDate.getFullYear(),
+          eDate.getMonth(),
+          eDate.getDate(),
+          23, 59, 59
+        );
+      }
+    }
 
     const meetsDateCriteria =
       start && end
@@ -383,8 +425,22 @@ export default function AdminContacts() {
   // Sort contacts based on current sort column and direction
   const sortedContacts = [...filteredContacts].sort((a, b) => {
     if (sortColumn === "partyDate") {
-      const dateA = new Date(a.partyDate).getTime();
-      const dateB = new Date(b.partyDate).getTime();
+      // Use consistent date handling for sorting
+      const getConsistentDate = (dateStr: string) => {
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          return new Date(`${dateStr}T12:00:00`).getTime();
+        } else {
+          const date = new Date(dateStr);
+          return new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate()
+          ).getTime();
+        }
+      };
+      
+      const dateA = getConsistentDate(a.partyDate);
+      const dateB = getConsistentDate(b.partyDate);
       return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
     }
     return 0;
@@ -708,7 +764,22 @@ export default function AdminContacts() {
                   {currentContacts.map((contact) => (
                     <tr key={contact.id}>
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6">
-                        {new Date(contact.partyDate).toLocaleDateString()}
+                        {(() => {
+                          // Fix timezone issue by parsing the date and preserving the day
+                          const dateStr = contact.partyDate;
+                          // If the date is in ISO format (YYYY-MM-DD), add time to ensure correct day
+                          if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                            return new Date(`${dateStr}T12:00:00`).toLocaleDateString();
+                          }
+                          // For dates with time component, create a date object in local timezone
+                          const date = new Date(dateStr);
+                          const localDate = new Date(
+                            date.getFullYear(),
+                            date.getMonth(),
+                            date.getDate()
+                          );
+                          return localDate.toLocaleDateString();
+                        })()}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm">
                         <div className="font-medium text-gray-900">
