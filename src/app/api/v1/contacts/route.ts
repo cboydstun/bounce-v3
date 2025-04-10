@@ -94,9 +94,6 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Debug log for tracking
-    debugLog("Processing contact form submission");
-
     await dbConnect();
     const contactData = await request.json();
 

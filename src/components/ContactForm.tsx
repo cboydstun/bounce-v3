@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { getProducts, createContact } from "@/utils/api";
+import { getProducts } from "@/utils/api";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
 import { trackFormStart, trackFormSubmit } from "@/utils/trackInteraction";
 import { trackContactForm } from "@/utils/trackConversion";
@@ -204,7 +204,19 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
 
     try {
       console.log("Submitting contact form:", formData);
-      await createContact(formData);
+      
+      // Direct fetch call instead of using createContact from api.ts
+      const response = await fetch("/api/v1/contacts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to submit form: ${response.status}`);
+      }
 
       // Track conversion event
       trackContactForm(formData.bouncer);
