@@ -25,24 +25,24 @@ export interface ApiError {
 
 // Define public endpoints that don't require authentication
 const publicEndpoints = [
-  '/api/v1/contacts',
-  '/api/v1/package-promo',
-  '/api/v1/promo-optins'
+  "/api/v1/contacts",
+  "/api/v1/package-promo",
+  "/api/v1/promo-optins",
 ];
 
 // Request interceptor for API calls
 api.interceptors.request.use(
   async (config) => {
     // Check if the request URL is for a public endpoint
-    const isPublicEndpoint = publicEndpoints.some(endpoint => 
-      config.url?.endsWith(endpoint)
+    const isPublicEndpoint = publicEndpoints.some((endpoint) =>
+      config.url?.endsWith(endpoint),
     );
-    
+
     // Skip authentication for public endpoints
     if (isPublicEndpoint) {
       return config;
     }
-    
+
     if (typeof window !== "undefined") {
       try {
         // Get session from NextAuth.js
