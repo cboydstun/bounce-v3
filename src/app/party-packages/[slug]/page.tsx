@@ -1,16 +1,24 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PartyPackageWithId } from "../../../types/partypackage";
-import { getPartyPackageBySlug } from "../../../utils/api";
+import { ProductWithId } from "../../../types/product";
+import { getPartyPackageBySlug, getProducts } from "../../../utils/api";
 import ContactForm from "../../../components/ContactForm";
 import ItemsList from "./ItemsList";
 
-async function getPartyPackage(slug: string): Promise<PartyPackageWithId> {
+// New interface to hold package data with product images
+interface PartyPackageWithProductImages extends PartyPackageWithId {
+  productImages: Record<string, string>; // Map of product ID to image URL
+}
+
+async function getPartyPackageWithProductImages(slug: string): Promise<PartyPackageWithProductImages> {
   try {
+    // Get the party package
+    let partyPackage: PartyPackageWithId;
+    
     // Try both API client and direct fetch
     try {
-      const data = await getPartyPackageBySlug(slug);
-      return data;
+      partyPackage = await getPartyPackageBySlug(slug);
     } catch (apiError) {
       console.error(`Page component: API client failed:`, apiError);
 
@@ -23,9 +31,34 @@ async function getPartyPackage(slug: string): Promise<PartyPackageWithId> {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      return data;
+      partyPackage = await response.json();
     }
+    
+    // Get all products to find images for package items
+    const productsData = await getProducts();
+    const products = productsData.products || [];
+    
+    // Create a mapping of product IDs to their primary image URL
+    const productImages: Record<string, string> = {};
+    
+    // First, create mappings using _id, slug, and name-based IDs
+    products.forEach((product: ProductWithId) => {
+      if (product.images && product.images.length > 0) {
+        // Use both _id and slug as keys in the mapping to increase chances of a match
+        productImages[product._id] = product.images[0].url;
+        productImages[product.slug] = product.images[0].url;
+        
+        // Also try using the product name as a key (converted to lowercase and spaces replaced with hyphens)
+        const nameAsId = product.name.toLowerCase().replace(/\s+/g, '-');
+        productImages[nameAsId] = product.images[0].url;
+      }
+    });
+    
+    // Return the package with product images mapping
+    return {
+      ...partyPackage,
+      productImages,
+    };
   } catch (error) {
     console.error(
       `Page component: All attempts failed for slug ${slug}:`,
@@ -43,7 +76,7 @@ export async function generateMetadata({
   params: Params;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const partyPackage = await getPartyPackage(slug);
+  const partyPackage = await getPartyPackageWithProductImages(slug);
 
   return {
     title: `${partyPackage.name} | SATX Bounce House Rentals`,
@@ -66,7 +99,7 @@ export default async function PartyPackageDetail({
   params: Params;
 }) {
   const { slug } = await params;
-  const partyPackage = await getPartyPackage(slug);
+  const partyPackage = await getPartyPackageWithProductImages(slug);
 
   return (
     <div className="w-full bg-secondary-blue/5 py-12">
@@ -123,7 +156,10 @@ export default async function PartyPackageDetail({
               <h2 className="text-2xl font-bold text-primary-blue">
                 What&apos;s Included
               </h2>
-              <ItemsList items={partyPackage.items} />
+              <ItemsList 
+                items={partyPackage.items} 
+                productImages={partyPackage.productImages} 
+              />
             </div>
 
             {/* Specifications */}

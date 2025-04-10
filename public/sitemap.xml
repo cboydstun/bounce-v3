@@ -64,6 +64,13 @@
   </url>
 
   <url>
+    <loc>https://satxbounce.com/privacy-policy</loc>
+    <lastmod>2025-04-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
     <loc>https://satxbounce.com/party-packages</loc>
     <lastmod>2025-04-10</lastmod>
     <changefreq>weekly</changefreq>
@@ -72,13 +79,6 @@
 
   <url>
     <loc>https://satxbounce.com/tos</loc>
-    <lastmod>2025-04-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://satxbounce.com/privacy-policy</loc>
     <lastmod>2025-04-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

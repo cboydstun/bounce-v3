@@ -3,20 +3,55 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { PartyPackageWithId } from "../../types/partypackage";
-import { getPartyPackages } from "../../utils/api";
+import { ProductWithId } from "../../types/product";
+import { getPartyPackages, getProducts } from "../../utils/api";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
 
-function PackageGrid({ packages }: { packages: PartyPackageWithId[] }) {
+// Create a type for the product ID to image mapping
+type ProductImageMap = {
+  [productId: string]: string;
+};
+
+function PackageGrid({ 
+  packages, 
+  productImages 
+}: { 
+  packages: PartyPackageWithId[],
+  productImages: ProductImageMap
+}) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {packages.map((pkg) => (
-        <a
-          key={pkg._id}
-          href={`/party-packages/${pkg.id}`}
-          aria-label={`View details for ${pkg.name} - $${pkg.packagePrice.toFixed(2)}`}
-          className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] border-2 border-transparent hover:border-secondary-blue/20"
-        >
-          <div className="p-6">
+      {packages.map((pkg) => {
+        // Get the first item's ID
+        const firstItemId = pkg.items[0]?.id;
+        // Get the image URL for the first item, or use a default
+        const imageUrl = firstItemId && productImages[firstItemId] 
+          ? productImages[firstItemId]
+          : "/satx-bounce-house-rental-san-antonio-dry-xl.png";
+          
+        // Log for debugging
+        console.log(`Package: ${pkg.name}, First Item ID: ${firstItemId}, Found Image: ${productImages[firstItemId] ? 'Yes' : 'No'}`);
+          
+        return (
+          <a
+            key={pkg._id}
+            href={`/party-packages/${pkg.id}`}
+            aria-label={`View details for ${pkg.name} - $${pkg.packagePrice.toFixed(2)}`}
+            className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] border-2 border-transparent hover:border-secondary-blue/20"
+          >
+            {/* Image section */}
+            <div className="aspect-w-16 aspect-h-16 relative overflow-hidden">
+              <Image
+                src={imageUrl}
+                alt={pkg.name}
+                className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                width={400}
+                height={400}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                priority={false}
+              />
+            </div>
+            <div className="p-6">
             <h2 className="text-xl font-bold text-primary-blue mb-2">
               {pkg.name}
             </h2>
@@ -50,32 +85,61 @@ function PackageGrid({ packages }: { packages: PartyPackageWithId[] }) {
               </p>
             </div>
           </div>
-        </a>
-      ))}
+          </a>
+        );
+      })}
     </div>
   );
 }
 
 export function PartyPackagesContent() {
   const [packages, setPackages] = useState<PartyPackageWithId[]>([]);
+  const [productImages, setProductImages] = useState<ProductImageMap>({});
   const [loading, setLoading] = useState(true);
 
-  // Fetch party packages on mount
+  // Fetch party packages and products on mount
   useEffect(() => {
-    async function fetchPackages() {
+    async function fetchData() {
       try {
-        const data = await getPartyPackages();
-        // Extract packages array from the response
-        const packages = data.packages || [];
+        // Fetch party packages
+        const packagesData = await getPartyPackages();
+        const packages = packagesData.packages || [];
         setPackages(packages);
+        
+        // Fetch all products to get their images
+        const productsData = await getProducts();
+        const products = productsData.products || [];
+        
+        // Create mappings of product IDs and slugs to their primary image URLs
+        const imageMap: ProductImageMap = {};
+        products.forEach((product: ProductWithId) => {
+          if (product.images && product.images.length > 0) {
+            // Use both _id and slug as keys in the mapping to increase chances of a match
+            imageMap[product._id] = product.images[0].url;
+            imageMap[product.slug] = product.images[0].url;
+            // Also try using the product name as a key (converted to lowercase and spaces replaced with hyphens)
+            const nameAsId = product.name.toLowerCase().replace(/\s+/g, '-');
+            imageMap[nameAsId] = product.images[0].url;
+            
+            // Log product info for debugging
+            console.log(`Product: ${product.name}, _id: ${product._id}, slug: ${product.slug}, nameAsId: ${nameAsId}`);
+          }
+        });
+        
+        // Log the package items for debugging
+        packages.forEach((pkg: PartyPackageWithId) => {
+          console.log(`Package: ${pkg.name}, Items:`, pkg.items);
+        });
+        
+        setProductImages(imageMap);
       } catch (error) {
-        console.error("Failed to fetch party packages:", error);
+        console.error("Failed to fetch data:", error);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchPackages();
+    fetchData();
   }, []);
 
   if (loading) {
@@ -107,7 +171,7 @@ export function PartyPackagesContent() {
         </div>
 
         {/* Packages Grid */}
-        <PackageGrid packages={packages} />
+        <PackageGrid packages={packages} productImages={productImages} />
       </div>
     </div>
   );
