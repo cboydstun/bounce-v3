@@ -203,6 +203,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
     });
 
     try {
+      console.log("Submitting contact form:", formData);
       await createContact(formData);
 
       // Track conversion event
@@ -228,7 +229,8 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
         consentToContact: false,
       });
       setSelectedBouncerImage("");
-    } catch {
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
       setSubmitStatus("error");
     }
   };

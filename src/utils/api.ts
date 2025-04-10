@@ -23,9 +23,26 @@ export interface ApiError {
   errors?: Record<string, string[]>;
 }
 
+// Define public endpoints that don't require authentication
+const publicEndpoints = [
+  '/api/v1/contacts',
+  '/api/v1/package-promo',
+  '/api/v1/promo-optins'
+];
+
 // Request interceptor for API calls
 api.interceptors.request.use(
   async (config) => {
+    // Check if the request URL is for a public endpoint
+    const isPublicEndpoint = publicEndpoints.some(endpoint => 
+      config.url?.endsWith(endpoint)
+    );
+    
+    // Skip authentication for public endpoints
+    if (isPublicEndpoint) {
+      return config;
+    }
+    
     if (typeof window !== "undefined") {
       try {
         // Get session from NextAuth.js
@@ -318,8 +335,15 @@ export const createContact = async (contactData: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any; // Allow for additional fields
 }) => {
-  const response = await api.post("/api/v1/contacts", contactData);
-  return response.data;
+  console.log("Submitting contact form data:", contactData);
+  try {
+    const response = await api.post("/api/v1/contacts", contactData);
+    console.log("Contact form submission successful:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error in createContact function:", error);
+    throw error;
+  }
 };
 
 import { ConfirmationStatus } from "@/types/contact";
