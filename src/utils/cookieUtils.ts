@@ -6,10 +6,23 @@ const PACKAGE_DEALS_COOKIE = "package_deals_visible";
 
 /**
  * Check if the package deals should be visible based on cookie
+ * @param serverCookies Optional cookies object from NextRequest (for server-side)
  * @returns boolean indicating if package deals should be visible
  */
-export const isPackageDealsVisible = (): boolean => {
-  // Only run on client side
+export const isPackageDealsVisible = (serverCookies?: any): boolean => {
+  // Server-side check with provided cookies
+  if (serverCookies) {
+    // Handle different cookie APIs
+    if (typeof serverCookies.get === 'function') {
+      const cookie = serverCookies.get(PACKAGE_DEALS_COOKIE);
+      return cookie?.value === "true";
+    }
+    
+    // Fallback for other cookie formats
+    return false;
+  }
+  
+  // Client-side check
   if (typeof window === "undefined") return false;
 
   return document.cookie.includes(`${PACKAGE_DEALS_COOKIE}=true`);

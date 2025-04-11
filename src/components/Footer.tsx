@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePackageDeals } from "../contexts/PackageDealsContext";
+import ConditionalPackageLink from "./ConditionalPackageLink";
 import {
   Phone,
   Mail,
@@ -13,7 +14,7 @@ import {
 } from "lucide-react";
 
 const Footer = () => {
-  const { isVisible: showPackageDeals } = usePackageDeals();
+  const { hasCompletedForm } = usePackageDeals();
   return (
     <footer className="bg-white border-t border-gray-100">
       <div className="container mx-auto px-4 py-16">
@@ -51,9 +52,6 @@ const Footer = () => {
                 { href: "/products", label: "Products" },
                 { href: "/about", label: "About" },
                 { href: "/faq", label: "FAQ" },
-                ...(showPackageDeals
-                  ? [{ href: "/party-packages", label: "Package Deals" }]
-                  : []),
               ].map((link) => (
                 <li key={link.href}>
                   <Link
@@ -65,6 +63,12 @@ const Footer = () => {
                   </Link>
                 </li>
               ))}
+              <li>
+                <ConditionalPackageLink className="text-gray-600 hover:text-primary-blue transition-colors duration-300 flex items-center gap-2 group">
+                  <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" />
+                  Package Deals
+                </ConditionalPackageLink>
+              </li>
             </ul>
           </div>
 

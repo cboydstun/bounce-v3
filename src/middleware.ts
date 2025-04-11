@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
+import { isPackageDealsVisible } from "./utils/cookieUtils";
 
 /**
  * Phase 3: Enforce Admin Authentication Only
  * This middleware enforces authentication for admin routes only
  */
 export async function middleware(request: NextRequest) {
+  // Check if the request is for the party-packages page
+  if (request.nextUrl.pathname === '/party-packages') {
+    // Check if the user has completed the form
+    if (!isPackageDealsVisible(request.cookies)) {
+      // Redirect to the coupon form
+      return NextResponse.redirect(new URL('/coupon-form', request.url));
+    }
+  }
+
   // Enhanced request and cookie logging
   const allCookies = request.cookies.getAll();
   const cookieNames = allCookies.map((c) => c.name);
@@ -36,11 +46,13 @@ export async function middleware(request: NextRequest) {
   }
 }
 
-// Simple matcher configuration for Phase 1
-// Only target admin routes for now
+// Matcher configuration
 export const config = {
   matcher: [
-    // Only match admin routes
+    // Admin routes
     "/admin/:path*",
+    // Party packages route
+    "/party-packages",
+    "/party-packages/:path*"
   ],
 };

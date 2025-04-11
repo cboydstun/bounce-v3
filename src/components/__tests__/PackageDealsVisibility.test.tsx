@@ -37,24 +37,11 @@ describe("Package Deals Visibility", () => {
   });
 
   describe("Navigation Component", () => {
-    it("should not show Package Deals link when visibility is false", () => {
-      // Mock the context to return false for isVisible
+    it("should always show Package Deals link regardless of form completion status", () => {
+      // Mock the context to return false for hasCompletedForm
       (usePackageDeals as jest.Mock).mockReturnValue({
-        isVisible: false,
-        setVisible: jest.fn(),
-      });
-
-      render(<Navigation />);
-
-      // Verify Package Deals link is not present
-      expect(screen.queryByText("Package Deals")).not.toBeInTheDocument();
-    });
-
-    it("should show Package Deals link when visibility is true", () => {
-      // Mock the context to return true for isVisible
-      (usePackageDeals as jest.Mock).mockReturnValue({
-        isVisible: true,
-        setVisible: jest.fn(),
+        hasCompletedForm: false,
+        setFormCompleted: jest.fn(),
       });
 
       render(<Navigation />);
@@ -65,24 +52,11 @@ describe("Package Deals Visibility", () => {
   });
 
   describe("Footer Component", () => {
-    it("should not show Package Deals link when visibility is false", () => {
-      // Mock the context to return false for isVisible
+    it("should always show Package Deals link regardless of form completion status", () => {
+      // Mock the context to return false for hasCompletedForm
       (usePackageDeals as jest.Mock).mockReturnValue({
-        isVisible: false,
-        setVisible: jest.fn(),
-      });
-
-      render(<Footer />);
-
-      // Verify Package Deals link is not present
-      expect(screen.queryByText("Package Deals")).not.toBeInTheDocument();
-    });
-
-    it("should show Package Deals link when visibility is true", () => {
-      // Mock the context to return true for isVisible
-      (usePackageDeals as jest.Mock).mockReturnValue({
-        isVisible: true,
-        setVisible: jest.fn(),
+        hasCompletedForm: false,
+        setFormCompleted: jest.fn(),
       });
 
       render(<Footer />);

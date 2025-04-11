@@ -30,7 +30,7 @@ const PromoModal: React.FC<PromoModalProps> = ({
     setIsClient(true);
   }, []);
 
-  const { isVisible: packageDealsVisible, setVisible: setPackageDealsVisible } =
+  const { hasCompletedForm: packageDealsVisible, setFormCompleted: setPackageDealsVisible } =
     usePackageDeals();
 
   useEffect(() => {

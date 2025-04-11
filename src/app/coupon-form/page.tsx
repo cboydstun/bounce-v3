@@ -10,7 +10,7 @@ import { usePackageDeals } from "@/contexts/PackageDealsContext";
 function CouponFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setVisible: setPackageDealsVisible } = usePackageDeals();
+  const { setFormCompleted: setPackageDealsVisible } = usePackageDeals();
   const [promoName, setPromoName] = useState<string>("General Promotion");
   const [formData, setFormData] = useState({
     name: "",

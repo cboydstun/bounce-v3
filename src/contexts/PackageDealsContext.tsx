@@ -8,14 +8,14 @@ import {
 
 // Define the context shape
 type PackageDealsContextType = {
-  isVisible: boolean;
-  setVisible: () => void;
+  hasCompletedForm: boolean;
+  setFormCompleted: () => void;
 };
 
 // Create the context with default values
 const PackageDealsContext = createContext<PackageDealsContextType>({
-  isVisible: false,
-  setVisible: () => {},
+  hasCompletedForm: false,
+  setFormCompleted: () => {},
 });
 
 // Provider component
@@ -24,21 +24,21 @@ export function PackageDealsProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [isVisible, setIsVisible] = useState(false);
+  const [hasCompletedForm, setHasCompletedForm] = useState(false);
 
   // Check cookie on initial client-side render
   useEffect(() => {
-    setIsVisible(isPackageDealsVisible());
+    setHasCompletedForm(isPackageDealsVisible());
   }, []);
 
-  // Function to set visibility
-  const setVisible = () => {
+  // Function to set form completion status
+  const setFormCompleted = () => {
     setCookie();
-    setIsVisible(true);
+    setHasCompletedForm(true);
   };
 
   return (
-    <PackageDealsContext.Provider value={{ isVisible, setVisible }}>
+    <PackageDealsContext.Provider value={{ hasCompletedForm, setFormCompleted }}>
       {children}
     </PackageDealsContext.Provider>
   );

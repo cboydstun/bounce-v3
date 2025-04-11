@@ -6,10 +6,11 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import path from "path";
 import { usePackageDeals } from "../contexts/PackageDealsContext";
+import ConditionalPackageLink from "./ConditionalPackageLink";
 
 const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isVisible: showPackageDeals } = usePackageDeals();
+  const { hasCompletedForm } = usePackageDeals();
   const pathname = usePathname();
 
   const isActiveLink = (path: string) => {
@@ -24,10 +25,7 @@ const Navigation = () => {
     { path: "/faq", label: "FAQ" },
   ];
 
-  // Conditionally add Package Deals to navigation
-  if (showPackageDeals) {
-    navLinks.push({ path: "/party-packages", label: "Package Deals" });
-  }
+  // Package Deals link is now always shown via ConditionalPackageLink
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
@@ -58,6 +56,15 @@ const Navigation = () => {
                 {link.label}
               </Link>
             ))}
+            <ConditionalPackageLink
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                isActiveLink("/party-packages")
+                  ? "bg-secondary-blue/10 text-primary-blue"
+                  : "text-gray-600 hover:bg-secondary-blue/5 hover:text-primary-blue"
+              }`}
+            >
+              Package Deals
+            </ConditionalPackageLink>
             <Link
               href="/contact"
               className="ml-4 px-6 py-2.5 bg-gradient-to-r from-blue-400 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-500 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
@@ -104,6 +111,16 @@ const Navigation = () => {
                   {link.label}
                 </Link>
               ))}
+              <ConditionalPackageLink
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                  isActiveLink("/party-packages")
+                    ? "bg-secondary-blue/10 text-primary-blue"
+                    : "text-gray-600 hover:bg-secondary-blue/5 hover:text-primary-blue"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Package Deals
+              </ConditionalPackageLink>
               <Link
                 href="/contact"
                 className="px-4 py-2 bg-gradient-to-r from-blue-400 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-500 hover:to-purple-700 transition-all duration-300 text-center shadow-md hover:shadow-lg"
