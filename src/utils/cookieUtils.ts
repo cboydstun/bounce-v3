@@ -13,15 +13,15 @@ export const isPackageDealsVisible = (serverCookies?: any): boolean => {
   // Server-side check with provided cookies
   if (serverCookies) {
     // Handle different cookie APIs
-    if (typeof serverCookies.get === 'function') {
+    if (typeof serverCookies.get === "function") {
       const cookie = serverCookies.get(PACKAGE_DEALS_COOKIE);
       return cookie?.value === "true";
     }
-    
+
     // Fallback for other cookie formats
     return false;
   }
-  
+
   // Client-side check
   if (typeof window === "undefined") return false;
 

@@ -11,11 +11,13 @@ interface PartyPackageWithProductImages extends PartyPackageWithId {
   productImages: Record<string, string>; // Map of product ID to image URL
 }
 
-async function getPartyPackageWithProductImages(slug: string): Promise<PartyPackageWithProductImages> {
+async function getPartyPackageWithProductImages(
+  slug: string,
+): Promise<PartyPackageWithProductImages> {
   try {
     // Get the party package
     let partyPackage: PartyPackageWithId;
-    
+
     // Try both API client and direct fetch
     try {
       partyPackage = await getPartyPackageBySlug(slug);
@@ -33,27 +35,27 @@ async function getPartyPackageWithProductImages(slug: string): Promise<PartyPack
 
       partyPackage = await response.json();
     }
-    
+
     // Get all products to find images for package items
     const productsData = await getProducts();
     const products = productsData.products || [];
-    
+
     // Create a mapping of product IDs to their primary image URL
     const productImages: Record<string, string> = {};
-    
+
     // First, create mappings using _id, slug, and name-based IDs
     products.forEach((product: ProductWithId) => {
       if (product.images && product.images.length > 0) {
         // Use both _id and slug as keys in the mapping to increase chances of a match
         productImages[product._id] = product.images[0].url;
         productImages[product.slug] = product.images[0].url;
-        
+
         // Also try using the product name as a key (converted to lowercase and spaces replaced with hyphens)
-        const nameAsId = product.name.toLowerCase().replace(/\s+/g, '-');
+        const nameAsId = product.name.toLowerCase().replace(/\s+/g, "-");
         productImages[nameAsId] = product.images[0].url;
       }
     });
-    
+
     // Return the package with product images mapping
     return {
       ...partyPackage,
@@ -156,9 +158,9 @@ export default async function PartyPackageDetail({
               <h2 className="text-2xl font-bold text-primary-blue">
                 What&apos;s Included
               </h2>
-              <ItemsList 
-                items={partyPackage.items} 
-                productImages={partyPackage.productImages} 
+              <ItemsList
+                items={partyPackage.items}
+                productImages={partyPackage.productImages}
               />
             </div>
 

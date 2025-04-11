@@ -52,7 +52,9 @@ describe("PromoModal", () => {
 
   it("should not show modal initially", () => {
     render(<PromoModal holidays={mockHolidays} delayInSeconds={10} />);
-    expect(screen.queryByText("Test Holiday Special Offer")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Test Holiday Special Offer"),
+    ).not.toBeInTheDocument();
   });
 
   it("should show modal after delay when not previously dismissed", () => {
@@ -65,8 +67,12 @@ describe("PromoModal", () => {
 
     expect(screen.getByText("Test Holiday Special Offer")).toBeInTheDocument();
     expect(screen.getByText("Test promotional message")).toBeInTheDocument();
-    expect(screen.getByText("Detailed description of the test holiday promotion")).toBeInTheDocument();
-    expect(screen.getByAltText("Test Holiday Special Offer")).toBeInTheDocument();
+    expect(
+      screen.getByText("Detailed description of the test holiday promotion"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByAltText("Test Holiday Special Offer"),
+    ).toBeInTheDocument();
   });
 
   it("should not show modal if previously dismissed within persistence period", () => {
@@ -89,7 +95,9 @@ describe("PromoModal", () => {
     });
 
     // Modal should not appear
-    expect(screen.queryByText("Test Holiday Special Offer")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Test Holiday Special Offer"),
+    ).not.toBeInTheDocument();
   });
 
   it("should show modal if dismissal period has expired", () => {

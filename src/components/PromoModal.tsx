@@ -31,8 +31,10 @@ const PromoModal: React.FC<PromoModalProps> = ({
     setIsClient(true);
   }, []);
 
-  const { hasCompletedForm: packageDealsVisible, setFormCompleted: setPackageDealsVisible } =
-    usePackageDeals();
+  const {
+    hasCompletedForm: packageDealsVisible,
+    setFormCompleted: setPackageDealsVisible,
+  } = usePackageDeals();
 
   useEffect(() => {
     if (!isClient) return; // Only run on client
@@ -125,20 +127,20 @@ const PromoModal: React.FC<PromoModalProps> = ({
         >
           ✕
         </button>
-        
+
         {/* Responsive layout container */}
         <div className="flex flex-col md:flex-row md:items-stretch">
           {/* Image container - full width on mobile, left side on desktop */}
           <div className="relative w-full h-48 md:h-auto md:w-2/5 md:min-h-[300px] overflow-hidden md:rounded-l-lg">
-            <Image 
+            <Image
               src={currentPromo.promoImage}
               alt={currentPromo.promoTitle}
               fill
-              style={{ objectFit: 'cover' }}
+              style={{ objectFit: "cover" }}
               priority
             />
           </div>
-          
+
           {/* Content container - full width on mobile, right side on desktop */}
           <div className="md:w-3/5 md:p-6">
             <CardHeader className="pb-2 md:pt-4">
@@ -148,7 +150,9 @@ const PromoModal: React.FC<PromoModalProps> = ({
             </CardHeader>
             <CardContent>
               <p className="text-gray-700 mb-3">{currentPromo.message}</p>
-              <p className="text-gray-800 font-medium mb-6">{currentPromo.promoDescription}</p>
+              <p className="text-gray-800 font-medium mb-6">
+                {currentPromo.promoDescription}
+              </p>
               <div className="flex justify-end">
                 <button
                   onClick={handleGetCoupon}

@@ -269,10 +269,11 @@ export const updateProduct = async (
 export const getContacts = async (params?: {
   startDate?: string;
   endDate?: string;
-  confirmed?: boolean;
+  confirmed?: boolean | string; // Support both boolean and string values
   limit?: number;
   page?: number;
-  deliveryDay?: string; // Add deliveryDay parameter
+  deliveryDay?: string;
+  includeAllStatuses?: boolean; // New parameter to include all confirmation statuses
 }) => {
   const queryParams = new URLSearchParams();
 
@@ -284,7 +285,8 @@ export const getContacts = async (params?: {
     queryParams.append("endDate", params.endDate);
   }
 
-  if (params?.confirmed !== undefined) {
+  // Only include confirmed parameter if includeAllStatuses is not true
+  if (params?.confirmed !== undefined && !params?.includeAllStatuses) {
     queryParams.append("confirmed", params.confirmed.toString());
   }
 
@@ -299,6 +301,12 @@ export const getContacts = async (params?: {
   // Add support for deliveryDay parameter
   if (params?.deliveryDay) {
     queryParams.append("deliveryDay", params.deliveryDay);
+  }
+
+  // If includeAllStatuses is true, add a special parameter to tell the API
+  // to include all confirmation statuses
+  if (params?.includeAllStatuses) {
+    queryParams.append("includeAllStatuses", "true");
   }
 
   const queryString = queryParams.toString();

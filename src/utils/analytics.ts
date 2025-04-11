@@ -12,11 +12,10 @@ export function getDateRangeForPeriod(period: string): {
 
   switch (period) {
     case "nextMonth": {
-      // Next month based on previous year's data
-      const lastYear = now.getFullYear() - 1;
+      // Next month based on current year's data
       const nextMonth = now.getMonth() + 1;
-      startDate.setFullYear(lastYear, nextMonth, 1);
-      endDate.setFullYear(lastYear, nextMonth + 1, 0);
+      startDate.setMonth(nextMonth, 1);
+      endDate.setMonth(nextMonth + 1, 0);
       break;
     }
     case "currentMonth": {
@@ -57,15 +56,39 @@ export function calculateRevenueData(
   products: ProductWithId[],
   period: string,
 ) {
+  // Log the total number of contacts before processing
+  console.log(
+    `calculateRevenueData: Processing ${contacts.length} total contacts`,
+  );
+
   // Group contacts by time period (day, week, month)
   const groupedData = groupByTimePeriod(contacts, period);
+
+  // Log the number of unique time periods
+  console.log(
+    `calculateRevenueData: Grouped into ${Object.keys(groupedData).length} time periods`,
+  );
 
   // Calculate revenue for each period
   const revenueByPeriod = Object.entries(groupedData).reduce(
     (acc, [date, periodContacts]) => {
+      // Log the number of contacts for this period
+      console.log(
+        `calculateRevenueData: Period ${date} has ${periodContacts.length} contacts`,
+      );
+
       const periodRevenue = periodContacts.reduce((total, contact) => {
+        // Find the product for this contact
         const product = products.find((p) => p.name === contact.bouncer);
-        return total + (product?.price.base || 0);
+
+        // If product not found, log a warning
+        if (!product) {
+          console.warn(`Product not found for bouncer: ${contact.bouncer}`);
+          return total;
+        }
+
+        // Add the product price to the total
+        return total + (product.price.base || 0);
       }, 0);
 
       acc[date] = periodRevenue;
@@ -73,6 +96,9 @@ export function calculateRevenueData(
     },
     {} as Record<string, number>,
   );
+
+  // Log the revenue by period
+  console.log("Revenue by period:", revenueByPeriod);
 
   // Format for chart.js
   const sortedDates = Object.keys(revenueByPeriod).sort();
@@ -107,19 +133,31 @@ export function groupContactsByPeriod(contacts: Contact[], period: string) {
   const statusCounts = sortedDates.map((date) => {
     const dateContacts = groupedData[date];
 
-    // Count each status type
-    const confirmed = dateContacts.filter(
-      (contact) => contact.confirmed === "Confirmed",
-    ).length;
-    const pending = dateContacts.filter(
-      (contact) => contact.confirmed === "Pending",
-    ).length;
+    // Count each status type, handling both string and boolean values
+    const confirmed = dateContacts.filter((contact) => {
+      if (typeof contact.confirmed === "boolean") {
+        return contact.confirmed === true;
+      } else {
+        return contact.confirmed === "Confirmed";
+      }
+    }).length;
+
+    const pending = dateContacts.filter((contact) => {
+      if (typeof contact.confirmed === "boolean") {
+        return contact.confirmed === false;
+      } else {
+        return contact.confirmed === "Pending";
+      }
+    }).length;
+
     const calledTexted = dateContacts.filter(
       (contact) => contact.confirmed === "Called / Texted",
     ).length;
+
     const declined = dateContacts.filter(
       (contact) => contact.confirmed === "Declined",
     ).length;
+
     const cancelled = dateContacts.filter(
       (contact) => contact.confirmed === "Cancelled",
     ).length;

@@ -214,7 +214,6 @@ const VisitorSchema = new Schema<IVisitor>(
 );
 
 // Add indexes for common queries
-VisitorSchema.index({ visitorId: 1 });
 VisitorSchema.index({ lastVisit: -1 });
 VisitorSchema.index({ funnelStage: 1 });
 VisitorSchema.index({ engagementScore: -1 });

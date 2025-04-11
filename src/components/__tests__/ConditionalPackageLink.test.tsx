@@ -57,7 +57,7 @@ describe("ConditionalPackageLink", () => {
     render(
       <ConditionalPackageLink className={testClass}>
         Package Deals
-      </ConditionalPackageLink>
+      </ConditionalPackageLink>,
     );
 
     const link = screen.getByText("Package Deals").closest("a");
@@ -74,7 +74,7 @@ describe("ConditionalPackageLink", () => {
     const { getByText } = render(
       <ConditionalPackageLink onClick={handleClick}>
         Package Deals
-      </ConditionalPackageLink>
+      </ConditionalPackageLink>,
     );
 
     // We can't actually test the onClick behavior fully without userEvent,

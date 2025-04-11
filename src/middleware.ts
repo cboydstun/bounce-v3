@@ -9,11 +9,11 @@ import { isPackageDealsVisible } from "./utils/cookieUtils";
  */
 export async function middleware(request: NextRequest) {
   // Check if the request is for the party-packages page
-  if (request.nextUrl.pathname === '/party-packages') {
+  if (request.nextUrl.pathname === "/party-packages") {
     // Check if the user has completed the form
     if (!isPackageDealsVisible(request.cookies)) {
       // Redirect to the coupon form
-      return NextResponse.redirect(new URL('/coupon-form', request.url));
+      return NextResponse.redirect(new URL("/coupon-form", request.url));
     }
   }
 
@@ -53,6 +53,6 @@ export const config = {
     "/admin/:path*",
     // Party packages route
     "/party-packages",
-    "/party-packages/:path*"
+    "/party-packages/:path*",
   ],
 };

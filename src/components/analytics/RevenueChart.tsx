@@ -54,21 +54,91 @@ export default function RevenueChart({ period }: RevenueChartProps) {
         // Get date range for the selected period
         const dateRange = getDateRangeForPeriod(period);
 
-        // Fetch contacts and products
-        const contactsData = await getContacts({
-          startDate: dateRange.startDate,
-          endDate: dateRange.endDate,
-          limit: 1000, // Fetch a large number to ensure we get all data
-        });
-
+        // Fetch products first
         const productsData = await getProducts();
-
-        // Extract contacts and products from API response
-        const contacts = contactsData.contacts as Contact[];
         const products = productsData.products as ProductWithId[];
 
-        // Calculate revenue data
-        const revenueData = calculateRevenueData(contacts, products, period);
+        // Fetch all contacts with pagination handling
+        let allContacts: Contact[] = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        do {
+          const contactsData = await getContacts({
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate,
+            limit: 1000,
+            page: currentPage,
+            includeAllStatuses: true, // Include all confirmation statuses
+          });
+
+          // Add contacts from current page to our collection
+          allContacts = [
+            ...allContacts,
+            ...(contactsData.contacts as Contact[]),
+          ];
+
+          // Update pagination info
+          totalPages = contactsData.pagination?.totalPages || 1;
+          currentPage++;
+
+          // Log for debugging
+          console.log(
+            `Fetched page ${currentPage - 1} of ${totalPages}, got ${contactsData.contacts.length} contacts`,
+          );
+        } while (currentPage <= totalPages);
+
+        console.log(`Total contacts fetched: ${allContacts.length}`);
+
+        // Debug: Log contacts by month to see distribution
+        const contactsByMonth = allContacts.reduce(
+          (acc, contact) => {
+            const date = new Date(contact.partyDate);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+            if (!acc[monthKey]) {
+              acc[monthKey] = [];
+            }
+
+            acc[monthKey].push(contact);
+            return acc;
+          },
+          {} as Record<string, Contact[]>,
+        );
+
+        // Log the count of contacts for each month
+        console.log("Contacts by month:");
+        Object.entries(contactsByMonth).forEach(([month, contacts]) => {
+          console.log(`${month}: ${contacts.length} contacts`);
+        });
+
+        // Specifically check for April 2025
+        const april2025Key = "2025-04";
+        const april2025Contacts = contactsByMonth[april2025Key] || [];
+        console.log(`April 2025 contacts: ${april2025Contacts.length}`);
+
+        if (april2025Contacts.length > 0) {
+          console.log("April 2025 contacts confirmation status distribution:");
+          const statusCounts: Record<string, number> = {};
+
+          april2025Contacts.forEach((contact) => {
+            const status =
+              typeof contact.confirmed === "boolean"
+                ? contact.confirmed
+                  ? "true"
+                  : "false" // Handle boolean values
+                : contact.confirmed || "undefined"; // Handle string values or undefined
+
+            statusCounts[status] = (statusCounts[status] || 0) + 1;
+          });
+
+          Object.entries(statusCounts).forEach(([status, count]) => {
+            console.log(`  ${status}: ${count}`);
+          });
+        }
+
+        // Calculate revenue data with all contacts
+        const revenueData = calculateRevenueData(allContacts, products, period);
 
         setChartData(revenueData.chartData);
         setTotalRevenue(revenueData.total);

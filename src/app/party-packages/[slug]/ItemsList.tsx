@@ -13,8 +13,10 @@ export default function ItemsList({ items, productImages }: ItemsListProps) {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {items.map((item, index) => {
         // Get image URL for this item, or use default
-        const imageUrl = productImages[item.id] || "/satx-bounce-house-rental-san-antonio-dry-xl.png";
-        
+        const imageUrl =
+          productImages[item.id] ||
+          "/satx-bounce-house-rental-san-antonio-dry-xl.png";
+
         return (
           <div
             key={index}
@@ -31,7 +33,7 @@ export default function ItemsList({ items, productImages }: ItemsListProps) {
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
             </div>
-            
+
             {/* Product Details */}
             <div className="p-4">
               <div className="flex items-center justify-between">

@@ -38,7 +38,9 @@ export function PackageDealsProvider({
   };
 
   return (
-    <PackageDealsContext.Provider value={{ hasCompletedForm, setFormCompleted }}>
+    <PackageDealsContext.Provider
+      value={{ hasCompletedForm, setFormCompleted }}
+    >
       {children}
     </PackageDealsContext.Provider>
   );

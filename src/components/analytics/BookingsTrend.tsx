@@ -53,42 +53,74 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
         // Get date range for the selected period
         const dateRange = getDateRangeForPeriod(period);
 
-        // Fetch contacts
-        const contactsData = await getContacts({
-          startDate: dateRange.startDate,
-          endDate: dateRange.endDate,
-          limit: 1000, // Fetch a large number to ensure we get all data
-        });
+        // Fetch contacts with pagination handling
+        let allContacts: Contact[] = [];
+        let currentPage = 1;
+        let totalPages = 1;
 
-        // Extract contacts from API response
-        const contacts = contactsData.contacts as Contact[];
+        do {
+          const contactsData = await getContacts({
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate,
+            limit: 1000,
+            page: currentPage,
+            includeAllStatuses: true, // Include all confirmation statuses
+          });
+
+          // Add contacts from current page to our collection
+          allContacts = [
+            ...allContacts,
+            ...(contactsData.contacts as Contact[]),
+          ];
+
+          // Update pagination info
+          totalPages = contactsData.pagination?.totalPages || 1;
+          currentPage++;
+
+          // Log for debugging
+          console.log(
+            `BookingsTrend: Fetched page ${currentPage - 1} of ${totalPages}, got ${contactsData.contacts.length} contacts`,
+          );
+        } while (currentPage <= totalPages);
+
+        console.log(
+          `BookingsTrend: Total contacts fetched: ${allContacts.length}`,
+        );
 
         // Calculate bookings data
-        const bookingsData = groupContactsByPeriod(contacts, period);
+        const bookingsData = groupContactsByPeriod(allContacts, period);
 
-        // Count bookings by status
-        const confirmed = contacts.filter(
-          (contact) => contact.confirmed === "Confirmed",
+        // Count bookings by status, handling both string and boolean values
+        const confirmed = allContacts.filter((contact: Contact) => {
+          if (typeof contact.confirmed === "boolean") {
+            return contact.confirmed === true;
+          } else {
+            return contact.confirmed === "Confirmed";
+          }
+        }).length;
+
+        const pending = allContacts.filter((contact: Contact) => {
+          if (typeof contact.confirmed === "boolean") {
+            return contact.confirmed === false;
+          } else {
+            return contact.confirmed === "Pending";
+          }
+        }).length;
+
+        const calledTexted = allContacts.filter(
+          (contact: Contact) => contact.confirmed === "Called / Texted",
         ).length;
 
-        const pending = contacts.filter(
-          (contact) => contact.confirmed === "Pending",
+        const declined = allContacts.filter(
+          (contact: Contact) => contact.confirmed === "Declined",
         ).length;
 
-        const calledTexted = contacts.filter(
-          (contact) => contact.confirmed === "Called / Texted",
-        ).length;
-
-        const declined = contacts.filter(
-          (contact) => contact.confirmed === "Declined",
-        ).length;
-
-        const cancelled = contacts.filter(
-          (contact) => contact.confirmed === "Cancelled",
+        const cancelled = allContacts.filter(
+          (contact: Contact) => contact.confirmed === "Cancelled",
         ).length;
 
         setChartData(bookingsData.chartData);
-        setTotalBookings(contacts.length);
+        setTotalBookings(allContacts.length);
         setConfirmedBookings(confirmed);
         setPendingBookings(pending);
         setCalledTextedBookings(calledTexted);
