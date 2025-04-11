@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { getProducts } from "@/utils/api";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
 import { trackFormStart, trackFormSubmit } from "@/utils/trackInteraction";
 import { trackContactForm } from "@/utils/trackConversion";
+import { 
+  initFormTracking, 
+  trackFieldInteraction, 
+  trackExtrasSelection,
+  trackFormCompletion 
+} from "@/utils/formEngagementTracking";
 
 interface Specification {
   name: string;
@@ -52,6 +59,18 @@ interface ContactFormProps {
 }
 
 const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
+  const router = useRouter();
+  const formInitialized = useRef(false);
+  
+  // Initialize form tracking on mount
+  useEffect(() => {
+    if (!formInitialized.current) {
+      // Count total interactive fields (excluding checkboxes)
+      const totalFields = 5; // bouncer, email, partyDate, partyZipCode, phone
+      initFormTracking("contact-form", totalFields);
+      formInitialized.current = true;
+    }
+  }, []);
   const [formData, setFormData] = useState<FormData>({
     bouncer: "",
     email: "",
@@ -186,6 +205,9 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
 
     if (!validateForm() || !formData.consentToContact) return;
 
+    // Track form completion with detailed data
+    trackFormCompletion("contact-form", formData);
+
     // Track form submission interaction
     trackFormSubmit("contact-form", undefined, {
       formType: "contact",
@@ -221,26 +243,8 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
       // Track conversion event
       trackContactForm(formData.bouncer);
 
-      setSubmitStatus("success");
-      setFormData({
-        bouncer: "",
-        email: "",
-        partyDate: "",
-        partyZipCode: "",
-        phone: "",
-        message: "",
-        sourcePage: "contact",
-        tablesChairs: false,
-        generator: false,
-        popcornMachine: false,
-        cottonCandyMachine: false,
-        snowConeMachine: false,
-        basketballShoot: false,
-        slushyMachine: false,
-        overnight: false,
-        consentToContact: false,
-      });
-      setSelectedBouncerImage("");
+      // Redirect to success page instead of showing inline message
+      router.push("/contact-form-success");
     } catch (error) {
       console.error("Error submitting contact form:", error);
       setSubmitStatus("error");
@@ -266,6 +270,29 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
       formData.message === ""
     ) {
       trackFormStart("contact-form");
+    }
+
+    // Track field interaction
+    trackFieldInteraction("contact-form", name, "change", value);
+
+    // Track extras selection for checkboxes
+    if (type === "checkbox" && ["tablesChairs", "generator", "popcornMachine", 
+        "cottonCandyMachine", "snowConeMachine", "basketballShoot", 
+        "slushyMachine", "overnight"].includes(name)) {
+      
+      // Count how many extras are selected after this change
+      const updatedFormData = {
+        ...formData,
+        [name]: checked
+      };
+      
+      const extrasCount = Object.keys(updatedFormData).filter(key => 
+        ["tablesChairs", "generator", "popcornMachine", "cottonCandyMachine", 
+         "snowConeMachine", "basketballShoot", "slushyMachine", "overnight"].includes(key) && 
+        updatedFormData[key as keyof typeof updatedFormData] === true
+      ).length;
+      
+      trackExtrasSelection("contact-form", extrasCount);
     }
 
     if (name === "phone") {
@@ -305,7 +332,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
 
       {submitStatus === "error" && (
         <div className="bg-red-100 text-red-700 p-4 rounded-xl text-center text-lg animate-fade-in">
-          🎪 Oops! Something went wrong. Let&apos;s try that again! 🎪
+          👋 Oops! Something went wrong. Please call <a href="tel:5122100194"><strong>(512)-210-0194</strong></a> for a reward!🙏 
         </div>
       )}
 

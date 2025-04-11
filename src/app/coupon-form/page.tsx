@@ -1,10 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { usePackageDeals } from "@/contexts/PackageDealsContext";
+import { trackFormStart, trackFormSubmit } from "@/utils/trackInteraction";
+import { 
+  initFormTracking, 
+  trackFieldInteraction, 
+  trackFormCompletion 
+} from "@/utils/formEngagementTracking";
 
 // Component to handle search params
 function CouponFormContent() {
@@ -12,6 +18,17 @@ function CouponFormContent() {
   const searchParams = useSearchParams();
   const { setFormCompleted: setPackageDealsVisible } = usePackageDeals();
   const [promoName, setPromoName] = useState<string>("General Promotion");
+  const formInitialized = useRef(false);
+  
+  // Initialize form tracking on mount
+  useEffect(() => {
+    if (!formInitialized.current) {
+      // Count total interactive fields (excluding checkboxes)
+      const totalFields = 3; // name, email, phone
+      initFormTracking("coupon-form", totalFields);
+      formInitialized.current = true;
+    }
+  }, []);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -25,6 +42,7 @@ function CouponFormContent() {
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
 
   useEffect(() => {
     const promoParam = searchParams.get("promo");
@@ -86,6 +104,19 @@ function CouponFormContent() {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
+    // Track form start when user first interacts with the form
+    // Only track once when the form is empty
+    if (
+      formData.name === "" &&
+      formData.email === "" &&
+      formData.phone === ""
+    ) {
+      trackFormStart("coupon-form");
+    }
+
+    // Track field interaction
+    trackFieldInteraction("coupon-form", name, "change", value);
+
     if (name === "phone") {
       setFormData((prev) => ({
         ...prev,
@@ -103,6 +134,15 @@ function CouponFormContent() {
     e.preventDefault();
 
     if (!validateForm() || !formData.consentToContact) return;
+
+    // Track form completion with detailed data
+    trackFormCompletion("coupon-form", formData);
+
+    // Track form submission interaction
+    trackFormSubmit("coupon-form", undefined, {
+      formType: "coupon",
+      promoName: promoName
+    });
 
     setIsSubmitting(true);
 
@@ -130,6 +170,7 @@ function CouponFormContent() {
       router.push("/party-packages");
     } catch (error) {
       console.error("Error submitting form:", error);
+      setSubmitStatus("error");
     } finally {
       setIsSubmitting(false);
     }
@@ -141,6 +182,12 @@ function CouponFormContent() {
         <h1 className="text-3xl font-bold text-primary-purple mb-6 text-center">
           See Our Party Package Deals
         </h1>
+
+        {submitStatus === "error" && (
+          <div className="bg-red-100 text-red-700 p-4 rounded-xl text-center text-lg animate-fade-in">
+            👋 Oops! Something went wrong. Please call <a href="tel:5122100194"><strong>(512)-210-0194</strong></a> for a reward!🙏 
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
