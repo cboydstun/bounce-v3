@@ -3,4 +3,7 @@ export interface Holiday {
   startDate: string;
   endDate: string;
   message: string;
+  promoTitle: string;
+  promoDescription: string;
+  promoImage: string;
 }

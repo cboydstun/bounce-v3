@@ -4,97 +4,145 @@
       "name": "New Year's Day",
       "startDate": "2024-12-26",
       "endDate": "2025-01-01",
-      "message": "Start the new year with high-flying fun! Our bounce houses are the perfect way to give your New Year's celebration an extra bounce of excitement."
+      "message": "Start the new year with high-flying fun! Our bounce houses are the perfect way to give your New Year's celebration an extra bounce of excitement.",
+      "promoTitle": "New Year's Bounce & Sip Special",
+      "promoDescription": "Ring in 2025 with our exclusive New Year's package! Rent any bounce house and get a 30L Double Tank Slush Machine at 25% off. Perfect for creating both kid-friendly slushies and adult celebratory drinks to countdown to midnight!",
+      "promoImage": "https://media.giphy.com/media/1wuK7wttUESiijPoHo/giphy.gif?cid=ecf05e47rluj0nk7zz6pvxe26w277jicjocud6goc5dihs5o&ep"
     },
     {
       "name": "Valentine's Day",
       "startDate": "2025-02-02",
       "endDate": "2025-02-14",
-      "message": "Bounce into someone's heart this Valentine's Day! Our heart-shaped and pink bounce houses will add a special touch of love and fun to your celebration."
+      "message": "Bounce into someone's heart this Valentine's Day! Our heart-shaped and pink bounce houses will add a special touch of love and fun to your celebration.",
+      "promoTitle": "Valentine's Sweet Hearts Package",
+      "promoDescription": "Express your love with our Valentine's special! Rent our Pink Bounce Castle and receive a Cotton Candy Machine for just $25 more. Create sweet memories with pink vanilla cotton candy that matches your bouncer!",
+      "promoImage": "https://media.giphy.com/media/v3MzLJtE6EGjkPIzIx/giphy.gif?cid=ecf05e4763jxy6jj319u2n05lkvmj5tqwiucw0tw93bjcbfy&ep"
     },
     {
       "name": "St. Patrick's Day",
       "startDate": "2025-02-15",
       "endDate": "2025-03-17",
-      "message": "Feel the luck of the Irish with our festive bounce houses! They're more fun than finding a pot of gold at the end of the rainbow."
+      "message": "Feel the luck of the Irish with our festive bounce houses! They're more fun than finding a pot of gold at the end of the rainbow.",
+      "promoTitle": "Lucky Leprechaun Combo Deal",
+      "promoDescription": "Get lucky this St. Patrick's Day! Book our Lime Water Slide and receive a free table and chairs set. Plus, add our 15L Single Tank Slush Machine for just $50 more to create green festive drinks!",
+      "promoImage": "https://media.giphy.com/media/hSd9XHdpr3OwiDm5AD/giphy.gif?cid=ecf05e47chp5jduwnmgjpvxu1kffp21univsxlf8lrohhjjj&ep"
     },
     {
       "name": "Easter",
       "startDate": "2025-03-18",
       "endDate": "2025-04-20",
-      "message": "Hop into Easter fun with our bounce houses! They're the perfect addition to your Easter egg hunt and springtime celebration."
+      "message": "Hop into Easter fun with our bounce houses! They're the perfect addition to your Easter egg hunt and springtime celebration.",
+      "promoTitle": "Easter Egg-stravaganza Bundle",
+      "promoDescription": "Make your Easter celebration hop with joy! Book any bounce house and receive a free Children's Table and Chair Set for the little ones' Easter crafts and egg decorating. Perfect for creating a complete kids' activity zone!",
+      "promoImage": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExY3BlcWNwem5rOWo3N2J0YTI5djIxMzIwZ2N6NXBjbWYwY3dsZTlxOCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/XKwHqAskAcb6tjFgUY/giphy.gif"
     },
     {
       "name": "Cinco de Mayo",
       "startDate": "2025-04-21",
       "endDate": "2025-05-05",
-      "message": "¡Olé! Celebrate Cinco de Mayo with a festive bounce house fiesta that will have everyone jumping with joy!"
+      "message": "¡Olé! Celebrate Cinco de Mayo with a festive bounce house fiesta that will have everyone jumping with joy!",
+      "promoTitle": "Fiesta Fantastica Package",
+      "promoDescription": "¡Viva la fiesta! Book any our Tropical units and get 50% off our Snow Cone Machine with three festive flavors. Add a Slush Machine for authentic margaritas (for adults) at just $75 more!",
+      "promoImage": "https://media.giphy.com/media/xTiTnHEw4oaK5VdCCI/giphy.gif?cid=ecf05e47nwzqqx2wek7s52d16gn51x3apm5x8otwunug3poz&ep"
     },
     {
       "name": "Mother's Day",
       "startDate": "2025-05-06",
       "endDate": "2025-05-11",
-      "message": "Give Mom what she really wants this Mother's Day – kids having fun (and burning energy) in a bounce house while she relaxes!"
+      "message": "Give Mom what she really wants this Mother's Day – kids having fun (and burning energy) in a bounce house while she relaxes!",
+      "promoTitle": "Mom's Day Off Special",
+      "promoDescription": "Treat mom to real relaxation! Book any bounce house or water slide and add a Cotton Candy Machine at half price. We'll include 2 extra hours of rental time FREE so mom can truly enjoy her special day!",
+      "promoImage": "https://media.giphy.com/media/oynf6RnFvNfCi3TWeq/giphy.gif?cid=ecf05e47otqw4jgkf0f7ofagforx91kovqncxwn8viv4vn4z&ep"
     },
     {
       "name": "Memorial Day",
       "startDate": "2025-05-12",
       "endDate": "2025-05-26",
-      "message": "Kick off summer the right way with a patriotic bounce house for your Memorial Day cookout! Red, white, and bounce for everyone."
+      "message": "Kick off summer the right way with a patriotic bounce house for your Memorial Day cookout! Red, white, and bounce for everyone.",
+      "promoTitle": "Patriotic Splash Kickoff",
+      "promoDescription": "Salute the start of summer! Book our Blue Double Lane Waterslide and get a Popcorn Machine absolutely FREE. Perfect for backyard barbecues and honoring the holiday while keeping cool!",
+      "promoImage": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMGxpYXNkOXpiMWxnZGd1ZzkydGM1YXd5MXIybWM1ZTZ3bm16ZWlpaiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/IjEcnYevLdldymWxk0/giphy.gif"
     },
     {
       "name": "Father's Day",
       "startDate": "2025-05-27",
       "endDate": "2025-06-15",
-      "message": "Dad will love watching the kids have a blast in one of our awesome bounce houses – and he might just join in the fun too!"
+      "message": "Dad will love watching the kids have a blast in one of our awesome bounce houses – and he might just join in the fun too!",
+      "promoTitle": "Dad's Ultimate Backyard Bash",
+      "promoDescription": "Give Dad what he really wants - family fun and great food! Rent any water slide and receive a Popcorn Machine at 50% off. Add our generator for just $25 more if you're planning a park celebration!",
+      "promoImage": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExN2hpYmJncXRvMDM5ZTN2bmUzbnduM2x1dXV0bTdhNXh2eXJ2MWRmcCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/l0HlSH2gsSrxJySnS/giphy.gif"
     },
     {
       "name": "Independence Day",
       "startDate": "2025-06-16",
       "endDate": "2025-07-04",
-      "message": "Make your 4th of July celebration explode with fun! Our patriotic bounce houses are the perfect addition to your family cookout."
+      "message": "Make your 4th of July celebration explode with fun! Our patriotic bounce houses are the perfect addition to your family cookout.",
+      "promoTitle": "Red, White & Blue Spectacular",
+      "promoDescription": "Celebrate America with our patriotic package! Rent the Blue Inflatable Castle with Slide AND receive any Slush Machine at 50% off. Create red, white, and blue slushies for the perfect Independence Day refreshments!",
+      "promoImage": "https://media.giphy.com/media/26cCzg5nY3jXvLpyiH/giphy.gif?cid=ecf05e471z8l51ber2gv1yd6deledrd7j4i1zgpi5d8z1sgs&ep"
     },
     {
       "name": "Summer Kickoff",
       "startDate": "2025-07-05",
       "endDate": "2025-07-31",
-      "message": "School's out for summer! Celebrate with our water slide inflatables and bounce houses for the ultimate summer vacation party."
+      "message": "School's out for summer! Celebrate with our water slide inflatables and bounce houses for the ultimate summer vacation party.",
+      "promoTitle": "Summer Splash Mega Deal",
+      "promoDescription": "School's out special! Book any of our water slides and get a Snow Cone Machine for just $25 more. Stay cool all day with this perfect summer combo - ideal for birthday parties and neighborhood gatherings!",
+      "promoImage": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbzR5ajV2N2lpZDVjYm5la3IzeGpoa3lva3d6bTE5MjhjdjhrenB1NCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/KGknuZFYJ1dCrARKIg/giphy.gif"
     },
     {
       "name": "Back to School",
       "startDate": "2025-08-01",
       "endDate": "2025-08-17",
-      "message": "Squeeze in one last adventure before the school bell rings! Our bounce houses are the perfect way to end summer vacation with a bang."
+      "message": "Squeeze in one last adventure before the school bell rings! Our bounce houses are the perfect way to end summer vacation with a bang.",
+      "promoTitle": "Last Blast of Summer Special",
+      "promoDescription": "Send summer off with a bang! Book our TALL Red Water Slide or Tropical Water Slide and receive a free Cotton Candy Machine rental. Make those last summer memories extra sweet before the school year begins!",
+      "promoImage": "https://media.giphy.com/media/SSirUu2TrV65ymCi4J/giphy.gif?cid=ecf05e47muow7kai75bx432vbupqa0luxzemd3yguk6fwnb5"
     },
     {
       "name": "Labor Day",
       "startDate": "2025-08-18",
       "endDate": "2025-09-01",
-      "message": "Say goodbye to summer with one last bounce! Our inflatable rentals are the perfect way to celebrate Labor Day weekend."
+      "message": "Say goodbye to summer with one last bounce! Our inflatable rentals are the perfect way to celebrate Labor Day weekend.",
+      "promoTitle": "Labor Day Weekend Extravaganza",
+      "promoDescription": "End summer with the ultimate party! Book any water slide for your Labor Day celebration and get any Slush Machine at 50% off. Keep the whole family cool and refreshed during the long weekend!",
+      "promoImage": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3p2am4wNGsybWN6bWJxYWt6ZWVxMjE2b2k2c3prcXJzdm9qNmE4diZlcD12MV9naWZzX3NlYXJjaCZjdD1n/ucECkm8kDKxkRL7Yzg/giphy.gif"
     },
     {
       "name": "Halloween",
       "startDate": "2025-10-01",
       "endDate": "2025-10-31",
-      "message": "Bounce-tacular Halloween fun awaits! Our spooky-themed bounce houses are a monster hit at any Halloween party or fall festival."
+      "message": "Bounce-tacular Halloween fun awaits! Our spooky-themed bounce houses are a monster hit at any Halloween party or fall festival.",
+      "promoTitle": "Spooktacular Bounce & Treat Package",
+      "promoDescription": "Treat, no tricks! Book our Red or White Large Castles with Slides and get a Popcorn Machine OR Cotton Candy Machine for the free! Perfect for Halloween parties and fall festivals to keep the little monsters happy!",
+      "promoImage": "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExanVuMHpzN2VtZGphaTlyMTUwdTF4amVtYnJjeXZqZ3F3ZTE1bDRxNSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/A3pAWzorjiXjm927yk/giphy.gif"
     },
     {
       "name": "Thanksgiving",
       "startDate": "2025-11-01",
       "endDate": "2025-11-27",
-      "message": "Keep the kids entertained while the turkey cooks! Our bounce houses are the perfect way to work up an appetite for that Thanksgiving feast."
+      "message": "Keep the kids entertained while the turkey cooks! Our bounce houses are the perfect way to work up an appetite for that Thanksgiving feast.",
+      "promoTitle": "Turkey Day Entertainment Bundle",
+      "promoDescription": "Keep the kids busy while the turkey cooks! Rent any bounce house and receive 2 free tables and 12 chairs to go with. Perfect for setting up a kids' activity zone while adults prepare the Thanksgiving feast!",
+      "promoImage": "https://media.giphy.com/media/dWknHx8LmjvqCwdK1U/giphy.gif?cid=ecf05e4722qeoaymhm9mcyxrf5564j46l1vxdz190a2gxfy6"
     },
     {
       "name": "Hanukkah",
       "startDate": "2025-11-28",
       "endDate": "2025-12-22",
-      "message": "Eight nights of bouncing joy! Celebrate Hanukkah with an inflatable that will have everyone jumping with holiday spirit."
+      "message": "Eight nights of bouncing joy! Celebrate Hanukkah with an inflatable that will have everyone jumping with holiday spirit.",
+      "promoTitle": "Eight Nights of Bounce Delights",
+      "promoDescription": "Celebrate the Festival of Lights! Rent our White Bouncer or Balloon Bouncer and receive a Popcorn Machine rental at 50% off. Add a Popcorn Machine for just $25 more to complete your Hanukkah celebration!",
+      "promoImage": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHFyYjN6NzRxNGxsdW9xNjhvZ3ozdzl0NDYxZHp3c3cwamlnbTZ1OCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/URy7ODRrblqSkyhc6A/giphy.gif"
     },
     {
       "name": "Christmas",
       "startDate": "2025-12-23",
       "endDate": "2025-12-25",
-      "message": "Make spirits bright with a festive bounce house! Santa's elves approve of our Christmas-themed inflatables for your holiday gathering."
+      "message": "Make spirits bright with a festive bounce house! Santa's elves approve of our Christmas-themed inflatables for your holiday gathering.",
+      "promoTitle": "Santa's Special Delivery Package",
+      "promoDescription": "Ho-ho-ho! Book our Large White Combo with Slide (perfect for a winter wonderland theme) and get a cotton candy machine with 50 services FREE! Snack on cotton candy and candy canes for the kids at your Christmas celebration!",
+      "promoImage": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWZ0d3RjeWpudnZ1MXp6aGZmdmM1bmo0N2l4dGs5dGtybXNvMTc2cCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/rFHd4OUe6kOhvAXSQN/giphy.gif"
     }
   ]
 }

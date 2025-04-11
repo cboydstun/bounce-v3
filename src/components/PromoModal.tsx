@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Modal from "./ui/Modal";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { getCurrentPromotion } from "../utils/promoUtils";
@@ -113,33 +114,52 @@ const PromoModal: React.FC<PromoModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      className="w-full max-w-md"
+      className="w-full max-w-md md:max-w-2xl"
       position="follow-scroll"
     >
       <Card className="border-0 shadow-none relative">
         <button
           onClick={handleClose}
-          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 transition-colors"
+          className="absolute top-3 right-3 z-10 text-gray-500 hover:text-gray-700 transition-colors"
           aria-label="Close"
         >
           ✕
         </button>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-primary-purple text-2xl">
-            {currentPromo.name} Special!
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-700 mb-6">{currentPromo.message}</p>
-          <div className="flex justify-end">
-            <button
-              onClick={handleGetCoupon}
-              className="bg-primary-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-primary-purple transition-colors duration-300"
-            >
-              See Package Deals
-            </button>
+        
+        {/* Responsive layout container */}
+        <div className="flex flex-col md:flex-row md:items-stretch">
+          {/* Image container - full width on mobile, left side on desktop */}
+          <div className="relative w-full h-48 md:h-auto md:w-2/5 md:min-h-[300px] overflow-hidden md:rounded-l-lg">
+            <Image 
+              src={currentPromo.promoImage}
+              alt={currentPromo.promoTitle}
+              fill
+              style={{ objectFit: 'cover' }}
+              priority
+            />
           </div>
-        </CardContent>
+          
+          {/* Content container - full width on mobile, right side on desktop */}
+          <div className="md:w-3/5 md:p-6">
+            <CardHeader className="pb-2 md:pt-4">
+              <CardTitle className="text-primary-purple text-2xl md:text-3xl">
+                {currentPromo.promoTitle}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 mb-3">{currentPromo.message}</p>
+              <p className="text-gray-800 font-medium mb-6">{currentPromo.promoDescription}</p>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleGetCoupon}
+                  className="bg-primary-blue text-white px-5 py-2 rounded-lg font-semibold hover:bg-primary-purple transition-colors duration-300"
+                >
+                  See Package Deals
+                </button>
+              </div>
+            </CardContent>
+          </div>
+        </div>
       </Card>
     </Modal>
   );

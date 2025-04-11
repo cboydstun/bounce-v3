@@ -39,6 +39,9 @@ describe("PromoModal", () => {
       startDate: "2025-01-01",
       endDate: "2025-12-31",
       message: "Test promotional message",
+      promoTitle: "Test Holiday Special Offer",
+      promoDescription: "Detailed description of the test holiday promotion",
+      promoImage: "https://example.com/test-image.gif",
     },
   ];
 
@@ -49,7 +52,7 @@ describe("PromoModal", () => {
 
   it("should not show modal initially", () => {
     render(<PromoModal holidays={mockHolidays} delayInSeconds={10} />);
-    expect(screen.queryByText("Test Holiday Special!")).not.toBeInTheDocument();
+    expect(screen.queryByText("Test Holiday Special Offer")).not.toBeInTheDocument();
   });
 
   it("should show modal after delay when not previously dismissed", () => {
@@ -60,8 +63,10 @@ describe("PromoModal", () => {
       jest.advanceTimersByTime(10000);
     });
 
-    expect(screen.getByText("Test Holiday Special!")).toBeInTheDocument();
+    expect(screen.getByText("Test Holiday Special Offer")).toBeInTheDocument();
     expect(screen.getByText("Test promotional message")).toBeInTheDocument();
+    expect(screen.getByText("Detailed description of the test holiday promotion")).toBeInTheDocument();
+    expect(screen.getByAltText("Test Holiday Special Offer")).toBeInTheDocument();
   });
 
   it("should not show modal if previously dismissed within persistence period", () => {
@@ -84,7 +89,7 @@ describe("PromoModal", () => {
     });
 
     // Modal should not appear
-    expect(screen.queryByText("Test Holiday Special!")).not.toBeInTheDocument();
+    expect(screen.queryByText("Test Holiday Special Offer")).not.toBeInTheDocument();
   });
 
   it("should show modal if dismissal period has expired", () => {
@@ -107,7 +112,7 @@ describe("PromoModal", () => {
     });
 
     // Modal should appear again
-    expect(screen.getByText("Test Holiday Special!")).toBeInTheDocument();
+    expect(screen.getByText("Test Holiday Special Offer")).toBeInTheDocument();
   });
 
   it("should update localStorage when modal is closed", () => {
@@ -119,7 +124,7 @@ describe("PromoModal", () => {
     });
 
     // Click the close button
-    const closeButton = screen.getByText("Got it!");
+    const closeButton = screen.getByLabelText("Close");
     fireEvent.click(closeButton);
 
     // Fast-forward animation time
