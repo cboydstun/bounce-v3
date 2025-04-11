@@ -7,11 +7,11 @@ import { getProducts } from "@/utils/api";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
 import { trackFormStart, trackFormSubmit } from "@/utils/trackInteraction";
 import { trackContactForm } from "@/utils/trackConversion";
-import { 
-  initFormTracking, 
-  trackFieldInteraction, 
+import {
+  initFormTracking,
+  trackFieldInteraction,
   trackExtrasSelection,
-  trackFormCompletion 
+  trackFormCompletion,
 } from "@/utils/formEngagementTracking";
 
 interface Specification {
@@ -61,7 +61,7 @@ interface ContactFormProps {
 const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
   const router = useRouter();
   const formInitialized = useRef(false);
-  
+
   // Initialize form tracking on mount
   useEffect(() => {
     if (!formInitialized.current) {
@@ -276,22 +276,40 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
     trackFieldInteraction("contact-form", name, "change", value);
 
     // Track extras selection for checkboxes
-    if (type === "checkbox" && ["tablesChairs", "generator", "popcornMachine", 
-        "cottonCandyMachine", "snowConeMachine", "basketballShoot", 
-        "slushyMachine", "overnight"].includes(name)) {
-      
+    if (
+      type === "checkbox" &&
+      [
+        "tablesChairs",
+        "generator",
+        "popcornMachine",
+        "cottonCandyMachine",
+        "snowConeMachine",
+        "basketballShoot",
+        "slushyMachine",
+        "overnight",
+      ].includes(name)
+    ) {
       // Count how many extras are selected after this change
       const updatedFormData = {
         ...formData,
-        [name]: checked
+        [name]: checked,
       };
-      
-      const extrasCount = Object.keys(updatedFormData).filter(key => 
-        ["tablesChairs", "generator", "popcornMachine", "cottonCandyMachine", 
-         "snowConeMachine", "basketballShoot", "slushyMachine", "overnight"].includes(key) && 
-        updatedFormData[key as keyof typeof updatedFormData] === true
+
+      const extrasCount = Object.keys(updatedFormData).filter(
+        (key) =>
+          [
+            "tablesChairs",
+            "generator",
+            "popcornMachine",
+            "cottonCandyMachine",
+            "snowConeMachine",
+            "basketballShoot",
+            "slushyMachine",
+            "overnight",
+          ].includes(key) &&
+          updatedFormData[key as keyof typeof updatedFormData] === true,
       ).length;
-      
+
       trackExtrasSelection("contact-form", extrasCount);
     }
 
@@ -332,7 +350,11 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
 
       {submitStatus === "error" && (
         <div className="bg-red-100 text-red-700 p-4 rounded-xl text-center text-lg animate-fade-in">
-          👋 Oops! Something went wrong. Please call <a href="tel:5122100194"><strong>(512)-210-0194</strong></a> for a reward!🙏 
+          👋 Oops! Something went wrong. Please call{" "}
+          <a href="tel:5122100194">
+            <strong>(512)-210-0194</strong>
+          </a>{" "}
+          for a reward!🙏
         </div>
       )}
 

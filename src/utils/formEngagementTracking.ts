@@ -15,10 +15,10 @@ export function initFormTracking(formId: string, fieldCount: number) {
   formStartTime = Date.now();
   fieldInteractions = {};
   totalFields = fieldCount;
-  
+
   // Track form view
   trackFormEngagement("form_view", formId, {
-    totalFields: totalFields
+    totalFields: totalFields,
   });
 }
 
@@ -33,30 +33,30 @@ export function trackFieldInteraction(
   formId: string,
   fieldName: string,
   interactionType: "focus" | "blur" | "change",
-  value?: string
+  value?: string,
 ) {
   // Track field focus
   if (interactionType === "focus") {
     trackFormEngagement("form_field_focus", formId, {
-      field: fieldName
+      field: fieldName,
     });
   }
-  
+
   // Track field completion on blur if field has value
   if (interactionType === "blur" && value) {
     fieldInteractions[fieldName] = true;
-    
+
     trackFormEngagement("form_field_complete", formId, {
       field: fieldName,
       fieldsCompleted: Object.keys(fieldInteractions).length,
-      totalFields: totalFields
+      totalFields: totalFields,
     });
   }
-  
+
   // For message field, track length
   if (fieldName === "message" && interactionType === "change" && value) {
     trackFormEngagement("form_message_update", formId, {
-      messageLength: value.length
+      messageLength: value.length,
     });
   }
 }
@@ -68,7 +68,7 @@ export function trackFieldInteraction(
  */
 export function trackExtrasSelection(formId: string, extrasSelected: number) {
   trackFormEngagement("form_extras_selection", formId, {
-    extrasSelected: extrasSelected
+    extrasSelected: extrasSelected,
   });
 }
 
@@ -79,27 +79,39 @@ export function trackExtrasSelection(formId: string, extrasSelected: number) {
  */
 export function trackFormCompletion(formId: string, data: any) {
   // Calculate time spent on form
-  const timeSpent = formStartTime ? Math.floor((Date.now() - formStartTime) / 1000) : 0;
-  
+  const timeSpent = formStartTime
+    ? Math.floor((Date.now() - formStartTime) / 1000)
+    : 0;
+
   // Count extras selected
-  const extrasSelected = Object.keys(data).filter(key => 
-    ["tablesChairs", "generator", "popcornMachine", "cottonCandyMachine", 
-     "snowConeMachine", "basketballShoot", "slushyMachine", "overnight"].includes(key) && 
-    data[key] === true
+  const extrasSelected = Object.keys(data).filter(
+    (key) =>
+      [
+        "tablesChairs",
+        "generator",
+        "popcornMachine",
+        "cottonCandyMachine",
+        "snowConeMachine",
+        "basketballShoot",
+        "slushyMachine",
+        "overnight",
+      ].includes(key) && data[key] === true,
   ).length;
-  
+
   // Count completed fields
-  const fieldsCompleted = Object.keys(data).filter(key => 
-    Boolean(data[key]) && key !== "sourcePage" && 
-    typeof data[key] !== "boolean"
+  const fieldsCompleted = Object.keys(data).filter(
+    (key) =>
+      Boolean(data[key]) &&
+      key !== "sourcePage" &&
+      typeof data[key] !== "boolean",
   ).length;
-  
+
   trackFormEngagement("form_completion", formId, {
     timeSpent,
     extrasSelected,
     fieldsCompleted,
     totalFields,
-    messageLength: data.message ? data.message.length : 0
+    messageLength: data.message ? data.message.length : 0,
   });
 }
 
@@ -121,7 +133,7 @@ export function trackSuccessPageEngagement(action: string, data?: any) {
 async function trackFormEngagement(
   interactionType: string,
   element: string,
-  data?: Record<string, any>
+  data?: Record<string, any>,
 ) {
   try {
     // First track using existing tracking system if it's a standard interaction type
@@ -130,17 +142,17 @@ async function trackFormEngagement(
         interactionType as InteractionType,
         element,
         window.location.pathname,
-        data
+        data,
       );
     }
-    
+
     // Get visitor ID from localStorage
     const visitorId = localStorage.getItem("visitorId");
     if (!visitorId) {
       console.warn("Cannot track form engagement: No visitor ID found");
       return;
     }
-    
+
     // Then update scores via API
     await fetch("/api/v1/visitors/score", {
       method: "POST",
@@ -156,8 +168,8 @@ async function trackFormEngagement(
           userAgent: navigator.userAgent,
           language: navigator.language,
           referrer: document.referrer || "Direct",
-          device: getDeviceType()
-        }
+          device: getDeviceType(),
+        },
       }),
     });
   } catch (error) {
@@ -179,9 +191,9 @@ function isStandardInteractionType(type: string): boolean {
     "video_play",
     "gallery_view",
     "product_view",
-    "price_check"
+    "price_check",
   ];
-  
+
   return standardTypes.includes(type as InteractionType);
 }
 

@@ -660,6 +660,18 @@ The application includes a comprehensive analytics dashboard that provides insig
 - `BookingsTrend.tsx`: Bar chart component for booking trend analysis
 - `ProductPopularity.tsx`: Horizontal bar chart for product popularity
 - `ContactCalendar.tsx`: Calendar component for visualizing bookings
+- `FormEngagementAnalytics.tsx`: Comprehensive form engagement analytics dashboard
+
+### Form Engagement Analytics
+
+- **Multi-Form Tracking**: Track engagement metrics across different forms (contact form, coupon form)
+- **Form Type Filtering**: Filter analytics by form type for targeted analysis
+- **Conversion Funnel Visualization**: Track progression from form starts to successful submissions
+- **Field Completion Analysis**: Identify which form fields cause the most friction
+- **Extras Selection Analysis**: Analyze which add-on options are most popular (for contact form)
+- **High Intent Visitor Identification**: Identify users who engaged with forms but didn't complete them
+- **Actionable Insights**: Get specific recommendations to improve form performance
+- **Abandonment Analysis**: Track where users drop off in the form completion process
 
 ## Promo Opt-ins Implementation
 

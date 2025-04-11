@@ -6,10 +6,10 @@ import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { usePackageDeals } from "@/contexts/PackageDealsContext";
 import { trackFormStart, trackFormSubmit } from "@/utils/trackInteraction";
-import { 
-  initFormTracking, 
-  trackFieldInteraction, 
-  trackFormCompletion 
+import {
+  initFormTracking,
+  trackFieldInteraction,
+  trackFormCompletion,
 } from "@/utils/formEngagementTracking";
 
 // Component to handle search params
@@ -19,7 +19,7 @@ function CouponFormContent() {
   const { setFormCompleted: setPackageDealsVisible } = usePackageDeals();
   const [promoName, setPromoName] = useState<string>("General Promotion");
   const formInitialized = useRef(false);
-  
+
   // Initialize form tracking on mount
   useEffect(() => {
     if (!formInitialized.current) {
@@ -42,7 +42,9 @@ function CouponFormContent() {
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
 
   useEffect(() => {
     const promoParam = searchParams.get("promo");
@@ -141,7 +143,7 @@ function CouponFormContent() {
     // Track form submission interaction
     trackFormSubmit("coupon-form", undefined, {
       formType: "coupon",
-      promoName: promoName
+      promoName: promoName,
     });
 
     setIsSubmitting(true);
@@ -185,7 +187,11 @@ function CouponFormContent() {
 
         {submitStatus === "error" && (
           <div className="bg-red-100 text-red-700 p-4 rounded-xl text-center text-lg animate-fade-in">
-            👋 Oops! Something went wrong. Please call <a href="tel:5122100194"><strong>(512)-210-0194</strong></a> for a reward!🙏 
+            👋 Oops! Something went wrong. Please call{" "}
+            <a href="tel:5122100194">
+              <strong>(512)-210-0194</strong>
+            </a>{" "}
+            for a reward!🙏
           </div>
         )}
 
