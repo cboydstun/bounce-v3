@@ -12,10 +12,10 @@ interface Step2Props {
 const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
   // Handle input changes
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    
+
     // Format phone number if it's the phone field
     if (name === "customerPhone") {
       dispatch({

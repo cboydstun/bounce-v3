@@ -29,7 +29,7 @@ const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold text-gray-800">Add Extras</h2>
-      
+
       <p className="text-gray-600">
         Enhance your bounce house rental with these popular add-ons!
       </p>
@@ -94,11 +94,15 @@ const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
         </div>
         <div className="flex justify-between items-center mt-2">
           <span className="text-gray-700">Extras Total:</span>
-          <span className="font-semibold">${selectedExtrasTotal.toFixed(2)}</span>
+          <span className="font-semibold">
+            ${selectedExtrasTotal.toFixed(2)}
+          </span>
         </div>
         <div className="flex justify-between items-center mt-2">
           <span className="text-gray-700">Bouncer:</span>
-          <span className="font-semibold">${state.bouncerPrice.toFixed(2)}</span>
+          <span className="font-semibold">
+            ${state.bouncerPrice.toFixed(2)}
+          </span>
         </div>
         <div className="border-t border-gray-200 my-2"></div>
         <div className="flex justify-between items-center font-semibold">

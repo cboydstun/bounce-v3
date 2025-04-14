@@ -49,7 +49,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
         // Filter for bouncer products
         const filteredBouncers = productsArray.filter((product: Bouncer) => {
           const typeSpec = product.specifications?.find(
-            (spec) => spec.name === "Type"
+            (spec) => spec.name === "Type",
           );
           if (!typeSpec) return false;
 
@@ -73,7 +73,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
         // If there's a previously selected bouncer, set the image
         if (state.selectedBouncer) {
           const selectedBouncer = bouncersWithPrice.find(
-            (b: Bouncer) => b._id === state.selectedBouncer
+            (b: Bouncer) => b._id === state.selectedBouncer,
           );
           if (selectedBouncer && selectedBouncer.images[0]?.url) {
             setSelectedBouncerImage(selectedBouncer.images[0].url);
@@ -94,7 +94,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
   const handleBouncerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
     const selectedBouncer = bouncers.find((b) => b._id === selectedId);
-    
+
     if (selectedBouncer) {
       setSelectedBouncerImage(selectedBouncer.images[0]?.url || "");
       dispatch({
@@ -155,7 +155,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
             <option value="">Choose a bouncer...</option>
             {bouncers.map((bouncer) => {
               const typeSpec = bouncer.specifications.find(
-                (spec) => spec.name === "Type"
+                (spec) => spec.name === "Type",
               );
               const type = Array.isArray(typeSpec?.value)
                 ? typeSpec.value.join("/")
@@ -301,39 +301,45 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
       </div>
 
       {/* Validation Message */}
-      {state.deliveryDate && state.pickupDate && state.deliveryTime && state.pickupTime && (
-        <div className="bg-blue-50 p-4 rounded-md">
-          <p className="text-blue-800">
-            Your rental will be delivered on{" "}
-            <strong>
-              {new Date(state.deliveryDate).toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}{" "}
-              at{" "}
-              {new Date(`2000-01-01T${state.deliveryTime}`).toLocaleTimeString(
-                "en-US",
-                { hour: "numeric", minute: "numeric", hour12: true }
-              )}
-            </strong>{" "}
-            and picked up on{" "}
-            <strong>
-              {new Date(state.pickupDate).toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}{" "}
-              at{" "}
-              {new Date(`2000-01-01T${state.pickupTime}`).toLocaleTimeString(
-                "en-US",
-                { hour: "numeric", minute: "numeric", hour12: true }
-              )}
-            </strong>
-            .
-          </p>
-        </div>
-      )}
+      {state.deliveryDate &&
+        state.pickupDate &&
+        state.deliveryTime &&
+        state.pickupTime && (
+          <div className="bg-blue-50 p-4 rounded-md">
+            <p className="text-blue-800">
+              Your rental will be delivered on{" "}
+              <strong>
+                {new Date(state.deliveryDate).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}{" "}
+                at{" "}
+                {new Date(
+                  `2000-01-01T${state.deliveryTime}`,
+                ).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "numeric",
+                  hour12: true,
+                })}
+              </strong>{" "}
+              and picked up on{" "}
+              <strong>
+                {new Date(state.pickupDate).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}{" "}
+                at{" "}
+                {new Date(`2000-01-01T${state.pickupTime}`).toLocaleTimeString(
+                  "en-US",
+                  { hour: "numeric", minute: "numeric", hour12: true },
+                )}
+              </strong>
+              .
+            </p>
+          </div>
+        )}
     </div>
   );
 };

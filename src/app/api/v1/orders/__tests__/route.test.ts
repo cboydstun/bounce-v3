@@ -1,7 +1,10 @@
 import { NextRequest } from "next/server";
 import { GET, POST } from "../route";
 import { GET as GET_BY_ID, PUT, DELETE } from "../[id]/route";
-import { POST as INITIATE_PAYMENT, PATCH as UPDATE_PAYMENT } from "../[id]/payment/route";
+import {
+  POST as INITIATE_PAYMENT,
+  PATCH as UPDATE_PAYMENT,
+} from "../[id]/payment/route";
 import * as dbHandler from "@/lib/test/db-handler";
 import Order from "@/models/Order";
 import Contact from "@/models/Contact";
@@ -52,17 +55,17 @@ describe("Orders API", () => {
     );
 
     // Create test contact
-    const contact = await Contact.create({
+    const contact = (await Contact.create({
       bouncer: "Test Bouncer",
       email: "test@example.com",
       partyDate: new Date("2025-05-15"),
       partyZipCode: "12345",
       sourcePage: "website",
-    }) as mongoose.Document & { _id: mongoose.Types.ObjectId };
+    })) as mongoose.Document & { _id: mongoose.Types.ObjectId };
     contactId = contact._id.toString();
 
     // Create test order
-    const order = await Order.create({
+    const order = (await Order.create({
       contactId,
       orderNumber: "BB-2024-0001",
       items: [
@@ -85,7 +88,7 @@ describe("Orders API", () => {
       status: "Pending",
       paymentStatus: "Pending",
       paymentMethod: "paypal",
-    }) as mongoose.Document & { _id: mongoose.Types.ObjectId };
+    })) as mongoose.Document & { _id: mongoose.Types.ObjectId };
     orderId = order._id.toString();
   });
 
@@ -93,7 +96,7 @@ describe("Orders API", () => {
   const testListAuthProtection = async () => {
     // Set global auth state to unauthenticated
     global.mockAuthState.authenticated = false;
-    
+
     // Test without authentication
     const reqWithoutAuth = new NextRequest(
       `http://localhost:3000/api/v1/orders`,
@@ -181,7 +184,7 @@ describe("Orders API", () => {
     it("should return 401 if user is not authenticated", async () => {
       // Set global auth state to unauthenticated
       global.mockAuthState.authenticated = false;
-      
+
       const req = new NextRequest("http://localhost:3000/api/v1/orders");
       const response = await GET(req);
       expect(response.status).toBe(401);
@@ -290,7 +293,9 @@ describe("Orders API", () => {
       expect(response.status).toBe(400);
 
       const data = await response.json();
-      expect(data.error).toBe("Either contactId or customer email must be provided");
+      expect(data.error).toBe(
+        "Either contactId or customer email must be provided",
+      );
     });
 
     it("should create a new order with contactId", async () => {
@@ -371,10 +376,10 @@ describe("Orders API", () => {
       expect(data.status).toBe("Pending");
       expect(data.paymentStatus).toBe("Pending");
     });
-    
+
     it("should update contact status to Converted when creating an order from contact", async () => {
       // Create a test contact with required fields for conversion
-      const testContact = await Contact.create({
+      const testContact = (await Contact.create({
         bouncer: "Conversion Test Bouncer",
         email: "conversion@example.com",
         partyDate: new Date("2025-06-15"),
@@ -382,8 +387,8 @@ describe("Orders API", () => {
         sourcePage: "website",
         streetAddress: "123 Test St",
         partyStartTime: "14:00",
-      }) as mongoose.Document & { _id: mongoose.Types.ObjectId };
-      
+      })) as mongoose.Document & { _id: mongoose.Types.ObjectId };
+
       const orderData = {
         contactId: testContact._id.toString(),
         items: [
@@ -411,15 +416,15 @@ describe("Orders API", () => {
       // Verify the order was created
       const data = await response.json();
       expect(data.contactId.toString()).toBe(testContact._id.toString());
-      
+
       // Verify the contact status was updated to "Converted"
       const updatedContact = await Contact.findById(testContact._id);
       expect(updatedContact?.confirmed).toBe("Converted");
     });
-    
+
     it("should prevent creating duplicate orders for the same contact", async () => {
       // Create a test contact
-      const testContact = await Contact.create({
+      const testContact = (await Contact.create({
         bouncer: "Duplicate Test Bouncer",
         email: "duplicate@example.com",
         partyDate: new Date("2025-07-15"),
@@ -427,8 +432,8 @@ describe("Orders API", () => {
         sourcePage: "website",
         streetAddress: "123 Test St",
         partyStartTime: "14:00",
-      }) as mongoose.Document & { _id: mongoose.Types.ObjectId };
-      
+      })) as mongoose.Document & { _id: mongoose.Types.ObjectId };
+
       // Create first order
       const orderData = {
         contactId: testContact._id.toString(),
@@ -453,7 +458,7 @@ describe("Orders API", () => {
 
       const firstResponse = await POST(firstReq);
       expect(firstResponse.status).toBe(201);
-      
+
       // Attempt to create second order for the same contact
       const secondReq = new NextRequest("http://localhost:3000/api/v1/orders", {
         method: "POST",
@@ -462,9 +467,11 @@ describe("Orders API", () => {
 
       const secondResponse = await POST(secondReq);
       expect(secondResponse.status).toBe(400);
-      
+
       const errorData = await secondResponse.json();
-      expect(errorData.error).toContain("An order already exists for this contact");
+      expect(errorData.error).toContain(
+        "An order already exists for this contact",
+      );
     });
   });
 
@@ -621,7 +628,9 @@ describe("Orders API", () => {
       const response = await DELETE(reqWithAdmin, params);
       expect(response.status).toBe(400);
       const data = await response.json();
-      expect(data.error).toBe("Cannot delete orders with Paid or Confirmed status");
+      expect(data.error).toBe(
+        "Cannot delete orders with Paid or Confirmed status",
+      );
     });
   });
 
@@ -675,7 +684,7 @@ describe("Orders API", () => {
 
     it("should update order with payment transaction details", async () => {
       // Create a fresh order for this test to avoid interference from other tests
-      const freshOrder = await Order.create({
+      const freshOrder = (await Order.create({
         contactId,
         orderNumber: "BB-2024-9999",
         items: [
@@ -698,8 +707,8 @@ describe("Orders API", () => {
         status: "Pending",
         paymentStatus: "Pending",
         paymentMethod: "paypal",
-      }) as mongoose.Document & { _id: mongoose.Types.ObjectId };
-      
+      })) as mongoose.Document & { _id: mongoose.Types.ObjectId };
+
       const freshOrderId = freshOrder._id.toString();
       const params = {
         params: Promise.resolve({ id: freshOrderId }),
@@ -729,7 +738,9 @@ describe("Orders API", () => {
       expect(data.order.status).toBe("Paid");
       expect(data.order.balanceDue).toBe(0);
       expect(data.order.paypalTransactions).toHaveLength(1);
-      expect(data.order.paypalTransactions[0].transactionId).toBe("PAY-123456789");
+      expect(data.order.paypalTransactions[0].transactionId).toBe(
+        "PAY-123456789",
+      );
     });
 
     it("should handle partial payment (deposit)", async () => {

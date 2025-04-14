@@ -561,9 +561,11 @@ export const getOrders = async (params?: {
   if (params?.startDate) queryParams.append("startDate", params.startDate);
   if (params?.endDate) queryParams.append("endDate", params.endDate);
   if (params?.status) queryParams.append("status", params.status);
-  if (params?.paymentStatus) queryParams.append("paymentStatus", params.paymentStatus);
+  if (params?.paymentStatus)
+    queryParams.append("paymentStatus", params.paymentStatus);
   if (params?.contactId) queryParams.append("contactId", params.contactId);
-  if (params?.orderNumber) queryParams.append("orderNumber", params.orderNumber);
+  if (params?.orderNumber)
+    queryParams.append("orderNumber", params.orderNumber);
 
   const queryString = queryParams.toString();
   const url = queryString ? `/api/v1/orders?${queryString}` : "/api/v1/orders";
@@ -614,7 +616,7 @@ export const createOrder = async (orderData: {
 
 export const updateOrder = async (
   id: string,
-  orderData: Partial<Parameters<typeof createOrder>[0]>
+  orderData: Partial<Parameters<typeof createOrder>[0]>,
 ) => {
   const response = await api.put(`/api/v1/orders/${id}`, orderData);
   return response.data;
@@ -627,10 +629,12 @@ export const deleteOrder = async (id: string) => {
 
 export const createOrderFromContact = async (
   contactId: string,
-  orderData: Partial<Omit<Parameters<typeof createOrder>[0], 'items' | 'paymentMethod'>> & { 
-    items: Parameters<typeof createOrder>[0]['items'],
-    paymentMethod: Parameters<typeof createOrder>[0]['paymentMethod']
-  }
+  orderData: Partial<
+    Omit<Parameters<typeof createOrder>[0], "items" | "paymentMethod">
+  > & {
+    items: Parameters<typeof createOrder>[0]["items"];
+    paymentMethod: Parameters<typeof createOrder>[0]["paymentMethod"];
+  },
 ) => {
   // Check if an order already exists for this contact
   const existingOrders = await getOrders({ contactId });
@@ -641,15 +645,15 @@ export const createOrderFromContact = async (
   // Combine contact ID with order data
   const data = {
     ...orderData,
-    contactId
+    contactId,
   };
-  
+
   // Create the order
   const order = await createOrder(data);
-  
+
   // Mark the contact as converted
   await updateContact(contactId, { confirmed: "Converted" });
-  
+
   return order;
 };
 

@@ -13,7 +13,7 @@ describe("Payment API", () => {
 
   beforeEach(async () => {
     // Create a test order
-    const order = await Order.create({
+    const order = (await Order.create({
       customerName: "Test Customer",
       customerEmail: "test@example.com",
       customerPhone: "(123)-456-7890",
@@ -42,8 +42,8 @@ describe("Payment API", () => {
       status: "Pending",
       paymentStatus: "Pending",
       paymentMethod: "paypal",
-    }) as mongoose.Document & { _id: mongoose.Types.ObjectId };
-    
+    })) as mongoose.Document & { _id: mongoose.Types.ObjectId };
+
     orderId = order._id.toString();
   });
 
@@ -60,7 +60,7 @@ describe("Payment API", () => {
           body: JSON.stringify({
             amount: 186.88,
           }),
-        }
+        },
       );
 
       const response = await POST(req, params);
@@ -83,7 +83,7 @@ describe("Payment API", () => {
           body: JSON.stringify({
             amount: 186.88,
           }),
-        }
+        },
       );
 
       const response = await POST(req, params);
@@ -103,7 +103,7 @@ describe("Payment API", () => {
         {
           method: "POST",
           body: JSON.stringify({}),
-        }
+        },
       );
 
       const response = await POST(req, params);
@@ -125,7 +125,7 @@ describe("Payment API", () => {
           body: JSON.stringify({
             amount: 100, // Neither total (186.88) nor deposit (50)
           }),
-        }
+        },
       );
 
       const response = await POST(req, params);
@@ -147,7 +147,7 @@ describe("Payment API", () => {
           body: JSON.stringify({
             amount: 186.88, // Full amount
           }),
-        }
+        },
       );
 
       const response = await POST(req, params);
@@ -172,7 +172,7 @@ describe("Payment API", () => {
           body: JSON.stringify({
             amount: 50, // Deposit amount
           }),
-        }
+        },
       );
 
       const response = await POST(req, params);
@@ -199,7 +199,7 @@ describe("Payment API", () => {
           body: JSON.stringify({
             // Missing required fields
           }),
-        }
+        },
       );
 
       const response = await PATCH(req, params);
@@ -226,7 +226,7 @@ describe("Payment API", () => {
             currency: "USD",
             status: "COMPLETED",
           }),
-        }
+        },
       );
 
       const response = await PATCH(req, params);
@@ -238,7 +238,9 @@ describe("Payment API", () => {
       expect(data.order.status).toBe("Paid");
       expect(data.order.balanceDue).toBe(0);
       expect(data.order.paypalTransactions).toHaveLength(1);
-      expect(data.order.paypalTransactions[0].transactionId).toBe("PAY-123456789");
+      expect(data.order.paypalTransactions[0].transactionId).toBe(
+        "PAY-123456789",
+      );
     });
 
     it("should record deposit payment and update payment status", async () => {
@@ -258,7 +260,7 @@ describe("Payment API", () => {
             currency: "USD",
             status: "COMPLETED",
           }),
-        }
+        },
       );
 
       const response = await PATCH(req, params);
@@ -270,7 +272,9 @@ describe("Payment API", () => {
       expect(data.order.status).toBe("Pending"); // Status remains Pending
       expect(data.order.balanceDue).toBe(136.88); // Total - deposit
       expect(data.order.paypalTransactions).toHaveLength(1);
-      expect(data.order.paypalTransactions[0].transactionId).toBe("PAY-123456789");
+      expect(data.order.paypalTransactions[0].transactionId).toBe(
+        "PAY-123456789",
+      );
     });
   });
 });

@@ -25,7 +25,7 @@ const PayPalButton: React.FC<PayPalButtonProps> = ({
 }) => {
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [buttonRendered, setButtonRendered] = useState(false);
-  
+
   // Load the PayPal SDK script
   useEffect(() => {
     // Check if script is already loaded
@@ -33,23 +33,23 @@ const PayPalButton: React.FC<PayPalButtonProps> = ({
       setScriptLoaded(true);
       return;
     }
-    
+
     const script = document.createElement("script");
     script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&currency=USD`;
     script.async = true;
-    
+
     script.onload = () => {
       console.log("PayPal SDK loaded successfully");
       setScriptLoaded(true);
     };
-    
+
     script.onerror = (error) => {
       console.error("PayPal SDK could not be loaded.", error);
       onError(new Error("PayPal SDK could not be loaded."));
     };
-    
+
     document.body.appendChild(script);
-    
+
     return () => {
       // Only remove the script if we added it
       if (document.body.contains(script)) {
@@ -57,17 +57,19 @@ const PayPalButton: React.FC<PayPalButtonProps> = ({
       }
     };
   }, [onError]);
-  
+
   // Render the PayPal button once the script is loaded
   useEffect(() => {
     if (!scriptLoaded || buttonRendered || disabled) return;
-    
-    const paypalButtonContainer = document.getElementById("paypal-button-container");
+
+    const paypalButtonContainer = document.getElementById(
+      "paypal-button-container",
+    );
     if (!paypalButtonContainer) return;
-    
+
     // Clear any existing buttons
     paypalButtonContainer.innerHTML = "";
-    
+
     try {
       window.paypal
         .Buttons({
@@ -124,14 +126,14 @@ const PayPalButton: React.FC<PayPalButtonProps> = ({
       onError(error);
     }
   }, [scriptLoaded, amount, onSuccess, onError, buttonRendered, disabled]);
-  
+
   // If the amount changes, we need to re-render the button
   useEffect(() => {
     if (buttonRendered) {
       setButtonRendered(false);
     }
   }, [amount]);
-  
+
   return (
     <div className="w-full my-4">
       {disabled ? (

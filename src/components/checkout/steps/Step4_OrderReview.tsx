@@ -10,10 +10,10 @@ interface Step4Props {
   onEditStep: (step: number) => void;
 }
 
-const Step4_OrderReview: React.FC<Step4Props> = ({ 
-  state, 
+const Step4_OrderReview: React.FC<Step4Props> = ({
+  state,
   dispatch,
-  onEditStep = (step) => dispatch({ type: "GO_TO_STEP", payload: step })
+  onEditStep = (step) => dispatch({ type: "GO_TO_STEP", payload: step }),
 }) => {
   // Recalculate prices when component mounts
   useEffect(() => {
@@ -47,8 +47,10 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-gray-800">Review Your Order</h2>
-      
+      <h2 className="text-2xl font-semibold text-gray-800">
+        Review Your Order
+      </h2>
+
       <p className="text-gray-600">
         Please review your order details before proceeding to payment.
       </p>
@@ -57,7 +59,9 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-800">Rental Details</h3>
+            <h3 className="text-lg font-medium text-gray-800">
+              Rental Details
+            </h3>
             <button
               type="button"
               onClick={() => onEditStep(1)}
@@ -75,7 +79,8 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
           <div className="flex justify-between">
             <span className="text-gray-600">Delivery Date:</span>
             <span className="font-medium">
-              {formatDate(state.deliveryDate)} at {formatTime(state.deliveryTime)}
+              {formatDate(state.deliveryDate)} at{" "}
+              {formatTime(state.deliveryTime)}
             </span>
           </div>
           <div className="flex justify-between">
@@ -91,7 +96,9 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-800">Delivery Information</h3>
+            <h3 className="text-lg font-medium text-gray-800">
+              Delivery Information
+            </h3>
             <button
               type="button"
               onClick={() => onEditStep(2)}
@@ -117,7 +124,8 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
           <div className="flex justify-between">
             <span className="text-gray-600">Address:</span>
             <span className="font-medium">
-              {state.customerAddress}, {state.customerCity}, {state.customerState} {state.customerZipCode}
+              {state.customerAddress}, {state.customerCity},{" "}
+              {state.customerState} {state.customerZipCode}
             </span>
           </div>
           {state.deliveryInstructions && (
@@ -133,7 +141,9 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-800">Selected Extras</h3>
+            <h3 className="text-lg font-medium text-gray-800">
+              Selected Extras
+            </h3>
             <button
               type="button"
               onClick={() => onEditStep(3)}
@@ -169,7 +179,9 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
         <div className="p-4 space-y-3">
           <div className="flex justify-between">
             <span className="text-gray-600">Bouncer:</span>
-            <span className="font-medium">${state.bouncerPrice.toFixed(2)}</span>
+            <span className="font-medium">
+              ${state.bouncerPrice.toFixed(2)}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Extras:</span>
@@ -191,7 +203,9 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Processing Fee (3%):</span>
-            <span className="font-medium">${state.processingFee.toFixed(2)}</span>
+            <span className="font-medium">
+              ${state.processingFee.toFixed(2)}
+            </span>
           </div>
           {state.discountAmount > 0 && (
             <div className="flex justify-between text-green-600">
@@ -234,11 +248,7 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
       <div className="bg-blue-50 p-4 rounded-md">
         <p className="text-blue-800 text-sm">
           By proceeding to payment, you agree to our{" "}
-          <a
-            href="/tos"
-            target="_blank"
-            className="underline font-medium"
-          >
+          <a href="/tos" target="_blank" className="underline font-medium">
             Terms of Service
           </a>{" "}
           and{" "}

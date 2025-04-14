@@ -4,7 +4,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { getContactById, createOrderFromContact, getProducts } from "@/utils/api";
+import {
+  getContactById,
+  createOrderFromContact,
+  getProducts,
+} from "@/utils/api";
 import { OrderStatus, PaymentStatus, PaymentMethod } from "@/types/order";
 import { Contact } from "@/types/contact";
 import { ProductWithId } from "@/types/product";
@@ -85,13 +89,13 @@ export default function ConvertContactToOrder({ params }: PageProps) {
   // Check for missing required fields
   const validateRequiredFields = useCallback(() => {
     const missing: string[] = [];
-    
+
     // Check if contact has required fields
     if (contact) {
       if (!contact.streetAddress) missing.push("Street Address");
       if (!contact.partyStartTime) missing.push("Party Start Time");
     }
-    
+
     setMissingFields(missing);
     return missing.length === 0;
   }, [contact]);
@@ -106,14 +110,14 @@ export default function ConvertContactToOrder({ params }: PageProps) {
 
         // Use the getContactById function from the API client
         const contactData = await getContactById(resolvedParams.id);
-        
+
         // Check if contact is already converted
         if (contactData.confirmed === "Converted") {
           setError("This contact has already been converted to an order");
           setContact(contactData);
           return;
         }
-        
+
         setContact(contactData);
 
         // Initialize form data with contact information
@@ -190,7 +194,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
   const fetchProductPrices = async (items: OrderItem[]) => {
     try {
       setIsLoadingProducts(true);
-      
+
       // Map of extra field names to their display names
       const extraNameMap: Record<string, string> = {
         tablesChairs: "Tables & Chairs",
@@ -202,68 +206,67 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         slushyMachine: "Slushy Machine",
         overnight: "Overnight Rental",
       };
-      
+
       // Create a list of product names to search for
-      const productNames = items.map(item => item.name);
-      
+      const productNames = items.map((item) => item.name);
+
       // Fetch products that match these names
       const productsResponse = await getProducts();
       const products = productsResponse.products || [];
-      
+
       // Create a map of product names to prices
       const productPriceMap = new Map();
       products.forEach((product: ProductWithId) => {
         productPriceMap.set(product.name, product.price.base);
-        
+
         // Also map display names of extras to their prices
-        Object.values(extraNameMap).forEach(displayName => {
+        Object.values(extraNameMap).forEach((displayName) => {
           if (product.name.includes(displayName)) {
             productPriceMap.set(displayName, product.price.base);
           }
         });
       });
-      
+
       // Update items with prices from products
-      const updatedItems = items.map(item => {
+      const updatedItems = items.map((item) => {
         const price = productPriceMap.get(item.name);
         if (price) {
           return {
             ...item,
             unitPrice: price,
-            totalPrice: price * item.quantity
+            totalPrice: price * item.quantity,
           };
         }
         return item;
       });
-      
+
       // Calculate totals
       const subtotal = updatedItems.reduce(
         (sum, item) => sum + item.totalPrice,
-        0
+        0,
       );
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount = Math.round(
-        (subtotal +
-          formData.taxAmount +
-          formData.deliveryFee +
-          processingFee -
-          formData.discountAmount) *
-          100
-      ) / 100;
-      const balanceDue = Math.round(
-        (totalAmount - formData.depositAmount) * 100
-      ) / 100;
-      
+      const totalAmount =
+        Math.round(
+          (subtotal +
+            formData.taxAmount +
+            formData.deliveryFee +
+            processingFee -
+            formData.discountAmount) *
+            100,
+        ) / 100;
+      const balanceDue =
+        Math.round((totalAmount - formData.depositAmount) * 100) / 100;
+
       // Update form data with new items and calculated values
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         items: updatedItems,
         subtotal,
         processingFee,
         totalAmount,
-        balanceDue
+        balanceDue,
       }));
-      
     } catch (error) {
       console.error("Error fetching product prices:", error);
       // Don't set an error message, just log it
@@ -279,15 +282,17 @@ export default function ConvertContactToOrder({ params }: PageProps) {
       return;
     }
     e.preventDefault();
-    
+
     // Reset error and success messages
     setError(null);
     setSuccess(null);
-    
+
     // Check if contact has required fields
     const isValid = validateRequiredFields();
     if (!isValid) {
-      setError(`Contact is missing required fields: ${missingFields.join(", ")}. Please update the contact with this information before converting to an order.`);
+      setError(
+        `Contact is missing required fields: ${missingFields.join(", ")}. Please update the contact with this information before converting to an order.`,
+      );
       return;
     }
 
@@ -311,10 +316,12 @@ export default function ConvertContactToOrder({ params }: PageProps) {
 
       // Use the createOrderFromContact function from the API client
       const order = await createOrderFromContact(resolvedParams.id, formData);
-      
+
       // Show success message
-      setSuccess(`Order created successfully! Order number: ${order.orderNumber}`);
-      
+      setSuccess(
+        `Order created successfully! Order number: ${order.orderNumber}`,
+      );
+
       // Wait a moment before redirecting
       setTimeout(() => {
         // Navigate back to orders list
@@ -349,8 +356,8 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         type === "checkbox"
           ? (e.target as HTMLInputElement).checked
           : type === "number"
-          ? parseFloat(value)
-          : value,
+            ? parseFloat(value)
+            : value,
     }));
   };
 
@@ -370,17 +377,17 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         0,
       );
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount = Math.round(
-        (subtotal +
-          prev.taxAmount +
-          prev.deliveryFee +
-          processingFee -
-          prev.discountAmount) *
-          100,
-      ) / 100;
-      const balanceDue = Math.round(
-        (totalAmount - prev.depositAmount) * 100,
-      ) / 100;
+      const totalAmount =
+        Math.round(
+          (subtotal +
+            prev.taxAmount +
+            prev.deliveryFee +
+            processingFee -
+            prev.discountAmount) *
+            100,
+        ) / 100;
+      const balanceDue =
+        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
@@ -415,17 +422,17 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         0,
       );
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount = Math.round(
-        (subtotal +
-          prev.taxAmount +
-          prev.deliveryFee +
-          processingFee -
-          prev.discountAmount) *
-          100,
-      ) / 100;
-      const balanceDue = Math.round(
-        (totalAmount - prev.depositAmount) * 100,
-      ) / 100;
+      const totalAmount =
+        Math.round(
+          (subtotal +
+            prev.taxAmount +
+            prev.deliveryFee +
+            processingFee -
+            prev.discountAmount) *
+            100,
+        ) / 100;
+      const balanceDue =
+        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
@@ -453,17 +460,17 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         0,
       );
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount = Math.round(
-        (subtotal +
-          prev.taxAmount +
-          prev.deliveryFee +
-          processingFee -
-          prev.discountAmount) *
-          100,
-      ) / 100;
-      const balanceDue = Math.round(
-        (totalAmount - prev.depositAmount) * 100,
-      ) / 100;
+      const totalAmount =
+        Math.round(
+          (subtotal +
+            prev.taxAmount +
+            prev.deliveryFee +
+            processingFee -
+            prev.discountAmount) *
+            100,
+        ) / 100;
+      const balanceDue =
+        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
@@ -483,17 +490,17 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         0,
       );
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount = Math.round(
-        (subtotal +
-          prev.taxAmount +
-          prev.deliveryFee +
-          processingFee -
-          prev.discountAmount) *
-          100,
-      ) / 100;
-      const balanceDue = Math.round(
-        (totalAmount - prev.depositAmount) * 100,
-      ) / 100;
+      const totalAmount =
+        Math.round(
+          (subtotal +
+            prev.taxAmount +
+            prev.deliveryFee +
+            processingFee -
+            prev.discountAmount) *
+            100,
+        ) / 100;
+      const balanceDue =
+        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
@@ -508,21 +515,21 @@ export default function ConvertContactToOrder({ params }: PageProps) {
   const handleAddTask = () => {
     const taskInput = document.getElementById("new-task") as HTMLInputElement;
     const taskValue = taskInput.value.trim();
-    
+
     if (!taskValue) return;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      tasks: [...(prev.tasks || []), taskValue]
+      tasks: [...(prev.tasks || []), taskValue],
     }));
-    
+
     taskInput.value = "";
   };
 
   const handleRemoveTask = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      tasks: prev.tasks?.filter((_, i) => i !== index)
+      tasks: prev.tasks?.filter((_, i) => i !== index),
     }));
   };
 
@@ -556,9 +563,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-gray-500">Name/Email</p>
-              <p className="text-sm text-gray-900">
-                {contact.email}
-              </p>
+              <p className="text-sm text-gray-900">{contact.email}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Phone</p>
@@ -576,7 +581,9 @@ export default function ConvertContactToOrder({ params }: PageProps) {
             </div>
             <div className="md:col-span-2">
               <p className="text-sm font-medium text-gray-500">Message</p>
-              <p className="text-sm text-gray-900">{contact.message || "N/A"}</p>
+              <p className="text-sm text-gray-900">
+                {contact.message || "N/A"}
+              </p>
             </div>
           </div>
         </div>
@@ -587,13 +594,13 @@ export default function ConvertContactToOrder({ params }: PageProps) {
           {error}
         </div>
       )}
-      
+
       {success && (
         <div className="mb-4 p-4 bg-green-50 text-green-700 rounded-md">
           {success}
         </div>
       )}
-      
+
       {missingFields.length > 0 && (
         <div className="mb-4 p-4 bg-yellow-50 text-yellow-700 rounded-md">
           <p className="font-medium">Contact is missing required fields:</p>
@@ -602,7 +609,10 @@ export default function ConvertContactToOrder({ params }: PageProps) {
               <li key={index}>{field}</li>
             ))}
           </ul>
-          <p className="mt-2">Please update the contact with this information before converting to an order.</p>
+          <p className="mt-2">
+            Please update the contact with this information before converting to
+            an order.
+          </p>
         </div>
       )}
 
@@ -669,7 +679,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         {/* Order Items */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-lg font-medium mb-4">Order Items</h2>
-          
+
           {/* Existing Items */}
           {formData.items.length > 0 && (
             <div className="mb-6">
@@ -678,30 +688,69 @@ export default function ConvertContactToOrder({ params }: PageProps) {
                 <table className="min-w-full divide-y divide-gray-300">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">Type</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Name</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Quantity</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Unit Price</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Total</th>
-                      <th scope="col" className="relative py-3.5 pl-3 pr-4"></th>
+                      <th
+                        scope="col"
+                        className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Type
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Name
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Quantity
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Unit Price
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Total
+                      </th>
+                      <th
+                        scope="col"
+                        className="relative py-3.5 pl-3 pr-4"
+                      ></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {formData.items.map((item, index) => (
                       <tr key={index}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500">
-                          {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                          {item.type.charAt(0).toUpperCase() +
+                            item.type.slice(1)}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {item.name}
-                          {item.description && <div className="text-xs text-gray-400">{item.description}</div>}
+                          {item.description && (
+                            <div className="text-xs text-gray-400">
+                              {item.description}
+                            </div>
+                          )}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           <input
                             type="number"
                             min="1"
                             value={item.quantity}
-                            onChange={(e) => handleItemPriceChange(index, "quantity", parseInt(e.target.value))}
+                            onChange={(e) =>
+                              handleItemPriceChange(
+                                index,
+                                "quantity",
+                                parseInt(e.target.value),
+                              )
+                            }
                             className="w-16 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                           />
                         </td>
@@ -711,10 +760,16 @@ export default function ConvertContactToOrder({ params }: PageProps) {
                             min="0"
                             step="0.01"
                             value={item.unitPrice}
-                            onChange={(e) => handleItemPriceChange(index, "unitPrice", parseFloat(e.target.value))}
+                            onChange={(e) =>
+                              handleItemPriceChange(
+                                index,
+                                "unitPrice",
+                                parseFloat(e.target.value),
+                              )
+                            }
                             className={`w-24 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-                              item.unitPrice <= 0 
-                                ? "border-yellow-500 bg-yellow-50" 
+                              item.unitPrice <= 0
+                                ? "border-yellow-500 bg-yellow-50"
                                 : "border-gray-300"
                             }`}
                           />
@@ -743,7 +798,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
               </div>
             </div>
           )}
-          
+
           {/* Add New Item */}
           <div className="mt-4">
             <h3 className="text-md font-medium mb-2">Add Additional Item</h3>
@@ -791,7 +846,9 @@ export default function ConvertContactToOrder({ params }: PageProps) {
                     type="number"
                     min="1"
                     value={newItemQuantity}
-                    onChange={(e) => setNewItemQuantity(parseInt(e.target.value))}
+                    onChange={(e) =>
+                      setNewItemQuantity(parseInt(e.target.value))
+                    }
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </label>
@@ -804,7 +861,9 @@ export default function ConvertContactToOrder({ params }: PageProps) {
                     min="0"
                     step="0.01"
                     value={newItemUnitPrice}
-                    onChange={(e) => setNewItemUnitPrice(parseFloat(e.target.value))}
+                    onChange={(e) =>
+                      setNewItemUnitPrice(parseFloat(e.target.value))
+                    }
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </label>
@@ -957,18 +1016,21 @@ export default function ConvertContactToOrder({ params }: PageProps) {
                 />
               </label>
             </div>
-            
+
             {/* Tasks */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tasks
               </label>
-              
+
               {/* Existing Tasks */}
               {formData.tasks && formData.tasks.length > 0 && (
                 <ul className="mb-4 space-y-2">
                   {formData.tasks.map((task, index) => (
-                    <li key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                    <li
+                      key={index}
+                      className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                    >
                       <span className="text-sm text-gray-700">{task}</span>
                       <button
                         type="button"
@@ -981,7 +1043,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
                   ))}
                 </ul>
               )}
-              
+
               {/* Add Task */}
               <div className="flex items-center">
                 <input

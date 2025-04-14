@@ -26,7 +26,7 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
           step_label: getStepLabel(currentStep),
         });
       }
-      
+
       // Log to console in development
       if (process.env.NODE_ENV === "development") {
         console.log(`Checkout step: ${currentStep}`, {
@@ -38,7 +38,7 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
       console.error("Error tracking checkout step:", error);
     }
   }, [currentStep]);
-  
+
   // Track form completion
   useEffect(() => {
     if (currentStep === "payment" && formData.paymentComplete) {
@@ -56,8 +56,8 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
                 price: formData.bouncerPrice,
               },
               ...formData.extras
-                .filter(extra => extra.selected)
-                .map(extra => ({
+                .filter((extra) => extra.selected)
+                .map((extra) => ({
                   item_id: extra.id,
                   item_name: extra.name,
                   price: extra.price,
@@ -71,7 +71,7 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
       }
     }
   }, [currentStep, formData.paymentComplete]);
-  
+
   // Helper function to get step label
   const getStepLabel = (step: OrderStep): string => {
     switch (step) {
@@ -89,7 +89,7 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
         return step;
     }
   };
-  
+
   // This component doesn't render anything
   return null;
 };

@@ -955,14 +955,16 @@ export default function AdminContacts() {
                           Edit
                         </Link>
                         {/* Convert to Order button - only show if not already converted and has required fields */}
-                        {contact.confirmed !== "Converted" && contact.streetAddress && contact.partyStartTime && (
-                          <Link
-                            href={`/admin/contacts/${contact.id}/convert-to-order`}
-                            className="text-green-600 hover:text-green-900 mr-4"
-                          >
-                            Convert to Order
-                          </Link>
-                        )}
+                        {contact.confirmed !== "Converted" &&
+                          contact.streetAddress &&
+                          contact.partyStartTime && (
+                            <Link
+                              href={`/admin/contacts/${contact.id}/convert-to-order`}
+                              className="text-green-600 hover:text-green-900 mr-4"
+                            >
+                              Convert to Order
+                            </Link>
+                          )}
                         <button
                           onClick={() => handleDelete(contact.id)}
                           className="text-red-600 hover:text-red-900"

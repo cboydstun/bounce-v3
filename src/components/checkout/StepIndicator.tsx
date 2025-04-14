@@ -22,7 +22,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
           const stepNumber = index + 1;
           const isActive = stepNumber === currentStep;
           const isCompleted = stepNumber < currentStep;
-          
+
           return (
             <div
               key={stepNumber}
@@ -37,15 +37,15 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
                   style={{ transform: "translateX(50%)" }}
                 />
               )}
-              
+
               {/* Step circle */}
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center z-10 ${
                   isActive
                     ? "bg-primary-purple text-white"
                     : isCompleted
-                    ? "bg-primary-purple text-white"
-                    : "bg-gray-300 text-gray-600"
+                      ? "bg-primary-purple text-white"
+                      : "bg-gray-300 text-gray-600"
                 }`}
               >
                 {isCompleted ? (
@@ -65,7 +65,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
                   stepNumber
                 )}
               </div>
-              
+
               {/* Step label */}
               <span
                 className={`mt-2 text-xs sm:text-sm font-medium ${

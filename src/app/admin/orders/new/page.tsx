@@ -131,8 +131,8 @@ export default function NewOrder() {
         type === "checkbox"
           ? (e.target as HTMLInputElement).checked
           : type === "number"
-          ? parseFloat(value)
-          : value,
+            ? parseFloat(value)
+            : value,
     }));
   };
 
@@ -158,17 +158,17 @@ export default function NewOrder() {
         0,
       );
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount = Math.round(
-        (subtotal +
-          prev.taxAmount +
-          prev.deliveryFee +
-          processingFee -
-          prev.discountAmount) *
-          100,
-      ) / 100;
-      const balanceDue = Math.round(
-        (totalAmount - prev.depositAmount) * 100,
-      ) / 100;
+      const totalAmount =
+        Math.round(
+          (subtotal +
+            prev.taxAmount +
+            prev.deliveryFee +
+            processingFee -
+            prev.discountAmount) *
+            100,
+        ) / 100;
+      const balanceDue =
+        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
@@ -196,17 +196,17 @@ export default function NewOrder() {
         0,
       );
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount = Math.round(
-        (subtotal +
-          prev.taxAmount +
-          prev.deliveryFee +
-          processingFee -
-          prev.discountAmount) *
-          100,
-      ) / 100;
-      const balanceDue = Math.round(
-        (totalAmount - prev.depositAmount) * 100,
-      ) / 100;
+      const totalAmount =
+        Math.round(
+          (subtotal +
+            prev.taxAmount +
+            prev.deliveryFee +
+            processingFee -
+            prev.discountAmount) *
+            100,
+        ) / 100;
+      const balanceDue =
+        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
@@ -226,17 +226,17 @@ export default function NewOrder() {
         0,
       );
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount = Math.round(
-        (subtotal +
-          prev.taxAmount +
-          prev.deliveryFee +
-          processingFee -
-          prev.discountAmount) *
-          100,
-      ) / 100;
-      const balanceDue = Math.round(
-        (totalAmount - prev.depositAmount) * 100,
-      ) / 100;
+      const totalAmount =
+        Math.round(
+          (subtotal +
+            prev.taxAmount +
+            prev.deliveryFee +
+            processingFee -
+            prev.discountAmount) *
+            100,
+        ) / 100;
+      const balanceDue =
+        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
@@ -251,21 +251,21 @@ export default function NewOrder() {
   const handleAddTask = () => {
     const taskInput = document.getElementById("new-task") as HTMLInputElement;
     const taskValue = taskInput.value.trim();
-    
+
     if (!taskValue) return;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      tasks: [...(prev.tasks || []), taskValue]
+      tasks: [...(prev.tasks || []), taskValue],
     }));
-    
+
     taskInput.value = "";
   };
 
   const handleRemoveTask = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      tasks: prev.tasks?.filter((_, i) => i !== index)
+      tasks: prev.tasks?.filter((_, i) => i !== index),
     }));
   };
 
@@ -463,7 +463,7 @@ export default function NewOrder() {
         {/* Order Items */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-lg font-medium mb-4">Order Items</h2>
-          
+
           {/* Existing Items */}
           {formData.items.length > 0 && (
             <div className="mb-6">
@@ -472,23 +472,56 @@ export default function NewOrder() {
                 <table className="min-w-full divide-y divide-gray-300">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">Type</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Name</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Quantity</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Unit Price</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Total</th>
-                      <th scope="col" className="relative py-3.5 pl-3 pr-4"></th>
+                      <th
+                        scope="col"
+                        className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Type
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Name
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Quantity
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Unit Price
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Total
+                      </th>
+                      <th
+                        scope="col"
+                        className="relative py-3.5 pl-3 pr-4"
+                      ></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {formData.items.map((item, index) => (
                       <tr key={index}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500">
-                          {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                          {item.type.charAt(0).toUpperCase() +
+                            item.type.slice(1)}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {item.name}
-                          {item.description && <div className="text-xs text-gray-400">{item.description}</div>}
+                          {item.description && (
+                            <div className="text-xs text-gray-400">
+                              {item.description}
+                            </div>
+                          )}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {item.quantity}
@@ -515,7 +548,7 @@ export default function NewOrder() {
               </div>
             </div>
           )}
-          
+
           {/* Add New Item */}
           <div className="mt-4">
             <h3 className="text-md font-medium mb-2">Add New Item</h3>
@@ -563,7 +596,9 @@ export default function NewOrder() {
                     type="number"
                     min="1"
                     value={newItemQuantity}
-                    onChange={(e) => setNewItemQuantity(parseInt(e.target.value))}
+                    onChange={(e) =>
+                      setNewItemQuantity(parseInt(e.target.value))
+                    }
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </label>
@@ -576,7 +611,9 @@ export default function NewOrder() {
                     min="0"
                     step="0.01"
                     value={newItemUnitPrice}
-                    onChange={(e) => setNewItemUnitPrice(parseFloat(e.target.value))}
+                    onChange={(e) =>
+                      setNewItemUnitPrice(parseFloat(e.target.value))
+                    }
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </label>
@@ -729,18 +766,21 @@ export default function NewOrder() {
                 />
               </label>
             </div>
-            
+
             {/* Tasks */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tasks
               </label>
-              
+
               {/* Existing Tasks */}
               {formData.tasks && formData.tasks.length > 0 && (
                 <ul className="mb-4 space-y-2">
                   {formData.tasks.map((task, index) => (
-                    <li key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                    <li
+                      key={index}
+                      className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                    >
                       <span>{task}</span>
                       <button
                         type="button"
@@ -753,7 +793,7 @@ export default function NewOrder() {
                   ))}
                 </ul>
               )}
-              
+
               {/* Add New Task */}
               <div className="flex gap-2">
                 <input

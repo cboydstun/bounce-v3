@@ -17,13 +17,13 @@ describe("Order Model", () => {
 
   // Create a test contact before each test
   beforeEach(async () => {
-    const contact = await Contact.create({
+    const contact = (await Contact.create({
       bouncer: "Test Bouncer",
       email: "test@example.com",
       partyDate: new Date("2025-05-15"),
       partyZipCode: "12345",
       sourcePage: "website",
-    }) as mongoose.Document & { _id: mongoose.Types.ObjectId };
+    })) as mongoose.Document & { _id: mongoose.Types.ObjectId };
     contactId = contact._id;
   });
 
@@ -155,7 +155,9 @@ describe("Order Model", () => {
       paymentMethod: "paypal",
     };
 
-    await expect(Order.create(invalidOrder)).rejects.toThrow(/Either contactId or customer email must be provided/);
+    await expect(Order.create(invalidOrder)).rejects.toThrow(
+      /Either contactId or customer email must be provided/,
+    );
   });
 
   it("should fail validation if items array is empty", async () => {
@@ -172,7 +174,9 @@ describe("Order Model", () => {
       paymentMethod: "paypal",
     };
 
-    await expect(Order.create(invalidOrder)).rejects.toThrow(/at least one item/);
+    await expect(Order.create(invalidOrder)).rejects.toThrow(
+      /at least one item/,
+    );
   });
 
   it("should fail validation if monetary values are negative", async () => {
@@ -389,125 +393,125 @@ describe("Order Model", () => {
       ]);
     });
 
-  it("should use default values for deliveryFee and processingFee if not provided", async () => {
-    const orderData = {
-      contactId,
-      orderNumber: "BB-2024-0008",
-      items: [
-        {
-          type: "bouncer",
-          name: "Test Bouncer",
-          quantity: 1,
-          unitPrice: 150,
-          totalPrice: 150,
-        },
-      ],
-      subtotal: 150,
-      taxAmount: 12.38,
-      discountAmount: 0,
-      // deliveryFee not provided - should default to 20
-      // processingFee not provided - should be calculated as 3% of subtotal
-      totalAmount: 186.88, // 150 + 12.38 + 20 + 4.5 = 186.88
-      depositAmount: 50,
-      balanceDue: 136.88,
-      paymentMethod: "paypal",
-    };
+    it("should use default values for deliveryFee and processingFee if not provided", async () => {
+      const orderData = {
+        contactId,
+        orderNumber: "BB-2024-0008",
+        items: [
+          {
+            type: "bouncer",
+            name: "Test Bouncer",
+            quantity: 1,
+            unitPrice: 150,
+            totalPrice: 150,
+          },
+        ],
+        subtotal: 150,
+        taxAmount: 12.38,
+        discountAmount: 0,
+        // deliveryFee not provided - should default to 20
+        // processingFee not provided - should be calculated as 3% of subtotal
+        totalAmount: 186.88, // 150 + 12.38 + 20 + 4.5 = 186.88
+        depositAmount: 50,
+        balanceDue: 136.88,
+        paymentMethod: "paypal",
+      };
 
-    const order = await Order.create(orderData);
-    expect(order.deliveryFee).toBe(20); // Default value
-    expect(order.processingFee).toBe(4.5); // Calculated as 3% of subtotal
-  });
+      const order = await Order.create(orderData);
+      expect(order.deliveryFee).toBe(20); // Default value
+      expect(order.processingFee).toBe(4.5); // Calculated as 3% of subtotal
+    });
 
-  it("should store tasks associated with the order", async () => {
-    const orderData = {
-      contactId,
-      orderNumber: "BB-2024-0009",
-      items: [
-        {
-          type: "bouncer",
-          name: "Test Bouncer",
-          quantity: 1,
-          unitPrice: 150,
-          totalPrice: 150,
-        },
-      ],
-      subtotal: 150,
-      taxAmount: 12.38,
-      discountAmount: 0,
-      deliveryFee: 20,
-      processingFee: 4.5,
-      totalAmount: 186.88,
-      depositAmount: 50,
-      balanceDue: 136.88,
-      paymentMethod: "paypal",
-      tasks: ["Deliver", "Setup", "Pickup"],
-    };
+    it("should store tasks associated with the order", async () => {
+      const orderData = {
+        contactId,
+        orderNumber: "BB-2024-0009",
+        items: [
+          {
+            type: "bouncer",
+            name: "Test Bouncer",
+            quantity: 1,
+            unitPrice: 150,
+            totalPrice: 150,
+          },
+        ],
+        subtotal: 150,
+        taxAmount: 12.38,
+        discountAmount: 0,
+        deliveryFee: 20,
+        processingFee: 4.5,
+        totalAmount: 186.88,
+        depositAmount: 50,
+        balanceDue: 136.88,
+        paymentMethod: "paypal",
+        tasks: ["Deliver", "Setup", "Pickup"],
+      };
 
-    const order = await Order.create(orderData);
-    expect(order.tasks).toHaveLength(3);
-    expect(order.tasks).toContain("Deliver");
-    expect(order.tasks).toContain("Setup");
-    expect(order.tasks).toContain("Pickup");
-  });
+      const order = await Order.create(orderData);
+      expect(order.tasks).toHaveLength(3);
+      expect(order.tasks).toContain("Deliver");
+      expect(order.tasks).toContain("Setup");
+      expect(order.tasks).toContain("Pickup");
+    });
 
-  it("should validate customer email format", async () => {
-    const invalidOrder = {
-      // No contactId
-      customerName: "John Doe",
-      customerEmail: "invalid-email", // Invalid email format
-      orderNumber: "BB-2024-0012",
-      items: [
-        {
-          type: "bouncer",
-          name: "Test Bouncer",
-          quantity: 1,
-          unitPrice: 150,
-          totalPrice: 150,
-        },
-      ],
-      subtotal: 150,
-      taxAmount: 12.38,
-      discountAmount: 0,
-      deliveryFee: 20,
-      processingFee: 4.5,
-      totalAmount: 186.88,
-      depositAmount: 50,
-      balanceDue: 136.88,
-      paymentMethod: "paypal",
-    };
+    it("should validate customer email format", async () => {
+      const invalidOrder = {
+        // No contactId
+        customerName: "John Doe",
+        customerEmail: "invalid-email", // Invalid email format
+        orderNumber: "BB-2024-0012",
+        items: [
+          {
+            type: "bouncer",
+            name: "Test Bouncer",
+            quantity: 1,
+            unitPrice: 150,
+            totalPrice: 150,
+          },
+        ],
+        subtotal: 150,
+        taxAmount: 12.38,
+        discountAmount: 0,
+        deliveryFee: 20,
+        processingFee: 4.5,
+        totalAmount: 186.88,
+        depositAmount: 50,
+        balanceDue: 136.88,
+        paymentMethod: "paypal",
+      };
 
-    await expect(Order.create(invalidOrder)).rejects.toThrow(/valid email/);
-  });
+      await expect(Order.create(invalidOrder)).rejects.toThrow(/valid email/);
+    });
 
-  it("should validate customer phone format", async () => {
-    const invalidOrder = {
-      // No contactId
-      customerName: "John Doe",
-      customerEmail: "john@example.com",
-      customerPhone: "123", // Too short for phone regex
-      orderNumber: "BB-2024-0013",
-      items: [
-        {
-          type: "bouncer",
-          name: "Test Bouncer",
-          quantity: 1,
-          unitPrice: 150,
-          totalPrice: 150,
-        },
-      ],
-      subtotal: 150,
-      taxAmount: 12.38,
-      discountAmount: 0,
-      deliveryFee: 20,
-      processingFee: 4.5,
-      totalAmount: 186.88,
-      depositAmount: 50,
-      balanceDue: 136.88,
-      paymentMethod: "paypal",
-    };
+    it("should validate customer phone format", async () => {
+      const invalidOrder = {
+        // No contactId
+        customerName: "John Doe",
+        customerEmail: "john@example.com",
+        customerPhone: "123", // Too short for phone regex
+        orderNumber: "BB-2024-0013",
+        items: [
+          {
+            type: "bouncer",
+            name: "Test Bouncer",
+            quantity: 1,
+            unitPrice: 150,
+            totalPrice: 150,
+          },
+        ],
+        subtotal: 150,
+        taxAmount: 12.38,
+        discountAmount: 0,
+        deliveryFee: 20,
+        processingFee: 4.5,
+        totalAmount: 186.88,
+        depositAmount: 50,
+        balanceDue: 136.88,
+        paymentMethod: "paypal",
+      };
 
-    await expect(Order.create(invalidOrder)).rejects.toThrow(/valid phone/);
-  });
+      await expect(Order.create(invalidOrder)).rejects.toThrow(/valid phone/);
+    });
 
     it("should find order by order number", async () => {
       const order = await Order.findByOrderNumber("BB-2024-0001");
@@ -529,7 +533,7 @@ describe("Order Model", () => {
       expect(pendingOrders).toHaveLength(1);
       expect(pendingOrders[0].orderNumber).toBe("BB-2024-0002");
     });
-    
+
     it("should update contact status to Converted when creating an order", async () => {
       // Create a test contact
       const testContact = await Contact.create({
@@ -541,7 +545,7 @@ describe("Order Model", () => {
         streetAddress: "123 Test St",
         partyStartTime: "14:00",
       });
-      
+
       // Create an order from the contact
       const orderData = {
         contactId: testContact._id,
@@ -565,22 +569,21 @@ describe("Order Model", () => {
         balanceDue: 136.88,
         paymentMethod: "paypal",
       };
-      
+
       await Order.create(orderData);
-      
+
       // Update the contact status to "Converted"
-      await Contact.findByIdAndUpdate(testContact._id, { confirmed: "Converted" });
-      
+      await Contact.findByIdAndUpdate(testContact._id, {
+        confirmed: "Converted",
+      });
+
       // Verify the contact status was updated
       const updatedContact = await Contact.findById(testContact._id);
       expect(updatedContact?.confirmed).toBe("Converted");
     });
 
     it("should find orders by date range", async () => {
-      const orders = await Order.findByDateRange(
-        "2024-04-01",
-        "2024-04-10"
-      );
+      const orders = await Order.findByDateRange("2024-04-01", "2024-04-10");
       expect(orders).toHaveLength(1);
       expect(orders[0].orderNumber).toBe("BB-2024-0001");
     });
@@ -636,9 +639,9 @@ describe("Order Model", () => {
       // Now generate a new order number
       const orderNumber = await Order.generateOrderNumber();
       expect(orderNumber).toMatch(/^BB-\d{4}-\d{4}$/);
-      
+
       // The generated number should be higher than existing ones
-      const numericPart = parseInt(orderNumber.split('-')[2]);
+      const numericPart = parseInt(orderNumber.split("-")[2]);
       expect(numericPart).toBeGreaterThan(2); // We already have 0001 and 0002
     });
   });

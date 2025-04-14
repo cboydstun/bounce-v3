@@ -82,23 +82,23 @@ const Step5_Payment: React.FC<Step5Props> = ({
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(
-            errorData.error || "Failed to create order. Please try again."
+            errorData.error || "Failed to create order. Please try again.",
           );
         }
 
         const order = await response.json();
-        
+
         // Store order ID and number in state
         dispatch({ type: "SET_ORDER_ID", payload: order._id });
         dispatch({ type: "SET_ORDER_NUMBER", payload: order.orderNumber });
-        
+
         setOrderCreated(true);
       } catch (error) {
         console.error("Error creating order:", error);
         setOrderError(
           error instanceof Error
             ? error.message
-            : "Failed to create order. Please try again."
+            : "Failed to create order. Please try again.",
         );
       } finally {
         setIsCreatingOrder(false);
@@ -158,7 +158,7 @@ const Step5_Payment: React.FC<Step5Props> = ({
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.error || "Failed to process payment. Please try again."
+          errorData.error || "Failed to process payment. Please try again.",
         );
       }
 
@@ -226,7 +226,9 @@ const Step5_Payment: React.FC<Step5Props> = ({
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Total Amount:</span>
-              <span className="font-medium">${state.totalAmount.toFixed(2)}</span>
+              <span className="font-medium">
+                ${state.totalAmount.toFixed(2)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Payment Method:</span>
@@ -327,7 +329,9 @@ const Step5_Payment: React.FC<Step5Props> = ({
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-medium">Order Summary</h3>
-          <span className="font-bold text-xl">${state.totalAmount.toFixed(2)}</span>
+          <span className="font-bold text-xl">
+            ${state.totalAmount.toFixed(2)}
+          </span>
         </div>
 
         <div className="border-t border-gray-200 pt-4">
@@ -385,8 +389,8 @@ const Step5_Payment: React.FC<Step5Props> = ({
           </div>
           <div className="ml-3">
             <p className="text-sm text-blue-800">
-              Your payment information is securely processed by PayPal. We do not
-              store your payment details.
+              Your payment information is securely processed by PayPal. We do
+              not store your payment details.
             </p>
           </div>
         </div>

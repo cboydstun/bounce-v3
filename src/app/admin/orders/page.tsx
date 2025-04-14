@@ -14,13 +14,13 @@ export default function OrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Filter states
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [paymentStatus, setPaymentStatus] = useState<string>("");
-  
+
   // Get the NextAuth session
   const { data: session, status: authStatus } = useSession();
 
@@ -36,18 +36,20 @@ export default function OrdersPage() {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const filters: Record<string, string> = {};
       if (startDate) filters.startDate = startDate;
       if (endDate) filters.endDate = endDate;
       if (status) filters.status = status;
       if (paymentStatus) filters.paymentStatus = paymentStatus;
-      
+
       const data = await getOrders(filters);
       setOrders(data.orders || []);
     } catch (error) {
       console.error("Error fetching orders:", error);
-      setError(error instanceof Error ? error.message : "Failed to fetch orders");
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch orders",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -256,7 +258,10 @@ export default function OrdersPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+                  <td
+                    colSpan={7}
+                    className="px-6 py-4 text-center text-sm text-gray-500"
+                  >
                     No orders found
                   </td>
                 </tr>
@@ -270,7 +275,9 @@ export default function OrdersPage() {
                       {formatDate(order.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.customerName || order.customerEmail || "Contact ID: " + order.contactId}
+                      {order.customerName ||
+                        order.customerEmail ||
+                        "Contact ID: " + order.contactId}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       ${order.totalAmount.toFixed(2)}
@@ -278,7 +285,7 @@ export default function OrdersPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                          order.status
+                          order.status,
                         )}`}
                       >
                         {order.status}
@@ -287,7 +294,7 @@ export default function OrdersPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentStatusColor(
-                          order.paymentStatus
+                          order.paymentStatus,
                         )}`}
                       >
                         {order.paymentStatus}
@@ -306,19 +313,20 @@ export default function OrdersPage() {
                       >
                         View
                       </Link>
-                      {order.status !== "Paid" && order.status !== "Confirmed" && (
-                        <button
-                          onClick={() => handleDelete(order._id)}
-                          className="text-red-600 hover:text-red-900"
-                          disabled={isDeleting}
-                        >
-                          {isDeleting ? (
-                            <LoadingSpinner className="w-4 h-4" />
-                          ) : (
-                            "Delete"
-                          )}
-                        </button>
-                      )}
+                      {order.status !== "Paid" &&
+                        order.status !== "Confirmed" && (
+                          <button
+                            onClick={() => handleDelete(order._id)}
+                            className="text-red-600 hover:text-red-900"
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? (
+                              <LoadingSpinner className="w-4 h-4" />
+                            ) : (
+                              "Delete"
+                            )}
+                          </button>
+                        )}
                     </td>
                   </tr>
                 ))
@@ -341,7 +349,9 @@ export default function OrdersPage() {
     }
 
     if (
-      !window.confirm("Are you sure you want to delete this order? This action cannot be undone.")
+      !window.confirm(
+        "Are you sure you want to delete this order? This action cannot be undone.",
+      )
     ) {
       return;
     }
@@ -354,14 +364,17 @@ export default function OrdersPage() {
 
       // Update the local state
       setOrders(orders.filter((order) => order._id !== id));
-      
+
       // Show success message
       alert("Order deleted successfully");
     } catch (error) {
       // Handle authentication errors
-      if (error instanceof Error && error.message.includes("Authentication failed")) {
+      if (
+        error instanceof Error &&
+        error.message.includes("Authentication failed")
+      ) {
         setError("Your session has expired. Please log in again to continue.");
-        
+
         // Force refresh the session by redirecting to login
         setTimeout(() => {
           const returnUrl = encodeURIComponent(window.location.pathname);
@@ -371,7 +384,7 @@ export default function OrdersPage() {
       }
 
       setError(
-        error instanceof Error ? error.message : "Failed to delete order"
+        error instanceof Error ? error.message : "Failed to delete order",
       );
       console.error("Error deleting order:", error);
     } finally {

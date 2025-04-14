@@ -1,13 +1,13 @@
 import mongoose, { Schema } from "mongoose";
-import { 
-  IOrderDocument, 
-  IOrderModel, 
-  OrderStatus, 
+import {
+  IOrderDocument,
+  IOrderModel,
+  OrderStatus,
   PaymentStatus,
   PaymentMethod,
   OrderItemType,
   Currency,
-  PayPalTransactionStatus
+  PayPalTransactionStatus,
 } from "../types/order";
 
 // PayPal transaction schema
@@ -38,7 +38,7 @@ const PayPalTransactionSchema = new Schema(
         "VOIDED",
         "COMPLETED",
         "PAYER_ACTION_REQUIRED",
-        "FAILED"
+        "FAILED",
       ],
       required: true,
     },
@@ -48,7 +48,7 @@ const PayPalTransactionSchema = new Schema(
     },
     updatedAt: Date,
   },
-  { _id: false }
+  { _id: false },
 );
 
 // Order item schema
@@ -85,11 +85,11 @@ const OrderItemSchema = new Schema(
       min: 0,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 // Custom validation function to ensure totalPrice = quantity * unitPrice
-OrderItemSchema.pre('validate', function(next) {
+OrderItemSchema.pre("validate", function (next) {
   if (this.quantity && this.unitPrice) {
     const calculatedTotal = this.quantity * this.unitPrice;
     // Allow for small floating point differences
@@ -109,7 +109,7 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
       required: false, // Now optional
       index: true,
     },
-    
+
     // Direct customer information fields
     customerName: {
       type: String,
@@ -119,7 +119,10 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
       type: String,
       trim: true,
       lowercase: true,
-      match: [/^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/, "Please enter a valid email address"],
+      match: [
+        /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/,
+        "Please enter a valid email address",
+      ],
     },
     customerPhone: {
       type: String,
@@ -142,7 +145,7 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
       type: String,
       trim: true,
     },
-    
+
     orderNumber: {
       type: String,
       required: true,
@@ -185,7 +188,7 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
       type: Number,
       required: true,
       min: 0,
-      default: function(this: IOrderDocument) {
+      default: function (this: IOrderDocument) {
         // Default 3% of subtotal
         return this.subtotal ? Math.round(this.subtotal * 0.03 * 100) / 100 : 0;
       },
@@ -208,14 +211,28 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
     },
     status: {
       type: String,
-      enum: ["Pending", "Processing", "Paid", "Confirmed", "Cancelled", "Refunded"],
+      enum: [
+        "Pending",
+        "Processing",
+        "Paid",
+        "Confirmed",
+        "Cancelled",
+        "Refunded",
+      ],
       default: "Pending",
       required: true,
       index: true,
     },
     paymentStatus: {
       type: String,
-      enum: ["Pending", "Authorized", "Paid", "Failed", "Refunded", "Partially Refunded"],
+      enum: [
+        "Pending",
+        "Authorized",
+        "Paid",
+        "Failed",
+        "Refunded",
+        "Partially Refunded",
+      ],
       default: "Pending",
       required: true,
       index: true,
@@ -240,19 +257,21 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Custom validation to ensure either contactId or customer information is provided
-OrderSchema.pre('validate', function(next) {
+OrderSchema.pre("validate", function (next) {
   if (!this.contactId && !this.customerEmail) {
-    return next(new Error('Either contactId or customer email must be provided'));
+    return next(
+      new Error("Either contactId or customer email must be provided"),
+    );
   }
   next();
 });
 
 // Pre-save hook to calculate totals if not provided
-OrderSchema.pre('save', function(next) {
+OrderSchema.pre("save", function (next) {
   // Calculate subtotal from items if not provided
   if (!this.subtotal || this.subtotal === 0) {
     this.subtotal = this.items.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -270,15 +289,26 @@ OrderSchema.pre('save', function(next) {
 
   // Calculate total amount if not provided
   if (!this.totalAmount) {
-    this.totalAmount = Math.round(
-      (this.subtotal + this.taxAmount + this.deliveryFee + this.processingFee - this.discountAmount) * 100
-    ) / 100;
+    this.totalAmount =
+      Math.round(
+        (this.subtotal +
+          this.taxAmount +
+          this.deliveryFee +
+          this.processingFee -
+          this.discountAmount) *
+          100,
+      ) / 100;
   }
 
   // Calculate balance due if not provided or not explicitly set to 0
   // Use isNaN to check if it's undefined or null, but allow explicit 0 values
-  if (isNaN(this.balanceDue) || this.balanceDue === undefined || this.balanceDue === null) {
-    this.balanceDue = Math.round((this.totalAmount - this.depositAmount) * 100) / 100;
+  if (
+    isNaN(this.balanceDue) ||
+    this.balanceDue === undefined ||
+    this.balanceDue === null
+  ) {
+    this.balanceDue =
+      Math.round((this.totalAmount - this.depositAmount) * 100) / 100;
   }
 
   next();
@@ -313,30 +343,30 @@ OrderSchema.statics.findByDateRange = function (
 OrderSchema.statics.generateOrderNumber = async function () {
   const currentDate = new Date();
   const year = currentDate.getFullYear();
-  
+
   // Find all orders for this year to get the highest sequence number
   const orders = await this.find({
     orderNumber: new RegExp(`^BB-${year}-`),
   }).exec();
-  
+
   // Start with sequence 1 or find the highest existing sequence
   let sequence = 1;
   if (orders && orders.length > 0) {
     // Extract all sequence numbers and find the highest one
-    const sequences = orders.map(order => {
-      const parts = order.orderNumber.split('-');
+    const sequences = orders.map((order) => {
+      const parts = order.orderNumber.split("-");
       if (parts.length === 3) {
         return parseInt(parts[2], 10);
       }
       return 0;
     });
-    
+
     const highestSequence = Math.max(...sequences);
     sequence = highestSequence + 1;
   }
-  
+
   // Format with padded zeros (e.g., BB-2024-0001)
-  return `BB-${year}-${sequence.toString().padStart(4, '0')}`;
+  return `BB-${year}-${sequence.toString().padStart(4, "0")}`;
 };
 
 // Create text index for searching

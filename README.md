@@ -322,6 +322,66 @@ node scripts/create-dev-blog.js
 - `PUT /api/v1/promo-optins/:id` - Update a promo opt-in by ID (authenticated users only)
 - `DELETE /api/v1/promo-optins/:id` - Delete a promo opt-in by ID (authenticated users only)
 
+### Orders API
+
+- `GET /api/v1/orders` - Retrieve all orders (authenticated users only)
+  - Query parameters:
+    - `startDate`: Filter orders created on or after this date (ISO format)
+    - `endDate`: Filter orders created on or before this date (ISO format)
+    - `status`: Filter orders by status
+    - `paymentStatus`: Filter orders by payment status
+    - `contactId`: Filter orders by contact ID
+    - `orderNumber`: Filter orders by order number
+  - Response format:
+    ```json
+    {
+      "orders": [
+        {
+          "_id": "60d21b4667d0d8992e610c85",
+          "orderNumber": "BB-2024-0001",
+          "contactId": "60d21b4667d0d8992e610c84",
+          "items": [
+            {
+              "type": "bouncer",
+              "name": "Test Bouncer",
+              "quantity": 1,
+              "unitPrice": 150,
+              "totalPrice": 150
+            }
+          ],
+          "subtotal": 150,
+          "taxAmount": 12.38,
+          "discountAmount": 0,
+          "deliveryFee": 20,
+          "processingFee": 4.5,
+          "totalAmount": 186.88,
+          "depositAmount": 50,
+          "balanceDue": 136.88,
+          "status": "Pending",
+          "paymentStatus": "Pending",
+          "paymentMethod": "paypal",
+          "tasks": ["Delivery", "Setup", "Pickup"],
+          "createdAt": "2024-04-14T15:00:00.000Z",
+          "updatedAt": "2024-04-14T15:00:00.000Z"
+        }
+      ]
+    }
+    ```
+- `GET /api/v1/orders/:id` - Retrieve a specific order by ID (authenticated users only)
+- `POST /api/v1/orders` - Create a new order (public)
+  - Required fields: `items`, `paymentMethod`
+  - Either `contactId` or `customerEmail` must be provided
+  - Optional fields: `taxAmount`, `discountAmount`, `deliveryFee`, `depositAmount`, `notes`, `tasks`
+  - Auto-calculated fields: `subtotal`, `processingFee`, `totalAmount`, `balanceDue`, `orderNumber`
+- `PUT /api/v1/orders/:id` - Update an order by ID (authenticated users only)
+- `DELETE /api/v1/orders/:id` - Delete an order by ID (authenticated users only)
+  - Restrictions: Cannot delete orders with status "Paid" or "Confirmed"
+- `POST /api/v1/orders/:id/payment` - Initiate payment for an order
+  - Required fields: `amount`
+- `PATCH /api/v1/orders/:id/payment` - Record payment transaction for an order
+  - Required fields: `transactionId`, `amount`, `status`
+  - Optional fields: `payerId`, `payerEmail`, `currency`
+
 ## Products Implementation
 
 The Products API is implemented using MongoDB and Mongoose with TypeScript. It provides a comprehensive system for managing product data with advanced features like slug generation, text search, and category filtering.

@@ -24,17 +24,17 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
   // Determine button text based on current step
   const getNextButtonText = () => {
     if (nextButtonText) return nextButtonText;
-    
+
     if (isLastStep) return "Complete Order";
     if (currentStep === 4) return "Proceed to Payment";
     return "Continue";
   };
-  
+
   const getBackButtonText = () => {
     if (backButtonText) return backButtonText;
     return "Back";
   };
-  
+
   return (
     <div className="flex justify-between mt-8">
       {/* Back button */}
@@ -47,10 +47,10 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
           {getBackButtonText()}
         </button>
       )}
-      
+
       {/* Spacer if first step */}
       {isFirstStep && <div></div>}
-      
+
       {/* Next button - hidden on the last step (payment) as PayPal button will be used */}
       {!isLastStep && (
         <button

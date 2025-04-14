@@ -44,29 +44,31 @@ describe("CheckoutWizard", () => {
 
   it("renders the first step by default", async () => {
     render(<CheckoutWizard />);
-    
+
     // Wait for the component to load
     await waitFor(() => {
       expect(screen.getByText("Select Your Rental")).toBeInTheDocument();
     });
-    
+
     // Check that the step indicator shows step 1 as active
-    const stepIndicators = screen.getAllByText(/Rental Selection|Delivery Info|Add Extras|Review Order|Payment/);
+    const stepIndicators = screen.getAllByText(
+      /Rental Selection|Delivery Info|Add Extras|Review Order|Payment/,
+    );
     expect(stepIndicators[0]).toHaveClass("text-primary-purple");
   });
 
   it("shows validation errors when trying to proceed without required fields", async () => {
     render(<CheckoutWizard />);
-    
+
     // Wait for the component to load
     await waitFor(() => {
       expect(screen.getByText("Select Your Rental")).toBeInTheDocument();
     });
-    
+
     // Try to proceed without selecting a bouncer
     const continueButton = screen.getByText("Continue");
     fireEvent.click(continueButton);
-    
+
     // Check that validation errors are shown
     await waitFor(() => {
       expect(screen.getByText("Please select a bouncer")).toBeInTheDocument();
@@ -75,16 +77,16 @@ describe("CheckoutWizard", () => {
 
   it("disables the next button when there are validation errors", async () => {
     render(<CheckoutWizard />);
-    
+
     // Wait for the component to load
     await waitFor(() => {
       expect(screen.getByText("Select Your Rental")).toBeInTheDocument();
     });
-    
+
     // Try to proceed without selecting a bouncer
     const continueButton = screen.getByText("Continue");
     fireEvent.click(continueButton);
-    
+
     // Check that validation errors are shown and button is disabled
     await waitFor(() => {
       expect(screen.getByText("Please select a bouncer")).toBeInTheDocument();

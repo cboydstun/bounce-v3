@@ -25,13 +25,13 @@ export const NavigationButtons: React.FC<NavigationButtonsProps> = ({
         return "Continue";
     }
   };
-  
+
   // Hide next button on payment step (PayPal button will be used)
   const showNextButton = currentStep !== "payment";
-  
+
   // First step doesn't need a back button
   const showPreviousButton = currentStep !== "delivery";
-  
+
   return (
     <div className="flex justify-between mt-8">
       {/* Back button */}
@@ -58,7 +58,7 @@ export const NavigationButtons: React.FC<NavigationButtonsProps> = ({
       ) : (
         <div></div> // Empty div for spacing
       )}
-      
+
       {/* Next button */}
       {showNextButton && (
         <button

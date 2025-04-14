@@ -21,7 +21,7 @@ const LoginForm = () => {
   useEffect(() => {
     const from = searchParams.get("from");
     const returnUrl = searchParams.get("returnUrl");
-    
+
     if (from) {
       setError(`You need to be logged in to access ${from}`);
     }

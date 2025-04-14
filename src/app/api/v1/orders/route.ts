@@ -113,7 +113,9 @@ export async function POST(request: NextRequest) {
 
     // If contactId is provided, check if an order already exists for this contact
     if (orderData.contactId) {
-      const existingOrder = await Order.findOne({ contactId: orderData.contactId });
+      const existingOrder = await Order.findOne({
+        contactId: orderData.contactId,
+      });
       if (existingOrder) {
         return NextResponse.json(
           { error: "An order already exists for this contact" },
@@ -150,26 +152,29 @@ export async function POST(request: NextRequest) {
 
     // Calculate processing fee if not provided (3% of subtotal)
     if (!orderData.processingFee && orderData.processingFee !== 0) {
-      orderData.processingFee = Math.round(orderData.subtotal * 0.03 * 100) / 100;
+      orderData.processingFee =
+        Math.round(orderData.subtotal * 0.03 * 100) / 100;
     }
 
     // Calculate total amount if not provided
     if (!orderData.totalAmount) {
-      orderData.totalAmount = Math.round(
-        (orderData.subtotal +
-          (orderData.taxAmount || 0) +
-          orderData.deliveryFee +
-          orderData.processingFee -
-          (orderData.discountAmount || 0)) *
-          100,
-      ) / 100;
+      orderData.totalAmount =
+        Math.round(
+          (orderData.subtotal +
+            (orderData.taxAmount || 0) +
+            orderData.deliveryFee +
+            orderData.processingFee -
+            (orderData.discountAmount || 0)) *
+            100,
+        ) / 100;
     }
 
     // Calculate balance due if not provided
     if (!orderData.balanceDue) {
-      orderData.balanceDue = Math.round(
-        (orderData.totalAmount - (orderData.depositAmount || 0)) * 100,
-      ) / 100;
+      orderData.balanceDue =
+        Math.round(
+          (orderData.totalAmount - (orderData.depositAmount || 0)) * 100,
+        ) / 100;
     }
 
     // Set default status values if not provided

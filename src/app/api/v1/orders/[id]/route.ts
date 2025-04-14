@@ -111,7 +111,8 @@ export async function PUT(
       ) {
         return NextResponse.json(
           {
-            error: "Cannot set order status to Paid when payment status is not Paid",
+            error:
+              "Cannot set order status to Paid when payment status is not Paid",
           },
           { status: 400 },
         );
@@ -139,27 +140,28 @@ export async function PUT(
           (sum: number, item: any) => sum + (item.totalPrice || 0),
           0,
         );
-        
+
         // Recalculate processing fee if it's based on subtotal
         if (orderData.processingFee === undefined) {
-          orderDoc.processingFee = Math.round(orderDoc.subtotal * 0.03 * 100) / 100;
+          orderDoc.processingFee =
+            Math.round(orderDoc.subtotal * 0.03 * 100) / 100;
         }
       }
 
       // Recalculate total amount
-      orderDoc.totalAmount = Math.round(
-        (orderDoc.subtotal +
-          orderDoc.taxAmount +
-          orderDoc.deliveryFee +
-          orderDoc.processingFee -
-          orderDoc.discountAmount) *
-          100,
-      ) / 100;
+      orderDoc.totalAmount =
+        Math.round(
+          (orderDoc.subtotal +
+            orderDoc.taxAmount +
+            orderDoc.deliveryFee +
+            orderDoc.processingFee -
+            orderDoc.discountAmount) *
+            100,
+        ) / 100;
 
       // Recalculate balance due
-      orderDoc.balanceDue = Math.round(
-        (orderDoc.totalAmount - orderDoc.depositAmount) * 100,
-      ) / 100;
+      orderDoc.balanceDue =
+        Math.round((orderDoc.totalAmount - orderDoc.depositAmount) * 100) / 100;
     }
 
     // Save the updated document

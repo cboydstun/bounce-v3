@@ -1,7 +1,12 @@
 import { OrderItem, PaymentStatus } from "@/types/order";
 
 // Define the step types
-export type OrderStep = "delivery" | "details" | "extras" | "review" | "payment";
+export type OrderStep =
+  | "delivery"
+  | "details"
+  | "extras"
+  | "review"
+  | "payment";
 
 // Define the step configuration
 export interface StepConfig {
@@ -23,7 +28,12 @@ export const EXTRAS = [
   { id: "tablesChairs", name: "Tables & Chairs", price: 25, image: "🪑" },
   { id: "generator", name: "Generator", price: 50, image: "⚡" },
   { id: "popcornMachine", name: "Popcorn Machine", price: 35, image: "🍿" },
-  { id: "cottonCandyMachine", name: "Cotton Candy Machine", price: 35, image: "🍭" },
+  {
+    id: "cottonCandyMachine",
+    name: "Cotton Candy Machine",
+    price: 35,
+    image: "🍭",
+  },
   { id: "snowConeMachine", name: "Snow Cone Machine", price: 35, image: "🧊" },
   { id: "basketballShoot", name: "Basketball Shoot", price: 30, image: "🏀" },
   { id: "slushyMachine", name: "Slushy Machine", price: 40, image: "🥤" },
@@ -31,10 +41,10 @@ export const EXTRAS = [
 ];
 
 // Define the checkout state interface
-export interface CheckoutState{
+export interface CheckoutState {
   // Current step
   currentStep: OrderStep;
-  
+
   // Step 1: Rental Selection
   selectedBouncer: string;
   bouncerName: string;
@@ -43,7 +53,7 @@ export interface CheckoutState{
   deliveryTime: string;
   pickupDate: string;
   pickupTime: string;
-  
+
   // Step 2: Delivery Information
   customerName: string;
   customerEmail: string;
@@ -53,7 +63,7 @@ export interface CheckoutState{
   customerState: string;
   customerZipCode: string;
   deliveryInstructions?: string;
-  
+
   // Step 3: Extras
   extras: {
     id: string;
@@ -62,7 +72,7 @@ export interface CheckoutState{
     selected: boolean;
     image: string;
   }[];
-  
+
   // Step 4: Order Review (calculated from above)
   subtotal: number;
   taxAmount: number;
@@ -71,7 +81,7 @@ export interface CheckoutState{
   discountAmount: number;
   totalAmount: number;
   agreedToTerms: boolean;
-  
+
   // Step 5: Payment
   paymentMethod: "paypal";
   paymentStatus: PaymentStatus;
@@ -79,7 +89,7 @@ export interface CheckoutState{
   orderNumber: string;
   paymentComplete: boolean;
   paymentError: string | null;
-  
+
   // Form validation
   errors: Record<string, string>;
   isFormValid: boolean;
@@ -113,14 +123,22 @@ export interface Step5Props extends BaseStepProps {
 }
 
 // Union type for all step props
-export type StepProps = Step1Props | Step2Props | Step3Props | Step4Props | Step5Props;
+export type StepProps =
+  | Step1Props
+  | Step2Props
+  | Step3Props
+  | Step4Props
+  | Step5Props;
 
 // Define action types
 export type CheckoutAction =
   | { type: "NEXT_STEP" }
   | { type: "PREVIOUS_STEP" }
   | { type: "GO_TO_STEP"; payload: OrderStep }
-  | { type: "SET_BOUNCER"; payload: { id: string; name: string; price: number } }
+  | {
+      type: "SET_BOUNCER";
+      payload: { id: string; name: string; price: number };
+    }
   | { type: "SET_DELIVERY_DATE"; payload: string }
   | { type: "SET_DELIVERY_TIME"; payload: string }
   | { type: "SET_PICKUP_DATE"; payload: string }

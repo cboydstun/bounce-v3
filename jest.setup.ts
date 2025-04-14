@@ -74,25 +74,27 @@ jest.mock("next-auth", () => {
       POST: jest.fn(),
     };
   };
-  
+
   mockNextAuth.getServerSession = jest.fn().mockImplementation(() => {
     // Check the global auth state
     if (!global.mockAuthState.authenticated) {
       return Promise.resolve(null);
     }
-    
+
     // Return session based on role
     return Promise.resolve({
       user: {
         id: global.mockAuthState.isAdmin ? "admin-user-id" : "test-user-id",
-        email: global.mockAuthState.isAdmin ? "admin@example.com" : "test@example.com",
+        email: global.mockAuthState.isAdmin
+          ? "admin@example.com"
+          : "test@example.com",
         name: global.mockAuthState.isAdmin ? "Admin User" : "Test User",
         role: global.mockAuthState.isAdmin ? "admin" : "user",
       },
       expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     });
   });
-  
+
   return mockNextAuth;
 });
 

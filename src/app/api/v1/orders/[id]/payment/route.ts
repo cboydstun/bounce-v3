@@ -9,7 +9,7 @@ import mongoose from "mongoose";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await dbConnect();
@@ -21,7 +21,7 @@ export async function POST(
     if (!mongoose.Types.ObjectId.isValid(resolvedParams.id)) {
       return NextResponse.json(
         { error: "Invalid order ID format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -37,7 +37,7 @@ export async function POST(
     if (!amount) {
       return NextResponse.json(
         { error: "Payment amount is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -45,12 +45,15 @@ export async function POST(
     const totalAmount = parseFloat(order.totalAmount.toFixed(2));
     const depositAmount = parseFloat(order.depositAmount.toFixed(2));
 
-    if (parseFloat(amount.toFixed(2)) !== totalAmount && parseFloat(amount.toFixed(2)) !== depositAmount) {
+    if (
+      parseFloat(amount.toFixed(2)) !== totalAmount &&
+      parseFloat(amount.toFixed(2)) !== depositAmount
+    ) {
       return NextResponse.json(
         {
           error: `Payment amount must match either the total amount (${totalAmount}) or deposit amount (${depositAmount})`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -68,7 +71,7 @@ export async function POST(
     console.error("Error initiating payment:", error);
     return NextResponse.json(
       { error: "Failed to initiate payment" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -79,7 +82,7 @@ export async function POST(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await dbConnect();
@@ -91,7 +94,7 @@ export async function PATCH(
     if (!mongoose.Types.ObjectId.isValid(resolvedParams.id)) {
       return NextResponse.json(
         { error: "Invalid order ID format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -105,14 +108,12 @@ export async function PATCH(
 
     // Validate required fields
     const requiredFields = ["transactionId", "amount", "status"];
-    const missingFields = requiredFields.filter(
-      (field) => !paymentData[field]
-    );
+    const missingFields = requiredFields.filter((field) => !paymentData[field]);
 
     if (missingFields.length > 0) {
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(", ")}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -137,7 +138,7 @@ export async function PATCH(
     const totalAmount = parseFloat(order.totalAmount.toFixed(2));
     const paidAmount = order.paypalTransactions.reduce(
       (sum, t) => sum + t.amount,
-      0
+      0,
     );
 
     // If full amount is paid
@@ -162,7 +163,7 @@ export async function PATCH(
     console.error("Error recording payment transaction:", error);
     return NextResponse.json(
       { error: "Failed to record payment transaction" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
