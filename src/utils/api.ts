@@ -547,4 +547,97 @@ export const getPartyPackageBySlug = async (slug: string) => {
   }
 };
 
+// Orders API calls
+export const getOrders = async (params?: {
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  paymentStatus?: string;
+  contactId?: string;
+  orderNumber?: string;
+}) => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.startDate) queryParams.append("startDate", params.startDate);
+  if (params?.endDate) queryParams.append("endDate", params.endDate);
+  if (params?.status) queryParams.append("status", params.status);
+  if (params?.paymentStatus) queryParams.append("paymentStatus", params.paymentStatus);
+  if (params?.contactId) queryParams.append("contactId", params.contactId);
+  if (params?.orderNumber) queryParams.append("orderNumber", params.orderNumber);
+
+  const queryString = queryParams.toString();
+  const url = queryString ? `/api/v1/orders?${queryString}` : "/api/v1/orders";
+
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getOrderById = async (id: string) => {
+  const response = await api.get(`/api/v1/orders/${id}`);
+  return response.data;
+};
+
+export const createOrder = async (orderData: {
+  contactId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  customerCity?: string;
+  customerState?: string;
+  customerZipCode?: string;
+  items: Array<{
+    type: string;
+    name: string;
+    description?: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }>;
+  subtotal?: number;
+  taxAmount?: number;
+  discountAmount?: number;
+  deliveryFee?: number;
+  processingFee?: number;
+  totalAmount?: number;
+  depositAmount?: number;
+  balanceDue?: number;
+  status?: string;
+  paymentStatus?: string;
+  paymentMethod: string;
+  notes?: string;
+  tasks?: string[];
+}) => {
+  const response = await api.post("/api/v1/orders", orderData);
+  return response.data;
+};
+
+export const updateOrder = async (
+  id: string,
+  orderData: Partial<Parameters<typeof createOrder>[0]>
+) => {
+  const response = await api.put(`/api/v1/orders/${id}`, orderData);
+  return response.data;
+};
+
+export const deleteOrder = async (id: string) => {
+  const response = await api.delete(`/api/v1/orders/${id}`);
+  return response.data;
+};
+
+export const createOrderFromContact = async (
+  contactId: string,
+  orderData: Partial<Omit<Parameters<typeof createOrder>[0], 'items' | 'paymentMethod'>> & { 
+    items: Parameters<typeof createOrder>[0]['items'],
+    paymentMethod: Parameters<typeof createOrder>[0]['paymentMethod']
+  }
+) => {
+  // Combine contact ID with order data
+  const data = {
+    ...orderData,
+    contactId
+  };
+  return createOrder(data);
+};
+
 export default api;

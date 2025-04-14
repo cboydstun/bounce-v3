@@ -701,3 +701,122 @@ const deleteOrder = async (orderId, adminToken) => {
 ```
 
 This documentation should provide a comprehensive guide for frontend developers to integrate with the Orders API.
+
+## Frontend Checkout Implementation
+
+The frontend checkout process is implemented as a multi-step wizard that guides customers through the rental selection, delivery information, extras selection, order review, and payment process.
+
+### Checkout Flow
+
+The checkout process follows these steps:
+
+1. **Rental Selection**: User selects a bouncer, delivery date/time, and pickup date/time
+2. **Delivery Information**: User enters their contact and delivery address details
+3. **Add Extras**: User can select optional add-ons like tables, chairs, or machines
+4. **Order Review**: User reviews their order details and agrees to terms
+5. **Payment**: User completes payment via PayPal
+
+### Key Components
+
+The checkout implementation consists of the following key components:
+
+#### CheckoutWizard
+
+The main component that orchestrates the entire checkout flow. It manages the state using a reducer pattern and dynamically loads the appropriate step component.
+
+#### Step Components
+
+- **Step1_RentalSelection**: Allows users to select a bouncer from available inventory and choose delivery/pickup dates and times
+- **Step2_DeliveryInfo**: Collects customer contact information and delivery address
+- **Step3_Extras**: Displays available add-ons with prices that users can select
+- **Step4_OrderReview**: Shows a summary of the order with pricing breakdown
+- **Step5_Payment**: Integrates with PayPal for secure payment processing
+
+#### UI Components
+
+- **ProgressBar**: Visual indicator of the user's progress through the checkout steps
+- **NavigationButtons**: Provides back and continue buttons for step navigation
+- **OrderFormTracker**: Tracks user progress through the checkout for analytics
+- **StepSkeleton**: Loading placeholder during dynamic component loading
+
+### State Management
+
+The checkout state is managed using React's useReducer with a well-defined state structure and actions:
+
+```typescript
+// Checkout state structure
+interface CheckoutState {
+  currentStep: OrderStep;
+
+  // Rental Selection
+  selectedBouncer: string;
+  bouncerName: string;
+  bouncerPrice: number;
+  deliveryDate: string;
+  deliveryTime: string;
+  pickupDate: string;
+  pickupTime: string;
+
+  // Delivery Information
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  customerAddress: string;
+  customerCity: string;
+  customerState: string;
+  customerZipCode: string;
+
+  // Extras
+  extras: Extra[];
+
+  // Pricing
+  subtotal: number;
+  taxAmount: number;
+  deliveryFee: number;
+  processingFee: number;
+  discountAmount: number;
+  totalAmount: number;
+
+  // Payment
+  paymentMethod: "paypal";
+  paymentStatus: PaymentStatus;
+  orderId: string;
+  orderNumber: string;
+  paymentComplete: boolean;
+}
+```
+
+### Order Creation Process
+
+1. User progresses through the checkout steps
+2. On the review step, an order is created in the database with status "Pending"
+3. On the payment step, the user completes payment via PayPal
+4. After successful payment, the order status is updated to "Paid"
+5. The user is shown a confirmation page with their order details
+
+### Integration with Backend
+
+The checkout process integrates with the following API endpoints:
+
+- `GET /api/v1/products` - To fetch available bouncers
+- `POST /api/v1/orders` - To create a new order
+- `POST /api/v1/orders/[id]/payment` - To initiate payment
+- `PATCH /api/v1/orders/[id]/payment` - To record payment completion
+
+### Validation
+
+Each step includes validation to ensure all required information is provided:
+
+- Rental Selection: Validates bouncer selection and date/time logic
+- Delivery Information: Validates contact details and delivery address
+- Order Review: Ensures terms are accepted
+- Payment: Validates payment completion
+
+### Price Calculation
+
+Prices are calculated automatically based on the selected bouncer and extras:
+
+- Subtotal = Bouncer price + Sum of selected extras
+- Tax = Subtotal × 8.25%
+- Processing Fee = Subtotal × 3%
+- Total = Subtotal + Tax + Delivery Fee + Processing Fee - Discount
