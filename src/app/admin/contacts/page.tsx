@@ -51,7 +51,8 @@ type ConfirmationFilter =
   | "pending"
   | "called"
   | "declined"
-  | "cancelled";
+  | "cancelled"
+  | "converted";
 type DateRangeFilter = "none" | "week" | "month" | "year";
 
 export default function AdminContacts() {
@@ -334,6 +335,8 @@ export default function AdminContacts() {
         return "bg-red-100 text-red-800";
       case "Cancelled":
         return "bg-gray-100 text-gray-800";
+      case "Converted":
+        return "bg-purple-100 text-purple-800";
       case "Pending":
       default:
         return "bg-yellow-100 text-yellow-800";
@@ -434,6 +437,9 @@ export default function AdminContacts() {
           break;
         case "cancelled":
           meetsConfirmationCriteria = contact.confirmed === "Cancelled";
+          break;
+        case "converted":
+          meetsConfirmationCriteria = contact.confirmed === "Converted";
           break;
         default:
           meetsConfirmationCriteria = true;
@@ -690,6 +696,19 @@ export default function AdminContacts() {
               Cancelled
             </button>
             <button
+              onClick={() => {
+                setConfirmationFilter("converted");
+                setCurrentPage(1);
+              }}
+              className={`rounded-md px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ${
+                confirmationFilter === "converted"
+                  ? "bg-purple-600 text-white ring-purple-600"
+                  : "bg-white text-gray-900 ring-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              Converted
+            </button>
+            <button
               onClick={resetFilters}
               className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
             >
@@ -925,6 +944,7 @@ export default function AdminContacts() {
                           </option>
                           <option value="Declined">Declined</option>
                           <option value="Cancelled">Cancelled</option>
+                          <option value="Converted">Converted</option>
                         </select>
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
@@ -934,6 +954,15 @@ export default function AdminContacts() {
                         >
                           Edit
                         </Link>
+                        {/* Convert to Order button - only show if not already converted and has required fields */}
+                        {contact.confirmed !== "Converted" && contact.streetAddress && contact.partyStartTime && (
+                          <Link
+                            href={`/admin/contacts/${contact.id}/convert-to-order`}
+                            className="text-green-600 hover:text-green-900 mr-4"
+                          >
+                            Convert to Order
+                          </Link>
+                        )}
                         <button
                           onClick={() => handleDelete(contact.id)}
                           className="text-red-600 hover:text-red-900"

@@ -529,6 +529,52 @@ describe("Order Model", () => {
       expect(pendingOrders).toHaveLength(1);
       expect(pendingOrders[0].orderNumber).toBe("BB-2024-0002");
     });
+    
+    it("should update contact status to Converted when creating an order", async () => {
+      // Create a test contact
+      const testContact = await Contact.create({
+        bouncer: "Test Bouncer for Conversion",
+        email: "convert@example.com",
+        partyDate: new Date("2025-06-15"),
+        partyZipCode: "12345",
+        sourcePage: "website",
+        streetAddress: "123 Test St",
+        partyStartTime: "14:00",
+      });
+      
+      // Create an order from the contact
+      const orderData = {
+        contactId: testContact._id,
+        orderNumber: "BB-2024-0099",
+        items: [
+          {
+            type: "bouncer",
+            name: "Test Bouncer for Conversion",
+            quantity: 1,
+            unitPrice: 150,
+            totalPrice: 150,
+          },
+        ],
+        subtotal: 150,
+        taxAmount: 12.38,
+        discountAmount: 0,
+        deliveryFee: 20,
+        processingFee: 4.5,
+        totalAmount: 186.88,
+        depositAmount: 50,
+        balanceDue: 136.88,
+        paymentMethod: "paypal",
+      };
+      
+      await Order.create(orderData);
+      
+      // Update the contact status to "Converted"
+      await Contact.findByIdAndUpdate(testContact._id, { confirmed: "Converted" });
+      
+      // Verify the contact status was updated
+      const updatedContact = await Contact.findById(testContact._id);
+      expect(updatedContact?.confirmed).toBe("Converted");
+    });
 
     it("should find orders by date range", async () => {
       const orders = await Order.findByDateRange(

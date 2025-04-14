@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import Order from "@/models/Order";
+import Contact from "@/models/Contact";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -110,6 +111,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If contactId is provided, check if an order already exists for this contact
+    if (orderData.contactId) {
+      const existingOrder = await Order.findOne({ contactId: orderData.contactId });
+      if (existingOrder) {
+        return NextResponse.json(
+          { error: "An order already exists for this contact" },
+          { status: 400 },
+        );
+      }
+    }
+
     // Validate items array is not empty
     if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
       return NextResponse.json(
@@ -171,6 +183,13 @@ export async function POST(request: NextRequest) {
 
     // Create order
     const order = await Order.create(orderData);
+
+    // If order was created from a contact, update the contact status to "Converted"
+    if (orderData.contactId) {
+      await Contact.findByIdAndUpdate(orderData.contactId, {
+        confirmed: "Converted",
+      });
+    }
 
     return NextResponse.json(order, { status: 201 });
   } catch (error: unknown) {

@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { getContactById, createOrderFromContact } from "@/utils/api";
+import { getContactById, createOrderFromContact, getProducts } from "@/utils/api";
 import { OrderStatus, PaymentStatus, PaymentMethod } from "@/types/order";
 import { Contact } from "@/types/contact";
+import { ProductWithId } from "@/types/product";
 
 interface OrderItem {
   type: string;
@@ -62,11 +63,14 @@ export default function ConvertContactToOrder({ params }: PageProps) {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
   const [newItemType, setNewItemType] = useState<string>("bouncer");
   const [newItemName, setNewItemName] = useState<string>("");
   const [newItemDescription, setNewItemDescription] = useState<string>("");
   const [newItemQuantity, setNewItemQuantity] = useState<number>(1);
   const [newItemUnitPrice, setNewItemUnitPrice] = useState<number>(0);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   // Get the NextAuth session
   const { data: session, status } = useSession();
@@ -78,6 +82,20 @@ export default function ConvertContactToOrder({ params }: PageProps) {
     }
   }, [status, router]);
 
+  // Check for missing required fields
+  const validateRequiredFields = useCallback(() => {
+    const missing: string[] = [];
+    
+    // Check if contact has required fields
+    if (contact) {
+      if (!contact.streetAddress) missing.push("Street Address");
+      if (!contact.partyStartTime) missing.push("Party Start Time");
+    }
+    
+    setMissingFields(missing);
+    return missing.length === 0;
+  }, [contact]);
+
   useEffect(() => {
     // Only fetch contact if authenticated
     if (status !== "authenticated") return;
@@ -88,6 +106,14 @@ export default function ConvertContactToOrder({ params }: PageProps) {
 
         // Use the getContactById function from the API client
         const contactData = await getContactById(resolvedParams.id);
+        
+        // Check if contact is already converted
+        if (contactData.confirmed === "Converted") {
+          setError("This contact has already been converted to an order");
+          setContact(contactData);
+          return;
+        }
+        
         setContact(contactData);
 
         // Initialize form data with contact information
@@ -134,6 +160,9 @@ export default function ConvertContactToOrder({ params }: PageProps) {
           items: initialItems,
           notes: contactData.message || "",
         }));
+
+        // Fetch product prices for the items
+        await fetchProductPrices(initialItems);
       } catch (error) {
         // Handle authentication errors
         if (
@@ -157,6 +186,92 @@ export default function ConvertContactToOrder({ params }: PageProps) {
     fetchContact();
   }, [resolvedParams.id, router, status]);
 
+  // Function to fetch product prices and update items
+  const fetchProductPrices = async (items: OrderItem[]) => {
+    try {
+      setIsLoadingProducts(true);
+      
+      // Map of extra field names to their display names
+      const extraNameMap: Record<string, string> = {
+        tablesChairs: "Tables & Chairs",
+        generator: "Generator",
+        popcornMachine: "Popcorn Machine",
+        cottonCandyMachine: "Cotton Candy Machine",
+        snowConeMachine: "Snow Cone Machine",
+        basketballShoot: "Basketball Shoot",
+        slushyMachine: "Slushy Machine",
+        overnight: "Overnight Rental",
+      };
+      
+      // Create a list of product names to search for
+      const productNames = items.map(item => item.name);
+      
+      // Fetch products that match these names
+      const productsResponse = await getProducts();
+      const products = productsResponse.products || [];
+      
+      // Create a map of product names to prices
+      const productPriceMap = new Map();
+      products.forEach((product: ProductWithId) => {
+        productPriceMap.set(product.name, product.price.base);
+        
+        // Also map display names of extras to their prices
+        Object.values(extraNameMap).forEach(displayName => {
+          if (product.name.includes(displayName)) {
+            productPriceMap.set(displayName, product.price.base);
+          }
+        });
+      });
+      
+      // Update items with prices from products
+      const updatedItems = items.map(item => {
+        const price = productPriceMap.get(item.name);
+        if (price) {
+          return {
+            ...item,
+            unitPrice: price,
+            totalPrice: price * item.quantity
+          };
+        }
+        return item;
+      });
+      
+      // Calculate totals
+      const subtotal = updatedItems.reduce(
+        (sum, item) => sum + item.totalPrice,
+        0
+      );
+      const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
+      const totalAmount = Math.round(
+        (subtotal +
+          formData.taxAmount +
+          formData.deliveryFee +
+          processingFee -
+          formData.discountAmount) *
+          100
+      ) / 100;
+      const balanceDue = Math.round(
+        (totalAmount - formData.depositAmount) * 100
+      ) / 100;
+      
+      // Update form data with new items and calculated values
+      setFormData(prev => ({
+        ...prev,
+        items: updatedItems,
+        subtotal,
+        processingFee,
+        totalAmount,
+        balanceDue
+      }));
+      
+    } catch (error) {
+      console.error("Error fetching product prices:", error);
+      // Don't set an error message, just log it
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     // Check if authenticated
     if (status !== "authenticated") {
@@ -164,6 +279,17 @@ export default function ConvertContactToOrder({ params }: PageProps) {
       return;
     }
     e.preventDefault();
+    
+    // Reset error and success messages
+    setError(null);
+    setSuccess(null);
+    
+    // Check if contact has required fields
+    const isValid = validateRequiredFields();
+    if (!isValid) {
+      setError(`Contact is missing required fields: ${missingFields.join(", ")}. Please update the contact with this information before converting to an order.`);
+      return;
+    }
 
     // Validate form data
     if (formData.items.length === 0) {
@@ -184,11 +310,17 @@ export default function ConvertContactToOrder({ params }: PageProps) {
       setIsLoading(true);
 
       // Use the createOrderFromContact function from the API client
-      await createOrderFromContact(resolvedParams.id, formData);
-
-      // Navigate back to orders list
-      router.push("/admin/orders");
-      router.refresh();
+      const order = await createOrderFromContact(resolvedParams.id, formData);
+      
+      // Show success message
+      setSuccess(`Order created successfully! Order number: ${order.orderNumber}`);
+      
+      // Wait a moment before redirecting
+      setTimeout(() => {
+        // Navigate back to orders list
+        router.push("/admin/orders");
+        router.refresh();
+      }, 2000);
     } catch (error) {
       // Handle authentication errors
       if (error instanceof Error && error.message.includes("401")) {
@@ -394,8 +526,8 @@ export default function ConvertContactToOrder({ params }: PageProps) {
     }));
   };
 
-  // Show loading spinner when session is loading or when fetching contact
-  if (status === "loading" || isLoading) {
+  // Show loading spinner when session is loading or when fetching contact or products
+  if (status === "loading" || isLoading || isLoadingProducts) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <LoadingSpinner className="w-8 h-8" />
@@ -453,6 +585,24 @@ export default function ConvertContactToOrder({ params }: PageProps) {
       {error && (
         <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
           {error}
+        </div>
+      )}
+      
+      {success && (
+        <div className="mb-4 p-4 bg-green-50 text-green-700 rounded-md">
+          {success}
+        </div>
+      )}
+      
+      {missingFields.length > 0 && (
+        <div className="mb-4 p-4 bg-yellow-50 text-yellow-700 rounded-md">
+          <p className="font-medium">Contact is missing required fields:</p>
+          <ul className="list-disc list-inside mt-2">
+            {missingFields.map((field, index) => (
+              <li key={index}>{field}</li>
+            ))}
+          </ul>
+          <p className="mt-2">Please update the contact with this information before converting to an order.</p>
         </div>
       )}
 
@@ -562,8 +712,17 @@ export default function ConvertContactToOrder({ params }: PageProps) {
                             step="0.01"
                             value={item.unitPrice}
                             onChange={(e) => handleItemPriceChange(index, "unitPrice", parseFloat(e.target.value))}
-                            className="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className={`w-24 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+                              item.unitPrice <= 0 
+                                ? "border-yellow-500 bg-yellow-50" 
+                                : "border-gray-300"
+                            }`}
                           />
+                          {item.unitPrice <= 0 && (
+                            <div className="text-xs text-yellow-600 mt-1">
+                              Please set a price
+                            </div>
+                          )}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           ${item.totalPrice.toFixed(2)}

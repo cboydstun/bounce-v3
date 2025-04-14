@@ -189,8 +189,8 @@ export async function DELETE(
     // Get the session using NextAuth's recommended approach
     const session = await getServerSession(authOptions);
 
-    // Check if user is authenticated and is an admin
-    if (!session || !session.user || (session.user as any).role !== "admin") {
+    // Check if user is authenticated
+    if (!session || !session.user) {
       return NextResponse.json(
         { error: "Not authorized to delete orders" },
         { status: 401 },

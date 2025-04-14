@@ -65,6 +65,7 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
         "Called / Texted",
         "Declined",
         "Cancelled",
+        "Converted",
       ],
       default: "Pending",
       validate: [

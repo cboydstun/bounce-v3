@@ -371,6 +371,101 @@ describe("Orders API", () => {
       expect(data.status).toBe("Pending");
       expect(data.paymentStatus).toBe("Pending");
     });
+    
+    it("should update contact status to Converted when creating an order from contact", async () => {
+      // Create a test contact with required fields for conversion
+      const testContact = await Contact.create({
+        bouncer: "Conversion Test Bouncer",
+        email: "conversion@example.com",
+        partyDate: new Date("2025-06-15"),
+        partyZipCode: "12345",
+        sourcePage: "website",
+        streetAddress: "123 Test St",
+        partyStartTime: "14:00",
+      }) as mongoose.Document & { _id: mongoose.Types.ObjectId };
+      
+      const orderData = {
+        contactId: testContact._id.toString(),
+        items: [
+          {
+            type: "bouncer",
+            name: "Conversion Test Bouncer",
+            quantity: 1,
+            unitPrice: 180,
+            totalPrice: 180,
+          },
+        ],
+        taxAmount: 14.85,
+        discountAmount: 0,
+        paymentMethod: "paypal",
+      };
+
+      const req = new NextRequest("http://localhost:3000/api/v1/orders", {
+        method: "POST",
+        body: JSON.stringify(orderData),
+      });
+
+      const response = await POST(req);
+      expect(response.status).toBe(201);
+
+      // Verify the order was created
+      const data = await response.json();
+      expect(data.contactId.toString()).toBe(testContact._id.toString());
+      
+      // Verify the contact status was updated to "Converted"
+      const updatedContact = await Contact.findById(testContact._id);
+      expect(updatedContact?.confirmed).toBe("Converted");
+    });
+    
+    it("should prevent creating duplicate orders for the same contact", async () => {
+      // Create a test contact
+      const testContact = await Contact.create({
+        bouncer: "Duplicate Test Bouncer",
+        email: "duplicate@example.com",
+        partyDate: new Date("2025-07-15"),
+        partyZipCode: "12345",
+        sourcePage: "website",
+        streetAddress: "123 Test St",
+        partyStartTime: "14:00",
+      }) as mongoose.Document & { _id: mongoose.Types.ObjectId };
+      
+      // Create first order
+      const orderData = {
+        contactId: testContact._id.toString(),
+        items: [
+          {
+            type: "bouncer",
+            name: "Duplicate Test Bouncer",
+            quantity: 1,
+            unitPrice: 180,
+            totalPrice: 180,
+          },
+        ],
+        taxAmount: 14.85,
+        discountAmount: 0,
+        paymentMethod: "paypal",
+      };
+
+      const firstReq = new NextRequest("http://localhost:3000/api/v1/orders", {
+        method: "POST",
+        body: JSON.stringify(orderData),
+      });
+
+      const firstResponse = await POST(firstReq);
+      expect(firstResponse.status).toBe(201);
+      
+      // Attempt to create second order for the same contact
+      const secondReq = new NextRequest("http://localhost:3000/api/v1/orders", {
+        method: "POST",
+        body: JSON.stringify(orderData),
+      });
+
+      const secondResponse = await POST(secondReq);
+      expect(secondResponse.status).toBe(400);
+      
+      const errorData = await secondResponse.json();
+      expect(errorData.error).toContain("An order already exists for this contact");
+    });
   });
 
   describe("GET /api/v1/orders/[id]", () => {

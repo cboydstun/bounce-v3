@@ -632,12 +632,25 @@ export const createOrderFromContact = async (
     paymentMethod: Parameters<typeof createOrder>[0]['paymentMethod']
   }
 ) => {
+  // Check if an order already exists for this contact
+  const existingOrders = await getOrders({ contactId });
+  if (existingOrders.orders && existingOrders.orders.length > 0) {
+    throw new Error("An order already exists for this contact");
+  }
+
   // Combine contact ID with order data
   const data = {
     ...orderData,
     contactId
   };
-  return createOrder(data);
+  
+  // Create the order
+  const order = await createOrder(data);
+  
+  // Mark the contact as converted
+  await updateContact(contactId, { confirmed: "Converted" });
+  
+  return order;
 };
 
 export default api;

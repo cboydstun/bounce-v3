@@ -6,7 +6,8 @@ export type ConfirmationStatus =
   | "Pending"
   | "Called / Texted"
   | "Declined"
-  | "Cancelled";
+  | "Cancelled"
+  | "Converted";
 
 // Define the Contact interface
 export interface Contact {
