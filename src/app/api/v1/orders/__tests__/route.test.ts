@@ -335,7 +335,7 @@ describe("Orders API", () => {
         customerEmail: "john@example.com",
         customerPhone: "123-456-7890",
         customerAddress: "123 Main St",
-        customerCity: "Austin",
+        customerCity: "San Antonio",
         customerState: "TX",
         customerZipCode: "78701",
         items: [
