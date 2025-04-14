@@ -21,29 +21,29 @@ The Order model represents a customer's order for bounce house rentals and relat
 
 ### Core Properties
 
-| Property             | Type                         | Description                                  | Required                 |
-| -------------------- | ---------------------------- | -------------------------------------------- | ------------------------ |
-| `_id`                | `string`                     | MongoDB document ID                          | Auto-generated           |
-| `orderNumber`        | `string`                     | Unique order identifier (e.g., BB-2024-0001) | Yes                      |
-| `contactId`          | `string`                     | Reference to a Contact document              | No\*                     |
-| `customerEmail`      | `string`                     | Customer's email address                     | No\*                     |
-| `items`              | `OrderItem[]`                | Array of ordered items                       | Yes                      |
-| `subtotal`           | `number`                     | Sum of all item prices                       | Yes                      |
-| `taxAmount`          | `number`                     | Tax amount                                   | Yes                      |
-| `discountAmount`     | `number`                     | Discount amount                              | Yes (default: 0)         |
-| `deliveryFee`        | `number`                     | Delivery fee                                 | Yes (default: $20)       |
-| `processingFee`      | `number`                     | Credit card processing fee (3% of subtotal)  | Yes (auto-calculated)    |
-| `totalAmount`        | `number`                     | Final amount                                 | Yes                      |
-| `depositAmount`      | `number`                     | Initial deposit amount                       | Yes (default: 0)         |
-| `balanceDue`         | `number`                     | Remaining balance                            | Yes                      |
-| `status`             | `OrderStatus`                | Current order status                         | Yes (default: "Pending") |
-| `paymentStatus`      | `PaymentStatus`              | Current payment status                       | Yes (default: "Pending") |
-| `paymentMethod`      | `PaymentMethod`              | Method of payment                            | Yes                      |
-| `paypalTransactions` | `PayPalTransactionDetails[]` | PayPal transaction details                   | No                       |
-| `notes`              | `string`                     | Additional order notes                       | No                       |
-| `tasks`              | `string[]`                   | List of tasks associated with the order      | No                       |
-| `createdAt`          | `Date`                       | Order creation date                          | Auto-generated           |
-| `updatedAt`          | `Date`                       | Order last update date                       | Auto-generated           |
+| Property             | Type                         | Description                                                          | Required                 |
+| -------------------- | ---------------------------- | -------------------------------------------------------------------- | ------------------------ |
+| `_id`                | `string`                     | MongoDB document ID                                                  | Auto-generated           |
+| `orderNumber`        | `string`                     | Unique order identifier (e.g., BB-2024-0001)                         | Yes                      |
+| `contactId`          | `string`                     | Reference to a Contact document                                      | No\*                     |
+| `customerEmail`      | `string`                     | Customer's email address                                             | No\*                     |
+| `items`              | `OrderItem[]`                | Array of ordered items                                               | Yes                      |
+| `subtotal`           | `number`                     | Sum of all item prices                                               | Yes                      |
+| `taxAmount`          | `number`                     | Tax amount                                                           | Yes                      |
+| `discountAmount`     | `number`                     | Discount amount                                                      | Yes (default: 0)         |
+| `deliveryFee`        | `number`                     | Delivery fee                                                         | Yes (default: $20)       |
+| `processingFee`      | `number`                     | Credit card processing fee (3% of subtotal, rounded to nearest cent) | Yes (auto-calculated)    |
+| `totalAmount`        | `number`                     | Final amount                                                         | Yes                      |
+| `depositAmount`      | `number`                     | Initial deposit amount                                               | Yes (default: 0)         |
+| `balanceDue`         | `number`                     | Remaining balance                                                    | Yes                      |
+| `status`             | `OrderStatus`                | Current order status                                                 | Yes (default: "Pending") |
+| `paymentStatus`      | `PaymentStatus`              | Current payment status                                               | Yes (default: "Pending") |
+| `paymentMethod`      | `PaymentMethod`              | Method of payment                                                    | Yes                      |
+| `paypalTransactions` | `PayPalTransactionDetails[]` | PayPal transaction details                                           | No                       |
+| `notes`              | `string`                     | Additional order notes                                               | No                       |
+| `tasks`              | `string[]`                   | List of tasks associated with the order                              | No                       |
+| `createdAt`          | `Date`                       | Order creation date                                                  | Auto-generated           |
+| `updatedAt`          | `Date`                       | Order last update date                                               | Auto-generated           |
 
 \*Note: Either `contactId` or `customerEmail` must be provided.
 
@@ -237,7 +237,7 @@ type PayPalTransactionStatus =
 - The following fields are optional and will be calculated if not provided:
   - `subtotal` (calculated from items)
   - `deliveryFee` (defaults to $20)
-  - `processingFee` (calculated as 3% of subtotal)
+  - `processingFee` (calculated as 3% of subtotal, rounded to nearest cent)
   - `totalAmount` (calculated from subtotal, taxAmount, deliveryFee, processingFee, and discountAmount)
   - `balanceDue` (calculated from totalAmount and depositAmount)
   - `orderNumber` (auto-generated if not provided)
@@ -702,6 +702,53 @@ const deleteOrder = async (orderId, adminToken) => {
 
 This documentation should provide a comprehensive guide for frontend developers to integrate with the Orders API.
 
+## Contact-Order-Task Relationship
+
+The following diagram illustrates the relationship between Contacts, Orders, and Tasks in the system:
+
+```mermaid
+graph TD
+    Contact[Contact] -->|can be converted to| Order[Order]
+    Order -->|contains| Task[Task]
+    Task -->|can be claimed by| Employee[Employee]
+
+    Contact --> ContactInfo[Contact Info]
+    Contact --> PartyInfo[Party Info]
+    Contact --> ProductInterest[Product Interest]
+
+    Order --> OrderItems[Order Items]
+    Order --> OrderFinancials[Order Financials]
+    Order --> OrderStatus[Order Status]
+
+    Task --> TaskType[Task Type]
+    Task --> TaskStatus[Task Status]
+    Task --> TaskSchedule[Task Schedule]
+
+    Contact -.->|inquiry| ProductInterest
+    Order -.->|generates| Task
+    Employee -.->|completes| Task
+```
+
+In this workflow:
+
+1. **Contacts** represent customer inquiries and contain basic customer information and product interests
+2. **Orders** are created from contacts (or directly) and contain detailed information about products, pricing, and payment
+3. **Tasks** are generated from orders and represent specific jobs that need to be completed (delivery, setup, pickup, etc.)
+4. **Employees** can claim and complete tasks
+
+### Task Management
+
+Tasks are an array of jobs associated with each order. The admin can create jobs which are available to be claimed by employees. Tasks can include a variety of activities needed for a party rental business:
+
+- **Delivery**: Transporting equipment to the customer's location
+- **Setup**: Assembling and preparing equipment at the location
+- **Attendant**: Providing on-site supervision during the event
+- **Pickup**: Disassembling and retrieving equipment after the event
+- **Cleaning**: Sanitizing and preparing equipment for the next rental
+- **Maintenance**: Performing repairs or routine maintenance on equipment
+
+Each task has its own lifecycle (created → assigned → in progress → completed) and can be tracked separately within the system.
+
 ## Frontend Checkout Implementation
 
 The frontend checkout process is implemented as a multi-step wizard that guides customers through the rental selection, delivery information, extras selection, order review, and payment process.
@@ -818,5 +865,5 @@ Prices are calculated automatically based on the selected bouncer and extras:
 
 - Subtotal = Bouncer price + Sum of selected extras
 - Tax = Subtotal × 8.25%
-- Processing Fee = Subtotal × 3%
+- Processing Fee = Subtotal × 3% (rounded to nearest cent)
 - Total = Subtotal + Tax + Delivery Fee + Processing Fee - Discount

@@ -66,7 +66,18 @@ export default function EditOrderPage({ params }: PageProps) {
           
           const orderData = await getOrderById(params.id);
           setOrder(orderData);
-          setFormData(orderData);
+          
+          // Ensure processing fee is correctly calculated (3% of subtotal)
+          const calculatedProcessingFee = Math.round(orderData.subtotal * 0.03 * 100) / 100;
+          
+          // Update the order data with the calculated processing fee
+          const updatedOrderData = {
+            ...orderData,
+            processingFee: calculatedProcessingFee
+          };
+          
+          setOrder(updatedOrderData);
+          setFormData(updatedOrderData);
           
           // If order has a contactId, fetch the contact data
           if (orderData.contactId) {
@@ -709,7 +720,7 @@ export default function EditOrderPage({ params }: PageProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Processing Fee (3% of subtotal)
+                Processing Fee (3% of subtotal, rounded to nearest cent)
                 <input
                   type="number"
                   name="processingFee"
