@@ -52,6 +52,75 @@ jest.mock("next/navigation", () => ({
   },
 }));
 
+// Declare the global type for mockAuthState
+declare global {
+  var mockAuthState: {
+    authenticated: boolean;
+    isAdmin: boolean;
+  };
+}
+
+// Create a global variable to track authentication state in tests
+global.mockAuthState = {
+  authenticated: true,
+  isAdmin: false,
+};
+
+// Mock next-auth
+jest.mock("next-auth", () => {
+  const mockNextAuth = () => {
+    return {
+      GET: jest.fn(),
+      POST: jest.fn(),
+    };
+  };
+  
+  mockNextAuth.getServerSession = jest.fn().mockImplementation(() => {
+    // Check the global auth state
+    if (!global.mockAuthState.authenticated) {
+      return Promise.resolve(null);
+    }
+    
+    // Return session based on role
+    return Promise.resolve({
+      user: {
+        id: global.mockAuthState.isAdmin ? "admin-user-id" : "test-user-id",
+        email: global.mockAuthState.isAdmin ? "admin@example.com" : "test@example.com",
+        name: global.mockAuthState.isAdmin ? "Admin User" : "Test User",
+        role: global.mockAuthState.isAdmin ? "admin" : "user",
+      },
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+  });
+  
+  return mockNextAuth;
+});
+
+// Mock next-auth providers
+jest.mock("next-auth/providers/credentials", () => {
+  return {
+    __esModule: true,
+    default: jest.fn(() => ({
+      id: "credentials",
+      name: "Credentials",
+      credentials: {},
+      authorize: jest.fn(),
+    })),
+  };
+});
+
+// Mock next-auth/jwt
+jest.mock("next-auth/jwt", () => ({
+  getToken: jest.fn().mockImplementation(() => {
+    return Promise.resolve({
+      id: "test-user-id",
+      email: "test@example.com",
+      name: "Test User",
+      role: "admin",
+    });
+  }),
+}));
+
 // Mock next/server
 jest.mock("next/server", () => {
   // Create a mock NextRequest class

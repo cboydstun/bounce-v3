@@ -275,8 +275,9 @@ OrderSchema.pre('save', function(next) {
     ) / 100;
   }
 
-  // Calculate balance due if not provided
-  if (!this.balanceDue) {
+  // Calculate balance due if not provided or not explicitly set to 0
+  // Use isNaN to check if it's undefined or null, but allow explicit 0 values
+  if (isNaN(this.balanceDue) || this.balanceDue === undefined || this.balanceDue === null) {
     this.balanceDue = Math.round((this.totalAmount - this.depositAmount) * 100) / 100;
   }
 
