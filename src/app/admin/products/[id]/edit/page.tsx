@@ -8,14 +8,6 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type { ProductFormData } from "../../ProductForm";
 import { getProductBySlug, updateProduct } from "@/utils/api";
 
-// Debug logger function
-const debugLog = (message: string, data?: any) => {
-  console.log(
-    `[PRODUCT EDIT PAGE DEBUG] ${message}`,
-    data ? JSON.stringify(data, null, 2) : "",
-  );
-};
-
 interface Product extends ProductFormData {
   slug: string;
   _id: string;
@@ -52,7 +44,6 @@ export default function EditProductPage({
 
     const fetchProduct = async () => {
       try {
-        debugLog("Fetching product", { slug: unwrappedParams.id });
         setIsLoading(true);
         setError(null);
 
@@ -71,11 +62,9 @@ export default function EditProductPage({
           setError(
             err instanceof Error
               ? err.message
-              : "An error occurred while fetching the product",
+              : "An error occurred while fetching the product"
           );
         }
-
-        debugLog("Error fetching product", { error: err });
       } finally {
         setIsLoading(false);
       }
@@ -104,7 +93,6 @@ export default function EditProductPage({
         slug: product.slug, // Preserve the slug from the original product
       });
 
-      debugLog("Product updated successfully");
       router.push("/admin/products");
     } catch (err) {
       console.error("Submit error:", err);
@@ -117,11 +105,9 @@ export default function EditProductPage({
         setError("Authentication failed. Please log in again.");
       } else {
         setError(
-          err instanceof Error ? err.message : "Failed to update product",
+          err instanceof Error ? err.message : "Failed to update product"
         );
       }
-
-      debugLog("Error updating product", { error: err });
     } finally {
       setIsLoading(false);
     }

@@ -20,15 +20,11 @@ export async function withAuth(
   req: NextRequest,
   handler: (req: AuthRequest) => Promise<NextResponse>,
 ) {
-  debugLog("withAuth middleware called", {
-    path: req.nextUrl.pathname,
-    method: req.method,
-  });
+
 
   try {
     // Check if user is already set (for testing purposes)
     if ((req as AuthRequest).user) {
-      debugLog("User already set on request (test mode)");
       return await handler(req as AuthRequest);
     }
 
@@ -89,7 +85,6 @@ export async function withAuth(
       { status: 401 },
     );
   } catch (error) {
-    debugLog("Auth middleware error", { error });
     console.error("Auth middleware error:", error);
     return NextResponse.json(
       { error: "Unauthorized - Authentication error" },
