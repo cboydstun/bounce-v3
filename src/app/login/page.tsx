@@ -22,7 +22,6 @@ const LoginForm = () => {
     const from = searchParams.get("from");
     if (from) {
       setError(`You need to be logged in to access ${from}`);
-      debugLog("Redirected from protected page", { from });
     }
 
     // If already authenticated, redirect
@@ -47,34 +46,29 @@ const LoginForm = () => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-    debugLog("Login form submitted", { email });
 
     // Enhanced validation
     if (!email) {
       setError("Please provide an email address");
       setIsLoading(false);
-      debugLog("Validation failed: missing email");
       return;
     }
 
     if (!email.match(/^\S+@\S+\.\S+$/)) {
       setError("Please provide a valid email address");
       setIsLoading(false);
-      debugLog("Validation failed: invalid email format");
       return;
     }
 
     if (!password) {
       setError("Please provide a password");
       setIsLoading(false);
-      debugLog("Validation failed: missing password");
       return;
     }
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters long");
       setIsLoading(false);
-      debugLog("Validation failed: password too short");
       return;
     }
 
@@ -104,8 +98,6 @@ const LoginForm = () => {
       }
     } catch (err) {
       console.error("Login error:", err);
-      debugLog("Login exception", { error: err });
-
       // Improved error handling with more specific messages
       if (err instanceof Error) {
         if (
@@ -113,7 +105,7 @@ const LoginForm = () => {
           err.message.includes("connection")
         ) {
           setError(
-            "Network error. Please check your internet connection and try again.",
+            "Network error. Please check your internet connection and try again."
           );
         } else {
           setError(err.message);

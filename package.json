@@ -45,6 +45,7 @@
     "next-cloudinary": "^6.16.0",
     "node-fetch": "^3.3.2",
     "nodemailer": "^6.10.0",
+    "npm": "^11.3.0",
     "postcss": "^8",
     "react": "^19.0.0",
     "react-big-calendar": "^1.18.0",
