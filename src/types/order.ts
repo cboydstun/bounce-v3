@@ -77,11 +77,21 @@ export interface OrderItem {
 }
 
 /**
+ * Defines the possible time preference options
+ */
+export type TimePreference = "flexible" | "specific";
+
+/**
  * Main Order interface
  */
 export interface Order {
   _id: string; // MongoDB document ID
   contactId?: string | IContactDocument; // Optional reference to the Contact
+
+  // Delivery and pickup time preferences
+  deliveryTimePreference: TimePreference; // Flexible or specific delivery time
+  pickupTimePreference: TimePreference; // Flexible or specific pickup time
+  specificTimeCharge: number; // Additional charge for specific time ($50)
 
   // Direct customer information (used when no contactId is provided)
   customerName?: string; // Customer's name
@@ -117,6 +127,11 @@ export interface Order {
  */
 export interface OrderFormData {
   contactId?: string; // Optional: ID of the associated contact
+
+  // Delivery and pickup time preferences
+  deliveryTimePreference?: TimePreference; // Optional: defaults to "flexible"
+  pickupTimePreference?: TimePreference; // Optional: defaults to "flexible"
+  specificTimeCharge?: number; // Optional: defaults to 0
 
   // Direct customer information (used when no contactId is provided)
   customerName?: string; // Customer's name

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckoutState } from "../utils/checkoutReducer";
-import PayPalButton from "../PayPalButton";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { CheckoutState } from "../utils/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Step5Props {
@@ -135,16 +135,18 @@ const Step5_Payment: React.FC<Step5Props> = ({
   ]);
 
   // Handle PayPal payment success
-  const handlePaymentSuccess = async (details: any) => {
+  const handlePaymentSuccess = async (orderId: string) => {
     try {
+      console.log("[Step5_Payment] Payment successful with order ID:", orderId);
+      
       // Process payment
       const paymentDetails = {
-        transactionId: details.id,
-        payerId: details.payer.payer_id,
-        payerEmail: details.payer.email_address,
+        transactionId: orderId,
+        payerId: "PAYPAL_PAYER", // We don't have this from the new PayPal SDK
+        payerEmail: state.customerEmail, // Use customer email as fallback
         amount: state.totalAmount,
         currency: "USD",
-        status: details.status.toUpperCase(),
+        status: "COMPLETED",
       };
 
       const response = await fetch(`/api/v1/orders/${state.orderId}/payment`, {
@@ -162,8 +164,15 @@ const Step5_Payment: React.FC<Step5Props> = ({
         );
       }
 
-      // Call the onPaymentSuccess callback
-      onPaymentSuccess(details);
+      // Call the onPaymentSuccess callback with a compatible format
+      onPaymentSuccess({
+        id: orderId,
+        status: "COMPLETED",
+        payer: {
+          payer_id: "PAYPAL_PAYER",
+          email_address: state.customerEmail,
+        },
+      });
     } catch (error) {
       console.error("Error processing payment:", error);
       dispatch({
@@ -177,14 +186,11 @@ const Step5_Payment: React.FC<Step5Props> = ({
   };
 
   // Handle PayPal payment error
-  const handlePaymentError = (error: any) => {
+  const handlePaymentError = (error: Error) => {
     console.error("PayPal payment error:", error);
     dispatch({
       type: "PAYMENT_ERROR",
-      payload:
-        error instanceof Error
-          ? error.message
-          : "Payment failed. Please try again.",
+      payload: error.message || "Payment failed. Please try again.",
     });
   };
 
@@ -361,12 +367,79 @@ const Step5_Payment: React.FC<Step5Props> = ({
               </button>
             </div>
           ) : (
-            <PayPalButton
-              amount={state.totalAmount}
-              onSuccess={handlePaymentSuccess}
-              onError={handlePaymentError}
-              disabled={!state.orderId}
-            />
+            <PayPalScriptProvider 
+              options={{
+                clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "",
+                currency: "USD",
+                intent: "capture",
+                components: "buttons",
+                // Enable credit card funding
+                "disable-funding": ""
+              }}
+            >
+              <div className="w-full my-4">
+                {!state.orderId ? (
+                  <div className="bg-gray-100 p-4 rounded-md text-center text-gray-500">
+                    PayPal payment is disabled until order details are confirmed.
+                  </div>
+                ) : (
+                  <PayPalButtons
+                    style={{
+                      layout: "vertical",
+                      color: "gold",
+                      shape: "rect",
+                      label: "pay",
+                      height: 45
+                    }}
+                    disabled={!state.orderId}
+                    forceReRender={[state.totalAmount, state.orderId]}
+                    createOrder={(data, actions) => {
+                      console.log("Creating PayPal order for amount:", state.totalAmount);
+                      return actions.order.create({
+                        intent: "CAPTURE",
+                        purchase_units: [
+                          {
+                            amount: {
+                              value: state.totalAmount.toFixed(2),
+                              currency_code: "USD",
+                            },
+                            description: "Bounce House Rental",
+                          },
+                        ],
+                        application_context: {
+                          shipping_preference: "NO_SHIPPING",
+                          user_action: "PAY_NOW",
+                        },
+                      });
+                    }}
+                    onApprove={async (data, actions) => {
+                      try {
+                        console.log("Payment approved:", data);
+                        if (!actions.order) {
+                          throw new Error("PayPal order actions not available");
+                        }
+                        
+                        const orderDetails = await actions.order.capture();
+                        console.log("Payment successful:", orderDetails);
+                        
+                        // Call the success handler with the order ID
+                        handlePaymentSuccess(orderDetails.id ?? "UNKNOWN_ORDER_ID");
+                      } catch (error) {
+                        console.error("Error capturing PayPal order:", error);
+                        handlePaymentError(error instanceof Error ? error : new Error(String(error)));
+                      }
+                    }}
+                    onError={(err) => {
+                      console.error("PayPal Error:", err);
+                      handlePaymentError(err instanceof Error ? err : new Error(String(err)));
+                    }}
+                    onCancel={() => {
+                      console.log("Payment cancelled by user");
+                    }}
+                  />
+                )}
+              </div>
+            </PayPalScriptProvider>
           )}
         </div>
       </div>

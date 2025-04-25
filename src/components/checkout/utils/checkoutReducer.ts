@@ -7,6 +7,26 @@ import {
 } from "./types";
 import { PaymentStatus } from "@/types/order";
 
+// Helper function to calculate specific time charge
+const calculateSpecificTimeCharge = (
+  deliveryTimePreference: "flexible" | "specific",
+  pickupTimePreference: "flexible" | "specific"
+): number => {
+  let charge = 0;
+  
+  // $20 charge for specific delivery time
+  if (deliveryTimePreference === "specific") {
+    charge += 20;
+  }
+  
+  // Additional $20 charge for specific pickup time
+  if (pickupTimePreference === "specific") {
+    charge += 20;
+  }
+  
+  return charge;
+};
+
 // Define the initial state
 export const initialState: CheckoutState = {
   currentStep: "delivery",
@@ -17,8 +37,11 @@ export const initialState: CheckoutState = {
   bouncerPrice: 0,
   deliveryDate: "",
   deliveryTime: "",
+  deliveryTimePreference: "flexible",
   pickupDate: "",
   pickupTime: "",
+  pickupTimePreference: "flexible",
+  specificTimeCharge: 0,
 
   // Step 2
   customerName: "",
@@ -34,6 +57,7 @@ export const initialState: CheckoutState = {
   extras: EXTRAS.map((extra) => ({
     ...extra,
     selected: false,
+    quantity: 1, // Default quantity
   })),
 
   // Step 4
@@ -134,6 +158,37 @@ export const checkoutReducer = (
         ...state,
         pickupTime: action.payload,
       };
+      
+    case "SET_DELIVERY_TIME_PREFERENCE":
+      return {
+        ...state,
+        deliveryTimePreference: action.payload,
+        // Reset specific time charge when preferences change
+        specificTimeCharge: calculateSpecificTimeCharge(
+          action.payload,
+          state.pickupTimePreference
+        ),
+      };
+      
+    case "SET_PICKUP_TIME_PREFERENCE":
+      return {
+        ...state,
+        pickupTimePreference: action.payload,
+        // Reset specific time charge when preferences change
+        specificTimeCharge: calculateSpecificTimeCharge(
+          state.deliveryTimePreference,
+          action.payload
+        ),
+      };
+      
+    case "UPDATE_SPECIFIC_TIME_CHARGE":
+      return {
+        ...state,
+        specificTimeCharge: calculateSpecificTimeCharge(
+          state.deliveryTimePreference,
+          state.pickupTimePreference
+        ),
+      };
 
     case "SET_CUSTOMER_INFO":
       return {
@@ -147,6 +202,36 @@ export const checkoutReducer = (
         extras: state.extras.map((extra) =>
           extra.id === action.payload
             ? { ...extra, selected: !extra.selected }
+            : extra,
+        ),
+      };
+      
+    case "INCREMENT_EXTRA_QUANTITY":
+      return {
+        ...state,
+        extras: state.extras.map((extra) =>
+          extra.id === action.payload && extra.id === "tablesChairs"
+            ? { ...extra, quantity: extra.quantity + 1 }
+            : extra,
+        ),
+      };
+      
+    case "DECREMENT_EXTRA_QUANTITY":
+      return {
+        ...state,
+        extras: state.extras.map((extra) =>
+          extra.id === action.payload && extra.id === "tablesChairs" && extra.quantity > 1
+            ? { ...extra, quantity: extra.quantity - 1 }
+            : extra,
+        ),
+      };
+      
+    case "SET_EXTRA_QUANTITY":
+      return {
+        ...state,
+        extras: state.extras.map((extra) =>
+          extra.id === action.payload.id && extra.id === "tablesChairs"
+            ? { ...extra, quantity: Math.max(1, action.payload.quantity) }
             : extra,
         ),
       };

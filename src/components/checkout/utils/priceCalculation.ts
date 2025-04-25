@@ -7,9 +7,15 @@ export const calculatePrices = (state: CheckoutState) => {
   // Calculate subtotal from bouncer and selected extras
   const extrasTotal = state.extras
     .filter((extra) => extra.selected)
-    .reduce((sum: number, extra) => sum + extra.price, 0);
+    .reduce((sum: number, extra) => {
+      // Only apply quantity for Tables & Chairs
+      const quantity = extra.id === "tablesChairs" ? extra.quantity : 1;
+      return sum + (extra.price * quantity);
+    }, 0);
 
-  const subtotal = state.bouncerPrice + extrasTotal;
+  // Include specific time charge in the subtotal
+  const specificTimeCharge = state.specificTimeCharge || 0;
+  const subtotal = state.bouncerPrice + extrasTotal + specificTimeCharge;
 
   // Calculate tax (8.25%)
   const taxAmount = parseFloat((subtotal * 0.0825).toFixed(2));
@@ -36,6 +42,7 @@ export const calculatePrices = (state: CheckoutState) => {
     taxAmount,
     deliveryFee,
     processingFee,
+    specificTimeCharge,
     totalAmount,
   };
 };

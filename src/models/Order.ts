@@ -9,6 +9,7 @@ import {
   Currency,
   PayPalTransactionStatus,
 } from "../types/order";
+import Counter from "./Counter";
 
 // PayPal transaction schema
 const PayPalTransactionSchema = new Schema(
@@ -108,6 +109,25 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
       ref: "Contact",
       required: false, // Now optional
       index: true,
+    },
+
+    // Delivery and pickup time preferences
+    deliveryTimePreference: {
+      type: String,
+      enum: ["flexible", "specific"],
+      default: "flexible",
+      required: true,
+    },
+    pickupTimePreference: {
+      type: String,
+      enum: ["flexible", "specific"],
+      default: "flexible",
+      required: true,
+    },
+    specificTimeCharge: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
 
     // Direct customer information fields
@@ -339,32 +359,16 @@ OrderSchema.statics.findByDateRange = function (
   });
 };
 
-// Generate a unique order number
+// Generate a unique order number using atomic counter
 OrderSchema.statics.generateOrderNumber = async function () {
   const currentDate = new Date();
   const year = currentDate.getFullYear();
-
-  // Find all orders for this year to get the highest sequence number
-  const orders = await this.find({
-    orderNumber: new RegExp(`^BB-${year}-`),
-  }).exec();
-
-  // Start with sequence 1 or find the highest existing sequence
-  let sequence = 1;
-  if (orders && orders.length > 0) {
-    // Extract all sequence numbers and find the highest one
-    const sequences = orders.map((order) => {
-      const parts = order.orderNumber.split("-");
-      if (parts.length === 3) {
-        return parseInt(parts[2], 10);
-      }
-      return 0;
-    });
-
-    const highestSequence = Math.max(...sequences);
-    sequence = highestSequence + 1;
-  }
-
+  
+  // Use the Counter model to get the next sequence atomically
+  // The counter name includes the year to reset sequence each year
+  const counterName = `orderNumber-${year}`;
+  const sequence = await Counter.getNextSequence(counterName);
+  
   // Format with padded zeros (e.g., BB-2024-0001)
   return `BB-${year}-${sequence.toString().padStart(4, "0")}`;
 };

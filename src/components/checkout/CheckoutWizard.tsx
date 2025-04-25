@@ -165,8 +165,10 @@ const CheckoutWizard: React.FC = () => {
             isNextDisabled={
               // Disable next button if there are validation errors
               Object.keys(state.errors).length > 0 ||
-              // Or if we're on step 1 and no bouncer is selected
-              (state.currentStep === "delivery" && !state.selectedBouncer) ||
+              // Or if we're on extras step and no items are selected
+              (state.currentStep === "extras" && 
+                !state.selectedBouncer && 
+                !state.extras.some(extra => extra.selected)) ||
               // Or if we're on review step and terms not agreed
               (state.currentStep === "review" && !state.agreedToTerms)
             }

@@ -189,157 +189,301 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
       )}
 
       {/* Delivery Date and Time */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label
-            htmlFor="delivery-date"
-            className="block text-lg font-medium text-gray-700"
-          >
-            📅 Delivery Date
-          </label>
-          <input
-            type="date"
-            id="delivery-date"
-            value={state.deliveryDate}
-            onChange={(e) =>
-              dispatch({ type: "SET_DELIVERY_DATE", payload: e.target.value })
-            }
-            min={new Date().toISOString().split("T")[0]} // Today or later
-            className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
-          />
-          {state.errors.deliveryDate && (
-            <p className="text-red-500 text-sm mt-1">
-              {state.errors.deliveryDate}
-            </p>
-          )}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label
+              htmlFor="delivery-date"
+              className="block text-lg font-medium text-gray-700"
+            >
+              📅 Delivery Date
+            </label>
+            <input
+              type="date"
+              id="delivery-date"
+              value={state.deliveryDate}
+              onChange={(e) =>
+                dispatch({ type: "SET_DELIVERY_DATE", payload: e.target.value })
+              }
+              min={new Date().toISOString().split("T")[0]} // Today or later
+              className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
+            />
+            {state.errors.deliveryDate && (
+              <p className="text-red-500 text-sm mt-1">
+                {state.errors.deliveryDate}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="delivery-time-preference"
+              className="block text-lg font-medium text-gray-700"
+            >
+              ⏰ Delivery Time Preference
+            </label>
+            <div className="flex space-x-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="delivery-time-preference"
+                  checked={state.deliveryTimePreference === "flexible"}
+                  onChange={() =>
+                    dispatch({
+                      type: "SET_DELIVERY_TIME_PREFERENCE",
+                      payload: "flexible",
+                    })
+                  }
+                  className="h-4 w-4 text-primary-purple focus:ring-primary-purple"
+                />
+                <span>Flexible (Free)</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="delivery-time-preference"
+                  checked={state.deliveryTimePreference === "specific"}
+                  onChange={() =>
+                    dispatch({
+                      type: "SET_DELIVERY_TIME_PREFERENCE",
+                      payload: "specific",
+                    })
+                  }
+                  className="h-4 w-4 text-primary-purple focus:ring-primary-purple"
+                />
+                <span>Specific Time (+$20)</span>
+              </label>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <label
-            htmlFor="delivery-time"
-            className="block text-lg font-medium text-gray-700"
-          >
-            🕒 Delivery Time
-          </label>
-          <select
-            id="delivery-time"
-            value={state.deliveryTime}
-            onChange={(e) =>
-              dispatch({ type: "SET_DELIVERY_TIME", payload: e.target.value })
-            }
-            className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
-          >
-            <option value="">Select a time...</option>
-            {timeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          {state.errors.deliveryTime && (
-            <p className="text-red-500 text-sm mt-1">
-              {state.errors.deliveryTime}
-            </p>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label
+              htmlFor="delivery-time"
+              className="block text-lg font-medium text-gray-700"
+            >
+              🕒 Delivery Time
+            </label>
+            <select
+              id="delivery-time"
+              value={state.deliveryTime}
+              onChange={(e) =>
+                dispatch({ type: "SET_DELIVERY_TIME", payload: e.target.value })
+              }
+              disabled={state.deliveryTimePreference === "flexible"}
+              className={`w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 ${
+                state.deliveryTimePreference === "flexible"
+                  ? "bg-gray-100 cursor-not-allowed"
+                  : ""
+              }`}
+            >
+              <option value="">Select a time...</option>
+              {timeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {state.errors.deliveryTime && (
+              <p className="text-red-500 text-sm mt-1">
+                {state.errors.deliveryTime}
+              </p>
+            )}
+            {state.deliveryTimePreference === "flexible" && (
+              <p className="text-gray-500 text-sm italic">
+                We'll contact you to arrange a delivery window
+              </p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            {/* Empty div for grid alignment */}
+          </div>
         </div>
       </div>
 
       {/* Pickup Date and Time */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label
-            htmlFor="pickup-date"
-            className="block text-lg font-medium text-gray-700"
-          >
-            📅 Pickup Date
-          </label>
-          <input
-            type="date"
-            id="pickup-date"
-            value={state.pickupDate}
-            onChange={(e) =>
-              dispatch({ type: "SET_PICKUP_DATE", payload: e.target.value })
-            }
-            min={state.deliveryDate || new Date().toISOString().split("T")[0]} // Delivery date or today
-            className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
-          />
-          {state.errors.pickupDate && (
-            <p className="text-red-500 text-sm mt-1">
-              {state.errors.pickupDate}
-            </p>
-          )}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label
+              htmlFor="pickup-date"
+              className="block text-lg font-medium text-gray-700"
+            >
+              📅 Pickup Date
+            </label>
+            <input
+              type="date"
+              id="pickup-date"
+              value={state.pickupDate}
+              onChange={(e) =>
+                dispatch({ type: "SET_PICKUP_DATE", payload: e.target.value })
+              }
+              min={state.deliveryDate || new Date().toISOString().split("T")[0]} // Delivery date or today
+              className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
+            />
+            {state.errors.pickupDate && (
+              <p className="text-red-500 text-sm mt-1">
+                {state.errors.pickupDate}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="pickup-time-preference"
+              className="block text-lg font-medium text-gray-700"
+            >
+              ⏰ Pickup Time Preference
+            </label>
+            <div className="flex space-x-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="pickup-time-preference"
+                  checked={state.pickupTimePreference === "flexible"}
+                  onChange={() =>
+                    dispatch({
+                      type: "SET_PICKUP_TIME_PREFERENCE",
+                      payload: "flexible",
+                    })
+                  }
+                  className="h-4 w-4 text-primary-purple focus:ring-primary-purple"
+                />
+                <span>Flexible (Free)</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="pickup-time-preference"
+                  checked={state.pickupTimePreference === "specific"}
+                  onChange={() =>
+                    dispatch({
+                      type: "SET_PICKUP_TIME_PREFERENCE",
+                      payload: "specific",
+                    })
+                  }
+                  className="h-4 w-4 text-primary-purple focus:ring-primary-purple"
+                />
+                <span>Specific Time (+$20)</span>
+              </label>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <label
-            htmlFor="pickup-time"
-            className="block text-lg font-medium text-gray-700"
-          >
-            🕒 Pickup Time
-          </label>
-          <select
-            id="pickup-time"
-            value={state.pickupTime}
-            onChange={(e) =>
-              dispatch({ type: "SET_PICKUP_TIME", payload: e.target.value })
-            }
-            className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
-          >
-            <option value="">Select a time...</option>
-            {timeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          {state.errors.pickupTime && (
-            <p className="text-red-500 text-sm mt-1">
-              {state.errors.pickupTime}
-            </p>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label
+              htmlFor="pickup-time"
+              className="block text-lg font-medium text-gray-700"
+            >
+              🕒 Pickup Time
+            </label>
+            <select
+              id="pickup-time"
+              value={state.pickupTime}
+              onChange={(e) =>
+                dispatch({ type: "SET_PICKUP_TIME", payload: e.target.value })
+              }
+              disabled={state.pickupTimePreference === "flexible"}
+              className={`w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 ${
+                state.pickupTimePreference === "flexible"
+                  ? "bg-gray-100 cursor-not-allowed"
+                  : ""
+              }`}
+            >
+              <option value="">Select a time...</option>
+              {timeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {state.errors.pickupTime && (
+              <p className="text-red-500 text-sm mt-1">
+                {state.errors.pickupTime}
+              </p>
+            )}
+            {state.pickupTimePreference === "flexible" && (
+              <p className="text-gray-500 text-sm italic">
+                We'll contact you to arrange a pickup window
+              </p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            {/* Empty div for grid alignment */}
+          </div>
         </div>
       </div>
 
       {/* Validation Message */}
-      {state.deliveryDate &&
-        state.pickupDate &&
-        state.deliveryTime &&
-        state.pickupTime && (
-          <div className="bg-blue-50 p-4 rounded-md">
-            <p className="text-blue-800">
-              Your rental will be delivered on{" "}
-              <strong>
-                {new Date(state.deliveryDate).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                })}{" "}
+      {state.deliveryDate && state.pickupDate && (
+        <div className="bg-blue-50 p-4 rounded-md">
+          <p className="text-blue-800">
+            Your rental will be delivered on{" "}
+            <strong>
+              {new Date(state.deliveryDate).toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+            </strong>
+            {state.deliveryTimePreference === "specific" ? (
+              <>
+                {" "}
                 at{" "}
-                {new Date(
-                  `2000-01-01T${state.deliveryTime}`,
-                ).toLocaleTimeString("en-US", {
-                  hour: "numeric",
-                  minute: "numeric",
-                  hour12: true,
-                })}
-              </strong>{" "}
-              and picked up on{" "}
-              <strong>
-                {new Date(state.pickupDate).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                })}{" "}
+                <strong>
+                  {new Date(
+                    `2000-01-01T${state.deliveryTime}`,
+                  ).toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "numeric",
+                    hour12: true,
+                  })}
+                </strong>
+              </>
+            ) : (
+              <strong> (flexible time)</strong>
+            )}{" "}
+            and picked up on{" "}
+            <strong>
+              {new Date(state.pickupDate).toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+            </strong>
+            {state.pickupTimePreference === "specific" ? (
+              <>
+                {" "}
                 at{" "}
-                {new Date(`2000-01-01T${state.pickupTime}`).toLocaleTimeString(
-                  "en-US",
-                  { hour: "numeric", minute: "numeric", hour12: true },
-                )}
-              </strong>
-              .
-            </p>
-          </div>
-        )}
+                <strong>
+                  {new Date(
+                    `2000-01-01T${state.pickupTime}`,
+                  ).toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "numeric",
+                    hour12: true,
+                  })}
+                </strong>
+              </>
+            ) : (
+              <strong> (flexible time)</strong>
+            )}
+            .
+            {state.specificTimeCharge > 0 && (
+              <span className="block mt-2 text-sm">
+                Note: A $20 fee is added for each specific time selection (delivery and/or pickup).
+                {state.deliveryTimePreference === "specific" && state.pickupTimePreference === "specific" && 
+                  " You have selected both specific delivery and pickup times ($100 total)."
+                }
+              </span>
+            )}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

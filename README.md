@@ -459,7 +459,7 @@ const ProductSchema = new Schema<IProductDocument, IProductModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -593,7 +593,7 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -641,7 +641,7 @@ export interface IContactModel extends Model<IContactDocument> {
   findByPartyDate(date: string): Promise<IContactDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string,
+    endDate: string
   ): Promise<IContactDocument[]>;
 }
 ```
@@ -773,9 +773,371 @@ const PromoOptinSchema = new Schema<IPromoOptinDocument, IPromoOptinModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
+
+## Orders Implementation
+
+The Orders API is implemented using MongoDB and Mongoose with TypeScript. It provides a comprehensive system for managing customer orders with advanced features like order status tracking, payment processing, and task management.
+
+### MongoDB Schema
+
+```typescript
+// Order item schema
+const OrderItemSchema = new Schema(
+  {
+    type: {
+      type: String,
+      enum: ["bouncer", "extra", "add-on"],
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+      default: 1,
+    },
+    unitPrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    totalPrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
+// PayPal transaction schema
+const PayPalTransactionSchema = new Schema(
+  {
+    transactionId: {
+      type: String,
+      required: true,
+    },
+    payerId: String,
+    payerEmail: String,
+    amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    currency: {
+      type: String,
+      enum: ["USD"],
+      default: "USD",
+    },
+    status: {
+      type: String,
+      enum: [
+        "CREATED",
+        "SAVED",
+        "APPROVED",
+        "VOIDED",
+        "COMPLETED",
+        "PAYER_ACTION_REQUIRED",
+        "FAILED",
+      ],
+      required: true,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: Date,
+  },
+  { _id: false }
+);
+
+// Main Order schema
+const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
+  {
+    contactId: {
+      type: Schema.Types.ObjectId,
+      ref: "Contact",
+      required: false,
+      index: true,
+    },
+
+    // Direct customer information fields
+    customerName: {
+      type: String,
+      trim: true,
+    },
+    customerEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      match: [
+        /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/,
+        "Please enter a valid email address",
+      ],
+    },
+    customerPhone: {
+      type: String,
+      trim: true,
+      match: [/^(\+?[\d\s\-()]{7,16})?$/, "Please enter a valid phone number"],
+    },
+    customerAddress: {
+      type: String,
+      trim: true,
+    },
+    customerCity: {
+      type: String,
+      trim: true,
+    },
+    customerState: {
+      type: String,
+      trim: true,
+    },
+    customerZipCode: {
+      type: String,
+      trim: true,
+    },
+
+    orderNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      index: true,
+    },
+    items: {
+      type: [OrderItemSchema],
+      required: true,
+      validate: [
+        (items: any[]) => items.length > 0,
+        "Order must contain at least one item",
+      ],
+    },
+    subtotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    taxAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    discountAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    deliveryFee: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 20, // Default $20 delivery fee
+    },
+    processingFee: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: function (this: IOrderDocument) {
+        // Default 3% of subtotal, rounded to nearest cent
+        return this.subtotal ? Math.round(this.subtotal * 0.03 * 100) / 100 : 0;
+      },
+    },
+    totalAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    depositAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    balanceDue: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    status: {
+      type: String,
+      enum: [
+        "Pending",
+        "Processing",
+        "Paid",
+        "Confirmed",
+        "Cancelled",
+        "Refunded",
+      ],
+      default: "Pending",
+      required: true,
+      index: true,
+    },
+    paymentStatus: {
+      type: String,
+      enum: [
+        "Pending",
+        "Authorized",
+        "Paid",
+        "Failed",
+        "Refunded",
+        "Partially Refunded",
+      ],
+      default: "Pending",
+      required: true,
+      index: true,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["paypal", "cash", "quickbooks", "free"],
+      required: true,
+    },
+    paypalTransactions: {
+      type: [PayPalTransactionSchema],
+      default: [],
+    },
+    notes: {
+      type: String,
+      trim: true,
+    },
+    tasks: {
+      type: [String],
+      default: [],
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+```
+
+### Features
+
+- **Order Status Tracking**: Track orders through their lifecycle (Pending, Processing, Paid, Confirmed, Cancelled, Refunded)
+- **Payment Status Tracking**: Track payment status separately from order status (Pending, Authorized, Paid, Failed, Refunded, Partially Refunded)
+- **Payment Processing**: Integration with PayPal for secure payment processing
+- **Contact-to-Order Conversion**: Convert contact inquiries to orders with reference to the original contact
+- **Task Management**: Associate tasks with orders for delivery, setup, pickup, etc.
+- **Automatic Calculations**: Auto-calculate subtotal, processing fee, total amount, and balance due
+- **Order Number Generation**: Automatically generate sequential order numbers (e.g., BB-2024-0001)
+- **Date Range Filtering**: Filter orders by creation date range
+- **Status Filtering**: Filter orders by order status or payment status
+- **Contact Association**: Filter orders by associated contact
+
+### TypeScript Interfaces
+
+The order model uses TypeScript interfaces to ensure type safety:
+
+```typescript
+export interface Order {
+  _id: string;
+  orderNumber: string;
+  contactId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  customerCity?: string;
+  customerState?: string;
+  customerZipCode?: string;
+  items: OrderItem[];
+  subtotal: number;
+  taxAmount: number;
+  discountAmount: number;
+  deliveryFee: number;
+  processingFee: number;
+  totalAmount: number;
+  depositAmount: number;
+  balanceDue: number;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
+  paypalTransactions?: PayPalTransactionDetails[];
+  notes?: string;
+  tasks?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OrderItem {
+  type: OrderItemType;
+  name: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface IOrderDocument extends Omit<Order, "_id">, Document {
+  generateOrderNumber(): Promise<string>;
+}
+
+export interface IOrderModel extends Model<IOrderDocument> {
+  findByOrderNumber(orderNumber: string): Promise<IOrderDocument | null>;
+  findByContactId(contactId: string): Promise<IOrderDocument[]>;
+  findByStatus(status: OrderStatus): Promise<IOrderDocument[]>;
+  findByDateRange(
+    startDate: string,
+    endDate: string
+  ): Promise<IOrderDocument[]>;
+  generateOrderNumber(): Promise<string>;
+}
+```
+
+### API Endpoints
+
+The Orders API provides comprehensive endpoints with filtering, payment processing, and authentication:
+
+- **GET /api/v1/orders**: List all orders with filtering and pagination (authenticated users only)
+- **GET /api/v1/orders/:id**: Get a specific order by ID (authenticated users only)
+- **POST /api/v1/orders**: Create a new order (public)
+- **PUT /api/v1/orders/:id**: Update an order (authenticated users only)
+- **DELETE /api/v1/orders/:id**: Delete an order (authenticated users only)
+  - Restrictions: Cannot delete orders with status "Paid" or "Confirmed"
+- **POST /api/v1/orders/:id/payment**: Initiate payment for an order
+- **PATCH /api/v1/orders/:id/payment**: Record payment transaction for an order
+
+### Frontend Components
+
+- **Admin Interface**: Comprehensive admin interface for managing orders
+  - Order listing with filtering by date, status, and payment status
+  - Order detail view with editable fields
+  - Order creation form with automatic calculations
+  - Task management interface for adding and removing tasks
+- **Checkout Process**: Multi-step checkout wizard for customers
+  - Step1_RentalSelection: Select products and delivery dates
+  - Step2_DeliveryInfo: Enter customer and delivery information
+  - Step3_Extras: Add optional extras to the order
+  - Step4_OrderReview: Review order details before payment
+  - Step5_Payment: Complete payment via PayPal
+- **Supporting Components**:
+  - ProgressBar: Visual indicator of checkout progress
+  - NavigationButtons: Navigation between checkout steps
+  - OrderFormTracker: Analytics tracking for the checkout process
+  - PayPalButton: Integration with PayPal for payment processing
+
+### Contact-Order-Task Relationship
+
+The system implements a relationship between Contacts, Orders, and Tasks:
+
+1. **Contacts** represent customer inquiries and contain basic customer information
+2. **Orders** are created from contacts (or directly) and contain detailed information about products, pricing, and payment
+3. **Tasks** are generated from orders and represent specific jobs that need to be completed (delivery, setup, pickup, etc.)
+4. **Employees** can claim and complete tasks
+
+This relationship allows for a complete workflow from initial customer inquiry to order fulfillment and task completion.
 
 ### Features
 
@@ -812,7 +1174,7 @@ export interface IPromoOptinModel extends Model<IPromoOptinDocument> {
   findByPromoName(promoName: string): Promise<IPromoOptinDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string,
+    endDate: string
   ): Promise<IPromoOptinDocument[]>;
 }
 ```
@@ -957,7 +1319,7 @@ const handleGetCoupon = () => {
 
   // Navigate to the coupon form
   router.push(
-    `/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`,
+    `/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`
   );
 };
 ```
@@ -1121,7 +1483,7 @@ const ReviewSchema = new Schema<IReviewDocument, IReviewModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 

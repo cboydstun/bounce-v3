@@ -25,19 +25,21 @@ export const steps: StepConfig[] = [
 
 // Define the extras with their prices
 export const EXTRAS = [
-  { id: "tablesChairs", name: "Tables & Chairs", price: 25, image: "🪑" },
-  { id: "generator", name: "Generator", price: 50, image: "⚡" },
-  { id: "popcornMachine", name: "Popcorn Machine", price: 35, image: "🍿" },
+  { id: "tablesChairs", name: "Tables & Chairs", price: 19.95, image: "🪑" },
+  { id: "generator", name: "Generator", price: 49.95, image: "⚡" },
+  { id: "popcornMachine", name: "Popcorn Machine", price: 49.95, image: "🍿" },
   {
     id: "cottonCandyMachine",
     name: "Cotton Candy Machine",
-    price: 35,
+    price: 49.95,
     image: "🍭",
   },
-  { id: "snowConeMachine", name: "Snow Cone Machine", price: 35, image: "🧊" },
-  { id: "basketballShoot", name: "Basketball Shoot", price: 30, image: "🏀" },
-  { id: "slushyMachine", name: "Slushy Machine", price: 40, image: "🥤" },
-  { id: "overnight", name: "Overnight Rental", price: 75, image: "🌙" },
+  { id: "snowConeMachine", name: "Snow Cone Machine", price: 49.95, image: "🧊" },
+  { id: "basketballShoot", name: "Basketball Shoot", price: 49.95, image: "🏀" },
+  { id: "slushyMachineSingle", name: "Single Tank Slushy Machine", price: 124.95, image: "🥤" },
+  { id: "slushyMachineDouble", name: "Double Tank Slushy Machine", price: 149.95, image: "🥤🥤" },
+  { id: "slushyMachineTriple", name: "Triple Tank Slushy Machine", price: 174.95, image: "🥤🥤🥤" },
+  { id: "overnight", name: "Overnight Rental", price: 49.95, image: "🌙" },
 ];
 
 // Define the checkout state interface
@@ -51,8 +53,11 @@ export interface CheckoutState {
   bouncerPrice: number;
   deliveryDate: string;
   deliveryTime: string;
+  deliveryTimePreference: "flexible" | "specific";
   pickupDate: string;
   pickupTime: string;
+  pickupTimePreference: "flexible" | "specific";
+  specificTimeCharge: number;
 
   // Step 2: Delivery Information
   customerName: string;
@@ -70,6 +75,7 @@ export interface CheckoutState {
     name: string;
     price: number;
     selected: boolean;
+    quantity: number;
     image: string;
   }[];
 
@@ -141,10 +147,16 @@ export type CheckoutAction =
     }
   | { type: "SET_DELIVERY_DATE"; payload: string }
   | { type: "SET_DELIVERY_TIME"; payload: string }
+  | { type: "SET_DELIVERY_TIME_PREFERENCE"; payload: "flexible" | "specific" }
   | { type: "SET_PICKUP_DATE"; payload: string }
   | { type: "SET_PICKUP_TIME"; payload: string }
+  | { type: "SET_PICKUP_TIME_PREFERENCE"; payload: "flexible" | "specific" }
+  | { type: "UPDATE_SPECIFIC_TIME_CHARGE" }
   | { type: "SET_CUSTOMER_INFO"; payload: Partial<CheckoutState> }
   | { type: "TOGGLE_EXTRA"; payload: string }
+  | { type: "INCREMENT_EXTRA_QUANTITY"; payload: string }
+  | { type: "DECREMENT_EXTRA_QUANTITY"; payload: string }
+  | { type: "SET_EXTRA_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "UPDATE_PRICES"; payload: Partial<CheckoutState> }
   | { type: "SET_ORDER_ID"; payload: string }
   | { type: "SET_ORDER_NUMBER"; payload: string }

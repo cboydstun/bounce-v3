@@ -14,15 +14,14 @@ export const validateStep = (
 
   switch (step) {
     case "delivery": // Rental Selection
-      if (!state.selectedBouncer) {
-        errors.selectedBouncer = "Please select a bouncer";
-      }
+      // We'll validate bouncer selection in the extras step
+      // to allow extras-only orders
 
       if (!state.deliveryDate) {
         errors.deliveryDate = "Please select a delivery date";
       }
 
-      if (!state.deliveryTime) {
+      if (state.deliveryTimePreference === "specific" && !state.deliveryTime) {
         errors.deliveryTime = "Please select a delivery time";
       }
 
@@ -30,7 +29,7 @@ export const validateStep = (
         errors.pickupDate = "Please select a pickup date";
       }
 
-      if (!state.pickupTime) {
+      if (state.pickupTimePreference === "specific" && !state.pickupTime) {
         errors.pickupTime = "Please select a pickup time";
       }
 
@@ -103,7 +102,10 @@ export const validateStep = (
       break;
 
     case "extras": // Extras
-      // No validation needed for extras
+      // Ensure at least one item is selected (either bouncer or extras)
+      if (!state.selectedBouncer && !state.extras.some(extra => extra.selected)) {
+        errors.extras = "Please select at least one item (bouncer or extras) to continue";
+      }
       break;
 
     case "review": // Order Review
