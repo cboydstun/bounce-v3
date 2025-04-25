@@ -389,6 +389,81 @@ type PayPalTransactionStatus =
 
 ### Payment Processing
 
+#### PayPal Integration
+
+The application uses the official PayPal React SDK (`@paypal/react-paypal-js`) for payment processing. This integration provides a seamless checkout experience with both PayPal and credit card payment options.
+
+**Key Components:**
+
+1. **PayPalScriptProvider**: Manages the loading of the PayPal JavaScript SDK
+2. **PayPalButtons**: Renders the PayPal Smart Payment Buttons
+
+**Configuration:**
+
+```typescript
+// PayPal configuration (src/config/paypal.ts)
+export const paypalConfig = {
+  clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
+  currency: "USD",
+  intent: "capture",
+  components: "buttons",
+};
+```
+
+**Implementation in Checkout:**
+
+The PayPal integration is implemented in the Step5_Payment component of the checkout process:
+
+```typescript
+<PayPalScriptProvider options={paypalConfig}>
+  <PayPalButtons
+    style={{
+      layout: "vertical",
+      color: "gold",
+      shape: "rect",
+      label: "pay",
+      height: 45
+    }}
+    createOrder={(data, actions) => {
+      return actions.order.create({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            amount: {
+              value: totalAmount.toFixed(2),
+              currency_code: "USD",
+            },
+            description: "Bounce House Rental",
+          },
+        ],
+        application_context: {
+          shipping_preference: "NO_SHIPPING",
+          user_action: "PAY_NOW",
+        },
+      });
+    }}
+    onApprove={async (data, actions) => {
+      const orderDetails = await actions.order.capture();
+      // Process successful payment
+      handlePaymentSuccess(orderDetails.id);
+    }}
+    onError={(err) => {
+      // Handle payment errors
+      handlePaymentError(err);
+    }}
+  />
+</PayPalScriptProvider>
+```
+
+**Payment Flow:**
+
+1. User clicks the PayPal button
+2. PayPal modal opens for payment selection (PayPal account or credit card)
+3. User completes payment in the PayPal interface
+4. On successful payment, the `onApprove` callback is triggered
+5. The application captures the payment and updates the order status
+6. The order details are sent to the backend for processing
+
 #### Initiate Payment
 
 **Endpoint:** `POST /api/v1/orders/[id]/payment`
@@ -490,6 +565,33 @@ type PayPalTransactionStatus =
   }
 }
 ```
+
+#### Troubleshooting PayPal Integration
+
+Common issues and solutions:
+
+1. **PayPal SDK Loading Errors**:
+
+   - Ensure the `NEXT_PUBLIC_PAYPAL_CLIENT_ID` environment variable is correctly set
+   - Check for browser console errors related to script loading
+   - Verify network connectivity to PayPal domains
+
+2. **Payment Button Not Appearing**:
+
+   - Confirm the PayPalScriptProvider is properly configured
+   - Ensure the PayPal client ID is valid and has the correct permissions
+   - Check for any Content Security Policy (CSP) restrictions
+
+3. **Payment Processing Errors**:
+
+   - Verify the order amount is valid and properly formatted
+   - Ensure the PayPal account is properly configured for accepting payments
+   - Check the browser console for detailed error messages
+
+4. **Testing in Development**:
+   - Use PayPal Sandbox accounts for testing
+   - Create test buyer and seller accounts in the PayPal Developer Dashboard
+   - Use the PayPal Sandbox mode by setting the appropriate client ID
 
 ## Order Status Flow
 

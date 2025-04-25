@@ -777,6 +777,85 @@ const PromoOptinSchema = new Schema<IPromoOptinDocument, IPromoOptinModel>(
 );
 ```
 
+## PayPal Integration
+
+The application integrates with PayPal for secure payment processing using the official PayPal React SDK (`@paypal/react-paypal-js`). This integration provides a seamless checkout experience with both PayPal and credit card payment options.
+
+### Key Components
+
+- **PayPalScriptProvider**: Manages the loading of the PayPal JavaScript SDK
+- **PayPalButtons**: Renders the PayPal Smart Payment Buttons with customizable styling
+
+### Configuration
+
+```typescript
+// PayPal configuration (src/config/paypal.ts)
+export const paypalConfig: ReactPayPalScriptOptions = {
+  clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "",
+  currency: "USD",
+  intent: "capture",
+  components: "buttons",
+};
+```
+
+### Implementation
+
+The PayPal integration is implemented in the checkout process:
+
+```typescript
+<PayPalScriptProvider options={paypalConfig}>
+  <PayPalButtons
+    style={{
+      layout: "vertical",
+      color: "gold",
+      shape: "rect",
+      label: "pay",
+      height: 45
+    }}
+    createOrder={(data, actions) => {
+      return actions.order.create({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            amount: {
+              value: totalAmount.toFixed(2),
+              currency_code: "USD",
+            },
+            description: "Bounce House Rental",
+          },
+        ],
+        application_context: {
+          shipping_preference: "NO_SHIPPING",
+          user_action: "PAY_NOW",
+        },
+      });
+    }}
+    onApprove={async (data, actions) => {
+      const orderDetails = await actions.order.capture();
+      // Process successful payment
+      handlePaymentSuccess(orderDetails.id);
+    }}
+    onError={(err) => {
+      // Handle payment errors
+      handlePaymentError(err);
+    }}
+  />
+</PayPalScriptProvider>
+```
+
+### Payment Flow
+
+1. User clicks the PayPal button
+2. PayPal modal opens for payment selection (PayPal account or credit card)
+3. User completes payment in the PayPal interface
+4. On successful payment, the `onApprove` callback is triggered
+5. The application captures the payment and updates the order status
+6. The order details are sent to the backend for processing
+
+### Testing
+
+A dedicated test page at `/paypal-test` allows for testing the PayPal integration with configurable amounts and detailed error reporting.
+
 ## Orders Implementation
 
 The Orders API is implemented using MongoDB and Mongoose with TypeScript. It provides a comprehensive system for managing customer orders with advanced features like order status tracking, payment processing, and task management.
