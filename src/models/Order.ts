@@ -363,12 +363,12 @@ OrderSchema.statics.findByDateRange = function (
 OrderSchema.statics.generateOrderNumber = async function () {
   const currentDate = new Date();
   const year = currentDate.getFullYear();
-  
+
   // Use the Counter model to get the next sequence atomically
   // The counter name includes the year to reset sequence each year
   const counterName = `orderNumber-${year}`;
   const sequence = await Counter.getNextSequence(counterName);
-  
+
   // Format with padded zeros (e.g., BB-2024-0001)
   return `BB-${year}-${sequence.toString().padStart(4, "0")}`;
 };

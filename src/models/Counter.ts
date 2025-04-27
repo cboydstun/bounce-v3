@@ -14,15 +14,17 @@ export interface ICounterModel extends mongoose.Model<ICounterDocument> {
 // Define the counter schema
 const CounterSchema = new Schema<ICounterDocument, ICounterModel>({
   _id: { type: String, required: true },
-  seq: { type: Number, default: 0 }
+  seq: { type: Number, default: 0 },
 });
 
 // Add a static method to get the next sequence
-CounterSchema.statics.getNextSequence = async function(name: string): Promise<number> {
+CounterSchema.statics.getNextSequence = async function (
+  name: string,
+): Promise<number> {
   const result = await this.findOneAndUpdate(
     { _id: name },
     { $inc: { seq: 1 } },
-    { new: true, upsert: true }
+    { new: true, upsert: true },
   );
   return result.seq;
 };
@@ -34,7 +36,10 @@ let CounterModel: ICounterModel;
 if (mongoose.models.Counter) {
   CounterModel = mongoose.models.Counter as unknown as ICounterModel;
 } else {
-  CounterModel = mongoose.model<ICounterDocument, ICounterModel>("Counter", CounterSchema);
+  CounterModel = mongoose.model<ICounterDocument, ICounterModel>(
+    "Counter",
+    CounterSchema,
+  );
 }
 
 export default CounterModel;

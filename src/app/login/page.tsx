@@ -110,7 +110,7 @@ const LoginForm = () => {
           err.message.includes("connection")
         ) {
           setError(
-            "Network error. Please check your internet connection and try again."
+            "Network error. Please check your internet connection and try again.",
           );
         } else {
           setError(err.message);

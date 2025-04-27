@@ -29,16 +29,18 @@ export function usePayPalScript({
   onError,
   debug = true,
   currency = "USD",
-  components = ["buttons"]
+  components = ["buttons"],
 }: UsePayPalScriptOptions = {}) {
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [scriptError, setScriptError] = useState<Error | null>(null);
-  const clientIdRef = useRef<string | undefined>(process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID);
+  const clientIdRef = useRef<string | undefined>(
+    process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
+  );
   const paypalRef = useRef<PayPalNamespace | null>(null);
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const scriptLoadAttemptedRef = useRef(false);
-  
+
   // Debug logging function
   const log = (message: string, ...args: any[]) => {
     if (debug) {
@@ -70,14 +72,19 @@ export function usePayPalScript({
 
     // Validate client ID
     if (!clientIdRef.current) {
-      const error = new Error("PayPal Client ID is missing. Check your environment variables.");
+      const error = new Error(
+        "PayPal Client ID is missing. Check your environment variables.",
+      );
       logError(error.message);
       setScriptError(error);
       if (onError) onError(error);
       return;
     }
 
-    log("Initializing PayPal script with client ID:", clientIdRef.current.substring(0, 10) + "...");
+    log(
+      "Initializing PayPal script with client ID:",
+      clientIdRef.current.substring(0, 10) + "...",
+    );
 
     // Check if PayPal is already available globally
     if (window.paypal) {
@@ -88,10 +95,12 @@ export function usePayPalScript({
     }
 
     // Check if script is already in the DOM
-    const existingScript = document.querySelector('script[data-namespace="paypalSDK"]');
+    const existingScript = document.querySelector(
+      'script[data-namespace="paypalSDK"]',
+    );
     if (existingScript) {
       log("PayPal script tag already exists in DOM");
-      
+
       // Set up a check interval to wait for window.paypal to be available
       checkIntervalRef.current = setInterval(() => {
         if (window.paypal) {
@@ -101,47 +110,52 @@ export function usePayPalScript({
           setScriptLoaded(true);
         }
       }, 100);
-      
+
       // Set a timeout to stop checking after 15 seconds
       timeoutRef.current = setTimeout(() => {
         clearTimers();
         if (!window.paypal) {
-          const timeoutError = new Error("PayPal SDK failed to initialize after timeout");
+          const timeoutError = new Error(
+            "PayPal SDK failed to initialize after timeout",
+          );
           logError(timeoutError.message);
           setScriptError(timeoutError);
           if (onError) onError(timeoutError);
         }
       }, 15000);
-      
+
       return;
     }
 
     try {
       // Build the script URL with all necessary parameters
-      const componentsParam = components.join(',');
-      const scriptUrl = new URL('https://www.paypal.com/sdk/js');
-      scriptUrl.searchParams.append('client-id', clientIdRef.current);
-      scriptUrl.searchParams.append('currency', currency);
-      scriptUrl.searchParams.append('components', componentsParam);
-      scriptUrl.searchParams.append('debug', debug ? 'true' : 'false');
+      const componentsParam = components.join(",");
+      const scriptUrl = new URL("https://www.paypal.com/sdk/js");
+      scriptUrl.searchParams.append("client-id", clientIdRef.current);
+      scriptUrl.searchParams.append("currency", currency);
+      scriptUrl.searchParams.append("components", componentsParam);
+      scriptUrl.searchParams.append("debug", debug ? "true" : "false");
       // Add a cache buster to prevent caching issues
-      scriptUrl.searchParams.append('_', Date.now().toString());
-      
+      scriptUrl.searchParams.append("_", Date.now().toString());
+
       log("Creating PayPal script with URL:", scriptUrl.toString());
 
       // Create the script element using the official PayPal approach
-      const script = document.createElement('script');
+      const script = document.createElement("script");
       script.src = scriptUrl.toString();
-      script.setAttribute('data-namespace', 'paypalSDK');
-      script.setAttribute('data-page-type', 'checkout');
-      script.setAttribute('data-partner-attribution-id', 'NEXTJS_PAYPAL_INTEGRATION');
+      script.setAttribute("data-namespace", "paypalSDK");
+      script.setAttribute("data-page-type", "checkout");
+      script.setAttribute(
+        "data-partner-attribution-id",
+        "NEXTJS_PAYPAL_INTEGRATION",
+      );
       script.async = true;
       script.defer = true;
-      
+
       // Add event listeners
-      script.addEventListener('load', () => {
+      script.addEventListener("load", () => {
         log("PayPal script onload event fired");
-        
+
         // Set up a check interval to wait for window.paypal to be available
         checkIntervalRef.current = setInterval(() => {
           if (window.paypal) {
@@ -152,34 +166,36 @@ export function usePayPalScript({
             setScriptError(null);
           }
         }, 100);
-        
+
         // Set a timeout to stop checking after 15 seconds
         timeoutRef.current = setTimeout(() => {
           clearTimers();
           if (!window.paypal) {
-            const timeoutError = new Error("PayPal SDK failed to initialize after timeout");
+            const timeoutError = new Error(
+              "PayPal SDK failed to initialize after timeout",
+            );
             logError(timeoutError.message);
             setScriptError(timeoutError);
             if (onError) onError(timeoutError);
           }
         }, 15000);
       });
-      
-      script.addEventListener('error', (event) => {
+
+      script.addEventListener("error", (event) => {
         logError("PayPal script loading error:", event);
         clearTimers();
         const loadError = new Error("Failed to load PayPal SDK script");
         setScriptError(loadError);
         if (onError) onError(loadError);
       });
-      
+
       // Add the script to the document head (PayPal recommends head over body)
       log("Appending PayPal script to document head");
       document.head.appendChild(script);
-      
     } catch (error) {
       logError("Error during PayPal script creation:", error);
-      const creationError = error instanceof Error ? error : new Error(String(error));
+      const creationError =
+        error instanceof Error ? error : new Error(String(error));
       setScriptError(creationError);
       if (onError) onError(creationError);
     }
@@ -188,7 +204,7 @@ export function usePayPalScript({
   // Load the script when the component mounts
   useEffect(() => {
     loadPayPalScript();
-    
+
     // Cleanup function
     return () => {
       clearTimers();
@@ -210,14 +226,16 @@ export function usePayPalScript({
     clearTimers();
     setScriptError(null);
     scriptLoadAttemptedRef.current = false;
-    
+
     // Remove any existing script tags
-    const existingScript = document.querySelector('script[data-namespace="paypalSDK"]');
+    const existingScript = document.querySelector(
+      'script[data-namespace="paypalSDK"]',
+    );
     if (existingScript) {
       log("Removing existing PayPal script tag");
       existingScript.remove();
     }
-    
+
     // Try loading again
     loadPayPalScript();
   };
@@ -225,8 +243,9 @@ export function usePayPalScript({
   return {
     scriptLoaded,
     scriptError,
-    paypal: scriptLoaded && !scriptError ? (paypalRef.current || window.paypal) : null,
+    paypal:
+      scriptLoaded && !scriptError ? paypalRef.current || window.paypal : null,
     clientId: clientIdRef.current,
-    retryLoading
+    retryLoading,
   };
 }

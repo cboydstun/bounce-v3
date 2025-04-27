@@ -10,20 +10,20 @@ import { PaymentStatus } from "@/types/order";
 // Helper function to calculate specific time charge
 const calculateSpecificTimeCharge = (
   deliveryTimePreference: "flexible" | "specific",
-  pickupTimePreference: "flexible" | "specific"
+  pickupTimePreference: "flexible" | "specific",
 ): number => {
   let charge = 0;
-  
+
   // $20 charge for specific delivery time
   if (deliveryTimePreference === "specific") {
     charge += 20;
   }
-  
+
   // Additional $20 charge for specific pickup time
   if (pickupTimePreference === "specific") {
     charge += 20;
   }
-  
+
   return charge;
 };
 
@@ -158,7 +158,7 @@ export const checkoutReducer = (
         ...state,
         pickupTime: action.payload,
       };
-      
+
     case "SET_DELIVERY_TIME_PREFERENCE":
       return {
         ...state,
@@ -166,10 +166,10 @@ export const checkoutReducer = (
         // Reset specific time charge when preferences change
         specificTimeCharge: calculateSpecificTimeCharge(
           action.payload,
-          state.pickupTimePreference
+          state.pickupTimePreference,
         ),
       };
-      
+
     case "SET_PICKUP_TIME_PREFERENCE":
       return {
         ...state,
@@ -177,16 +177,16 @@ export const checkoutReducer = (
         // Reset specific time charge when preferences change
         specificTimeCharge: calculateSpecificTimeCharge(
           state.deliveryTimePreference,
-          action.payload
+          action.payload,
         ),
       };
-      
+
     case "UPDATE_SPECIFIC_TIME_CHARGE":
       return {
         ...state,
         specificTimeCharge: calculateSpecificTimeCharge(
           state.deliveryTimePreference,
-          state.pickupTimePreference
+          state.pickupTimePreference,
         ),
       };
 
@@ -205,7 +205,7 @@ export const checkoutReducer = (
             : extra,
         ),
       };
-      
+
     case "INCREMENT_EXTRA_QUANTITY":
       return {
         ...state,
@@ -215,17 +215,19 @@ export const checkoutReducer = (
             : extra,
         ),
       };
-      
+
     case "DECREMENT_EXTRA_QUANTITY":
       return {
         ...state,
         extras: state.extras.map((extra) =>
-          extra.id === action.payload && extra.id === "tablesChairs" && extra.quantity > 1
+          extra.id === action.payload &&
+          extra.id === "tablesChairs" &&
+          extra.quantity > 1
             ? { ...extra, quantity: extra.quantity - 1 }
             : extra,
         ),
       };
-      
+
     case "SET_EXTRA_QUANTITY":
       return {
         ...state,

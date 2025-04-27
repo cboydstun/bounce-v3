@@ -251,7 +251,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                   }
                   className="h-4 w-4 text-primary-purple focus:ring-primary-purple"
                 />
-                <span>Specific Time (+$20)</span>
+                <span>Specific Time (+$10)</span>
               </label>
             </div>
           </div>
@@ -271,12 +271,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               onChange={(e) =>
                 dispatch({ type: "SET_DELIVERY_TIME", payload: e.target.value })
               }
-              disabled={state.deliveryTimePreference === "flexible"}
-              className={`w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 ${
-                state.deliveryTimePreference === "flexible"
-                  ? "bg-gray-100 cursor-not-allowed"
-                  : ""
-              }`}
+              className={`w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3`}
             >
               <option value="">Select a time...</option>
               {timeOptions.map((option) => (
@@ -290,16 +285,18 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                 {state.errors.deliveryTime}
               </p>
             )}
-            {state.deliveryTimePreference === "flexible" && (
+            {state.deliveryTimePreference === "flexible" ? (
               <p className="text-gray-500 text-sm italic">
-                We'll contact you to arrange a delivery window
+                We will be there at or before the selected time
+              </p>
+            ) : (
+              <p className="text-gray-500 text-sm italic">
+                We will be there at the selected time
               </p>
             )}
           </div>
-          
-          <div className="space-y-2">
-            {/* Empty div for grid alignment */}
-          </div>
+
+          <div className="space-y-2">{/* Empty div for grid alignment */}</div>
         </div>
       </div>
 
@@ -321,7 +318,9 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                 dispatch({ type: "SET_PICKUP_DATE", payload: e.target.value })
               }
               min={state.deliveryDate || new Date().toISOString().split("T")[0]} // Delivery date or today
-              className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
+              className={
+                "w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
+              }
             />
             {state.errors.pickupDate && (
               <p className="text-red-500 text-sm mt-1">
@@ -366,7 +365,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                   }
                   className="h-4 w-4 text-primary-purple focus:ring-primary-purple"
                 />
-                <span>Specific Time (+$20)</span>
+                <span>Specific Time (+$10)</span>
               </label>
             </div>
           </div>
@@ -386,12 +385,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               onChange={(e) =>
                 dispatch({ type: "SET_PICKUP_TIME", payload: e.target.value })
               }
-              disabled={state.pickupTimePreference === "flexible"}
-              className={`w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 ${
-                state.pickupTimePreference === "flexible"
-                  ? "bg-gray-100 cursor-not-allowed"
-                  : ""
-              }`}
+              className={`w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 `}
             >
               <option value="">Select a time...</option>
               {timeOptions.map((option) => (
@@ -405,16 +399,18 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                 {state.errors.pickupTime}
               </p>
             )}
-            {state.pickupTimePreference === "flexible" && (
+            {state.pickupTimePreference === "flexible" ? (
               <p className="text-gray-500 text-sm italic">
-                We'll contact you to arrange a pickup window
+                We will be there at or after the selected time
+              </p>
+            ) : (
+              <p className="text-gray-500 text-sm italic">
+                We will be there at the selected time
               </p>
             )}
           </div>
-          
-          <div className="space-y-2">
-            {/* Empty div for grid alignment */}
-          </div>
+
+          <div className="space-y-2">{/* Empty div for grid alignment */}</div>
         </div>
       </div>
 
@@ -445,7 +441,19 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                 </strong>
               </>
             ) : (
-              <strong> (flexible time)</strong>
+              <>
+                {" "}
+                at or before{" "}
+                <strong>
+                  {new Date(
+                    `2000-01-01T${state.deliveryTime}`,
+                  ).toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "numeric",
+                    hour12: true,
+                  })}
+                </strong>
+              </>
             )}{" "}
             and picked up on{" "}
             <strong>
@@ -470,15 +478,27 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                 </strong>
               </>
             ) : (
-              <strong> (flexible time)</strong>
-            )}
-            .
+              <>
+                {" "}
+                at or after{" "}
+                <strong>
+                  {new Date(
+                    `2000-01-01T${state.pickupTime}`,
+                  ).toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "numeric",
+                    hour12: true,
+                  })}
+                </strong>
+              </>
+            )}.
             {state.specificTimeCharge > 0 && (
               <span className="block mt-2 text-sm">
-                Note: A $20 fee is added for each specific time selection (delivery and/or pickup).
-                {state.deliveryTimePreference === "specific" && state.pickupTimePreference === "specific" && 
-                  " You have selected both specific delivery and pickup times ($100 total)."
-                }
+                Note: A $10 fee is added for each specific time selection
+                (delivery and/or pickup).
+                {state.deliveryTimePreference === "specific" &&
+                  state.pickupTimePreference === "specific" &&
+                  " You have selected both specific delivery and pickup times ($20 total)."}
               </span>
             )}
           </p>

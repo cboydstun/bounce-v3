@@ -459,7 +459,7 @@ const ProductSchema = new Schema<IProductDocument, IProductModel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 ```
 
@@ -593,7 +593,7 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 ```
 
@@ -641,7 +641,7 @@ export interface IContactModel extends Model<IContactDocument> {
   findByPartyDate(date: string): Promise<IContactDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<IContactDocument[]>;
 }
 ```
@@ -773,7 +773,7 @@ const PromoOptinSchema = new Schema<IPromoOptinDocument, IPromoOptinModel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 ```
 
@@ -897,7 +897,7 @@ const OrderItemSchema = new Schema(
       min: 0,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 // PayPal transaction schema
@@ -938,7 +938,7 @@ const PayPalTransactionSchema = new Schema(
     },
     updatedAt: Date,
   },
-  { _id: false }
+  { _id: false },
 );
 
 // Main Order schema
@@ -1098,7 +1098,7 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 ```
 
@@ -1169,7 +1169,7 @@ export interface IOrderModel extends Model<IOrderDocument> {
   findByStatus(status: OrderStatus): Promise<IOrderDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<IOrderDocument[]>;
   generateOrderNumber(): Promise<string>;
 }
@@ -1253,7 +1253,7 @@ export interface IPromoOptinModel extends Model<IPromoOptinDocument> {
   findByPromoName(promoName: string): Promise<IPromoOptinDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<IPromoOptinDocument[]>;
 }
 ```
@@ -1398,7 +1398,7 @@ const handleGetCoupon = () => {
 
   // Navigate to the coupon form
   router.push(
-    `/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`
+    `/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`,
   );
 };
 ```
@@ -1562,7 +1562,7 @@ const ReviewSchema = new Schema<IReviewDocument, IReviewModel>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 ```
 

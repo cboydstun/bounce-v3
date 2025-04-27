@@ -8,15 +8,19 @@ describe("usePayPalScript", () => {
   beforeEach(() => {
     // Reset the mocks
     mockScripts = [];
-    
+
     // Mock document.querySelector
     document.querySelector = jest.fn().mockImplementation((selector) => {
       if (selector === 'script[src*="paypal.com/sdk/js"]') {
-        return mockScripts.find(script => script.src.includes("paypal.com/sdk/js")) || null;
+        return (
+          mockScripts.find((script) =>
+            script.src.includes("paypal.com/sdk/js"),
+          ) || null
+        );
       }
       return null;
     });
-    
+
     // Mock document.createElement
     document.createElement = jest.fn().mockImplementation((tag) => {
       if (tag === "script") {
@@ -33,7 +37,7 @@ describe("usePayPalScript", () => {
       // For other tags, create a simple mock
       return { tagName: tag } as any;
     });
-    
+
     // Mock document.body.appendChild
     document.body.appendChild = jest.fn().mockImplementation((element) => {
       if (element.tagName === "SCRIPT") {
@@ -41,7 +45,7 @@ describe("usePayPalScript", () => {
         // Simulate script load event
         setTimeout(() => {
           const loadEvent = element.addEventListener.mock.calls.find(
-            (call: [string, EventListener]) => call[0] === "load"
+            (call: [string, EventListener]) => call[0] === "load",
           );
           if (loadEvent && typeof loadEvent[1] === "function") {
             loadEvent[1]();
@@ -50,54 +54,54 @@ describe("usePayPalScript", () => {
       }
       return element;
     });
-    
+
     // Mock window.paypal
-    window.paypal = { 
+    window.paypal = {
       Buttons: jest.fn(),
       FUNDING: {
         PAYPAL: "paypal",
         CREDIT: "credit",
-        CARD: "card"
+        CARD: "card",
       },
-      version: "1.0.0" // Mock version property
+      version: "1.0.0", // Mock version property
     };
   });
-  
+
   afterEach(() => {
     jest.clearAllMocks();
   });
-  
+
   test("should load PayPal script if not already loaded", async () => {
     const { result } = renderHook(() => usePayPalScript());
-    
+
     // Initially, script is not loaded
     expect(result.current.scriptLoaded).toBe(false);
     expect(result.current.paypal).toBe(null);
-    
+
     // Wait for script to "load"
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     });
-    
+
     // After loading, script should be loaded
     expect(result.current.scriptLoaded).toBe(true);
     expect(result.current.paypal).toBe(window.paypal);
     expect(document.body.appendChild).toHaveBeenCalled();
   });
-  
+
   test("should reuse existing script if already loaded", async () => {
     // Simulate script already in DOM
     const existingScript = document.createElement("script");
     existingScript.src = "https://www.paypal.com/sdk/js?client-id=test";
     mockScripts.push(existingScript as HTMLScriptElement);
-    
+
     const { result } = renderHook(() => usePayPalScript());
-    
+
     // Script should be immediately loaded
     expect(result.current.scriptLoaded).toBe(true);
     expect(document.body.appendChild).not.toHaveBeenCalled();
   });
-  
+
   test("should handle script loading error", async () => {
     // Override appendChild to simulate error
     document.body.appendChild = jest.fn().mockImplementation((element) => {
@@ -106,7 +110,7 @@ describe("usePayPalScript", () => {
         // Simulate script error event
         setTimeout(() => {
           const errorEvent = element.addEventListener.mock.calls.find(
-            (call: [string, EventListener]) => call[0] === "error"
+            (call: [string, EventListener]) => call[0] === "error",
           );
           if (errorEvent && typeof errorEvent[1] === "function") {
             errorEvent[1](new Event("error"));
@@ -115,18 +119,20 @@ describe("usePayPalScript", () => {
       }
       return element;
     });
-    
+
     const mockOnError = jest.fn();
-    const { result } = renderHook(() => usePayPalScript({ onError: mockOnError }));
-    
+    const { result } = renderHook(() =>
+      usePayPalScript({ onError: mockOnError }),
+    );
+
     // Initially, script is not loaded
     expect(result.current.scriptLoaded).toBe(false);
-    
+
     // Wait for script to "error"
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     });
-    
+
     // After error, script should not be loaded
     expect(result.current.scriptLoaded).toBe(false);
     expect(result.current.scriptError).not.toBe(null);

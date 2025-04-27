@@ -10,7 +10,7 @@ export const calculatePrices = (state: CheckoutState) => {
     .reduce((sum: number, extra) => {
       // Only apply quantity for Tables & Chairs
       const quantity = extra.id === "tablesChairs" ? extra.quantity : 1;
-      return sum + (extra.price * quantity);
+      return sum + extra.price * quantity;
     }, 0);
 
   // Include specific time charge in the subtotal

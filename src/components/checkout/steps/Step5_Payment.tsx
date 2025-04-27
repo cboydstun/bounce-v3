@@ -138,7 +138,7 @@ const Step5_Payment: React.FC<Step5Props> = ({
   const handlePaymentSuccess = async (orderId: string) => {
     try {
       console.log("[Step5_Payment] Payment successful with order ID:", orderId);
-      
+
       // Process payment
       const paymentDetails = {
         transactionId: orderId,
@@ -367,20 +367,21 @@ const Step5_Payment: React.FC<Step5Props> = ({
               </button>
             </div>
           ) : (
-            <PayPalScriptProvider 
+            <PayPalScriptProvider
               options={{
                 clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "",
                 currency: "USD",
                 intent: "capture",
                 components: "buttons",
                 // Enable credit card funding
-                "disable-funding": ""
+                "disable-funding": "",
               }}
             >
               <div className="w-full my-4">
                 {!state.orderId ? (
                   <div className="bg-gray-100 p-4 rounded-md text-center text-gray-500">
-                    PayPal payment is disabled until order details are confirmed.
+                    PayPal payment is disabled until order details are
+                    confirmed.
                   </div>
                 ) : (
                   <PayPalButtons
@@ -389,12 +390,15 @@ const Step5_Payment: React.FC<Step5Props> = ({
                       color: "gold",
                       shape: "rect",
                       label: "pay",
-                      height: 45
+                      height: 45,
                     }}
                     disabled={!state.orderId}
                     forceReRender={[state.totalAmount, state.orderId]}
                     createOrder={(data, actions) => {
-                      console.log("Creating PayPal order for amount:", state.totalAmount);
+                      console.log(
+                        "Creating PayPal order for amount:",
+                        state.totalAmount,
+                      );
                       return actions.order.create({
                         intent: "CAPTURE",
                         purchase_units: [
@@ -418,20 +422,28 @@ const Step5_Payment: React.FC<Step5Props> = ({
                         if (!actions.order) {
                           throw new Error("PayPal order actions not available");
                         }
-                        
+
                         const orderDetails = await actions.order.capture();
                         console.log("Payment successful:", orderDetails);
-                        
+
                         // Call the success handler with the order ID
-                        handlePaymentSuccess(orderDetails.id ?? "UNKNOWN_ORDER_ID");
+                        handlePaymentSuccess(
+                          orderDetails.id ?? "UNKNOWN_ORDER_ID",
+                        );
                       } catch (error) {
                         console.error("Error capturing PayPal order:", error);
-                        handlePaymentError(error instanceof Error ? error : new Error(String(error)));
+                        handlePaymentError(
+                          error instanceof Error
+                            ? error
+                            : new Error(String(error)),
+                        );
                       }
                     }}
                     onError={(err) => {
                       console.error("PayPal Error:", err);
-                      handlePaymentError(err instanceof Error ? err : new Error(String(err)));
+                      handlePaymentError(
+                        err instanceof Error ? err : new Error(String(err)),
+                      );
                     }}
                     onCancel={() => {
                       console.log("Payment cancelled by user");

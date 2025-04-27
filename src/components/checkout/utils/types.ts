@@ -34,11 +34,36 @@ export const EXTRAS = [
     price: 49.95,
     image: "🍭",
   },
-  { id: "snowConeMachine", name: "Snow Cone Machine", price: 49.95, image: "🧊" },
-  { id: "basketballShoot", name: "Basketball Shoot", price: 49.95, image: "🏀" },
-  { id: "slushyMachineSingle", name: "Single Tank Slushy Machine", price: 124.95, image: "🥤" },
-  { id: "slushyMachineDouble", name: "Double Tank Slushy Machine", price: 149.95, image: "🥤🥤" },
-  { id: "slushyMachineTriple", name: "Triple Tank Slushy Machine", price: 174.95, image: "🥤🥤🥤" },
+  {
+    id: "snowConeMachine",
+    name: "Snow Cone Machine",
+    price: 49.95,
+    image: "🧊",
+  },
+  {
+    id: "basketballShoot",
+    name: "Basketball Shoot",
+    price: 49.95,
+    image: "🏀",
+  },
+  {
+    id: "slushyMachineSingle",
+    name: "Single Tank Slushy Machine",
+    price: 124.95,
+    image: "🥤",
+  },
+  {
+    id: "slushyMachineDouble",
+    name: "Double Tank Slushy Machine",
+    price: 149.95,
+    image: "🥤🥤",
+  },
+  {
+    id: "slushyMachineTriple",
+    name: "Triple Tank Slushy Machine",
+    price: 174.95,
+    image: "🥤🥤🥤",
+  },
   { id: "overnight", name: "Overnight Rental", price: 49.95, image: "🌙" },
 ];
 

@@ -80,9 +80,9 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
             <span className="text-gray-600">Delivery Date:</span>
             <span className="font-medium">
               {formatDate(state.deliveryDate)}
-              {state.deliveryTimePreference === "specific" && 
+              {state.deliveryTimePreference === "specific" &&
                 ` at ${formatTime(state.deliveryTime)}`}
-              {state.deliveryTimePreference === "flexible" && 
+              {state.deliveryTimePreference === "flexible" &&
                 " (Flexible Time)"}
             </span>
           </div>
@@ -90,10 +90,9 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
             <span className="text-gray-600">Pickup Date:</span>
             <span className="font-medium">
               {formatDate(state.pickupDate)}
-              {state.pickupTimePreference === "specific" && 
+              {state.pickupTimePreference === "specific" &&
                 ` at ${formatTime(state.pickupTime)}`}
-              {state.pickupTimePreference === "flexible" && 
-                " (Flexible Time)"}
+              {state.pickupTimePreference === "flexible" && " (Flexible Time)"}
             </span>
           </div>
         </div>
@@ -166,10 +165,17 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
               {selectedExtras.map((extra) => (
                 <div key={extra.id} className="flex justify-between">
                   <span className="text-gray-600">
-                    {extra.image} {extra.name} {extra.id === "tablesChairs" && extra.quantity > 1 ? `(${extra.quantity}x)` : ""}
+                    {extra.image} {extra.name}{" "}
+                    {extra.id === "tablesChairs" && extra.quantity > 1
+                      ? `(${extra.quantity}x)`
+                      : ""}
                   </span>
                   <span className="font-medium">
-                    ${(extra.price * (extra.id === "tablesChairs" ? extra.quantity : 1)).toFixed(2)}
+                    $
+                    {(
+                      extra.price *
+                      (extra.id === "tablesChairs" ? extra.quantity : 1)
+                    ).toFixed(2)}
                     {extra.id === "tablesChairs" && extra.quantity > 1 && (
                       <span className="text-sm text-gray-500 ml-1">
                         (${extra.price.toFixed(2)} each)
@@ -200,27 +206,37 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
           <div className="flex justify-between">
             <span className="text-gray-600">Extras:</span>
             <span className="font-medium">
-              ${(state.subtotal - state.bouncerPrice - state.specificTimeCharge).toFixed(2)}
+              $
+              {(
+                state.subtotal -
+                state.bouncerPrice -
+                state.specificTimeCharge
+              ).toFixed(2)}
             </span>
           </div>
           {state.specificTimeCharge > 0 && (
             <>
-              {state.deliveryTimePreference === "specific" && state.pickupTimePreference === "specific" ? (
+              {state.deliveryTimePreference === "specific" &&
+              state.pickupTimePreference === "specific" ? (
                 <>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Specific Delivery Time Fee:</span>
+                    <span className="text-gray-600">
+                      Specific Delivery Time Fee:
+                    </span>
                     <span className="font-medium">$20.00</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Specific Pickup Time Fee:</span>
+                    <span className="text-gray-600">
+                      Specific Pickup Time Fee:
+                    </span>
                     <span className="font-medium">$20.00</span>
                   </div>
                 </>
               ) : (
                 <div className="flex justify-between">
                   <span className="text-gray-600">
-                    {state.deliveryTimePreference === "specific" 
-                      ? "Specific Delivery Time Fee:" 
+                    {state.deliveryTimePreference === "specific"
+                      ? "Specific Delivery Time Fee:"
                       : "Specific Pickup Time Fee:"}
                   </span>
                   <span className="font-medium">
@@ -312,7 +328,9 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
           </label>
         </div>
         {state.errors.agreedToTerms && (
-          <p className="text-red-500 text-xs mt-1">{state.errors.agreedToTerms}</p>
+          <p className="text-red-500 text-xs mt-1">
+            {state.errors.agreedToTerms}
+          </p>
         )}
       </div>
     </div>
