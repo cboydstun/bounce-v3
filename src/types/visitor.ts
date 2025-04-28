@@ -170,6 +170,7 @@ export type InteractionType =
   | "form_step_complete"
   | "form_step_error"
   | "booking_abandoned"
+  | "booking_submitted"
   | "form_field_interaction";
 
 // Conversion event types
