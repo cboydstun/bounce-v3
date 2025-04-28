@@ -4,13 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import path from "path";
 import { usePackageDeals } from "../contexts/PackageDealsContext";
 import ConditionalPackageLink from "./ConditionalPackageLink";
 
 const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { hasCompletedForm } = usePackageDeals();
   const pathname = usePathname();
 
   const isActiveLink = (path: string) => {
@@ -23,6 +21,7 @@ const Navigation = () => {
     { path: "/about", label: "About" },
     { path: "/blogs", label: "Blog" },
     { path: "/faq", label: "FAQ" },
+    { path: "/contact", label: "Contact" },
   ];
 
   // Package Deals link is now always shown via ConditionalPackageLink
@@ -66,10 +65,10 @@ const Navigation = () => {
               Package Deals
             </ConditionalPackageLink>
             <Link
-              href="/contact"
+              href="/order"
               className="ml-4 px-6 py-2.5 bg-gradient-to-r from-blue-400 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-500 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
             >
-              Contact Now
+              BOOK NOW
             </Link>
           </div>
 
@@ -122,11 +121,11 @@ const Navigation = () => {
                 Package Deals
               </ConditionalPackageLink>
               <Link
-                href="/contact"
+                href="/order"
                 className="px-4 py-2 bg-gradient-to-r from-blue-400 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-500 hover:to-purple-700 transition-all duration-300 text-center shadow-md hover:shadow-lg"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Contact Now
+                BOOK NOW
               </Link>
             </div>
           </div>
