@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CheckoutState } from "../utils/types";
 import { formatPhoneNumber, isBexarCountyZipCode } from "../utils/validation";
+import { useFormFieldTracking } from "@/hooks/useFormFieldTracking";
 
 interface Step2Props {
   state: CheckoutState;
@@ -10,6 +11,10 @@ interface Step2Props {
 }
 
 const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
+  // Use the form field tracking hook
+  const { trackFieldFocus, trackFieldBlur, trackFieldChange } =
+    useFormFieldTracking();
+
   // Handle input changes
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -104,7 +109,12 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
             id="customerName"
             name="customerName"
             value={state.customerName}
-            onChange={handleInputChange}
+            onChange={(e) => {
+              handleInputChange(e);
+              trackFieldChange("customerName", e.target.value);
+            }}
+            onFocus={() => trackFieldFocus("customerName")}
+            onBlur={() => trackFieldBlur("customerName", state.customerName)}
             placeholder="John Doe"
             className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
           />
@@ -128,7 +138,12 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
             id="customerEmail"
             name="customerEmail"
             value={state.customerEmail}
-            onChange={handleInputChange}
+            onChange={(e) => {
+              handleInputChange(e);
+              trackFieldChange("customerEmail", e.target.value);
+            }}
+            onFocus={() => trackFieldFocus("customerEmail")}
+            onBlur={() => trackFieldBlur("customerEmail", state.customerEmail)}
             placeholder="your@email.com"
             className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
           />
@@ -152,7 +167,12 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
             id="customerPhone"
             name="customerPhone"
             value={state.customerPhone}
-            onChange={handleInputChange}
+            onChange={(e) => {
+              handleInputChange(e);
+              trackFieldChange("customerPhone", e.target.value);
+            }}
+            onFocus={() => trackFieldFocus("customerPhone")}
+            onBlur={() => trackFieldBlur("customerPhone", state.customerPhone)}
             placeholder="(###)-###-####"
             className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
           />
@@ -176,7 +196,14 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
             id="customerAddress"
             name="customerAddress"
             value={state.customerAddress}
-            onChange={handleInputChange}
+            onChange={(e) => {
+              handleInputChange(e);
+              trackFieldChange("customerAddress", e.target.value);
+            }}
+            onFocus={() => trackFieldFocus("customerAddress")}
+            onBlur={() =>
+              trackFieldBlur("customerAddress", state.customerAddress)
+            }
             placeholder="123 Main St"
             className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
           />
@@ -200,7 +227,12 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
             id="customerCity"
             name="customerCity"
             value={state.customerCity}
-            onChange={handleInputChange}
+            onChange={(e) => {
+              handleInputChange(e);
+              trackFieldChange("customerCity", e.target.value);
+            }}
+            onFocus={() => trackFieldFocus("customerCity")}
+            onBlur={() => trackFieldBlur("customerCity", state.customerCity)}
             placeholder="San Antonio"
             className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
           />
@@ -223,7 +255,12 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
             id="customerState"
             name="customerState"
             value={state.customerState}
-            onChange={handleInputChange}
+            onChange={(e) => {
+              handleInputChange(e);
+              trackFieldChange("customerState", e.target.value);
+            }}
+            onFocus={() => trackFieldFocus("customerState")}
+            onBlur={() => trackFieldBlur("customerState", state.customerState)}
             className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
           >
             <option value="">Select a state...</option>
@@ -258,7 +295,14 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
             id="customerZipCode"
             name="customerZipCode"
             value={state.customerZipCode}
-            onChange={handleInputChange}
+            onChange={(e) => {
+              handleInputChange(e);
+              trackFieldChange("customerZipCode", e.target.value);
+            }}
+            onFocus={() => trackFieldFocus("customerZipCode")}
+            onBlur={() =>
+              trackFieldBlur("customerZipCode", state.customerZipCode)
+            }
             placeholder="78701"
             className={`w-full rounded-lg border-2 ${
               state.customerZipCode &&
@@ -292,11 +336,16 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
           id="deliveryInstructions"
           name="deliveryInstructions"
           value={state.deliveryInstructions || ""}
-          onChange={(e) =>
+          onChange={(e) => {
             dispatch({
               type: "SET_CUSTOMER_INFO",
               payload: { deliveryInstructions: e.target.value },
-            })
+            });
+            trackFieldChange("deliveryInstructions", e.target.value);
+          }}
+          onFocus={() => trackFieldFocus("deliveryInstructions")}
+          onBlur={() =>
+            trackFieldBlur("deliveryInstructions", state.deliveryInstructions)
           }
           placeholder="Any special instructions for delivery (gate code, landmarks, etc.)"
           rows={3}

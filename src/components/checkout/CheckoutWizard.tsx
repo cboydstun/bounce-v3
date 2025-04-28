@@ -77,6 +77,13 @@ const CheckoutWizard: React.FC = () => {
     // Set loading state
     dispatch({ type: "SET_LOADING", payload: true });
 
+    // Track booking started conversion event
+    trackConversionEvent("booking_started", {
+      completed: false,
+      value: state.totalAmount,
+      product: state.bouncerName,
+    });
+
     try {
       // Prepare order data
       const orderData = {
@@ -169,6 +176,13 @@ const CheckoutWizard: React.FC = () => {
       dispatch({ type: "SET_ORDER_ID", payload: order._id });
       dispatch({ type: "SET_ORDER_NUMBER", payload: order.orderNumber });
 
+      // Track booking completed conversion event
+      trackConversionEvent("booking_completed", {
+        completed: true,
+        value: state.totalAmount,
+        product: state.bouncerName,
+      });
+
       // Mark as complete (but with different status than PayPal)
       dispatch({ type: "CASH_ORDER_SUCCESS" });
 
@@ -229,7 +243,52 @@ const CheckoutWizard: React.FC = () => {
 
   // Handle payment success
   const handlePaymentSuccess = (details: any) => {
+    // Track booking completed conversion event
+    trackConversionEvent("booking_completed", {
+      completed: true,
+      value: state.totalAmount,
+      product: state.bouncerName,
+    });
+
     dispatch({ type: "PAYMENT_SUCCESS" });
+  };
+
+  // Helper function to track conversion events
+  const trackConversionEvent = async (type: string, data: any) => {
+    try {
+      // Get visitorId from localStorage (set by Fingerprint.tsx)
+      const visitorId = localStorage.getItem("visitorId");
+
+      if (!visitorId) {
+        console.error("No visitorId found in localStorage");
+        return;
+      }
+
+      // Send conversion event to visitor API
+      await fetch("/api/v1/visitors", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          visitorId,
+          currentPage: window.location.pathname,
+          conversionEvent: {
+            type,
+            ...data,
+            timestamp: new Date(),
+          },
+        }),
+      });
+
+      // Log to console in development
+      if (process.env.NODE_ENV === "development") {
+        console.log(`Tracked conversion event: ${type}`, data);
+      }
+    } catch (error) {
+      // Silently fail to avoid breaking the checkout flow
+      console.error("Error tracking conversion event:", error);
+    }
   };
 
   // Render the appropriate step content
