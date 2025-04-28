@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CheckoutState } from "../utils/checkoutReducer";
-import { formatPhoneNumber } from "../utils/validation";
+import { CheckoutState } from "../utils/types";
+import { formatPhoneNumber, isBexarCountyZipCode } from "../utils/validation";
 
 interface Step2Props {
   state: CheckoutState;
@@ -242,12 +242,17 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
 
         {/* Zip Code */}
         <div className="space-y-2">
-          <label
-            htmlFor="customerZipCode"
-            className="block text-lg font-medium text-gray-700"
-          >
-            📮 Zip Code
-          </label>
+          <div className="flex items-center justify-between">
+            <label
+              htmlFor="customerZipCode"
+              className="block text-lg font-medium text-gray-700"
+            >
+              📮 Zip Code
+            </label>
+            <span className="text-sm text-primary-purple font-medium">
+              Bexar County Only
+            </span>
+          </div>
           <input
             type="text"
             id="customerZipCode"
@@ -255,11 +260,21 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
             value={state.customerZipCode}
             onChange={handleInputChange}
             placeholder="78701"
-            className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
+            className={`w-full rounded-lg border-2 ${
+              state.customerZipCode && 
+              state.customerZipCode.length >= 5 && 
+              !isBexarCountyZipCode(state.customerZipCode)
+                ? "border-red-300 bg-red-50"
+                : "border-secondary-blue/20"
+            } shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3`}
           />
-          {state.errors.customerZipCode && (
+          {state.errors.customerZipCode ? (
             <p className="text-red-500 text-sm mt-1">
               {state.errors.customerZipCode}
+            </p>
+          ) : (
+            <p className="text-gray-500 text-sm mt-1">
+              We only deliver to Bexar County, TX (San Antonio area)
             </p>
           )}
         </div>
@@ -294,6 +309,9 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
         <p className="text-blue-800 text-sm">
           This information will be used for delivery and contact purposes only.
           We'll never share your personal information with third parties.
+        </p>
+        <p className="text-blue-800 text-sm mt-2 font-medium">
+          Please note: We currently only deliver to addresses within Bexar County, TX.
         </p>
       </div>
     </div>
