@@ -35,6 +35,16 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedBouncerImage, setSelectedBouncerImage] = useState<string>("");
 
+  // Ensure pickup date matches delivery date when component loads or delivery date changes
+  useEffect(() => {
+    if (
+      state.deliveryDate &&
+      (!state.pickupDate || state.pickupDate < state.deliveryDate)
+    ) {
+      dispatch({ type: "SET_PICKUP_DATE", payload: state.deliveryDate });
+    }
+  }, [state.deliveryDate, state.pickupDate, dispatch]);
+
   // Fetch bouncers on component mount
   useEffect(() => {
     const fetchBouncers = async () => {
@@ -150,7 +160,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
             id="bouncer-select"
             value={state.selectedBouncer}
             onChange={handleBouncerChange}
-            className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
+            className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50"
           >
             <option value="">Choose a bouncer...</option>
             {bouncers.map((bouncer) => {
@@ -202,11 +212,14 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               type="date"
               id="delivery-date"
               value={state.deliveryDate}
-              onChange={(e) =>
-                dispatch({ type: "SET_DELIVERY_DATE", payload: e.target.value })
-              }
+              onChange={(e) => {
+                const selectedDate = e.target.value;
+                dispatch({ type: "SET_DELIVERY_DATE", payload: selectedDate });
+                // Also set pickup date to the same date
+                dispatch({ type: "SET_PICKUP_DATE", payload: selectedDate });
+              }}
               min={new Date().toISOString().split("T")[0]} // Today or later
-              className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
+              className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50"
             />
             {state.errors.deliveryDate && (
               <p className="text-red-500 text-sm mt-1">
@@ -271,7 +284,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               onChange={(e) =>
                 dispatch({ type: "SET_DELIVERY_TIME", payload: e.target.value })
               }
-              className={`w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3`}
+              className={`w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50`}
             >
               <option value="">Select a time...</option>
               {timeOptions.map((option) => (
@@ -319,7 +332,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               }
               min={state.deliveryDate || new Date().toISOString().split("T")[0]} // Delivery date or today
               className={
-                "w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
+                "w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50"
               }
             />
             {state.errors.pickupDate && (
@@ -385,7 +398,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               onChange={(e) =>
                 dispatch({ type: "SET_PICKUP_TIME", payload: e.target.value })
               }
-              className={`w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 `}
+              className={`w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50`}
             >
               <option value="">Select a time...</option>
               {timeOptions.map((option) => (
@@ -420,11 +433,18 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
           <p className="text-blue-800">
             Your rental will be delivered on{" "}
             <strong>
-              {new Date(state.deliveryDate).toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
+              {(() => {
+                // Fix timezone issue by parsing the date parts
+                const [year, month, day] = state.deliveryDate
+                  .split("-")
+                  .map(Number);
+                const date = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+                return date.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                });
+              })()}
             </strong>
             {state.deliveryTimePreference === "specific" ? (
               <>
@@ -457,11 +477,18 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
             )}{" "}
             and picked up on{" "}
             <strong>
-              {new Date(state.pickupDate).toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
+              {(() => {
+                // Fix timezone issue by parsing the date parts
+                const [year, month, day] = state.pickupDate
+                  .split("-")
+                  .map(Number);
+                const date = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+                return date.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                });
+              })()}
             </strong>
             {state.pickupTimePreference === "specific" ? (
               <>
