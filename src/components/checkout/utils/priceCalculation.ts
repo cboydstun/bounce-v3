@@ -37,6 +37,10 @@ export const calculatePrices = (state: CheckoutState) => {
     ).toFixed(2),
   );
 
+  // Calculate balance due based on deposit amount
+  const depositAmount = state.depositAmount || 0;
+  const balanceDue = parseFloat((totalAmount - depositAmount).toFixed(2));
+
   return {
     subtotal,
     taxAmount,
@@ -44,5 +48,7 @@ export const calculatePrices = (state: CheckoutState) => {
     processingFee,
     specificTimeCharge,
     totalAmount,
+    depositAmount,
+    balanceDue,
   };
 };

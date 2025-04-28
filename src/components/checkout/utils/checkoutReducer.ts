@@ -5,7 +5,7 @@ import {
   OrderStep,
   steps,
 } from "./types";
-import { PaymentStatus } from "@/types/order";
+import { PaymentStatus, OrderStatus, PaymentMethod } from "@/types/order";
 
 // Helper function to calculate specific time charge
 const calculateSpecificTimeCharge = (
@@ -70,16 +70,27 @@ export const initialState: CheckoutState = {
   agreedToTerms: false,
 
   // Step 5
-  paymentMethod: "paypal",
+  paymentMethod: "paypal" as PaymentMethod,
   paymentStatus: "Pending",
   orderId: "",
   orderNumber: "",
   paymentComplete: false,
   paymentError: null,
 
+  // Additional Order fields
+  contactId: undefined,
+  orderStatus: "Pending" as OrderStatus,
+  paypalTransactions: [],
+  depositAmount: 0,
+  balanceDue: 0,
+  tasks: [],
+
   // Validation
   errors: {},
   isFormValid: false,
+
+  // Loading state
+  isLoading: false,
 };
 
 // Helper function to get the next step
@@ -267,6 +278,7 @@ export const checkoutReducer = (
         ...state,
         paymentComplete: true,
         paymentStatus: "Paid",
+        orderStatus: "Paid",
         paymentError: null,
       };
 
@@ -288,6 +300,78 @@ export const checkoutReducer = (
         ...state,
         errors: {},
         isFormValid: true,
+      };
+
+    // New action handlers for additional Order fields
+    case "SET_CONTACT_ID":
+      return {
+        ...state,
+        contactId: action.payload,
+      };
+
+    case "SET_ORDER_STATUS":
+      return {
+        ...state,
+        orderStatus: action.payload,
+      };
+
+    case "ADD_PAYPAL_TRANSACTION":
+      return {
+        ...state,
+        paypalTransactions: [...state.paypalTransactions, action.payload],
+      };
+
+    case "SET_DEPOSIT_AMOUNT":
+      return {
+        ...state,
+        depositAmount: action.payload,
+        // Also update balance due
+        balanceDue: state.totalAmount - action.payload,
+      };
+
+    case "UPDATE_BALANCE_DUE":
+      return {
+        ...state,
+        balanceDue: state.totalAmount - state.depositAmount,
+      };
+
+    case "ADD_TASK":
+      return {
+        ...state,
+        tasks: [...state.tasks, action.payload],
+      };
+
+    case "REMOVE_TASK":
+      return {
+        ...state,
+        tasks: state.tasks.filter((task) => task !== action.payload),
+      };
+
+    case "SET_PAYMENT_METHOD":
+      return {
+        ...state,
+        paymentMethod: action.payload,
+      };
+
+    case "SET_LOADING":
+      return {
+        ...state,
+        isLoading: action.payload,
+      };
+
+    case "CASH_ORDER_SUCCESS":
+      return {
+        ...state,
+        paymentComplete: true,
+        paymentStatus: "Pending",
+        orderStatus: "Pending",
+        paymentError: null,
+      };
+
+    case "ORDER_ERROR":
+      return {
+        ...state,
+        paymentError: action.payload,
       };
 
     default:

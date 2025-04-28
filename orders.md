@@ -389,6 +389,24 @@ type PayPalTransactionStatus =
 
 ### Payment Processing
 
+#### Payment Methods
+
+The application supports multiple payment methods:
+
+1. **PayPal**: Online payment processed through PayPal's payment gateway
+2. **Cash**: Cash payment collected at the time of delivery
+3. **QuickBooks**: Payment processed through QuickBooks (admin-only)
+4. **Free**: No payment required (admin-only)
+
+#### Deposit Options
+
+For PayPal payments, customers can choose between:
+
+1. **Full Payment**: Pay the entire amount upfront
+2. **Deposit Payment**: Pay a deposit (typically 50% of the total) upfront, with the remaining balance due at delivery
+
+Cash payments are always processed as full payments at the time of delivery.
+
 #### PayPal Integration
 
 The application uses the official PayPal React SDK (`@paypal/react-paypal-js`) for payment processing. This integration provides a seamless checkout experience with both PayPal and credit card payment options.
@@ -425,15 +443,20 @@ The PayPal integration is implemented in the Step5_Payment component of the chec
       height: 45
     }}
     createOrder={(data, actions) => {
+      // For deposit payments, use depositAmount instead of totalAmount
+      const paymentAmount = state.depositAmount > 0 ? state.depositAmount : state.totalAmount;
+
       return actions.order.create({
         intent: "CAPTURE",
         purchase_units: [
           {
             amount: {
-              value: totalAmount.toFixed(2),
+              value: paymentAmount.toFixed(2),
               currency_code: "USD",
             },
-            description: "Bounce House Rental",
+            description: state.depositAmount > 0
+              ? "Bounce House Rental - Deposit Payment"
+              : "Bounce House Rental - Full Payment",
           },
         ],
         application_context: {
@@ -455,14 +478,24 @@ The PayPal integration is implemented in the Step5_Payment component of the chec
 </PayPalScriptProvider>
 ```
 
-**Payment Flow:**
+**PayPal Payment Flow:**
 
-1. User clicks the PayPal button
-2. PayPal modal opens for payment selection (PayPal account or credit card)
-3. User completes payment in the PayPal interface
-4. On successful payment, the `onApprove` callback is triggered
-5. The application captures the payment and updates the order status
-6. The order details are sent to the backend for processing
+1. User selects PayPal as payment method
+2. User chooses between full payment or deposit payment (if applicable)
+3. User clicks the PayPal button
+4. PayPal modal opens for payment selection (PayPal account or credit card)
+5. User completes payment in the PayPal interface
+6. On successful payment, the `onApprove` callback is triggered
+7. The application captures the payment and updates the order status
+8. The order details are sent to the backend for processing
+
+**Cash Payment Flow:**
+
+1. User selects Cash on Delivery as payment method
+2. User completes the order (no online payment required)
+3. Order is created with status "Pending" and payment status "Pending"
+4. Customer pays in cash at the time of delivery
+5. Admin updates the order status after receiving payment
 
 #### Initiate Payment
 
@@ -610,6 +643,29 @@ The payment status follows a similar flow:
 3. **Paid**: Full payment has been received
 4. **Failed**: Payment attempt failed
 5. **Refunded** or **Partially Refunded**: If the payment is refunded
+
+### Payment Method Specific Flows
+
+#### PayPal Payment Flow
+
+1. Order created with `paymentMethod: "paypal"`
+2. If full payment:
+   - Payment processed via PayPal
+   - Order status updated to "Paid"
+   - Payment status updated to "Paid"
+3. If deposit payment:
+   - Deposit processed via PayPal
+   - Order status remains "Pending"
+   - Payment status updated to "Authorized"
+   - Balance due collected at delivery or pickup
+
+#### Cash Payment Flow
+
+1. Order created with `paymentMethod: "cash"`
+2. Order status set to "Pending"
+3. Payment status set to "Pending"
+4. Full payment collected at delivery
+5. Admin updates order status to "Paid" after receiving payment
 
 ## Examples
 
@@ -853,119 +909,4 @@ Each task has its own lifecycle (created → assigned → in progress → comple
 
 ## Frontend Checkout Implementation
 
-The frontend checkout process is implemented as a multi-step wizard that guides customers through the rental selection, delivery information, extras selection, order review, and payment process.
-
-### Checkout Flow
-
-The checkout process follows these steps:
-
-1. **Rental Selection**: User selects a bouncer, delivery date/time, and pickup date/time
-2. **Delivery Information**: User enters their contact and delivery address details
-3. **Add Extras**: User can select optional add-ons like tables, chairs, or machines
-4. **Order Review**: User reviews their order details and agrees to terms
-5. **Payment**: User completes payment via PayPal
-
-### Key Components
-
-The checkout implementation consists of the following key components:
-
-#### CheckoutWizard
-
-The main component that orchestrates the entire checkout flow. It manages the state using a reducer pattern and dynamically loads the appropriate step component.
-
-#### Step Components
-
-- **Step1_RentalSelection**: Allows users to select a bouncer from available inventory and choose delivery/pickup dates and times
-- **Step2_DeliveryInfo**: Collects customer contact information and delivery address
-- **Step3_Extras**: Displays available add-ons with prices that users can select
-- **Step4_OrderReview**: Shows a summary of the order with pricing breakdown
-- **Step5_Payment**: Integrates with PayPal for secure payment processing
-
-#### UI Components
-
-- **ProgressBar**: Visual indicator of the user's progress through the checkout steps
-- **NavigationButtons**: Provides back and continue buttons for step navigation
-- **OrderFormTracker**: Tracks user progress through the checkout for analytics
-- **StepSkeleton**: Loading placeholder during dynamic component loading
-
-### State Management
-
-The checkout state is managed using React's useReducer with a well-defined state structure and actions:
-
-```typescript
-// Checkout state structure
-interface CheckoutState {
-  currentStep: OrderStep;
-
-  // Rental Selection
-  selectedBouncer: string;
-  bouncerName: string;
-  bouncerPrice: number;
-  deliveryDate: string;
-  deliveryTime: string;
-  pickupDate: string;
-  pickupTime: string;
-
-  // Delivery Information
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  customerAddress: string;
-  customerCity: string;
-  customerState: string;
-  customerZipCode: string;
-
-  // Extras
-  extras: Extra[];
-
-  // Pricing
-  subtotal: number;
-  taxAmount: number;
-  deliveryFee: number;
-  processingFee: number;
-  discountAmount: number;
-  totalAmount: number;
-
-  // Payment
-  paymentMethod: "paypal";
-  paymentStatus: PaymentStatus;
-  orderId: string;
-  orderNumber: string;
-  paymentComplete: boolean;
-}
-```
-
-### Order Creation Process
-
-1. User progresses through the checkout steps
-2. On the review step, an order is created in the database with status "Pending"
-3. On the payment step, the user completes payment via PayPal
-4. After successful payment, the order status is updated to "Paid"
-5. The user is shown a confirmation page with their order details
-
-### Integration with Backend
-
-The checkout process integrates with the following API endpoints:
-
-- `GET /api/v1/products` - To fetch available bouncers
-- `POST /api/v1/orders` - To create a new order
-- `POST /api/v1/orders/[id]/payment` - To initiate payment
-- `PATCH /api/v1/orders/[id]/payment` - To record payment completion
-
-### Validation
-
-Each step includes validation to ensure all required information is provided:
-
-- Rental Selection: Validates bouncer selection and date/time logic
-- Delivery Information: Validates contact details and delivery address
-- Order Review: Ensures terms are accepted
-- Payment: Validates payment completion
-
-### Price Calculation
-
-Prices are calculated automatically based on the selected bouncer and extras:
-
-- Subtotal = Bouncer price + Sum of selected extras
-- Tax = Subtotal × 8.25%
-- Processing Fee = Subtotal × 3% (rounded to nearest cent)
-- Total = Subtotal + Tax + Delivery Fee + Processing Fee - Discount
+The frontend checkout process is implemented as a multi-step wizard that guides customers through the rental selection, delivery information

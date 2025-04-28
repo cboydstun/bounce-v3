@@ -276,7 +276,10 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               htmlFor="delivery-time"
               className="block text-lg font-medium text-gray-700"
             >
-              🕒 {state.deliveryTimePreference === "flexible" ? "What time is the party?" : "Delivery Time"}
+              🕒{" "}
+              {state.deliveryTimePreference === "flexible"
+                ? "What time is the party?"
+                : "Delivery Time"}
             </label>
             <select
               id="delivery-time"
@@ -390,7 +393,10 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               htmlFor="pickup-time"
               className="block text-lg font-medium text-gray-700"
             >
-             🕒 {state.pickupTimePreference === "flexible" ? "When is the party over?" : "Delivery Time"}
+              🕒{" "}
+              {state.pickupTimePreference === "flexible"
+                ? "When is the party over?"
+                : "Delivery Time"}
             </label>
             <select
               id="pickup-time"

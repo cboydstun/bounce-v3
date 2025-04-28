@@ -1,4 +1,11 @@
-import { OrderItem, PaymentStatus } from "@/types/order";
+import {
+  OrderItem,
+  PaymentStatus,
+  OrderStatus,
+  PaymentMethod,
+  PayPalTransactionDetails,
+  TimePreference,
+} from "@/types/order";
 
 // Define the step types
 export type OrderStep =
@@ -114,16 +121,27 @@ export interface CheckoutState {
   agreedToTerms: boolean;
 
   // Step 5: Payment
-  paymentMethod: "paypal";
+  paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   orderId: string;
   orderNumber: string;
   paymentComplete: boolean;
   paymentError: string | null;
 
+  // Additional Order fields from Order model
+  contactId?: string;
+  orderStatus: OrderStatus;
+  paypalTransactions: PayPalTransactionDetails[];
+  depositAmount: number;
+  balanceDue: number;
+  tasks: string[];
+
   // Form validation
   errors: Record<string, string>;
   isFormValid: boolean;
+
+  // Loading state
+  isLoading?: boolean;
 }
 
 // Define base props for step components
@@ -189,4 +207,17 @@ export type CheckoutAction =
   | { type: "PAYMENT_SUCCESS"; payload?: { transactionId: string } }
   | { type: "PAYMENT_ERROR"; payload: string }
   | { type: "SET_ERRORS"; payload: Record<string, string> }
-  | { type: "CLEAR_ERRORS" };
+  | { type: "CLEAR_ERRORS" }
+  // New actions for additional Order fields
+  | { type: "SET_CONTACT_ID"; payload: string }
+  | { type: "SET_ORDER_STATUS"; payload: OrderStatus }
+  | { type: "ADD_PAYPAL_TRANSACTION"; payload: PayPalTransactionDetails }
+  | { type: "SET_DEPOSIT_AMOUNT"; payload: number }
+  | { type: "UPDATE_BALANCE_DUE" }
+  | { type: "ADD_TASK"; payload: string }
+  | { type: "REMOVE_TASK"; payload: string }
+  | { type: "SET_PAYMENT_METHOD"; payload: PaymentMethod }
+  // New actions for cash payment flow
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "CASH_ORDER_SUCCESS" }
+  | { type: "ORDER_ERROR"; payload: string };

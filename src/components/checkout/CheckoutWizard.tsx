@@ -72,6 +72,122 @@ const CheckoutWizard: React.FC = () => {
     }
   }, [state.bouncerPrice, state.extras]);
 
+  // Function to create order for cash payments
+  const createCashOrder = async () => {
+    // Set loading state
+    dispatch({ type: "SET_LOADING", payload: true });
+
+    try {
+      // Prepare order data
+      const orderData = {
+        // Customer information
+        contactId: state.contactId,
+        customerName: state.customerName,
+        customerEmail: state.customerEmail,
+        customerPhone: state.customerPhone,
+        customerAddress: state.customerAddress,
+        customerCity: state.customerCity,
+        customerState: state.customerState,
+        customerZipCode: state.customerZipCode,
+
+        // Delivery preferences
+        deliveryTimePreference: state.deliveryTimePreference,
+        pickupTimePreference: state.pickupTimePreference,
+        specificTimeCharge: state.specificTimeCharge,
+
+        // Order items
+        items: [
+          // Only include bouncer if one is selected
+          ...(state.selectedBouncer
+            ? [
+                {
+                  type: "bouncer",
+                  name: state.bouncerName,
+                  quantity: 1,
+                  unitPrice: state.bouncerPrice,
+                  totalPrice: state.bouncerPrice,
+                },
+              ]
+            : []),
+          // Include selected extras
+          ...state.extras
+            .filter((extra) => extra.selected)
+            .map((extra) => ({
+              type: "extra",
+              name: extra.name,
+              quantity: extra.id === "tablesChairs" ? extra.quantity : 1,
+              unitPrice: extra.price,
+              totalPrice:
+                extra.price *
+                (extra.id === "tablesChairs" ? extra.quantity : 1),
+            })),
+        ],
+
+        // Financial details
+        subtotal: state.subtotal,
+        taxAmount: state.taxAmount,
+        discountAmount: state.discountAmount,
+        deliveryFee: state.deliveryFee,
+        processingFee: state.processingFee,
+        totalAmount: state.totalAmount,
+        depositAmount: state.depositAmount,
+        balanceDue: state.balanceDue,
+
+        // Status information
+        status: "Pending",
+        paymentStatus: "Pending",
+        paymentMethod: "cash",
+
+        // Additional information
+        tasks: state.tasks,
+        notes: `Delivery: ${state.deliveryDate} ${state.deliveryTime}, Pickup: ${state.pickupDate} ${state.pickupTime}${
+          state.deliveryInstructions
+            ? `, Instructions: ${state.deliveryInstructions}`
+            : ""
+        }`,
+      };
+
+      // Create order
+      const response = await fetch("/api/v1/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || "Failed to create order. Please try again.",
+        );
+      }
+
+      const order = await response.json();
+
+      // Store order ID and number in state
+      dispatch({ type: "SET_ORDER_ID", payload: order._id });
+      dispatch({ type: "SET_ORDER_NUMBER", payload: order.orderNumber });
+
+      // Mark as complete (but with different status than PayPal)
+      dispatch({ type: "CASH_ORDER_SUCCESS" });
+
+      // Go to confirmation step
+      dispatch({ type: "GO_TO_STEP", payload: "payment" });
+    } catch (error) {
+      console.error("Error creating cash order:", error);
+      dispatch({
+        type: "ORDER_ERROR",
+        payload:
+          error instanceof Error
+            ? error.message
+            : "Failed to create order. Please try again.",
+      });
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: false });
+    }
+  };
+
   // Handle going to the next step
   const goToNextStep = () => {
     // Validate current step
@@ -88,6 +204,13 @@ const CheckoutWizard: React.FC = () => {
 
     if (Object.keys(errors).length > 0) {
       dispatch({ type: "SET_ERRORS", payload: errors });
+      return;
+    }
+
+    // Special handling for review step with cash payment
+    if (state.currentStep === "review" && state.paymentMethod === "cash") {
+      // Create order directly without going to payment step
+      createCashOrder();
       return;
     }
 
