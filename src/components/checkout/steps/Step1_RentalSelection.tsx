@@ -491,7 +491,8 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                   })}
                 </strong>
               </>
-            )}.
+            )}
+            .
             {state.specificTimeCharge > 0 && (
               <span className="block mt-2 text-sm">
                 Note: A $10 fee is added for each specific time selection

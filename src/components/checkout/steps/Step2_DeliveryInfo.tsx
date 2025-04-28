@@ -261,8 +261,8 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
             onChange={handleInputChange}
             placeholder="78701"
             className={`w-full rounded-lg border-2 ${
-              state.customerZipCode && 
-              state.customerZipCode.length >= 5 && 
+              state.customerZipCode &&
+              state.customerZipCode.length >= 5 &&
               !isBexarCountyZipCode(state.customerZipCode)
                 ? "border-red-300 bg-red-50"
                 : "border-secondary-blue/20"
@@ -311,7 +311,8 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
           We'll never share your personal information with third parties.
         </p>
         <p className="text-blue-800 text-sm mt-2 font-medium">
-          Please note: We currently only deliver to addresses within Bexar County, TX.
+          Please note: We currently only deliver to addresses within Bexar
+          County, TX.
         </p>
       </div>
     </div>

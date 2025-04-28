@@ -116,74 +116,64 @@ const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
                     </span>
                   </div>
 
-                  {extra.selected && (
+                  {extra.selected && extra.id === "tablesChairs" && (
                     <div className="mt-3">
                       <div className="flex items-center justify-between">
-                        {extra.id === "tablesChairs" ? (
-                          <div className="flex items-center space-x-2">
-                            <button
-                              type="button"
-                              onClick={() => handleDecrementQuantity(extra.id)}
-                              disabled={extra.quantity <= 1}
-                              className={`w-8 h-8 rounded-full flex items-center justify-center border ${
-                                extra.quantity <= 1
-                                  ? "border-gray-200 text-gray-300 cursor-not-allowed"
-                                  : "border-primary-purple text-primary-purple hover:bg-primary-purple/10"
-                              }`}
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => handleDecrementQuantity(extra.id)}
+                            disabled={extra.quantity <= 1}
+                            aria-label="Decrease quantity"
+                            className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+                              extra.quantity <= 1
+                                ? "border-gray-200 text-gray-300 cursor-not-allowed"
+                                : "border-primary-purple text-primary-purple hover:bg-primary-purple/10"
+                            }`}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </button>
-                            <span className="text-lg font-medium w-8 text-center">
-                              {extra.quantity}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleIncrementQuantity(extra.id)}
-                              className="w-8 h-8 rounded-full flex items-center justify-center border border-primary-purple text-primary-purple hover:bg-primary-purple/10"
+                              <path
+                                fillRule="evenodd"
+                                d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </button>
+                          <span className="text-lg font-medium w-8 text-center">
+                            {extra.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleIncrementQuantity(extra.id)}
+                            aria-label="Increase quantity"
+                            className="w-8 h-8 rounded-full flex items-center justify-center border border-primary-purple text-primary-purple hover:bg-primary-purple/10"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="text-sm text-gray-500">
-                            Quantity: 1
-                          </div>
-                        )}
+                              <path
+                                fillRule="evenodd"
+                                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </button>
+                        </div>
                         <span className="font-semibold text-primary-purple">
-                          $
-                          {(
-                            extra.price *
-                            (extra.id === "tablesChairs" ? extra.quantity : 1)
-                          ).toFixed(2)}
+                          ${(extra.price * extra.quantity).toFixed(2)}
                         </span>
                       </div>
-                      {extra.id === "tablesChairs" && (
-                        <p className="text-sm text-gray-500 mt-2">
-                          Each set includes 1 table and 6 chairs
-                        </p>
-                      )}
+                      <p className="text-sm text-gray-500 mt-2">
+                        Each set includes 1 table and 6 chairs
+                      </p>
                     </div>
                   )}
                 </div>
