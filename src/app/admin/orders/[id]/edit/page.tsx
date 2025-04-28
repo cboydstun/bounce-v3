@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -31,6 +31,11 @@ interface PageProps {
 }
 
 export default function EditOrderPage({ params }: PageProps) {
+  // For future Next.js compatibility, always use React.use() to unwrap params
+  // This works in both current Next.js and future versions
+  const unwrappedParams = use(params as any) as { id: string };
+  const id = unwrappedParams.id;
+
   const router = useRouter();
   const [order, setOrder] = useState<Order | null>(null);
   const [contact, setContact] = useState<Contact | null>(null);
@@ -70,7 +75,7 @@ export default function EditOrderPage({ params }: PageProps) {
           setIsLoading(true);
           setError(null);
 
-          const orderData = await getOrderById(params.id);
+          const orderData = await getOrderById(id);
           setOrder(orderData);
 
           // Ensure processing fee is correctly calculated (3% of subtotal)
@@ -108,7 +113,7 @@ export default function EditOrderPage({ params }: PageProps) {
 
       fetchOrderData();
     }
-  }, [authStatus, params.id]);
+  }, [authStatus, id]);
 
   // Handle form input changes
   const handleInputChange = (
@@ -306,7 +311,7 @@ export default function EditOrderPage({ params }: PageProps) {
       setSuccess(null);
 
       // Update order
-      const updatedOrder = await updateOrder(params.id, {
+      const updatedOrder = await updateOrder(id, {
         ...formData,
         contactId:
           typeof order.contactId === "string" ? order.contactId : undefined,
