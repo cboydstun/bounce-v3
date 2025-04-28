@@ -16,12 +16,12 @@ const calculateSpecificTimeCharge = (
 
   // $20 charge for specific delivery time
   if (deliveryTimePreference === "specific") {
-    charge += 20;
+    charge += 10;
   }
 
   // Additional $20 charge for specific pickup time
   if (pickupTimePreference === "specific") {
-    charge += 20;
+    charge += 10;
   }
 
   return charge;
