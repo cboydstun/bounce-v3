@@ -141,6 +141,16 @@ const CheckoutWizard: React.FC = () => {
                 extra.price *
                 (extra.id === "tablesChairs" ? extra.quantity : 1),
             })),
+          // Include selected mixers as separate items
+          ...state.slushyMixers
+            .filter((mixer) => mixer.mixerId !== "none")
+            .map((mixer) => ({
+              type: "extra",
+              name: `Mixer (Tank ${mixer.tankNumber}): ${mixer.name}`,
+              quantity: 1,
+              unitPrice: mixer.price,
+              totalPrice: mixer.price,
+            })),
         ],
 
         // Financial details

@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { CheckoutState } from "../utils/types";
+import { CheckoutState, SLUSHY_MIXERS, SlushyMixer } from "../utils/types";
 import { calculatePrices } from "../utils/priceCalculation";
+import MixerSelection from "../MixerSelection";
 
 interface Step3Props {
   state: CheckoutState;
@@ -116,65 +117,360 @@ const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
                     </span>
                   </div>
 
-                  {extra.selected && extra.id === "tablesChairs" && (
-                    <div className="mt-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            type="button"
-                            onClick={() => handleDecrementQuantity(extra.id)}
-                            disabled={extra.quantity <= 1}
-                            aria-label="Decrease quantity"
-                            className={`w-8 h-8 rounded-full flex items-center justify-center border ${
-                              extra.quantity <= 1
-                                ? "border-gray-200 text-gray-300 cursor-not-allowed"
-                                : "border-primary-purple text-primary-purple hover:bg-primary-purple/10"
-                            }`}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </button>
-                          <span className="text-lg font-medium w-8 text-center">
-                            {extra.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleIncrementQuantity(extra.id)}
-                            aria-label="Increase quantity"
-                            className="w-8 h-8 rounded-full flex items-center justify-center border border-primary-purple text-primary-purple hover:bg-primary-purple/10"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </button>
+                  {extra.selected && (
+                    <>
+                      {extra.id === "tablesChairs" && (
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDecrementQuantity(extra.id)
+                                }
+                                disabled={extra.quantity <= 1}
+                                aria-label="Decrease quantity"
+                                className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+                                  extra.quantity <= 1
+                                    ? "border-gray-200 text-gray-300 cursor-not-allowed"
+                                    : "border-primary-purple text-primary-purple hover:bg-primary-purple/10"
+                                }`}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </button>
+                              <span className="text-lg font-medium w-8 text-center">
+                                {extra.quantity}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleIncrementQuantity(extra.id)
+                                }
+                                aria-label="Increase quantity"
+                                className="w-8 h-8 rounded-full flex items-center justify-center border border-primary-purple text-primary-purple hover:bg-primary-purple/10"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                            <span className="font-semibold text-primary-purple">
+                              ${(extra.price * extra.quantity).toFixed(2)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-2">
+                            Each set includes 1 table and 6 chairs
+                          </p>
                         </div>
-                        <span className="font-semibold text-primary-purple">
-                          ${(extra.price * extra.quantity).toFixed(2)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500 mt-2">
-                        Each set includes 1 table and 6 chairs
-                      </p>
-                    </div>
+                      )}
+
+                      {/* Slushy Mixer Selection - Inline */}
+                      {extra.id.includes("slushyMachine") && (
+                        <div className="mt-3">
+                          <div className="space-y-3">
+                            {extra.id === "slushyMachineSingle" && (
+                              <div className="flex flex-col">
+                                <label className="text-sm text-gray-700 mb-1">
+                                  Tank 1 Mixer
+                                </label>
+                                <select
+                                  value={
+                                    state.slushyMixers.find(
+                                      (m: SlushyMixer) =>
+                                        m.machineId === extra.id &&
+                                        m.tankNumber === 1,
+                                    )?.mixerId || "none"
+                                  }
+                                  onChange={(e) => {
+                                    const mixerId = e.target.value;
+                                    const mixer = SLUSHY_MIXERS.find(
+                                      (m) => m.id === mixerId,
+                                    );
+                                    if (mixer) {
+                                      dispatch({
+                                        type: "SELECT_SLUSHY_MIXER",
+                                        payload: {
+                                          machineId: extra.id,
+                                          tankNumber: 1,
+                                          mixerId: mixer.id,
+                                          name: mixer.name,
+                                          price: mixer.price,
+                                        },
+                                      });
+                                    }
+                                  }}
+                                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary-purple focus:border-primary-purple"
+                                >
+                                  {SLUSHY_MIXERS.map((mixer) => (
+                                    <option key={mixer.id} value={mixer.id}>
+                                      {mixer.name}{" "}
+                                      {mixer.price > 0 &&
+                                        `(+$${mixer.price.toFixed(2)})`}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+
+                            {extra.id === "slushyMachineDouble" && (
+                              <>
+                                <div className="flex flex-col">
+                                  <label className="text-sm text-gray-700 mb-1">
+                                    Tank 1 Mixer
+                                  </label>
+                                  <select
+                                    value={
+                                      state.slushyMixers.find(
+                                        (m: SlushyMixer) =>
+                                          m.machineId === extra.id &&
+                                          m.tankNumber === 1,
+                                      )?.mixerId || "none"
+                                    }
+                                    onChange={(e) => {
+                                      const mixerId = e.target.value;
+                                      const mixer = SLUSHY_MIXERS.find(
+                                        (m) => m.id === mixerId,
+                                      );
+                                      if (mixer) {
+                                        dispatch({
+                                          type: "SELECT_SLUSHY_MIXER",
+                                          payload: {
+                                            machineId: extra.id,
+                                            tankNumber: 1,
+                                            mixerId: mixer.id,
+                                            name: mixer.name,
+                                            price: mixer.price,
+                                          },
+                                        });
+                                      }
+                                    }}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary-purple focus:border-primary-purple"
+                                  >
+                                    {SLUSHY_MIXERS.map((mixer) => (
+                                      <option key={mixer.id} value={mixer.id}>
+                                        {mixer.name}{" "}
+                                        {mixer.price > 0 &&
+                                          `(+$${mixer.price.toFixed(2)})`}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="flex flex-col">
+                                  <label className="text-sm text-gray-700 mb-1">
+                                    Tank 2 Mixer
+                                  </label>
+                                  <select
+                                    value={
+                                      state.slushyMixers.find(
+                                        (m: SlushyMixer) =>
+                                          m.machineId === extra.id &&
+                                          m.tankNumber === 2,
+                                      )?.mixerId || "none"
+                                    }
+                                    onChange={(e) => {
+                                      const mixerId = e.target.value;
+                                      const mixer = SLUSHY_MIXERS.find(
+                                        (m) => m.id === mixerId,
+                                      );
+                                      if (mixer) {
+                                        dispatch({
+                                          type: "SELECT_SLUSHY_MIXER",
+                                          payload: {
+                                            machineId: extra.id,
+                                            tankNumber: 2,
+                                            mixerId: mixer.id,
+                                            name: mixer.name,
+                                            price: mixer.price,
+                                          },
+                                        });
+                                      }
+                                    }}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary-purple focus:border-primary-purple"
+                                  >
+                                    {SLUSHY_MIXERS.map((mixer) => (
+                                      <option key={mixer.id} value={mixer.id}>
+                                        {mixer.name}{" "}
+                                        {mixer.price > 0 &&
+                                          `(+$${mixer.price.toFixed(2)})`}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </>
+                            )}
+
+                            {extra.id === "slushyMachineTriple" && (
+                              <>
+                                <div className="flex flex-col">
+                                  <label className="text-sm text-gray-700 mb-1">
+                                    Tank 1 Mixer
+                                  </label>
+                                  <select
+                                    value={
+                                      state.slushyMixers.find(
+                                        (m: SlushyMixer) =>
+                                          m.machineId === extra.id &&
+                                          m.tankNumber === 1,
+                                      )?.mixerId || "none"
+                                    }
+                                    onChange={(e) => {
+                                      const mixerId = e.target.value;
+                                      const mixer = SLUSHY_MIXERS.find(
+                                        (m) => m.id === mixerId,
+                                      );
+                                      if (mixer) {
+                                        dispatch({
+                                          type: "SELECT_SLUSHY_MIXER",
+                                          payload: {
+                                            machineId: extra.id,
+                                            tankNumber: 1,
+                                            mixerId: mixer.id,
+                                            name: mixer.name,
+                                            price: mixer.price,
+                                          },
+                                        });
+                                      }
+                                    }}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary-purple focus:border-primary-purple"
+                                  >
+                                    {SLUSHY_MIXERS.map((mixer) => (
+                                      <option key={mixer.id} value={mixer.id}>
+                                        {mixer.name}{" "}
+                                        {mixer.price > 0 &&
+                                          `(+$${mixer.price.toFixed(2)})`}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="flex flex-col">
+                                  <label className="text-sm text-gray-700 mb-1">
+                                    Tank 2 Mixer
+                                  </label>
+                                  <select
+                                    value={
+                                      state.slushyMixers.find(
+                                        (m: SlushyMixer) =>
+                                          m.machineId === extra.id &&
+                                          m.tankNumber === 2,
+                                      )?.mixerId || "none"
+                                    }
+                                    onChange={(e) => {
+                                      const mixerId = e.target.value;
+                                      const mixer = SLUSHY_MIXERS.find(
+                                        (m) => m.id === mixerId,
+                                      );
+                                      if (mixer) {
+                                        dispatch({
+                                          type: "SELECT_SLUSHY_MIXER",
+                                          payload: {
+                                            machineId: extra.id,
+                                            tankNumber: 2,
+                                            mixerId: mixer.id,
+                                            name: mixer.name,
+                                            price: mixer.price,
+                                          },
+                                        });
+                                      }
+                                    }}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary-purple focus:border-primary-purple"
+                                  >
+                                    {SLUSHY_MIXERS.map((mixer) => (
+                                      <option key={mixer.id} value={mixer.id}>
+                                        {mixer.name}{" "}
+                                        {mixer.price > 0 &&
+                                          `(+$${mixer.price.toFixed(2)})`}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="flex flex-col">
+                                  <label className="text-sm text-gray-700 mb-1">
+                                    Tank 3 Mixer
+                                  </label>
+                                  <select
+                                    value={
+                                      state.slushyMixers.find(
+                                        (m: SlushyMixer) =>
+                                          m.machineId === extra.id &&
+                                          m.tankNumber === 3,
+                                      )?.mixerId || "none"
+                                    }
+                                    onChange={(e) => {
+                                      const mixerId = e.target.value;
+                                      const mixer = SLUSHY_MIXERS.find(
+                                        (m) => m.id === mixerId,
+                                      );
+                                      if (mixer) {
+                                        dispatch({
+                                          type: "SELECT_SLUSHY_MIXER",
+                                          payload: {
+                                            machineId: extra.id,
+                                            tankNumber: 3,
+                                            mixerId: mixer.id,
+                                            name: mixer.name,
+                                            price: mixer.price,
+                                          },
+                                        });
+                                      }
+                                    }}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary-purple focus:border-primary-purple"
+                                  >
+                                    {SLUSHY_MIXERS.map((mixer) => (
+                                      <option key={mixer.id} value={mixer.id}>
+                                        {mixer.name}{" "}
+                                        {mixer.price > 0 &&
+                                          `(+$${mixer.price.toFixed(2)})`}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </>
+                            )}
+
+                            {/* Display selected mixer prices */}
+                            {state.slushyMixers
+                              .filter(
+                                (mixer: SlushyMixer) =>
+                                  mixer.mixerId !== "none" &&
+                                  mixer.machineId === extra.id,
+                              )
+                              .map((mixer, index) => (
+                                <div
+                                  key={index}
+                                  className="flex justify-between items-center text-sm"
+                                >
+                                  <span className="text-gray-600">
+                                    Tank {mixer.tankNumber}: {mixer.name}
+                                  </span>
+                                  <span className="font-semibold text-primary-purple">
+                                    +${mixer.price.toFixed(2)}
+                                  </span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

@@ -60,6 +60,7 @@ export const initialState: CheckoutState = {
     selected: false,
     quantity: 1, // Default quantity
   })),
+  slushyMixers: [], // Initialize empty array for slushy mixers
 
   // Step 4
   subtotal: 0,
@@ -284,6 +285,26 @@ export const checkoutReducer = (
       };
 
     case "TOGGLE_EXTRA":
+      // If we're toggling a slushy machine and turning it off, clear the mixers
+      const isSlushyMachine = action.payload.includes("slushyMachine");
+      const extra = state.extras.find((e) => e.id === action.payload);
+      const isDeselecting = extra?.selected;
+
+      // If deselecting a slushy machine, clear only the mixers for this machine
+      if (isSlushyMachine && isDeselecting) {
+        return {
+          ...state,
+          extras: state.extras.map((extra) =>
+            extra.id === action.payload
+              ? { ...extra, selected: !extra.selected }
+              : extra,
+          ),
+          slushyMixers: state.slushyMixers.filter(
+            (mixer) => mixer.machineId !== action.payload,
+          ), // Clear only mixers for this machine
+        };
+      }
+
       return {
         ...state,
         extras: state.extras.map((extra) =>
@@ -448,6 +469,28 @@ export const checkoutReducer = (
       return {
         ...state,
         paymentError: action.payload,
+      };
+
+    // New actions for slushy mixer selection
+    case "SELECT_SLUSHY_MIXER":
+      return {
+        ...state,
+        slushyMixers: [
+          ...state.slushyMixers.filter(
+            (mixer) =>
+              !(
+                mixer.machineId === action.payload.machineId &&
+                mixer.tankNumber === action.payload.tankNumber
+              ),
+          ),
+          action.payload,
+        ],
+      };
+
+    case "CLEAR_SLUSHY_MIXERS":
+      return {
+        ...state,
+        slushyMixers: [],
       };
 
     default:

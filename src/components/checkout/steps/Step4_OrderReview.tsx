@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { CheckoutState } from "../utils/types";
+import { CheckoutState, OrderStep } from "../utils/types";
 import { calculatePrices } from "../utils/priceCalculation";
 
 interface Step4Props {
   state: CheckoutState;
   dispatch: React.Dispatch<any>;
-  onEditStep: (step: number) => void;
+  onEditStep: (step: OrderStep) => void;
 }
 
 const Step4_OrderReview: React.FC<Step4Props> = ({
@@ -79,7 +79,7 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
             </h3>
             <button
               type="button"
-              onClick={() => onEditStep(1)}
+              onClick={() => onEditStep("delivery")}
               className="text-primary-purple hover:text-primary-purple/80 text-sm font-medium"
             >
               Edit
@@ -160,7 +160,7 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
             </h3>
             <button
               type="button"
-              onClick={() => onEditStep(2)}
+              onClick={() => onEditStep("details")}
               className="text-primary-purple hover:text-primary-purple/80 text-sm font-medium"
             >
               Edit
@@ -205,7 +205,7 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
             </h3>
             <button
               type="button"
-              onClick={() => onEditStep(3)}
+              onClick={() => onEditStep("extras")}
               className="text-primary-purple hover:text-primary-purple/80 text-sm font-medium"
             >
               Edit
@@ -237,6 +237,28 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
                   </span>
                 </div>
               ))}
+
+              {/* Selected Mixers */}
+              {state.slushyMixers.filter((mixer) => mixer.mixerId !== "none")
+                .length > 0 && (
+                <div className="mt-3 border-t border-gray-100 pt-3">
+                  <h4 className="font-medium text-gray-700 mb-2">
+                    Selected Mixers:
+                  </h4>
+                  {state.slushyMixers
+                    .filter((mixer) => mixer.mixerId !== "none")
+                    .map((mixer, index) => (
+                      <div key={index} className="flex justify-between ml-4">
+                        <span className="text-gray-600">
+                          Tank {mixer.tankNumber}: {mixer.name}
+                        </span>
+                        <span className="font-medium">
+                          ${mixer.price.toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-gray-500 italic">No extras selected</p>
@@ -269,14 +291,18 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
             <span className="text-gray-600">Extras:</span>
             <span className="font-medium">
               $
-              {state.extras
-                .filter((extra) => extra.selected)
-                .reduce((sum, extra) => {
-                  const quantity =
-                    extra.id === "tablesChairs" ? extra.quantity : 1;
-                  return sum + extra.price * quantity;
-                }, 0)
-                .toFixed(2)}
+              {(
+                state.extras
+                  .filter((extra) => extra.selected)
+                  .reduce((sum, extra) => {
+                    const quantity =
+                      extra.id === "tablesChairs" ? extra.quantity : 1;
+                    return sum + extra.price * quantity;
+                  }, 0) +
+                state.slushyMixers
+                  .filter((mixer) => mixer.mixerId !== "none")
+                  .reduce((sum, mixer) => sum + mixer.price, 0)
+              ).toFixed(2)}
             </span>
           </div>
           <div className="flex justify-between">

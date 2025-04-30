@@ -30,6 +30,16 @@ export const steps: StepConfig[] = [
   { id: "payment", label: "Payment" },
 ];
 
+// Define the slushy mixer options
+export const SLUSHY_MIXERS = [
+  { id: "none", name: "None", price: 0.0 },
+  { id: "grape", name: "Grape Kool Aid", price: 19.95 },
+  { id: "cherry", name: "Cherry Kool Aid", price: 19.95 },
+  { id: "margarita", name: "Margarita", price: 19.95 },
+  { id: "strawberry", name: "Strawberry Daiquiri", price: 24.95 },
+  { id: "pinacolada", name: "Piña Colada", price: 24.95 },
+];
+
 // Define the extras with their prices
 export const EXTRAS = [
   { id: "tablesChairs", name: "Tables & Chairs", price: 19.95, image: "🪑" },
@@ -84,6 +94,15 @@ export interface BouncerItem {
   image?: string;
 }
 
+// Define a slushy mixer interface
+export interface SlushyMixer {
+  machineId: string; // Add this field to identify which machine the mixer belongs to
+  tankNumber: number;
+  mixerId: string;
+  name: string;
+  price: number;
+}
+
 // Define the checkout state interface
 export interface CheckoutState {
   // Current step
@@ -122,6 +141,7 @@ export interface CheckoutState {
     quantity: number;
     image: string;
   }[];
+  slushyMixers: SlushyMixer[];
 
   // Step 4: Order Review (calculated from above)
   subtotal: number;
@@ -242,4 +262,7 @@ export type CheckoutAction =
   // New actions for cash payment flow
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "CASH_ORDER_SUCCESS" }
-  | { type: "ORDER_ERROR"; payload: string };
+  | { type: "ORDER_ERROR"; payload: string }
+  // New actions for slushy mixer selection
+  | { type: "SELECT_SLUSHY_MIXER"; payload: SlushyMixer }
+  | { type: "CLEAR_SLUSHY_MIXERS" };

@@ -32,14 +32,20 @@ export const calculatePrices = (state: CheckoutState) => {
     bouncerSubtotal = state.bouncerPrice;
   }
 
-  // Calculate extras total
-  const extrasTotal = state.extras
-    .filter((extra) => extra.selected)
-    .reduce((sum: number, extra) => {
-      // Only apply quantity for Tables & Chairs
-      const quantity = extra.id === "tablesChairs" ? extra.quantity : 1;
-      return sum + extra.price * quantity;
-    }, 0);
+  // Calculate mixer total (exclude 'none' mixers)
+  const mixerTotal = state.slushyMixers
+    .filter((mixer) => mixer.mixerId !== "none")
+    .reduce((sum, mixer) => sum + mixer.price, 0);
+
+  // Calculate extras total (including mixers)
+  const extrasTotal =
+    state.extras
+      .filter((extra) => extra.selected)
+      .reduce((sum: number, extra) => {
+        // Only apply quantity for Tables & Chairs
+        const quantity = extra.id === "tablesChairs" ? extra.quantity : 1;
+        return sum + extra.price * quantity;
+      }, 0) + mixerTotal;
 
   // Include specific time charge and delivery fee in the subtotal
   const specificTimeCharge = state.specificTimeCharge || 0;
