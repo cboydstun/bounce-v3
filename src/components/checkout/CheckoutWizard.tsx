@@ -66,11 +66,15 @@ const CheckoutWizard: React.FC = () => {
 
   // Update prices whenever relevant state changes
   useEffect(() => {
-    if (state.bouncerPrice || state.extras.some((extra) => extra.selected)) {
+    if (
+      state.selectedBouncers.length > 0 ||
+      state.bouncerPrice ||
+      state.extras.some((extra) => extra.selected)
+    ) {
       const prices = calculatePrices(state);
       dispatch({ type: "UPDATE_PRICES", payload: prices });
     }
-  }, [state.bouncerPrice, state.extras]);
+  }, [state.selectedBouncers, state.bouncerPrice, state.extras]);
 
   // Function to create order for cash payments
   const createCashOrder = async () => {
@@ -104,18 +108,27 @@ const CheckoutWizard: React.FC = () => {
 
         // Order items
         items: [
-          // Only include bouncer if one is selected
-          ...(state.selectedBouncer
-            ? [
-                {
-                  type: "bouncer",
-                  name: state.bouncerName,
-                  quantity: 1,
-                  unitPrice: state.bouncerPrice,
-                  totalPrice: state.bouncerPrice,
-                },
-              ]
-            : []),
+          // Include all selected bouncers (each with quantity 1)
+          ...(state.selectedBouncers.length > 0
+            ? state.selectedBouncers.map((bouncer) => ({
+                type: "bouncer",
+                name: bouncer.name,
+                quantity: 1, // Fixed at 1
+                unitPrice: bouncer.price,
+                totalPrice: bouncer.discountedPrice || bouncer.price, // No need to multiply by quantity
+              }))
+            : // Fallback to legacy single bouncer if no bouncers in the array
+              state.selectedBouncer
+              ? [
+                  {
+                    type: "bouncer",
+                    name: state.bouncerName,
+                    quantity: 1,
+                    unitPrice: state.bouncerPrice,
+                    totalPrice: state.bouncerPrice,
+                  },
+                ]
+              : []),
           // Include selected extras
           ...state.extras
             .filter((extra) => extra.selected)
@@ -349,6 +362,7 @@ const CheckoutWizard: React.FC = () => {
               Object.keys(state.errors).length > 0 ||
               // Or if we're on extras step and no items are selected
               (state.currentStep === "extras" &&
+                state.selectedBouncers.length === 0 &&
                 !state.selectedBouncer &&
                 !state.extras.some((extra) => extra.selected)) ||
               // Or if we're on review step and terms not agreed

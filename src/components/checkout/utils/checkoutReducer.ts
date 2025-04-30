@@ -14,12 +14,12 @@ const calculateSpecificTimeCharge = (
 ): number => {
   let charge = 0;
 
-  // $20 charge for specific delivery time
+  // $10 charge for specific delivery time
   if (deliveryTimePreference === "specific") {
     charge += 10;
   }
 
-  // Additional $20 charge for specific pickup time
+  // Additional $10 charge for specific pickup time
   if (pickupTimePreference === "specific") {
     charge += 10;
   }
@@ -32,6 +32,7 @@ export const initialState: CheckoutState = {
   currentStep: "delivery",
 
   // Step 1
+  selectedBouncers: [],
   selectedBouncer: "",
   bouncerName: "",
   bouncerPrice: 0,
@@ -139,11 +140,86 @@ export const checkoutReducer = (
       };
 
     case "SET_BOUNCER":
+      // For backward compatibility, also update the selectedBouncers array
       return {
         ...state,
         selectedBouncer: action.payload.id,
         bouncerName: action.payload.name,
         bouncerPrice: action.payload.price,
+        // Clear existing bouncers and add this one
+        selectedBouncers: [
+          {
+            id: action.payload.id,
+            name: action.payload.name,
+            price: action.payload.price,
+            quantity: 1,
+          },
+        ],
+      };
+
+    case "ADD_BOUNCER":
+      // Don't add if already 3 bouncers or if this bouncer is already in the list
+      if (
+        state.selectedBouncers.length >= 3 ||
+        state.selectedBouncers.some((b) => b.id === action.payload.id)
+      ) {
+        return state;
+      }
+
+      // Add the new bouncer to the array with quantity fixed at 1
+      return {
+        ...state,
+        selectedBouncers: [
+          ...state.selectedBouncers,
+          {
+            id: action.payload.id,
+            name: action.payload.name,
+            price: action.payload.price,
+            quantity: 1, // Fixed at 1, cannot be changed
+            image: action.payload.image,
+          },
+        ],
+      };
+
+    case "REMOVE_BOUNCER":
+      // Remove the bouncer with the specified id
+      return {
+        ...state,
+        selectedBouncers: state.selectedBouncers.filter(
+          (bouncer) => bouncer.id !== action.payload,
+        ),
+      };
+
+    case "UPDATE_BOUNCER_QUANTITY":
+      // Update the quantity of the specified bouncer
+      return {
+        ...state,
+        selectedBouncers: state.selectedBouncers.map((bouncer) =>
+          bouncer.id === action.payload.id
+            ? { ...bouncer, quantity: Math.max(1, action.payload.quantity) }
+            : bouncer,
+        ),
+      };
+
+    case "CALCULATE_BOUNCER_DISCOUNTS":
+      // IMPORTANT: Always sort bouncers by price (highest to lowest)
+      // to ensure the most expensive bouncer gets full price
+      // and cheaper bouncers get the 50% discount
+      const sortedBouncers = [...state.selectedBouncers].sort(
+        (a, b) => b.price - a.price,
+      );
+
+      // Apply discounts: most expensive bouncer (index 0) gets full price,
+      // additional bouncers get 50% off
+      return {
+        ...state,
+        selectedBouncers: sortedBouncers.map((bouncer, index) => {
+          const discount = index === 0 ? 1 : 0.5;
+          return {
+            ...bouncer,
+            discountedPrice: bouncer.price * discount,
+          };
+        }),
       };
 
     case "SET_DELIVERY_DATE":

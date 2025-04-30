@@ -13,7 +13,8 @@ This document provides comprehensive documentation for the Orders system in the 
    - [Delete Order](#delete-order)
    - [Payment Processing](#payment-processing)
 3. [Order Status Flow](#order-status-flow)
-4. [Examples](#examples)
+4. [Multiple Bouncers Feature](#multiple-bouncers-feature)
+5. [Examples](#examples)
 
 ## Order Data Model
 
@@ -21,29 +22,29 @@ The Order model represents a customer's order for bounce house rentals and relat
 
 ### Core Properties
 
-| Property             | Type                         | Description                                                          | Required                 |
-| -------------------- | ---------------------------- | -------------------------------------------------------------------- | ------------------------ |
-| `_id`                | `string`                     | MongoDB document ID                                                  | Auto-generated           |
-| `orderNumber`        | `string`                     | Unique order identifier (e.g., BB-2024-0001)                         | Yes                      |
-| `contactId`          | `string`                     | Reference to a Contact document                                      | No\*                     |
-| `customerEmail`      | `string`                     | Customer's email address                                             | No\*                     |
-| `items`              | `OrderItem[]`                | Array of ordered items                                               | Yes                      |
-| `subtotal`           | `number`                     | Sum of all item prices                                               | Yes                      |
-| `taxAmount`          | `number`                     | Tax amount                                                           | Yes                      |
-| `discountAmount`     | `number`                     | Discount amount                                                      | Yes (default: 0)         |
-| `deliveryFee`        | `number`                     | Delivery fee                                                         | Yes (default: $20)       |
-| `processingFee`      | `number`                     | Credit card processing fee (3% of subtotal, rounded to nearest cent) | Yes (auto-calculated)    |
-| `totalAmount`        | `number`                     | Final amount                                                         | Yes                      |
-| `depositAmount`      | `number`                     | Initial deposit amount                                               | Yes (default: 0)         |
-| `balanceDue`         | `number`                     | Remaining balance                                                    | Yes                      |
-| `status`             | `OrderStatus`                | Current order status                                                 | Yes (default: "Pending") |
-| `paymentStatus`      | `PaymentStatus`              | Current payment status                                               | Yes (default: "Pending") |
-| `paymentMethod`      | `PaymentMethod`              | Method of payment                                                    | Yes                      |
-| `paypalTransactions` | `PayPalTransactionDetails[]` | PayPal transaction details                                           | No                       |
-| `notes`              | `string`                     | Additional order notes                                               | No                       |
-| `tasks`              | `string[]`                   | List of tasks associated with the order                              | No                       |
-| `createdAt`          | `Date`                       | Order creation date                                                  | Auto-generated           |
-| `updatedAt`          | `Date`                       | Order last update date                                               | Auto-generated           |
+| Property             | Type                         | Description                                                      | Required                 |
+| -------------------- | ---------------------------- | ---------------------------------------------------------------- | ------------------------ |
+| `_id`                | `string`                     | MongoDB document ID                                              | Auto-generated           |
+| `orderNumber`        | `string`                     | Unique order identifier (e.g., BB-2024-0001)                     | Yes                      |
+| `contactId`          | `string`                     | Reference to a Contact document                                  | No\*                     |
+| `customerEmail`      | `string`                     | Customer's email address                                         | No\*                     |
+| `items`              | `OrderItem[]`                | Array of ordered items                                           | Yes                      |
+| `subtotal`           | `number`                     | Sum of all item prices                                           | Yes                      |
+| `taxAmount`          | `number`                     | Tax amount                                                       | Yes                      |
+| `discountAmount`     | `number`                     | Discount amount                                                  | Yes (default: 0)         |
+| `deliveryFee`        | `number`                     | Delivery fee                                                     | Yes (default: $20)       |
+| `processingFee`      | `number`                     | Credit card processing fee (3% of subtotal+tax, for PayPal only) | Yes (auto-calculated)    |
+| `totalAmount`        | `number`                     | Final amount                                                     | Yes                      |
+| `depositAmount`      | `number`                     | Initial deposit amount                                           | Yes (default: 0)         |
+| `balanceDue`         | `number`                     | Remaining balance                                                | Yes                      |
+| `status`             | `OrderStatus`                | Current order status                                             | Yes (default: "Pending") |
+| `paymentStatus`      | `PaymentStatus`              | Current payment status                                           | Yes (default: "Pending") |
+| `paymentMethod`      | `PaymentMethod`              | Method of payment                                                | Yes                      |
+| `paypalTransactions` | `PayPalTransactionDetails[]` | PayPal transaction details                                       | No                       |
+| `notes`              | `string`                     | Additional order notes                                           | No                       |
+| `tasks`              | `string[]`                   | List of tasks associated with the order                          | No                       |
+| `createdAt`          | `Date`                       | Order creation date                                              | Auto-generated           |
+| `updatedAt`          | `Date`                       | Order last update date                                           | Auto-generated           |
 
 \*Note: Either `contactId` or `customerEmail` must be provided.
 
@@ -237,7 +238,7 @@ type PayPalTransactionStatus =
 - The following fields are optional and will be calculated if not provided:
   - `subtotal` (calculated from items)
   - `deliveryFee` (defaults to $20)
-  - `processingFee` (calculated as 3% of subtotal, rounded to nearest cent)
+  - `processingFee` (calculated as 3% of subtotal+tax, rounded to nearest cent, for PayPal payments only)
   - `totalAmount` (calculated from subtotal, taxAmount, deliveryFee, processingFee, and discountAmount)
   - `balanceDue` (calculated from totalAmount and depositAmount)
   - `orderNumber` (auto-generated if not provided)
@@ -497,6 +498,11 @@ The PayPal integration is implemented in the Step5_Payment component of the chec
 4. Customer pays in cash at the time of delivery
 5. Admin updates the order status after receiving payment
 
+**Processing Fee:**
+
+- For PayPal payments, a 3% processing fee is applied to the subtotal plus tax
+- For Cash payments, no processing fee is applied
+
 #### Initiate Payment
 
 **Endpoint:** `POST /api/v1/orders/[id]/payment`
@@ -667,6 +673,99 @@ The payment status follows a similar flow:
 4. Full payment collected at delivery
 5. Admin updates order status to "Paid" after receiving payment
 
+## Multiple Bouncers Feature
+
+The system supports ordering multiple bounce houses in a single transaction, with automatic discount pricing.
+
+### Key Features
+
+1. **Multiple Selection**: Customers can select up to 3 different bounce houses per order
+2. **Automatic Discount**: The most expensive bouncer is charged at full price, while additional bouncers receive a 50% discount
+3. **Price Sorting**: Bouncers are automatically sorted by price (highest to lowest) to ensure the most expensive bouncer is always charged at full price
+4. **Clear Pricing Display**: The UI clearly indicates which bouncer is full price and which ones are discounted
+
+### Implementation Details
+
+#### Data Structure
+
+Each order can contain multiple bouncer items in the `items` array:
+
+```json
+"items": [
+  {
+    "type": "bouncer",
+    "name": "Double Lane Waterslide",
+    "quantity": 1,
+    "unitPrice": 399.95,
+    "totalPrice": 399.95
+  },
+  {
+    "type": "bouncer",
+    "name": "Castle Bounce House",
+    "quantity": 1,
+    "unitPrice": 199.95,
+    "totalPrice": 99.98
+  },
+  {
+    "type": "bouncer",
+    "name": "Obstacle Course",
+    "quantity": 1,
+    "unitPrice": 299.95,
+    "totalPrice": 149.98
+  }
+]
+```
+
+#### Discount Logic
+
+The discount logic is applied as follows:
+
+1. Bouncers are sorted by price (highest to lowest)
+2. The first (most expensive) bouncer is charged at full price
+3. All additional bouncers receive a 50% discount
+4. The discounted prices are reflected in the `totalPrice` field of each item
+
+#### UI Implementation
+
+The checkout UI provides a streamlined experience for selecting multiple bouncers:
+
+1. First bouncer selection is automatically added to the order
+2. An "Add More Bouncers" button appears after the first selection
+3. Users can add up to 3 different bouncers to their order
+4. Each selected bouncer is displayed with clear pricing information:
+   - Most expensive bouncer: "Full Price" badge
+   - Additional bouncers: "50% Off" badge with strikethrough original price
+
+#### Order Summary
+
+The order summary displays each bouncer as a separate line item, with clear indication of pricing:
+
+```
+Order Summary
+------------
+Bouncers:
+- Double Lane Waterslide (Full Price): $399.95
+- Obstacle Course (50% Off): $149.98
+- Castle Bounce House (50% Off): $99.98
+
+Extras:
+- Generator: $50.00
+
+Delivery Fee: $20.00
+Subtotal: $719.91
+Tax (8.25%): $59.39
+Processing Fee (3%): $23.38 (PayPal only)
+Total: $802.68
+```
+
+### API Considerations
+
+When creating or updating orders with multiple bouncers:
+
+1. Each bouncer should be included as a separate item in the `items` array
+2. The `totalPrice` field should reflect any applicable discounts
+3. The system will automatically sort bouncers by price and apply discounts
+
 ## Examples
 
 ### Creating a New Order
@@ -701,6 +800,53 @@ const createOrder = async (contactId) => {
       discountAmount: 0,
       paymentMethod: "paypal",
       notes: "Please deliver before noon",
+    }),
+  });
+
+  return await response.json();
+};
+
+// Example: Creating a new order with multiple bouncers
+const createOrderWithMultipleBouncers = async () => {
+  const response = await fetch("/api/v1/orders", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      customerName: "John Doe",
+      customerEmail: "john@example.com",
+      customerPhone: "123-456-7890",
+      customerAddress: "123 Main St",
+      customerCity: "San Antonio",
+      customerState: "TX",
+      customerZipCode: "78701",
+      items: [
+        {
+          type: "bouncer",
+          name: "Double Lane Waterslide",
+          quantity: 1,
+          unitPrice: 399.95,
+          totalPrice: 399.95,
+        },
+        {
+          type: "bouncer",
+          name: "Castle Bounce House",
+          quantity: 1,
+          unitPrice: 199.95,
+          totalPrice: 99.98, // 50% discount applied
+        },
+        {
+          type: "extra",
+          name: "Generator",
+          quantity: 1,
+          unitPrice: 50,
+          totalPrice: 50,
+        },
+      ],
+      taxAmount: 45.41,
+      discountAmount: 0,
+      paymentMethod: "paypal",
     }),
   });
 
@@ -761,152 +907,4 @@ const processPayment = async (orderId, amount) => {
 
   // Step 2: In a real implementation, you would redirect to PayPal for payment
   // and then receive a callback with the transaction details
-
-  // Step 3: Record payment transaction
-  const recordResponse = await fetch(`/api/v1/orders/${orderId}/payment`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      transactionId: paymentInit.paypalOrderId, // In a real implementation, this would come from PayPal
-      payerId: "PAYER-123",
-      payerEmail: "customer@example.com",
-      amount,
-      currency: "USD",
-      status: "COMPLETED",
-    }),
-  });
-
-  return await recordResponse.json();
-};
 ```
-
-### Fetching Orders
-
-```javascript
-// Example: Fetching all orders
-const fetchOrders = async (token) => {
-  const response = await fetch("/api/v1/orders", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  return await response.json();
-};
-
-// Example: Fetching orders with filters
-const fetchFilteredOrders = async (token, filters) => {
-  const queryParams = new URLSearchParams();
-
-  if (filters.startDate) queryParams.append("startDate", filters.startDate);
-  if (filters.endDate) queryParams.append("endDate", filters.endDate);
-  if (filters.status) queryParams.append("status", filters.status);
-  if (filters.paymentStatus)
-    queryParams.append("paymentStatus", filters.paymentStatus);
-  if (filters.contactId) queryParams.append("contactId", filters.contactId);
-  if (filters.orderNumber)
-    queryParams.append("orderNumber", filters.orderNumber);
-
-  const response = await fetch(`/api/v1/orders?${queryParams.toString()}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  return await response.json();
-};
-```
-
-### Updating an Order
-
-```javascript
-// Example: Updating an order
-const updateOrder = async (orderId, token, updates) => {
-  const response = await fetch(`/api/v1/orders/${orderId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(updates),
-  });
-
-  return await response.json();
-};
-
-// Example: Updating order status
-const updateOrderStatus = async (orderId, token, status) => {
-  return await updateOrder(orderId, token, { status });
-};
-```
-
-### Deleting an Order
-
-```javascript
-// Example: Deleting an order (admin only)
-const deleteOrder = async (orderId, adminToken) => {
-  const response = await fetch(`/api/v1/orders/${orderId}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${adminToken}`,
-    },
-  });
-
-  return await response.json();
-};
-```
-
-This documentation should provide a comprehensive guide for frontend developers to integrate with the Orders API.
-
-## Contact-Order-Task Relationship
-
-The following diagram illustrates the relationship between Contacts, Orders, and Tasks in the system:
-
-```mermaid
-graph TD
-    Contact[Contact] -->|can be converted to| Order[Order]
-    Order -->|contains| Task[Task]
-    Task -->|can be claimed by| Employee[Employee]
-
-    Contact --> ContactInfo[Contact Info]
-    Contact --> PartyInfo[Party Info]
-    Contact --> ProductInterest[Product Interest]
-
-    Order --> OrderItems[Order Items]
-    Order --> OrderFinancials[Order Financials]
-    Order --> OrderStatus[Order Status]
-
-    Task --> TaskType[Task Type]
-    Task --> TaskStatus[Task Status]
-    Task --> TaskSchedule[Task Schedule]
-
-    Contact -.->|inquiry| ProductInterest
-    Order -.->|generates| Task
-    Employee -.->|completes| Task
-```
-
-In this workflow:
-
-1. **Contacts** represent customer inquiries and contain basic customer information and product interests
-2. **Orders** are created from contacts (or directly) and contain detailed information about products, pricing, and payment
-3. **Tasks** are generated from orders and represent specific jobs that need to be completed (delivery, setup, pickup, etc.)
-4. **Employees** can claim and complete tasks
-
-### Task Management
-
-Tasks are an array of jobs associated with each order. The admin can create jobs which are available to be claimed by employees. Tasks can include a variety of activities needed for a party rental business:
-
-- **Delivery**: Transporting equipment to the customer's location
-- **Setup**: Assembling and preparing equipment at the location
-- **Attendant**: Providing on-site supervision during the event
-- **Pickup**: Disassembling and retrieving equipment after the event
-- **Cleaning**: Sanitizing and preparing equipment for the next rental
-- **Maintenance**: Performing repairs or routine maintenance on equipment
-
-Each task has its own lifecycle (created → assigned → in progress → completed) and can be tracked separately within the system.
-
-## Frontend Checkout Implementation
-
-The frontend checkout process is implemented as a multi-step wizard that guides customers through the rental selection, delivery information

@@ -10,11 +10,11 @@ interface Step3Props {
 }
 
 const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
-  // Update prices whenever extras selection changes
+  // Update prices whenever extras or bouncers selection changes
   useEffect(() => {
     const prices = calculatePrices(state);
     dispatch({ type: "UPDATE_PRICES", payload: prices });
-  }, [state.extras, state.bouncerPrice, dispatch]);
+  }, [state.extras, state.bouncerPrice, state.selectedBouncers, dispatch]);
 
   // Handle toggling an extra
   const handleToggleExtra = (extraId: string) => {
@@ -199,9 +199,18 @@ const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
           </span>
         </div>
         <div className="flex justify-between items-center mt-2">
-          <span className="text-gray-700">Bouncer:</span>
+          <span className="text-gray-700">Bouncers:</span>
           <span className="font-semibold">
-            ${state.bouncerPrice.toFixed(2)}
+            $
+            {state.selectedBouncers.length > 0
+              ? state.selectedBouncers
+                  .reduce(
+                    (sum, bouncer) =>
+                      sum + (bouncer.discountedPrice || bouncer.price),
+                    0,
+                  )
+                  .toFixed(2)
+              : state.bouncerPrice.toFixed(2)}
           </span>
         </div>
         {state.specificTimeCharge > 0 && (
@@ -213,13 +222,13 @@ const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
                   <span className="text-gray-700">
                     Specific Delivery Time Fee:
                   </span>
-                  <span className="font-semibold">$20.00</span>
+                  <span className="font-semibold">$10.00</span>
                 </div>
                 <div className="flex justify-between items-center mt-2">
                   <span className="text-gray-700">
                     Specific Pickup Time Fee:
                   </span>
-                  <span className="font-semibold">$20.00</span>
+                  <span className="font-semibold">$10.00</span>
                 </div>
               </>
             ) : (
@@ -244,39 +253,45 @@ const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
       </div>
 
       {/* No extras selected message */}
-      {!state.extras.some((e) => e.selected) && state.selectedBouncer && (
-        <div className="bg-blue-50 p-4 rounded-md">
-          <p className="text-blue-800">
-            You haven't selected any extras yet. That's okay! You can continue
-            with just the bounce house rental.
-          </p>
-        </div>
-      )}
+      {!state.extras.some((e) => e.selected) &&
+        (state.selectedBouncer || state.selectedBouncers.length > 0) && (
+          <div className="bg-blue-50 p-4 rounded-md">
+            <p className="text-blue-800">
+              You haven't selected any extras yet. That's okay! You can continue
+              with just the bounce house rental.
+            </p>
+          </div>
+        )}
 
       {/* No bouncer selected message */}
-      {!state.selectedBouncer && !state.extras.some((e) => e.selected) && (
-        <div className="bg-yellow-50 p-4 rounded-md">
-          <p className="text-yellow-800">
-            <strong>Note:</strong> You haven't selected a bouncer or any extras
-            yet. Please select at least one item to continue.
-          </p>
-          {state.errors.extras && (
-            <p className="text-red-500 mt-2 font-medium">
-              {state.errors.extras}
+      {!state.selectedBouncer &&
+        state.selectedBouncers.length === 0 &&
+        !state.extras.some((e) => e.selected) && (
+          <div className="bg-yellow-50 p-4 rounded-md">
+            <p className="text-yellow-800">
+              <strong>Note:</strong> You haven't selected a bouncer or any
+              extras yet. Please select at least one item to continue.
             </p>
-          )}
-        </div>
-      )}
+            {state.errors.extras && (
+              <p className="text-red-500 mt-2 font-medium">
+                {state.errors.extras}
+              </p>
+            )}
+          </div>
+        )}
 
       {/* Extras-only order message */}
-      {!state.selectedBouncer && state.extras.some((e) => e.selected) && (
-        <div className="bg-blue-50 p-4 rounded-md">
-          <p className="text-blue-800">
-            <strong>Extras-Only Order:</strong> You're ordering extras without a
-            bouncer. That's fine! You can proceed with just the selected extras.
-          </p>
-        </div>
-      )}
+      {!state.selectedBouncer &&
+        state.selectedBouncers.length === 0 &&
+        state.extras.some((e) => e.selected) && (
+          <div className="bg-blue-50 p-4 rounded-md">
+            <p className="text-blue-800">
+              <strong>Extras-Only Order:</strong> You're ordering extras without
+              a bouncer. That's fine! You can proceed with just the selected
+              extras.
+            </p>
+          </div>
+        )}
     </div>
   );
 };

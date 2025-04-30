@@ -15,12 +15,12 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
   dispatch,
   onEditStep = (step) => dispatch({ type: "GO_TO_STEP", payload: step }),
 }) => {
-  // Recalculate prices when component mounts
+  // Recalculate prices when component mounts or when payment method changes
   useEffect(() => {
     const prices = calculatePrices(state);
     dispatch({ type: "UPDATE_PRICES", payload: prices });
 
-    // Update balance due when component mounts
+    // Update balance due
     dispatch({ type: "UPDATE_BALANCE_DUE" });
 
     // Reset deposit amount to 0 when payment method is cash
@@ -32,6 +32,7 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
     state.bouncerPrice,
     state.depositAmount,
     state.paymentMethod,
+    state.selectedBouncers,
     dispatch,
   ]);
 
@@ -86,10 +87,48 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
           </div>
         </div>
         <div className="p-4 space-y-3">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Bouncer:</span>
-            <span className="font-medium">{state.bouncerName}</span>
-          </div>
+          {state.selectedBouncers.length > 0 ? (
+            <>
+              {/* Sort bouncers by price (highest to lowest) for display */}
+              {[...state.selectedBouncers]
+                .sort((a, b) => b.price - a.price)
+                .map((bouncer, index) => (
+                  <div key={bouncer.id} className="flex justify-between">
+                    <span className="text-gray-600">
+                      {bouncer.name}
+                      {index === 0 ? (
+                        <span className="bg-blue-100 text-blue-800 text-xs font-medium ml-2 px-2 py-0.5 rounded">
+                          Full Price
+                        </span>
+                      ) : (
+                        <span className="bg-green-100 text-green-800 text-xs font-medium ml-2 px-2 py-0.5 rounded">
+                          50% Off
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-medium">
+                      {index === 0 ? (
+                        `$${bouncer.price.toFixed(2)}`
+                      ) : (
+                        <>
+                          <span className="text-gray-500 line-through mr-2">
+                            ${bouncer.price.toFixed(2)}
+                          </span>
+                          <span className="text-green-600">
+                            ${(bouncer.price * 0.5).toFixed(2)}
+                          </span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                ))}
+            </>
+          ) : (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Bouncer:</span>
+              <span className="font-medium">{state.bouncerName}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-gray-600">Delivery Date:</span>
             <span className="font-medium">
@@ -212,21 +251,37 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
         </div>
         <div className="p-4 space-y-3">
           <div className="flex justify-between">
-            <span className="text-gray-600">Bouncer:</span>
+            <span className="text-gray-600">Bouncers:</span>
             <span className="font-medium">
-              ${state.bouncerPrice.toFixed(2)}
+              $
+              {state.selectedBouncers.length > 0
+                ? state.selectedBouncers
+                    .reduce(
+                      (sum, bouncer) =>
+                        sum + (bouncer.discountedPrice || bouncer.price),
+                      0,
+                    )
+                    .toFixed(2)
+                : state.bouncerPrice.toFixed(2)}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Extras:</span>
             <span className="font-medium">
               $
-              {(
-                state.subtotal -
-                state.bouncerPrice -
-                state.specificTimeCharge
-              ).toFixed(2)}
+              {state.extras
+                .filter((extra) => extra.selected)
+                .reduce((sum, extra) => {
+                  const quantity =
+                    extra.id === "tablesChairs" ? extra.quantity : 1;
+                  return sum + extra.price * quantity;
+                }, 0)
+                .toFixed(2)}
             </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Delivery Fee:</span>
+            <span className="font-medium">${state.deliveryFee.toFixed(2)}</span>
           </div>
           {state.specificTimeCharge > 0 && (
             <>
@@ -237,13 +292,13 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
                     <span className="text-gray-600">
                       Specific Delivery Time Fee:
                     </span>
-                    <span className="font-medium">$20.00</span>
+                    <span className="font-medium">$10.00</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">
                       Specific Pickup Time Fee:
                     </span>
-                    <span className="font-medium">$20.00</span>
+                    <span className="font-medium">$10.00</span>
                   </div>
                 </>
               ) : (
@@ -268,16 +323,14 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
             <span className="text-gray-600">Tax (8.25%):</span>
             <span className="font-medium">${state.taxAmount.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Delivery Fee:</span>
-            <span className="font-medium">${state.deliveryFee.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Processing Fee (3%):</span>
-            <span className="font-medium">
-              ${state.processingFee.toFixed(2)}
-            </span>
-          </div>
+          {state.paymentMethod !== "cash" && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Processing Fee (3%):</span>
+              <span className="font-medium">
+                ${state.processingFee.toFixed(2)}
+              </span>
+            </div>
+          )}
           {state.discountAmount > 0 && (
             <div className="flex justify-between text-green-600">
               <span>Discount:</span>

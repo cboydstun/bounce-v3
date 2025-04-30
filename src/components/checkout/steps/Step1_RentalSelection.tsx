@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { getProducts } from "@/utils/api";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { CheckoutState } from "../utils/types";
+import { BouncerItem, CheckoutState } from "../utils/types";
 
 interface Specification {
   name: string;
@@ -33,7 +33,9 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
   const [bouncers, setBouncers] = useState<Bouncer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [selectedBouncerId, setSelectedBouncerId] = useState<string>("");
   const [selectedBouncerImage, setSelectedBouncerImage] = useState<string>("");
+  const [isAddingMore, setIsAddingMore] = useState<boolean>(false);
 
   // Ensure pickup date matches delivery date when component loads or delivery date changes
   useEffect(() => {
@@ -100,28 +102,105 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
     fetchBouncers();
   }, [state.selectedBouncer]);
 
-  // Handle bouncer selection
+  // Handle bouncer dropdown selection
   const handleBouncerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
-    const selectedBouncer = bouncers.find((b) => b._id === selectedId);
 
-    if (selectedBouncer) {
-      setSelectedBouncerImage(selectedBouncer.images[0]?.url || "");
-      dispatch({
-        type: "SET_BOUNCER",
-        payload: {
-          id: selectedBouncer._id,
-          name: selectedBouncer.name,
-          price: selectedBouncer.extractedPrice || 0,
-        },
-      });
+    // If this is the first bouncer selection, add it automatically
+    if (selectedId && state.selectedBouncers.length === 0 && !isAddingMore) {
+      const selectedBouncer = bouncers.find((b) => b._id === selectedId);
+      if (selectedBouncer) {
+        // Add the bouncer to the order
+        dispatch({
+          type: "ADD_BOUNCER",
+          payload: {
+            id: selectedBouncer._id,
+            name: selectedBouncer.name,
+            price: selectedBouncer.extractedPrice || 0,
+            image: selectedBouncer.images[0]?.url,
+          },
+        });
+
+        // Calculate discounts
+        dispatch({ type: "CALCULATE_BOUNCER_DISCOUNTS" });
+
+        // Clear the selection
+        setSelectedBouncerId("");
+        setSelectedBouncerImage("");
+      }
     } else {
-      setSelectedBouncerImage("");
-      dispatch({
-        type: "SET_BOUNCER",
-        payload: { id: "", name: "", price: 0 },
-      });
+      // For additional bouncers, just update the selection
+      setSelectedBouncerId(selectedId);
+
+      const selectedBouncer = bouncers.find((b) => b._id === selectedId);
+      if (selectedBouncer) {
+        setSelectedBouncerImage(selectedBouncer.images[0]?.url || "");
+      } else {
+        setSelectedBouncerImage("");
+      }
     }
+  };
+
+  // Add the selected bouncer to the order
+  const handleAddBouncer = () => {
+    if (!selectedBouncerId) return;
+
+    const selectedBouncer = bouncers.find((b) => b._id === selectedBouncerId);
+    if (!selectedBouncer) return;
+
+    // Check if we already have 3 bouncers
+    if (state.selectedBouncers.length >= 3) {
+      alert("You can only select up to 3 bouncers.");
+      return;
+    }
+
+    // Check if this bouncer is already selected
+    if (state.selectedBouncers.some((b) => b.id === selectedBouncerId)) {
+      alert("This bouncer is already in your order.");
+      return;
+    }
+
+    // Add the bouncer to the order
+    dispatch({
+      type: "ADD_BOUNCER",
+      payload: {
+        id: selectedBouncer._id,
+        name: selectedBouncer.name,
+        price: selectedBouncer.extractedPrice || 0,
+        image: selectedBouncer.images[0]?.url,
+      },
+    });
+
+    // Calculate discounts
+    dispatch({ type: "CALCULATE_BOUNCER_DISCOUNTS" });
+
+    // Clear the selection
+    setSelectedBouncerId("");
+    setSelectedBouncerImage("");
+
+    // Exit "adding more" mode after adding a bouncer
+    setIsAddingMore(false);
+  };
+
+  // Remove a bouncer from the order
+  const handleRemoveBouncer = (id: string) => {
+    dispatch({ type: "REMOVE_BOUNCER", payload: id });
+
+    // Recalculate discounts
+    if (state.selectedBouncers.length > 1) {
+      dispatch({ type: "CALCULATE_BOUNCER_DISCOUNTS" });
+    }
+  };
+
+  // Update the quantity of a bouncer
+  const handleUpdateQuantity = (id: string, quantity: number) => {
+    dispatch({
+      type: "UPDATE_BOUNCER_QUANTITY",
+      payload: { id, quantity },
+    });
+
+    // Recalculate discounts
+    dispatch({ type: "CALCULATE_BOUNCER_DISCOUNTS" });
   };
 
   // Generate time options (9 AM to 8 PM)
@@ -142,61 +221,198 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
       </h2>
 
       {/* Bouncer Selection */}
-      <div className="space-y-2">
-        <label
-          htmlFor="bouncer-select"
-          className="block text-lg font-medium text-gray-700"
-        >
-          🎪 Select a Bouncer
-        </label>
-        {isLoading ? (
-          <div className="flex justify-center py-4">
-            <LoadingSpinner />
-          </div>
-        ) : loadError ? (
-          <div className="text-red-500">{loadError}</div>
-        ) : (
-          <select
-            id="bouncer-select"
-            value={state.selectedBouncer}
-            onChange={handleBouncerChange}
-            className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50"
+      <div className="space-y-4">
+        <div>
+          <label
+            htmlFor="bouncer-select"
+            className="block text-lg font-medium text-gray-700"
           >
-            <option value="">Choose a bouncer...</option>
-            {bouncers.map((bouncer) => {
-              const typeSpec = bouncer.specifications.find(
-                (spec) => spec.name === "Type",
-              );
-              const type = Array.isArray(typeSpec?.value)
-                ? typeSpec.value.join("/")
-                : typeSpec?.value;
-              return (
-                <option key={bouncer._id} value={bouncer._id}>
-                  {bouncer.name} ({type}) - ${bouncer.extractedPrice}
-                </option>
-              );
-            })}
-          </select>
+            🎪 Select Bouncer
+          </label>
+          {isLoading ? (
+            <div className="flex justify-center py-4 w-full">
+              <LoadingSpinner />
+            </div>
+          ) : loadError ? (
+            <div className="text-red-500">{loadError}</div>
+          ) : (
+            <>
+              {/* Show dropdown for first selection or when adding more */}
+              {state.selectedBouncers.length === 0 || isAddingMore ? (
+                <div className="flex gap-2 mt-2">
+                  <select
+                    id="bouncer-select"
+                    value={selectedBouncerId}
+                    onChange={handleBouncerChange}
+                    className="flex-grow rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50"
+                    disabled={state.selectedBouncers.length >= 3}
+                  >
+                    <option value="">Choose a bouncer...</option>
+                    {bouncers.map((bouncer) => {
+                      const typeSpec = bouncer.specifications.find(
+                        (spec) => spec.name === "Type",
+                      );
+                      const type = Array.isArray(typeSpec?.value)
+                        ? typeSpec.value.join("/")
+                        : typeSpec?.value;
+                      return (
+                        <option
+                          key={bouncer._id}
+                          value={bouncer._id}
+                          disabled={state.selectedBouncers.some(
+                            (b) => b.id === bouncer._id,
+                          )}
+                        >
+                          {bouncer.name} ({type}) - ${bouncer.extractedPrice}
+                        </option>
+                      );
+                    })}
+                  </select>
+
+                  {/* Only show Add button when adding more bouncers */}
+                  {isAddingMore && (
+                    <button
+                      type="button"
+                      onClick={handleAddBouncer}
+                      disabled={
+                        !selectedBouncerId || state.selectedBouncers.length >= 3
+                      }
+                      className={`px-4 py-3 rounded-lg font-medium ${
+                        !selectedBouncerId || state.selectedBouncers.length >= 3
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-primary-purple text-white hover:bg-primary-purple/90"
+                      }`}
+                    >
+                      Add
+                    </button>
+                  )}
+                </div>
+              ) : (
+                /* Show "Add More Bouncers" button when at least one bouncer is selected */
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingMore(true)}
+                    disabled={state.selectedBouncers.length >= 3}
+                    className={`px-4 py-3 rounded-lg font-medium ${
+                      state.selectedBouncers.length >= 3
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-primary-purple text-white hover:bg-primary-purple/90"
+                    }`}
+                  >
+                    Add More Bouncers
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+          {state.errors.selectedBouncer && (
+            <p className="text-red-500 text-sm mt-1">
+              {state.errors.selectedBouncer}
+            </p>
+          )}
+        </div>
+
+        {/* Selected Bouncer Image */}
+        {selectedBouncerImage && (
+          <div className="rounded-xl overflow-hidden shadow-md">
+            <Image
+              src={selectedBouncerImage}
+              alt="Selected bouncer"
+              className="w-full h-full object-cover"
+              width={800}
+              height={600}
+            />
+          </div>
         )}
-        {state.errors.selectedBouncer && (
-          <p className="text-red-500 text-sm mt-1">
-            {state.errors.selectedBouncer}
+
+        {/* Pricing Explanation */}
+        <div className="mt-4 bg-blue-50 p-3 rounded-md">
+          <p className="text-sm text-blue-800">
+            <strong>Multiple Bouncer Discount:</strong> The most expensive
+            bouncer will be charged at full price, with additional bouncers at
+            50% off, regardless of selection order.
           </p>
+        </div>
+
+        {/* Selected Bouncers List */}
+        {state.selectedBouncers.length > 0 && (
+          <div className="mt-4 space-y-4">
+            <h3 className="text-lg font-medium text-gray-700">
+              Selected Bouncers
+            </h3>
+            <div className="space-y-3">
+              {state.selectedBouncers.map((bouncer, index) => (
+                <div
+                  key={bouncer.id}
+                  className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+                >
+                  <div className="flex justify-between">
+                    <div className="flex items-center space-x-4">
+                      {/* Bouncer Image */}
+                      {bouncer.image && (
+                        <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0">
+                          <Image
+                            src={bouncer.image}
+                            alt={bouncer.name}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+
+                      {/* Bouncer Name */}
+                      <div>
+                        <h4 className="font-medium text-gray-800">
+                          {bouncer.name}
+                        </h4>
+                        {/* Price Badge */}
+                        {index === 0 ? (
+                          <span className="inline-block bg-blue-100 text-blue-800 text-xs font-medium mt-1 px-2 py-0.5 rounded">
+                            Full Price
+                          </span>
+                        ) : (
+                          <span className="inline-block bg-green-100 text-green-800 text-xs font-medium mt-1 px-2 py-0.5 rounded">
+                            50% Off
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Price and Remove Button */}
+                    <div className="flex flex-col items-end">
+                      <div className="text-right">
+                        {index === 0 ? (
+                          <span className="font-medium">
+                            ${bouncer.price.toFixed(2)}
+                          </span>
+                        ) : (
+                          <div>
+                            <span className="text-gray-500 line-through mr-2">
+                              ${bouncer.price.toFixed(2)}
+                            </span>
+                            <span className="font-medium text-green-600">
+                              ${(bouncer.price * 0.5).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBouncer(bouncer.id)}
+                        className="mt-2 text-sm text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
-
-      {/* Selected Bouncer Image */}
-      {selectedBouncerImage && (
-        <div className="rounded-xl overflow-hidden shadow-md">
-          <Image
-            src={selectedBouncerImage}
-            alt="Selected bouncer"
-            className="w-full h-full object-cover"
-            width={800}
-            height={600}
-          />
-        </div>
-      )}
 
       {/* Delivery Date and Time */}
       <div className="space-y-4">

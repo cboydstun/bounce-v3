@@ -104,6 +104,7 @@ export const validateStep = (
     case "extras": // Extras
       // Ensure at least one item is selected (either bouncer or extras)
       if (
+        state.selectedBouncers.length === 0 &&
         !state.selectedBouncer &&
         !state.extras.some((extra) => extra.selected)
       ) {

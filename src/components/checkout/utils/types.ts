@@ -74,12 +74,24 @@ export const EXTRAS = [
   { id: "overnight", name: "Overnight Rental", price: 49.95, image: "🌙" },
 ];
 
+// Define a bouncer item interface
+export interface BouncerItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  discountedPrice?: number;
+  image?: string;
+}
+
 // Define the checkout state interface
 export interface CheckoutState {
   // Current step
   currentStep: OrderStep;
 
   // Step 1: Rental Selection
+  selectedBouncers: BouncerItem[];
+  // Keep these for backward compatibility during transition
   selectedBouncer: string;
   bouncerName: string;
   bouncerPrice: number;
@@ -188,6 +200,16 @@ export type CheckoutAction =
       type: "SET_BOUNCER";
       payload: { id: string; name: string; price: number };
     }
+  | {
+      type: "ADD_BOUNCER";
+      payload: { id: string; name: string; price: number; image?: string };
+    }
+  | { type: "REMOVE_BOUNCER"; payload: string }
+  | {
+      type: "UPDATE_BOUNCER_QUANTITY";
+      payload: { id: string; quantity: number };
+    }
+  | { type: "CALCULATE_BOUNCER_DISCOUNTS" }
   | { type: "SET_DELIVERY_DATE"; payload: string }
   | { type: "SET_DELIVERY_TIME"; payload: string }
   | { type: "SET_DELIVERY_TIME_PREFERENCE"; payload: "flexible" | "specific" }
