@@ -4,6 +4,36 @@ import { useEffect } from "react";
 import { CheckoutState, OrderStep } from "../utils/types";
 import { calculatePrices } from "../utils/priceCalculation";
 
+// Helper function to calculate days between dates
+function calculateRentalDays(deliveryDate: string, pickupDate: string): number {
+  if (!deliveryDate || !pickupDate) return 0;
+
+  // Parse dates to ensure consistent behavior
+  const [deliveryYear, deliveryMonth, deliveryDay] = deliveryDate
+    .split("-")
+    .map(Number);
+  const [pickupYear, pickupMonth, pickupDay] = pickupDate
+    .split("-")
+    .map(Number);
+
+  // Create date objects (using noon to avoid timezone issues)
+  const delivery = new Date(
+    deliveryYear,
+    deliveryMonth - 1,
+    deliveryDay,
+    12,
+    0,
+    0,
+  );
+  const pickup = new Date(pickupYear, pickupMonth - 1, pickupDay, 12, 0, 0);
+
+  // Calculate the difference in days
+  const diffTime = pickup.getTime() - delivery.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays;
+}
+
 interface Step4Props {
   state: CheckoutState;
   dispatch: React.Dispatch<any>;
@@ -272,6 +302,29 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
           <h3 className="text-lg font-medium text-gray-800">Order Summary</h3>
         </div>
         <div className="p-4 space-y-3">
+          {/* Rental Duration */}
+          <div className="bg-blue-50 p-3 rounded-md mb-4">
+            <div className="flex justify-between items-center">
+              <span className="font-medium text-blue-800">
+                Rental Duration:
+              </span>
+              <span className="font-medium text-blue-800">
+                {!state.rentalDays || state.rentalDays === 1
+                  ? "Same Day (Base Price)"
+                  : state.rentalDays === 2
+                    ? "Overnight Rental"
+                    : `${state.rentalDays - 1} Days (${state.dayMultiplier || state.rentalDays - 1}x Base Price)`}
+              </span>
+            </div>
+            <p className="text-sm text-blue-700 mt-1">
+              {!state.rentalDays || state.rentalDays === 1
+                ? "Delivered and picked up on the same day."
+                : state.rentalDays === 2
+                  ? "Overnight rental includes the 'Overnight Rental' extra."
+                  : `Multi-day rental: Base price × ${state.dayMultiplier || state.rentalDays - 1} for all bouncers and extras.`}
+            </p>
+          </div>
+
           <div className="flex justify-between">
             <span className="text-gray-600">Bouncers:</span>
             <span className="font-medium">
@@ -285,6 +338,11 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
                     )
                     .toFixed(2)
                 : state.bouncerPrice.toFixed(2)}
+              {state.dayMultiplier && state.dayMultiplier > 1 && (
+                <span className="text-sm text-gray-500 ml-1">
+                  (×{state.dayMultiplier})
+                </span>
+              )}
             </span>
           </div>
           <div className="flex justify-between">
@@ -293,7 +351,16 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
               $
               {(
                 state.extras
-                  .filter((extra) => extra.selected)
+                  .filter(
+                    (extra) =>
+                      // Exclude the "overnight" extra when it's automatically selected for overnight rentals
+                      extra.selected &&
+                      (extra.id !== "overnight" ||
+                        calculateRentalDays(
+                          state.deliveryDate,
+                          state.pickupDate,
+                        ) !== 1),
+                  )
                   .reduce((sum, extra) => {
                     const quantity =
                       extra.id === "tablesChairs" ? extra.quantity : 1;
@@ -303,8 +370,14 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
                   .filter((mixer) => mixer.mixerId !== "none")
                   .reduce((sum, mixer) => sum + mixer.price, 0)
               ).toFixed(2)}
+              {state.dayMultiplier && state.dayMultiplier > 1 && (
+                <span className="text-sm text-gray-500 ml-1">
+                  (×{state.dayMultiplier})
+                </span>
+              )}
             </span>
           </div>
+          {/* Overnight fee is now handled as an extra */}
           <div className="flex justify-between">
             <span className="text-gray-600">Delivery Fee:</span>
             <span className="font-medium">${state.deliveryFee.toFixed(2)}</span>

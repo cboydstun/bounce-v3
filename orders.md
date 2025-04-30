@@ -88,7 +88,7 @@ The checkout process uses a utility function to check availability:
 ```typescript
 export const checkAvailabilityForProducts = async (
   products: Array<{ _id: string; name: string }>,
-  date: string
+  date: string,
 ): Promise<Record<string, { available: boolean; reason?: string }>> => {
   try {
     // Extract product IDs

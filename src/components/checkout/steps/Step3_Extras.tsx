@@ -17,6 +17,48 @@ const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
     dispatch({ type: "UPDATE_PRICES", payload: prices });
   }, [state.extras, state.bouncerPrice, state.selectedBouncers, dispatch]);
 
+  // Automatically select/deselect the overnight extra based on delivery and pickup dates
+  useEffect(() => {
+    if (!state.deliveryDate || !state.pickupDate) return;
+
+    // Parse dates to ensure consistent behavior
+    const [deliveryYear, deliveryMonth, deliveryDay] = state.deliveryDate
+      .split("-")
+      .map(Number);
+    const [pickupYear, pickupMonth, pickupDay] = state.pickupDate
+      .split("-")
+      .map(Number);
+
+    // Create date objects (using noon to avoid timezone issues)
+    const delivery = new Date(
+      deliveryYear,
+      deliveryMonth - 1,
+      deliveryDay,
+      12,
+      0,
+      0,
+    );
+    const pickup = new Date(pickupYear, pickupMonth - 1, pickupDay, 12, 0, 0);
+
+    // Calculate the difference in days
+    const diffTime = pickup.getTime() - delivery.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    // Find the overnight extra
+    const overnightExtra = state.extras.find(
+      (extra) => extra.id === "overnight",
+    );
+    if (!overnightExtra) return;
+
+    // If it's an overnight rental (1 day difference), select the overnight extra
+    // Otherwise, deselect it
+    if (diffDays === 1 && !overnightExtra.selected) {
+      dispatch({ type: "TOGGLE_EXTRA", payload: "overnight" });
+    } else if (diffDays !== 1 && overnightExtra.selected) {
+      dispatch({ type: "TOGGLE_EXTRA", payload: "overnight" });
+    }
+  }, [state.deliveryDate, state.pickupDate, state.extras, dispatch]);
+
   // Handle toggling an extra
   const handleToggleExtra = (extraId: string) => {
     dispatch({ type: "TOGGLE_EXTRA", payload: extraId });
@@ -33,9 +75,49 @@ const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
   };
 
   // Calculate the total price of selected extras
+  // Exclude the "overnight" extra from the calculation when it's automatically selected
+  // to avoid double-charging (since we add the $50 fee directly in the price calculation)
   const selectedExtrasTotal = state.extras
-    .filter((extra) => extra.selected)
+    .filter(
+      (extra) =>
+        extra.selected &&
+        (extra.id !== "overnight" ||
+          calculateRentalDays(state.deliveryDate, state.pickupDate) !== 1),
+    )
     .reduce((sum, extra) => sum + extra.price * extra.quantity, 0);
+
+  // Helper function to calculate days between dates
+  function calculateRentalDays(
+    deliveryDate: string,
+    pickupDate: string,
+  ): number {
+    if (!deliveryDate || !pickupDate) return 0;
+
+    // Parse dates to ensure consistent behavior
+    const [deliveryYear, deliveryMonth, deliveryDay] = deliveryDate
+      .split("-")
+      .map(Number);
+    const [pickupYear, pickupMonth, pickupDay] = pickupDate
+      .split("-")
+      .map(Number);
+
+    // Create date objects (using noon to avoid timezone issues)
+    const delivery = new Date(
+      deliveryYear,
+      deliveryMonth - 1,
+      deliveryDay,
+      12,
+      0,
+      0,
+    );
+    const pickup = new Date(pickupYear, pickupMonth - 1, pickupDay, 12, 0, 0);
+
+    // Calculate the difference in days
+    const diffTime = pickup.getTime() - delivery.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays;
+  }
 
   // Calculate total quantity of selected extras
   const selectedExtrasCount = state.extras
@@ -111,11 +193,28 @@ const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
                       onClick={() => handleToggleExtra(extra.id)}
                     >
                       {extra.image} {extra.name}
+                      {extra.id === "overnight" && (
+                        <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                          Auto-selected for overnight rentals
+                        </span>
+                      )}
                     </span>
                     <span className="text-lg font-semibold text-primary-purple">
                       ${extra.price}
                     </span>
                   </div>
+
+                  {extra.id === "overnight" &&
+                    extra.selected &&
+                    calculateRentalDays(
+                      state.deliveryDate,
+                      state.pickupDate,
+                    ) === 1 && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        This extra is automatically selected for overnight
+                        rentals. The $50 fee is already included in your total.
+                      </p>
+                    )}
 
                   {extra.selected && (
                     <>

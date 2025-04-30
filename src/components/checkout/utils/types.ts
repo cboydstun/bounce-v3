@@ -164,6 +164,11 @@ export interface CheckoutState {
   totalAmount: number;
   agreedToTerms: boolean;
 
+  // Multiple day rental properties
+  rentalDays?: number;
+  dayMultiplier?: number;
+  overnightFee?: number;
+
   // Step 5: Payment
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;

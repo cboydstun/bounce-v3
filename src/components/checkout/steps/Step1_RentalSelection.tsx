@@ -243,93 +243,92 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
       {/* Bouncer Selection */}
       <div className="space-y-4">
         <div>
-
-                  {/* Selected Bouncers List */}
-        {state.selectedBouncers.length > 0 && (
-          <div className="mt-4 space-y-4">
-            <h3 className="text-lg font-medium text-gray-700">
-              Selected Bouncers
-            </h3>
-            <div className="space-y-3">
-              {state.selectedBouncers.map((bouncer, index) => (
-                <div
-                  key={bouncer.id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
-                >
-                  <div className="flex justify-between">
-                    <div className="flex items-center space-x-4">
-                      {/* Bouncer Image */}
-                      {bouncer.image && (
-                        <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0">
-                          <Image
-                            src={bouncer.image}
-                            alt={bouncer.name}
-                            width={80}
-                            height={80}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-
-                      {/* Bouncer Name */}
-                      <div>
-                        <h4 className="font-medium text-gray-800">
-                          {bouncer.name}
-                        </h4>
-                        {/* Price Badge */}
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {index === 0 ? (
-                            <span className="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded">
-                              Full Price
-                            </span>
-                          ) : (
-                            <span className="inline-block bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
-                              50% Off
-                            </span>
-                          )}
-                          
-                          {/* Availability Badge */}
-                          {state.availabilityChecks.status === "success" && (
-                            <span className="inline-block bg-emerald-100 text-emerald-800 text-xs font-medium px-2 py-0.5 rounded">
-                              Available
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Price and Remove Button */}
-                    <div className="flex flex-col items-end">
-                      <div className="text-right">
-                        {index === 0 ? (
-                          <span className="font-medium">
-                            ${bouncer.price.toFixed(2)}
-                          </span>
-                        ) : (
-                          <div>
-                            <span className="text-gray-500 line-through mr-2">
-                              ${bouncer.price.toFixed(2)}
-                            </span>
-                            <span className="font-medium text-green-600">
-                              ${(bouncer.price * 0.5).toFixed(2)}
-                            </span>
+          {/* Selected Bouncers List */}
+          {state.selectedBouncers.length > 0 && (
+            <div className="mt-4 space-y-4">
+              <h3 className="text-lg font-medium text-gray-700">
+                Selected Bouncers
+              </h3>
+              <div className="space-y-3">
+                {state.selectedBouncers.map((bouncer, index) => (
+                  <div
+                    key={bouncer.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+                  >
+                    <div className="flex justify-between">
+                      <div className="flex items-center space-x-4">
+                        {/* Bouncer Image */}
+                        {bouncer.image && (
+                          <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0">
+                            <Image
+                              src={bouncer.image}
+                              alt={bouncer.name}
+                              width={80}
+                              height={80}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                         )}
+
+                        {/* Bouncer Name */}
+                        <div>
+                          <h4 className="font-medium text-gray-800">
+                            {bouncer.name}
+                          </h4>
+                          {/* Price Badge */}
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {index === 0 ? (
+                              <span className="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded">
+                                Full Price
+                              </span>
+                            ) : (
+                              <span className="inline-block bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
+                                50% Off
+                              </span>
+                            )}
+
+                            {/* Availability Badge */}
+                            {state.availabilityChecks.status === "success" && (
+                              <span className="inline-block bg-emerald-100 text-emerald-800 text-xs font-medium px-2 py-0.5 rounded">
+                                Available
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveBouncer(bouncer.id)}
-                        className="mt-2 text-sm text-red-600 hover:text-red-800"
-                      >
-                        Remove
-                      </button>
+
+                      {/* Price and Remove Button */}
+                      <div className="flex flex-col items-end">
+                        <div className="text-right">
+                          {index === 0 ? (
+                            <span className="font-medium">
+                              ${bouncer.price.toFixed(2)}
+                            </span>
+                          ) : (
+                            <div>
+                              <span className="text-gray-500 line-through mr-2">
+                                ${bouncer.price.toFixed(2)}
+                              </span>
+                              <span className="font-medium text-green-600">
+                                ${(bouncer.price * 0.5).toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBouncer(bouncer.id)}
+                          className="mt-2 text-sm text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
           <label
             htmlFor="bouncer-select"
             className="block text-lg font-medium text-gray-700"
@@ -337,7 +336,6 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
             🎪 Select Bouncer
           </label>
 
-          
           {isLoading ? (
             <div className="flex justify-center py-4 w-full">
               <LoadingSpinner />
@@ -368,8 +366,8 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                       const availabilityText = !available
                         ? " (Unavailable)"
                         : state.availabilityChecks.status === "success"
-                        ? " (Available)"
-                        : "";
+                          ? " (Available)"
+                          : "";
 
                       return (
                         <option
@@ -453,8 +451,6 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
             50% off, regardless of selection order.
           </p>
         </div>
-
-
       </div>
 
       {/* Delivery Date and Time */}
@@ -921,6 +917,55 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                   " You have selected both specific delivery and pickup times ($20 total)."}
               </span>
             )}
+            {/* Multi-day pricing information */}
+            {(() => {
+              // Parse dates to ensure consistent behavior
+              const [deliveryYear, deliveryMonth, deliveryDay] =
+                state.deliveryDate.split("-").map(Number);
+              const [pickupYear, pickupMonth, pickupDay] = state.pickupDate
+                .split("-")
+                .map(Number);
+
+              // Create date objects (using noon to avoid timezone issues)
+              const delivery = new Date(
+                deliveryYear,
+                deliveryMonth - 1,
+                deliveryDay,
+                12,
+                0,
+                0,
+              );
+              const pickup = new Date(
+                pickupYear,
+                pickupMonth - 1,
+                pickupDay,
+                12,
+                0,
+                0,
+              );
+
+              // Calculate the difference in days
+              const diffTime = pickup.getTime() - delivery.getTime();
+              const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+              if (diffDays === 0) {
+                return null; // Same day rental, no additional message needed
+              } else if (diffDays === 1) {
+                return (
+                  <span className="block mt-2 text-sm font-medium text-blue-800">
+                    <strong>Overnight Rental:</strong> The "Overnight Rental"
+                    extra will be automatically added to your order.
+                  </span>
+                );
+              } else {
+                return (
+                  <span className="block mt-2 text-sm font-medium text-blue-800">
+                    <strong>Multi-day Rental ({diffDays} days):</strong> Your
+                    rental price will be multiplied by {diffDays}.
+                  </span>
+                );
+              }
+            })()}
           </p>
         </div>
       )}
