@@ -36,6 +36,12 @@ export const initialState: CheckoutState = {
   selectedBouncer: "",
   bouncerName: "",
   bouncerPrice: 0,
+  // Availability tracking
+  availabilityChecks: {
+    status: "idle",
+    results: {},
+    lastCheckedDate: null,
+  },
   deliveryDate: "",
   deliveryTime: "",
   deliveryTimePreference: "flexible",
@@ -491,6 +497,42 @@ export const checkoutReducer = (
       return {
         ...state,
         slushyMixers: [],
+      };
+
+    // New actions for availability checking
+    case "CHECK_AVAILABILITY":
+      return {
+        ...state,
+        availabilityChecks: {
+          status: "loading",
+          results: {},
+          lastCheckedDate: action.payload.date,
+        },
+      };
+
+    case "SET_AVAILABILITY_RESULTS":
+      // Remove unavailable bouncers from selected bouncers
+      const updatedBouncers = state.selectedBouncers.filter(
+        (bouncer) => action.payload.results[bouncer.id]?.available !== false,
+      );
+
+      return {
+        ...state,
+        availabilityChecks: {
+          status: "success",
+          results: action.payload.results,
+          lastCheckedDate: state.availabilityChecks.lastCheckedDate,
+        },
+        selectedBouncers: updatedBouncers,
+      };
+
+    case "SET_AVAILABILITY_ERROR":
+      return {
+        ...state,
+        availabilityChecks: {
+          ...state.availabilityChecks,
+          status: "error",
+        },
       };
 
     default:

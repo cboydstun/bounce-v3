@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { getProducts } from "@/utils/api";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { BouncerItem, CheckoutState } from "../utils/types";
+import { BouncerItem, CheckoutState, AvailabilityResult } from "../utils/types";
+import { checkAvailabilityForProducts } from "@/utils/availability";
+import { toast } from "react-hot-toast"; // Assuming you use this for notifications
 
 interface Specification {
   name: string;
@@ -36,6 +38,24 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
   const [selectedBouncerId, setSelectedBouncerId] = useState<string>("");
   const [selectedBouncerImage, setSelectedBouncerImage] = useState<string>("");
   const [isAddingMore, setIsAddingMore] = useState<boolean>(false);
+
+  // Helper function to determine if a product is available
+  const isProductAvailable = (bouncer: Bouncer) => {
+    if (!state.deliveryDate || state.availabilityChecks.status !== "success") {
+      return true; // No date selected yet or availability check not completed
+    }
+
+    // Try to find availability result using _id
+    const result = state.availabilityChecks.results[bouncer._id];
+    return result?.available !== false;
+  };
+
+  // Helper to get unavailability reason
+  const getUnavailabilityReason = (bouncer: Bouncer) => {
+    // Try to find availability result using _id
+    const result = state.availabilityChecks.results[bouncer._id];
+    return result?.reason || "Unavailable on selected date";
+  };
 
   // Ensure pickup date matches delivery date when component loads or delivery date changes
   useEffect(() => {
@@ -255,15 +275,23 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                       const type = Array.isArray(typeSpec?.value)
                         ? typeSpec.value.join("/")
                         : typeSpec?.value;
+                      const available = isProductAvailable(bouncer);
+                      const unavailableText = !available
+                        ? " (Unavailable)"
+                        : "";
+
                       return (
                         <option
                           key={bouncer._id}
                           value={bouncer._id}
-                          disabled={state.selectedBouncers.some(
-                            (b) => b.id === bouncer._id,
-                          )}
+                          disabled={
+                            state.selectedBouncers.some(
+                              (b) => b.id === bouncer._id,
+                            ) || !available
+                          }
                         >
                           {bouncer.name} ({type}) - ${bouncer.extractedPrice}
+                          {unavailableText}
                         </option>
                       );
                     })}
@@ -428,11 +456,62 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               type="date"
               id="delivery-date"
               value={state.deliveryDate}
-              onChange={(e) => {
+              onChange={async (e) => {
                 const selectedDate = e.target.value;
+
+                // Update date in state
                 dispatch({ type: "SET_DELIVERY_DATE", payload: selectedDate });
                 // Also set pickup date to the same date
                 dispatch({ type: "SET_PICKUP_DATE", payload: selectedDate });
+
+                // Start availability check
+                dispatch({
+                  type: "CHECK_AVAILABILITY",
+                  payload: { date: selectedDate },
+                });
+
+                try {
+                  // Check availability for all bounce house products with a single API call
+                  const results = await checkAvailabilityForProducts(
+                    bouncers,
+                    selectedDate,
+                  );
+
+                  // Update state with results
+                  dispatch({
+                    type: "SET_AVAILABILITY_RESULTS",
+                    payload: { results },
+                  });
+
+                  // Check if any selected bouncers were removed
+                  // Handle potential ID format mismatches by checking both formats
+                  const removedBouncers = state.selectedBouncers.filter(
+                    (bouncer) => {
+                      // First try with the bouncer.id (which should match _id from the database)
+                      const result = results[bouncer.id];
+                      return result?.available === false;
+                    },
+                  );
+
+                  if (removedBouncers.length > 0) {
+                    toast(
+                      `${removedBouncers.length} bounce house(s) were removed from your order because they are unavailable on the selected date.`,
+                      {
+                        icon: "⚠️",
+                        style: {
+                          borderRadius: "10px",
+                          background: "#FEF3C7",
+                          color: "#92400E",
+                        },
+                      },
+                    );
+                  }
+                } catch (error) {
+                  dispatch({ type: "SET_AVAILABILITY_ERROR" });
+                  toast.error(
+                    "Failed to check product availability. Please try again later.",
+                  );
+                }
               }}
               min={new Date().toISOString().split("T")[0]} // Today or later
               className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50"
@@ -441,6 +520,82 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               <p className="text-red-500 text-sm mt-1">
                 {state.errors.deliveryDate}
               </p>
+            )}
+
+            {/* Show loading indicator during availability check */}
+            {state.availabilityChecks.status === "loading" && (
+              <div className="flex items-center justify-center py-2 mt-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                <span className="ml-2 text-sm text-blue-800">
+                  Checking availability...
+                </span>
+              </div>
+            )}
+
+            {/* Show error message if availability check fails */}
+            {state.availabilityChecks.status === "error" && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded mt-2 text-sm">
+                <p>
+                  Failed to check product availability. Available products may
+                  still be shown.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!state.deliveryDate) return;
+
+                    dispatch({
+                      type: "CHECK_AVAILABILITY",
+                      payload: { date: state.deliveryDate },
+                    });
+
+                    try {
+                      // Check availability for all bounce house products with a single API call
+                      const results = await checkAvailabilityForProducts(
+                        bouncers,
+                        state.deliveryDate,
+                      );
+
+                      // Update state with results
+                      dispatch({
+                        type: "SET_AVAILABILITY_RESULTS",
+                        payload: { results },
+                      });
+
+                      // Check if any selected bouncers were removed
+                      // Handle potential ID format mismatches by checking both formats
+                      const removedBouncers = state.selectedBouncers.filter(
+                        (bouncer) => {
+                          // First try with the bouncer.id (which should match _id from the database)
+                          const result = results[bouncer.id];
+                          return result?.available === false;
+                        },
+                      );
+
+                      if (removedBouncers.length > 0) {
+                        toast(
+                          `${removedBouncers.length} bounce house(s) were removed from your order because they are unavailable on the selected date.`,
+                          {
+                            icon: "⚠️",
+                            style: {
+                              borderRadius: "10px",
+                              background: "#FEF3C7",
+                              color: "#92400E",
+                            },
+                          },
+                        );
+                      }
+                    } catch (error) {
+                      dispatch({ type: "SET_AVAILABILITY_ERROR" });
+                      toast.error(
+                        "Failed to check product availability. Please try again later.",
+                      );
+                    }
+                  }}
+                  className="underline mt-1"
+                >
+                  Try again
+                </button>
+              </div>
             )}
           </div>
 

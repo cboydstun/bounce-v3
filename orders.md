@@ -14,7 +14,147 @@ This document provides comprehensive documentation for the Orders system in the 
    - [Payment Processing](#payment-processing)
 3. [Order Status Flow](#order-status-flow)
 4. [Multiple Bouncers Feature](#multiple-bouncers-feature)
-5. [Examples](#examples)
+5. [Slushy Mixer Feature](#slushy-mixer-feature)
+6. [Availability Checking Feature](#availability-checking-feature)
+7. [Examples](#examples)
+
+## Availability Checking Feature
+
+The system includes a real-time availability checking feature that verifies if bounce houses are available on a customer's selected date during the checkout process.
+
+### Key Features
+
+1. **Real-time Availability**: When a customer selects a date in the checkout process, the system automatically checks availability for all bounce houses
+2. **Single API Call**: Uses a batch API endpoint to check availability for multiple products in a single request
+3. **Visual Indicators**: Unavailable bounce houses are clearly marked and disabled in the selection interface
+4. **Automatic Removal**: If a customer has already selected a bounce house and then selects a date when it's unavailable, the item is automatically removed from their order with a notification
+5. **Loading States**: The UI displays appropriate loading indicators during availability checks
+6. **Error Handling**: Graceful handling of API failures with retry options
+
+### Implementation Details
+
+#### Batch Availability API Endpoint
+
+The system uses a dedicated endpoint for checking availability of multiple products at once:
+
+**Endpoint:** `POST /api/v1/products/batch-availability`
+
+**Request Body:**
+
+```json
+{
+  "productIds": ["60d21b4667d0d8992e610c85", "60d21b4667d0d8992e610c86"],
+  "date": "2024-05-15"
+}
+```
+
+**Response:**
+
+```json
+{
+  "60d21b4667d0d8992e610c85": {
+    "available": true,
+    "product": {
+      "name": "Castle Bounce House",
+      "slug": "castle-bounce-house",
+      "status": "available"
+    }
+  },
+  "60d21b4667d0d8992e610c86": {
+    "available": false,
+    "product": {
+      "name": "Double Lane Waterslide",
+      "slug": "double-lane-waterslide",
+      "status": "available"
+    },
+    "reason": "Product is already booked for this date"
+  }
+}
+```
+
+#### Availability Check Logic
+
+The availability check performs two validations:
+
+1. **Product Status Check**: Verifies that the product's general status is "available" (not "maintenance", "discontinued", etc.)
+2. **Booking Check**: Checks if there are any confirmed bookings for the product on the selected date
+
+A product is considered available only if both checks pass.
+
+#### Client-Side Implementation
+
+The checkout process uses a utility function to check availability:
+
+```typescript
+export const checkAvailabilityForProducts = async (
+  products: Array<{ _id: string; name: string }>,
+  date: string
+): Promise<Record<string, { available: boolean; reason?: string }>> => {
+  try {
+    // Extract product IDs
+    const productIds = products.map((product) => product._id);
+
+    // Make a single API call to the batch endpoint
+    const response = await fetch("/api/v1/products/batch-availability", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        productIds,
+        date,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to check availability");
+    }
+
+    // Return the results
+    return await response.json();
+  } catch (error) {
+    console.error("Error checking product availability:", error);
+    throw error;
+  }
+};
+```
+
+#### Checkout State Management
+
+The checkout state tracks availability information:
+
+```typescript
+availabilityChecks: {
+  status: "idle" | "loading" | "success" | "error";
+  results: Record<string, { available: boolean; reason?: string }>;
+  lastCheckedDate: string | null;
+}
+```
+
+When a date is selected, the checkout process:
+
+1. Updates the `status` to 'loading'
+2. Makes the API call to check availability
+3. Updates the `results` with the response data
+4. Updates the `status` to 'success' or 'error'
+5. Removes any unavailable bounce houses from the order
+6. Displays a notification if any items were removed
+
+#### UI Integration
+
+The checkout UI provides visual feedback about availability:
+
+1. **Loading Indicator**: Displayed while the availability check is in progress
+2. **Unavailable Products**: Marked as "Unavailable" and disabled in the selection dropdown
+3. **Error Messages**: Displayed if the availability check fails, with an option to retry
+4. **Notifications**: Toast messages inform users when unavailable items are removed from their order
+
+### Benefits
+
+1. **Improved User Experience**: Customers immediately know which products are available on their selected date
+2. **Reduced Administrative Overhead**: Prevents double-bookings and reduces the need for manual intervention
+3. **Efficient API Usage**: Single API call for checking multiple products minimizes network traffic and server load
+4. **Real-time Feedback**: Immediate availability information helps customers make informed decisions
 
 ## Order Data Model
 
@@ -750,12 +890,14 @@ Bouncers:
 
 Extras:
 - Generator: $50.00
+- Single Tank Slushy Machine: $124.95
+  - Grape Kool Aid Mixer: $19.95
 
 Delivery Fee: $20.00
-Subtotal: $719.91
-Tax (8.25%): $59.39
-Processing Fee (3%): $23.38 (PayPal only)
-Total: $802.68
+Subtotal: $864.81
+Tax (8.25%): $71.35
+Processing Fee (3%): $28.09 (PayPal only)
+Total: $964.25
 ```
 
 ### API Considerations
@@ -765,6 +907,117 @@ When creating or updating orders with multiple bouncers:
 1. Each bouncer should be included as a separate item in the `items` array
 2. The `totalPrice` field should reflect any applicable discounts
 3. The system will automatically sort bouncers by price and apply discounts
+
+## Slushy Mixer Feature
+
+The system supports adding slushy machines with customizable mixer flavors to orders.
+
+### Key Features
+
+1. **Slushy Machine Types**: Three types of slushy machines are available:
+
+   - Single Tank Slushy Machine ($124.95)
+   - Double Tank Slushy Machine ($149.95)
+   - Triple Tank Slushy Machine ($174.95)
+
+2. **Mixer Selection**: Each tank in a slushy machine can be filled with a different mixer flavor
+
+   - Standard Kool Aid flavors ($19.95 each): Grape, Cherry
+   - Premium flavors ($24.95 each): Margarita, Strawberry Daiquiri, Piña Colada
+   - "None" option (free): For customers who want to use their own mixers
+
+3. **Tank Management**: The system tracks which mixer is assigned to each tank number
+
+   - Single machines: 1 tank
+   - Double machines: 2 tanks
+   - Triple machines: 3 tanks
+
+4. **Machine-Mixer Association**: Each mixer is associated with a specific machine ID to ensure proper tracking
+
+### Implementation Details
+
+#### Data Structure
+
+Slushy mixers are stored in the `slushyMixers` array in the checkout state:
+
+```typescript
+interface SlushyMixer {
+  machineId: string; // ID of the slushy machine this mixer belongs to
+  tankNumber: number; // Tank number (1, 2, or 3)
+  mixerId: string; // ID of the mixer flavor
+  name: string; // Display name of the mixer
+  price: number; // Price of the mixer
+}
+```
+
+Available mixer options are defined as constants:
+
+```typescript
+const SLUSHY_MIXERS = [
+  { id: "none", name: "None", price: 0.0 },
+  { id: "grape", name: "Grape Kool Aid", price: 19.95 },
+  { id: "cherry", name: "Cherry Kool Aid", price: 19.95 },
+  { id: "margarita", name: "Margarita", price: 19.95 },
+  { id: "strawberry", name: "Strawberry Daiquiri", price: 24.95 },
+  { id: "pinacolada", name: "Piña Colada", price: 24.95 },
+];
+```
+
+#### Checkout Actions
+
+The checkout system supports the following actions for slushy mixer management:
+
+1. **SELECT_SLUSHY_MIXER**: Adds or updates a mixer for a specific tank in a slushy machine
+2. **CLEAR_SLUSHY_MIXERS**: Removes all mixers from the order
+3. **TOGGLE_EXTRA**: When a slushy machine is deselected, all associated mixers are automatically removed
+
+#### Price Calculation
+
+Mixer prices are included in the order total calculation:
+
+1. The system filters out "none" mixers (price = 0) from price calculations
+2. Each selected mixer's price is added to the order subtotal
+3. The total is displayed in the order summary with a breakdown by machine and mixer
+
+#### API Representation
+
+When submitting an order with slushy mixers, each mixer is included as a separate item in the `items` array:
+
+```json
+"items": [
+  {
+    "type": "extra",
+    "name": "Double Tank Slushy Machine",
+    "quantity": 1,
+    "unitPrice": 149.95,
+    "totalPrice": 149.95
+  },
+  {
+    "type": "extra",
+    "name": "Grape Kool Aid Mixer (Tank 1)",
+    "quantity": 1,
+    "unitPrice": 19.95,
+    "totalPrice": 19.95
+  },
+  {
+    "type": "extra",
+    "name": "Strawberry Daiquiri Mixer (Tank 2)",
+    "quantity": 1,
+    "unitPrice": 24.95,
+    "totalPrice": 24.95
+  }
+]
+```
+
+### UI Implementation
+
+The checkout UI provides an intuitive experience for selecting slushy mixers:
+
+1. When a slushy machine is selected in the Extras step, a mixer selection interface appears
+2. Users can select a mixer flavor for each tank in the machine
+3. The UI clearly displays the price of each mixer
+4. Users can change their mixer selections at any time before completing the order
+5. The order summary displays each selected mixer with its price
 
 ## Examples
 
@@ -878,6 +1131,60 @@ const createOrderWithCustomerInfo = async () => {
         },
       ],
       taxAmount: 12.38,
+      discountAmount: 0,
+      paymentMethod: "paypal",
+    }),
+  });
+
+  return await response.json();
+};
+
+// Example: Creating an order with a slushy machine and mixers
+const createOrderWithSlushyMixers = async () => {
+  const response = await fetch("/api/v1/orders", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      customerName: "Jane Smith",
+      customerEmail: "jane@example.com",
+      customerPhone: "987-654-3210",
+      customerAddress: "456 Oak St",
+      customerCity: "San Antonio",
+      customerState: "TX",
+      customerZipCode: "78702",
+      items: [
+        {
+          type: "bouncer",
+          name: "Castle Bounce House",
+          quantity: 1,
+          unitPrice: 150,
+          totalPrice: 150,
+        },
+        {
+          type: "extra",
+          name: "Double Tank Slushy Machine",
+          quantity: 1,
+          unitPrice: 149.95,
+          totalPrice: 149.95,
+        },
+        {
+          type: "extra",
+          name: "Grape Kool Aid Mixer (Tank 1)",
+          quantity: 1,
+          unitPrice: 19.95,
+          totalPrice: 19.95,
+        },
+        {
+          type: "extra",
+          name: "Strawberry Daiquiri Mixer (Tank 2)",
+          quantity: 1,
+          unitPrice: 24.95,
+          totalPrice: 24.95,
+        },
+      ],
+      taxAmount: 28.53,
       discountAmount: 0,
       paymentMethod: "paypal",
     }),

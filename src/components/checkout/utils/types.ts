@@ -7,6 +7,12 @@ import {
   TimePreference,
 } from "@/types/order";
 
+// Define availability result interface
+export interface AvailabilityResult {
+  available: boolean;
+  reason?: string;
+}
+
 // Define the step types
 export type OrderStep =
   | "delivery"
@@ -114,6 +120,12 @@ export interface CheckoutState {
   selectedBouncer: string;
   bouncerName: string;
   bouncerPrice: number;
+  // Availability tracking
+  availabilityChecks: {
+    status: "idle" | "loading" | "success" | "error";
+    results: Record<string, AvailabilityResult>;
+    lastCheckedDate: string | null;
+  };
   deliveryDate: string;
   deliveryTime: string;
   deliveryTimePreference: "flexible" | "specific";
@@ -265,4 +277,11 @@ export type CheckoutAction =
   | { type: "ORDER_ERROR"; payload: string }
   // New actions for slushy mixer selection
   | { type: "SELECT_SLUSHY_MIXER"; payload: SlushyMixer }
-  | { type: "CLEAR_SLUSHY_MIXERS" };
+  | { type: "CLEAR_SLUSHY_MIXERS" }
+  // New actions for availability checking
+  | { type: "CHECK_AVAILABILITY"; payload: { date: string } }
+  | {
+      type: "SET_AVAILABILITY_RESULTS";
+      payload: { results: Record<string, AvailabilityResult> };
+    }
+  | { type: "SET_AVAILABILITY_ERROR" };

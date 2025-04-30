@@ -43,7 +43,7 @@
   </url>
 
   <url>
-    <loc>https://satxbounce.com/contact-form-success</loc>
+    <loc>https://satxbounce.com/coupon-form</loc>
     <lastmod>2025-04-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -57,7 +57,7 @@
   </url>
 
   <url>
-    <loc>https://satxbounce.com/coupon-form</loc>
+    <loc>https://satxbounce.com/contact-form-success</loc>
     <lastmod>2025-04-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -71,21 +71,7 @@
   </url>
 
   <url>
-    <loc>https://satxbounce.com/order</loc>
-    <lastmod>2025-04-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
     <loc>https://satxbounce.com/party-packages</loc>
-    <lastmod>2025-04-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://satxbounce.com/paypal-test</loc>
     <lastmod>2025-04-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -99,7 +85,21 @@
   </url>
 
   <url>
+    <loc>https://satxbounce.com/paypal-test</loc>
+    <lastmod>2025-04-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
     <loc>https://satxbounce.com/tos</loc>
+    <lastmod>2025-04-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://satxbounce.com/order</loc>
     <lastmod>2025-04-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
