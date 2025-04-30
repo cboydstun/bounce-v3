@@ -145,9 +145,30 @@ When a date is selected, the checkout process:
 The checkout UI provides visual feedback about availability:
 
 1. **Loading Indicator**: Displayed while the availability check is in progress
-2. **Unavailable Products**: Marked as "Unavailable" and disabled in the selection dropdown
-3. **Error Messages**: Displayed if the availability check fails, with an option to retry
-4. **Notifications**: Toast messages inform users when unavailable items are removed from their order
+2. **Available Products**: Clearly marked with "(Available)" text in the dropdown and a green "Available" badge in the selected bouncers list
+3. **Unavailable Products**: Marked as "(Unavailable)" and disabled in the selection dropdown
+4. **Error Messages**: Displayed if the availability check fails, with an option to retry
+5. **Notifications**: Toast messages inform users when unavailable items are removed from their order
+
+The visual indicators ensure users can easily identify which bounce houses are available on their selected date:
+
+```jsx
+// Dropdown option availability indicator
+const availabilityText = !available
+  ? " (Unavailable)"
+  : state.availabilityChecks.status === "success"
+    ? " (Available)"
+    : "";
+
+// Selected bouncer availability badge
+{
+  state.availabilityChecks.status === "success" && (
+    <span className="inline-block bg-emerald-100 text-emerald-800 text-xs font-medium px-2 py-0.5 rounded">
+      Available
+    </span>
+  );
+}
+```
 
 ### Benefits
 
