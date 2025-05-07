@@ -50,7 +50,6 @@ export function BlogsContent() {
 
         // Construct the URL properly
         const baseUrl =
-          process.env.NEXT_PUBLIC_API_URL ||
           (typeof window === "undefined"
             ? "http://localhost:3000"
             : window.location.origin);
