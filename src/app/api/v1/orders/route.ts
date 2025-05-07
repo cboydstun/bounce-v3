@@ -5,6 +5,11 @@ import Contact from "@/models/Contact";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { parseDateCT, formatDateCT } from "@/utils/dateUtils";
+import { sendEmail } from "@/utils/emailService";
+import {
+  generateNewOrderEmailAdmin,
+  generateNewOrderEmailCustomer,
+} from "@/utils/orderEmailTemplates";
 
 /**
  * GET endpoint to list all orders
@@ -195,6 +200,34 @@ export async function POST(request: NextRequest) {
       await Contact.findByIdAndUpdate(orderData.contactId, {
         confirmed: "Converted",
       });
+    }
+
+    // Send email to admin
+    try {
+      await sendEmail({
+        from: process.env.EMAIL as string,
+        to: process.env.EMAIL as string,
+        subject: `New Order: ${order.orderNumber}`,
+        text: generateNewOrderEmailAdmin(order),
+      });
+    } catch (emailError) {
+      console.error("Error sending admin notification email:", emailError);
+      // Continue execution even if email fails
+    }
+
+    // Send confirmation email to customer if email is provided
+    if (order.customerEmail) {
+      try {
+        await sendEmail({
+          from: process.env.EMAIL as string,
+          to: order.customerEmail,
+          subject: `Your Order Confirmation: ${order.orderNumber}`,
+          text: generateNewOrderEmailCustomer(order),
+        });
+      } catch (emailError) {
+        console.error("Error sending customer confirmation email:", emailError);
+        // Continue execution even if email fails
+      }
     }
 
     return NextResponse.json(order, { status: 201 });

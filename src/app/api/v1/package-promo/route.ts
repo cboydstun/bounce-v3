@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import PromoOptin from "@/models/PromoOptin";
-import nodemailer from "nodemailer";
+import { sendEmail } from "@/utils/emailService";
 import twilio from "twilio";
 import { getCurrentPromotion } from "@/utils/promoUtils";
 
@@ -55,18 +55,9 @@ export async function POST(request: NextRequest) {
 
     // Send email notification
     try {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.EMAIL,
-          pass: process.env.PASSWORD,
-        },
-      });
-
-      // Email to admin
-      const adminMailOptions = {
-        from: optinData.email,
-        to: process.env.EMAIL,
+      await sendEmail({
+        from: process.env.EMAIL as string, // Must be a verified sender in SendGrid
+        to: process.env.EMAIL as string,
         subject: `New Promo Opt-in: ${optinData.promoName}`,
         text: `
           New promotion opt-in from ${optinData.name}.
@@ -75,9 +66,7 @@ export async function POST(request: NextRequest) {
           Email: ${optinData.email}
           Phone: ${optinData.phone || "Not provided"}
         `,
-      };
-
-      await transporter.sendMail(adminMailOptions);
+      });
     } catch (emailError) {
       console.error("Error sending email notification:", emailError);
       // Continue execution even if email fails

@@ -4,6 +4,12 @@ import * as dbHandler from "@/lib/test/db-handler";
 import Order from "@/models/Order";
 import mongoose from "mongoose";
 
+// Mock @sendgrid/mail
+jest.mock("@sendgrid/mail", () => ({
+  setApiKey: jest.fn(),
+  send: jest.fn().mockResolvedValue(true),
+}));
+
 beforeAll(async () => await dbHandler.connect());
 afterEach(async () => await dbHandler.clearDatabase());
 afterAll(async () => await dbHandler.closeDatabase());

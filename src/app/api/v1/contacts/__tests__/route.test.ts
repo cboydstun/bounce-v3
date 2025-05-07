@@ -6,8 +6,11 @@ import Contact from "@/models/Contact";
 import User from "@/models/User";
 import jwt from "jsonwebtoken";
 
-// Mock nodemailer and twilio
-jest.mock("nodemailer");
+// Mock @sendgrid/mail and twilio
+jest.mock("@sendgrid/mail", () => ({
+  setApiKey: jest.fn(),
+  send: jest.fn().mockResolvedValue(true),
+}));
 jest.mock("twilio");
 
 // Set environment variables for tests

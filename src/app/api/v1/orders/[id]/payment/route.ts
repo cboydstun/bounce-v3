@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import Order from "@/models/Order";
 import mongoose from "mongoose";
+import { sendEmail } from "@/utils/emailService";
+import { generatePaymentConfirmationEmail } from "@/utils/orderEmailTemplates";
 
 /**
  * POST endpoint to initiate a payment for an order
@@ -154,6 +156,41 @@ export async function PATCH(
 
     // Save the updated order
     await order.save();
+
+    // Get the latest transaction (the one just added)
+    const latestTransaction =
+      order.paypalTransactions[order.paypalTransactions.length - 1];
+
+    // Send payment confirmation to customer if email is provided
+    if (order.customerEmail) {
+      try {
+        await sendEmail({
+          from: process.env.EMAIL as string,
+          to: order.customerEmail,
+          subject: `Payment Confirmation: ${order.orderNumber}`,
+          text: generatePaymentConfirmationEmail(order, latestTransaction),
+        });
+      } catch (emailError) {
+        console.error("Error sending payment confirmation email:", emailError);
+        // Continue execution even if email fails
+      }
+    }
+
+    // Send payment notification to admin
+    try {
+      await sendEmail({
+        from: process.env.EMAIL as string,
+        to: process.env.EMAIL as string,
+        subject: `Payment Received: ${order.orderNumber} - $${latestTransaction.amount.toFixed(2)}`,
+        text: generatePaymentConfirmationEmail(order, latestTransaction),
+      });
+    } catch (emailError) {
+      console.error(
+        "Error sending admin payment notification email:",
+        emailError,
+      );
+      // Continue execution even if email fails
+    }
 
     return NextResponse.json({
       message: "Payment transaction recorded successfully",

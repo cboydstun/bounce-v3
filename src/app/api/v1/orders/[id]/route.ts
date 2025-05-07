@@ -4,6 +4,8 @@ import Order from "@/models/Order";
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { sendEmail } from "@/utils/emailService";
+import { generateOrderStatusUpdateEmail } from "@/utils/orderEmailTemplates";
 
 export async function GET(
   request: NextRequest,
@@ -119,6 +121,9 @@ export async function PUT(
       }
     }
 
+    // Store previous status for comparison
+    const previousStatus = orderDoc.status;
+
     // Update all fields from orderData
     Object.keys(orderData).forEach((key) => {
       // For all fields, update directly
@@ -166,6 +171,42 @@ export async function PUT(
 
     // Save the updated document
     const updatedOrder = await orderDoc.save();
+
+    // Check if status was changed
+    if (orderData.status && orderData.status !== previousStatus) {
+      // Send status update email to customer if email is provided
+      if (updatedOrder.customerEmail) {
+        try {
+          await sendEmail({
+            from: process.env.EMAIL as string,
+            to: updatedOrder.customerEmail,
+            subject: `Order Status Update: ${updatedOrder.orderNumber}`,
+            text: generateOrderStatusUpdateEmail(updatedOrder),
+          });
+        } catch (emailError) {
+          console.error("Error sending status update email:", emailError);
+          // Continue execution even if email fails
+        }
+      }
+
+      // Send notification to admin for important status changes
+      if (["Cancelled", "Confirmed"].includes(updatedOrder.status)) {
+        try {
+          await sendEmail({
+            from: process.env.EMAIL as string,
+            to: process.env.EMAIL as string,
+            subject: `Order ${updatedOrder.status}: ${updatedOrder.orderNumber}`,
+            text: generateOrderStatusUpdateEmail(updatedOrder),
+          });
+        } catch (emailError) {
+          console.error(
+            "Error sending admin status notification email:",
+            emailError,
+          );
+          // Continue execution even if email fails
+        }
+      }
+    }
 
     return NextResponse.json(updatedOrder);
   } catch (error: unknown) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import Contact from "@/models/Contact";
-import nodemailer from "nodemailer";
+import { sendEmail } from "@/utils/emailService";
 import twilio from "twilio";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -139,17 +139,11 @@ export async function POST(request: NextRequest) {
 
     // Send email notification
     try {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.EMAIL,
-          pass: process.env.PASSWORD,
-        },
-      });
-
-      const mailOptions = {
-        from: contactData.email,
-        to: process.env.EMAIL,
+      await sendEmail({
+        from: process.env.EMAIL as string, // Must be a verified sender in SendGrid
+        to:
+          (process.env.OTHER_EMAIL as string) &&
+          (process.env.SECOND_EMAIL as string),
         subject: `New Bounce Contact ${contactData.bouncer.toUpperCase()}`,
         text: `
                     Incoming bounce house contact from ${contactData.bouncer.toUpperCase()}.
@@ -170,9 +164,7 @@ export async function POST(request: NextRequest) {
                     Message: ${contactData.message || "No message provided"}
                     Source Page: ${contactData.sourcePage}
                 `,
-      };
-
-      await transporter.sendMail(mailOptions);
+      });
     } catch (emailError) {
       console.error("Error sending email notification:", emailError);
       // Continue execution even if email fails

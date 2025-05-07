@@ -12,6 +12,12 @@ import User from "@/models/User";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 
+// Mock @sendgrid/mail
+jest.mock("@sendgrid/mail", () => ({
+  setApiKey: jest.fn(),
+  send: jest.fn().mockResolvedValue(true),
+}));
+
 // Set environment variables for tests
 process.env.JWT_SECRET = "test-secret";
 
