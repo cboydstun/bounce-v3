@@ -50,9 +50,9 @@ export function BlogsContent() {
 
         // Construct the URL properly
         const baseUrl =
-          (typeof window === "undefined"
+          typeof window === "undefined"
             ? "http://localhost:3000"
-            : window.location.origin);
+            : window.location.origin;
 
         // Create a proper URL object
         const url = new URL(`${API_ROUTES.BLOGS}${queryString}`, baseUrl);

@@ -95,7 +95,7 @@ The checkout process uses a utility function to check availability:
 ```typescript
 export const checkAvailabilityForProducts = async (
   products: Array<{ _id: string; name: string }>,
-  date: string
+  date: string,
 ): Promise<Record<string, { available: boolean; reason?: string }>> => {
   try {
     // Extract product IDs
@@ -273,12 +273,12 @@ The checkout process checks if a date is at capacity and displays appropriate me
 if (results._meta && results._meta.isBlackoutDate) {
   setIsDateAtCapacity(true);
   setDateCapacityMessage(
-    "This date is unavailable for booking. Please select another date or call 512-210-0194 to inquire about additional availability."
+    "This date is unavailable for booking. Please select another date or call 512-210-0194 to inquire about additional availability.",
   );
 } else if (results._meta && results._meta.dateAtCapacity) {
   setIsDateAtCapacity(true);
   setDateCapacityMessage(
-    `This date has reached its maximum booking capacity (${results._meta.totalBookings}/${results._meta.maxBookings}). Please select another date or call 512-210-0194 to inquire about additional availability.`
+    `This date has reached its maximum booking capacity (${results._meta.totalBookings}/${results._meta.maxBookings}). Please select another date or call 512-210-0194 to inquire about additional availability.`,
   );
 } else {
   setIsDateAtCapacity(false);
