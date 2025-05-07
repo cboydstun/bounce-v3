@@ -600,7 +600,7 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
             : "bg-gray-300 text-gray-500 cursor-not-allowed"
         }`}
       >
-        Book Now 🎉
+        Contact Now 🎉
       </button>
     </form>
   );

@@ -138,7 +138,7 @@ const Footer = () => {
               ))}
             </div>
             <div className="bg-gradient-to-r from-blue-400 to-purple-600 text-white p-4 rounded-xl">
-              <p className="font-semibold">Free Delivery</p>
+              <p className="font-semibold">Flat Rate Delivery</p>
               <p className="text-sm">Within Loop 1604!</p>
             </div>
           </div>

@@ -65,7 +65,7 @@ const InfoSections: React.FC = () => {
       variant: "default",
     },
     {
-      title: "Free Delivery & Setup for Party Rentals",
+      title: "Flat Rate Delivery & Setup for Party Rentals",
       content:
         "At SATX Bounce House Rentals, we believe in providing a hassle-free experience for our customers in San Antonio. That's why we include delivery and setup in the price of your bounce houses and slide rentals. We will collaborate with you to schedule a convenient delivery time, and our team will arrive promptly before 8 am to set up your rental. Once your event has concluded, we will return after 6 pm to pick up the slide or bounce house. With us, you won't have to worry about a thing; we've got you covered from start to finish, ensuring a smooth and enjoyable party rental experience.",
       variant: "secondary",

@@ -52,7 +52,7 @@ const HeroSection: React.FC = () => {
 
         <p className="text-2xl md:text-3xl text-white mb-12 max-w-4xl mx-auto leading-relaxed drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] animate-fade-in-up">
           Professional and timely bounce house rentals with
-          <span className="font-bold text-blue-300"> free delivery </span>
+          <span className="font-bold text-blue-300"> flat rate delivery </span>
           and
           <span className="font-bold text-purple-300">
             {" "}

@@ -8,7 +8,7 @@ const contactPageSchema = {
   "@type": "ContactPage",
   name: "Contact SATX Bounce House Rentals",
   description:
-    "Contact us for bounce house rentals in San Antonio. Free delivery within Loop 1604!",
+    "Contact us for bounce house rentals in San Antonio. Flat rate delivery within Loop 1604!",
   mainEntity: {
     "@type": "LocalBusiness",
     name: "SATX Bounce House Rentals",
@@ -32,17 +32,17 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Contact SATX Bounce | Reach Out for Bounce House Rentals",
     description:
-      "Contact SATX Bounce House Rentals for party equipment rentals in San Antonio. Free delivery within Loop 1604! Call us at 512-210-0194 or fill out our contact form.",
+      "Contact SATX Bounce House Rentals for party equipment rentals in San Antonio. Flat rate delivery within Loop 1604! Call us at 512-210-0194 or fill out our contact form.",
     alternates: {
       canonical: "/contact",
     },
     keywords:
-      "contact SATX Bounce House, bounce house rental contact, San Antonio party rentals, rental inquiry, free delivery, party equipment contact",
+      "contact SATX Bounce House, bounce house rental contact, San Antonio party rentals, rental inquiry, flat rate delivery, party equipment contact",
     openGraph: {
       title:
         "Contact SATX Bounce House Rentals | San Antonio Party Equipment Rental",
       description:
-        "Contact us for bounce house rentals in San Antonio. Free delivery within Loop 1604! Available 7 days a week from 8am to 8pm.",
+        "Contact us for bounce house rentals in San Antonio. Flat rate delivery within Loop 1604! Available 7 days a week from 8am to 8pm.",
       type: "website",
     },
     other: {
@@ -113,7 +113,9 @@ export default function ContactPage() {
                   </div>
 
                   <div className="bg-gradient-to-r from-blue-400 to-purple-600 text-white p-6 rounded-lg">
-                    <h3 className="text-xl font-bold mb-2">🎉 Free Delivery</h3>
+                    <h3 className="text-xl font-bold mb-2">
+                      🎉 Affordable Delivery
+                    </h3>
                     <p>Within Loop 1604 for all rentals!</p>
                   </div>
 

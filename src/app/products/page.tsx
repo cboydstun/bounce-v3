@@ -4,7 +4,7 @@ import { ProductsContent } from "./products-content";
 export const metadata: Metadata = {
   title: "Bounce Houses & Party Rentals | SATX Bounce",
   description:
-    "Browse our selection of bounce houses, water slides, and party equipment for rent in San Antonio. Filter by type, size, and price. Free delivery within Loop 1604!",
+    "Browse our selection of bounce houses, water slides, and party equipment for rent in San Antonio. Filter by type, size, and price. Flat rate delivery within Loop 1604!",
   alternates: {
     canonical: "/products",
   },
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Bounce Houses & Party Rentals | SATX Bounce",
     description:
-      "Browse our selection of bounce houses, water slides, and party equipment for rent in San Antonio. Free delivery within Loop 1604!",
+      "Browse our selection of bounce houses, water slides, and party equipment for rent in San Antonio. Flat rate delivery within Loop 1604!",
     type: "website",
     url: "https://satxbounce.com/products",
     images: ["/og-image.jpg"],

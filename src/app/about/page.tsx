@@ -41,7 +41,7 @@ const organizationSchema = {
   "@type": "Organization",
   name: "SATX Bounce House Rentals",
   description:
-    "Premier bounce house and party rental service in San Antonio, TX, offering inflatable bounce houses, water slides, and party equipment with free delivery.",
+    "Premier bounce house and party rental service in San Antonio, TX, offering inflatable bounce houses, water slides, and party equipment with flat rate delivery.",
   url: "https://satxbounce.com",
   areaServed: {
     "@type": "City",
@@ -124,10 +124,10 @@ export default function AboutPage() {
               <div className="bg-white backdrop-blur-sm rounded-2xl p-6 transform transition-all duration-300">
                 <Truck className="w-12 h-12 text-blue-400 mb-4" />
                 <h3 className="text-xl font-bold text-primary-purple mb-3">
-                  Free Delivery
+                  Flat Delivery
                 </h3>
                 <p className="text-primary-blue">
-                  Enjoy complimentary delivery within Loop 1604, making party
+                  Enjoy affordable delivery within Loop 1604, making party
                   planning easier and more affordable.
                 </p>
               </div>
