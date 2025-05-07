@@ -141,9 +141,10 @@ export async function POST(request: NextRequest) {
     try {
       await sendEmail({
         from: process.env.EMAIL as string, // Must be a verified sender in SendGrid
-        to:
-          (process.env.OTHER_EMAIL as string) &&
-          (process.env.SECOND_EMAIL as string),
+        to: [
+          process.env.OTHER_EMAIL as string,
+          process.env.SECOND_EMAIL as string,
+        ],
         subject: `New Bounce Contact ${contactData.bouncer.toUpperCase()}`,
         text: `
                     Incoming bounce house contact from ${contactData.bouncer.toUpperCase()}.
