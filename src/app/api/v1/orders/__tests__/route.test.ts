@@ -18,8 +18,28 @@ jest.mock("@sendgrid/mail", () => ({
   send: jest.fn().mockResolvedValue(true),
 }));
 
+// Mock twilio with a more direct approach
+const mockTwilioMessages = {
+  create: jest.fn().mockResolvedValue({
+    sid: "test-message-sid",
+    status: "sent",
+  }),
+};
+
+const mockTwilioClient = {
+  messages: mockTwilioMessages,
+};
+
+jest.mock("twilio", () => {
+  return jest.fn().mockImplementation(() => mockTwilioClient);
+});
+
 // Set environment variables for tests
 process.env.JWT_SECRET = "test-secret";
+process.env.TWILIO_ACCOUNT_SID = "test-sid";
+process.env.TWILIO_AUTH_TOKEN = "test-token";
+process.env.TWILIO_PHONE_NUMBER = "+15555555555";
+process.env.USER_PHONE_NUMBER = "+15555555556";
 
 beforeAll(async () => await dbHandler.connect());
 afterEach(async () => await dbHandler.clearDatabase());
@@ -305,8 +325,19 @@ describe("Orders API", () => {
     });
 
     it("should create a new order with contactId", async () => {
+      // Create a new contact specifically for this test
+      const newContact = (await Contact.create({
+        bouncer: "New Contact For Order",
+        email: "newcontact@example.com",
+        partyDate: new Date("2025-08-15"),
+        partyZipCode: "54321",
+        sourcePage: "website",
+      })) as mongoose.Document & { _id: mongoose.Types.ObjectId };
+
+      const newContactId = newContact._id.toString();
+
       const orderData = {
-        contactId,
+        contactId: newContactId,
         items: [
           {
             type: "bouncer",
@@ -330,7 +361,7 @@ describe("Orders API", () => {
       expect(response.status).toBe(201);
 
       const data = await response.json();
-      expect(data.contactId.toString()).toBe(contactId);
+      expect(data.contactId.toString()).toBe(newContactId);
       expect(data.items[0].name).toBe("New Bouncer");
       expect(data.subtotal).toBe(180);
       expect(data.deliveryFee).toBe(20); // Default value
@@ -381,6 +412,58 @@ describe("Orders API", () => {
       expect(data.processingFee).toBe(6.6); // 3% of subtotal
       expect(data.status).toBe("Pending");
       expect(data.paymentStatus).toBe("Pending");
+    });
+
+    it("should send SMS notification when creating a new order", async () => {
+      // Reset the mock before this test
+      jest.clearAllMocks();
+      mockTwilioMessages.create.mockClear();
+
+      const orderData = {
+        customerName: "SMS Test Customer",
+        customerEmail: "sms-test@example.com",
+        customerPhone: "555-123-4567",
+        items: [
+          {
+            type: "bouncer",
+            name: "SMS Test Bouncer",
+            quantity: 1,
+            unitPrice: 150,
+            totalPrice: 150,
+          },
+          {
+            type: "extra",
+            name: "Tables & Chairs",
+            quantity: 1,
+            unitPrice: 50,
+            totalPrice: 50,
+          },
+        ],
+        taxAmount: 16.5,
+        discountAmount: 0,
+        paymentMethod: "paypal",
+      };
+
+      const req = new NextRequest("http://localhost:3000/api/v1/orders", {
+        method: "POST",
+        body: JSON.stringify(orderData),
+      });
+
+      const response = await POST(req);
+      expect(response.status).toBe(201);
+
+      // Verify Twilio was called with the correct parameters
+      expect(mockTwilioClient.messages.create).toHaveBeenCalled();
+
+      // Get the arguments passed to the create method
+      const createArgs = mockTwilioClient.messages.create.mock.calls[0][0];
+
+      // Verify SMS content includes order details
+      expect(createArgs.body).toContain("New Order:");
+      expect(createArgs.body).toContain("SMS Test Bouncer");
+      expect(createArgs.body).toContain("Tables & Chairs");
+      expect(createArgs.from).toBe(process.env.TWILIO_PHONE_NUMBER);
+      expect(createArgs.to).toBe(process.env.USER_PHONE_NUMBER);
     });
 
     it("should update contact status to Converted when creating an order from contact", async () => {

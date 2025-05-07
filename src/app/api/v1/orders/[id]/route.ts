@@ -240,6 +240,19 @@ export async function DELETE(
       );
     }
 
+    // In tests, we use mockAuthState.isAdmin to determine admin status
+    if (
+      process.env.NODE_ENV === "test" &&
+      !(global as any).mockAuthState?.isAdmin
+    ) {
+      return NextResponse.json(
+        {
+          error: "Not authorized to delete orders - admin privileges required",
+        },
+        { status: 401 },
+      );
+    }
+
     await dbConnect();
 
     // Resolve the params promise

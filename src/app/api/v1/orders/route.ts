@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { parseDateCT, formatDateCT } from "@/utils/dateUtils";
 import { sendEmail } from "@/utils/emailService";
+import twilio from "twilio";
 import {
   generateNewOrderEmailAdmin,
   generateNewOrderEmailCustomer,
@@ -228,6 +229,40 @@ export async function POST(request: NextRequest) {
         console.error("Error sending customer confirmation email:", emailError);
         // Continue execution even if email fails
       }
+    }
+
+    // Send SMS notification
+    try {
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+      if (accountSid && authToken) {
+        const client = twilio(accountSid, authToken);
+
+        // Format items for SMS
+        const itemsList = order.items
+          .map((item: any) => `${item.name} x${item.quantity}`)
+          .join(", ");
+
+        // Create SMS body with order details
+        const smsBody = `
+          New Order: ${order.orderNumber}
+          Items: ${itemsList}
+          Total: $${order.totalAmount}
+          Customer: ${order.customerName || "N/A"}
+          Email: ${order.customerEmail || "N/A"}
+          Phone: ${order.customerPhone || "N/A"}
+        `.trim();
+
+        await client.messages.create({
+          body: smsBody,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: process.env.USER_PHONE_NUMBER || "",
+        });
+      }
+    } catch (smsError) {
+      console.error("Error sending SMS notification:", smsError);
+      // Continue execution even if SMS fails
     }
 
     return NextResponse.json(order, { status: 201 });

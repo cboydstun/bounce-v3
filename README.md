@@ -856,6 +856,75 @@ The PayPal integration is implemented in the checkout process:
 
 A dedicated test page at `/paypal-test` allows for testing the PayPal integration with configurable amounts and detailed error reporting.
 
+## Email Notifications
+
+The application uses SendGrid for reliable email delivery with a clean, reusable implementation:
+
+### SendGrid Integration
+
+- **Email Service**: Centralized email service using SendGrid's API
+- **Template System**: Reusable email templates for different notification types
+- **Error Handling**: Robust error handling to prevent email failures from affecting core functionality
+- **Environment Configuration**: SendGrid API key stored securely in environment variables
+
+### Email Notification Types
+
+- **Contact Form Submissions**: Notify administrators when customers submit contact forms
+- **Order Notifications**: Email notifications for new orders, status changes, and payment confirmations
+- **Promotional Opt-ins**: Confirmation emails for promotional sign-ups
+
+### Implementation
+
+The email system uses a centralized utility for all SendGrid operations:
+
+```typescript
+// src/utils/emailService.ts
+import sgMail from "@sendgrid/mail";
+
+// Initialize with API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY as string);
+
+export interface EmailData {
+  to: string;
+  from: string;
+  subject: string;
+  text: string;
+  html?: string;
+}
+
+export async function sendEmail(emailData: EmailData): Promise<void> {
+  try {
+    await sgMail.send(emailData);
+  } catch (error) {
+    console.error("Error sending email with SendGrid:", error);
+    throw error;
+  }
+}
+```
+
+Template functions generate consistent email content:
+
+```typescript
+// src/utils/orderEmailTemplates.ts (example)
+export function generateNewOrderEmailAdmin(order: IOrderDocument): string {
+  return `
+    New Order Received: ${order.orderNumber}
+    
+    Customer: ${order.customerName || "N/A"}
+    Email: ${order.customerEmail || "N/A"}
+    Phone: ${order.customerPhone || "N/A"}
+    
+    Order Details:
+    ${order.items.map((item) => `- ${item.quantity}x ${item.name}: $${item.totalPrice.toFixed(2)}`).join("\n")}
+    
+    Subtotal: $${order.subtotal.toFixed(2)}
+    Total Amount: $${order.totalAmount.toFixed(2)}
+    Payment Method: ${order.paymentMethod}
+    Payment Status: ${order.paymentStatus}
+  `;
+}
+```
+
 ## Orders Implementation
 
 The Orders API is implemented using MongoDB and Mongoose with TypeScript. It provides a comprehensive system for managing customer orders with advanced features like order status tracking, payment processing, and task management.
