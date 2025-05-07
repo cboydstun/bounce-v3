@@ -165,7 +165,13 @@ export type InteractionType =
   | "video_play"
   | "gallery_view"
   | "product_view"
-  | "price_check";
+  | "price_check"
+  | "view_form_step"
+  | "form_step_complete"
+  | "form_step_error"
+  | "booking_abandoned"
+  | "booking_submitted"
+  | "form_field_interaction";
 
 // Conversion event types
 export type ConversionEventType =

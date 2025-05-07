@@ -322,6 +322,66 @@ node scripts/create-dev-blog.js
 - `PUT /api/v1/promo-optins/:id` - Update a promo opt-in by ID (authenticated users only)
 - `DELETE /api/v1/promo-optins/:id` - Delete a promo opt-in by ID (authenticated users only)
 
+### Orders API
+
+- `GET /api/v1/orders` - Retrieve all orders (authenticated users only)
+  - Query parameters:
+    - `startDate`: Filter orders created on or after this date (ISO format)
+    - `endDate`: Filter orders created on or before this date (ISO format)
+    - `status`: Filter orders by status
+    - `paymentStatus`: Filter orders by payment status
+    - `contactId`: Filter orders by contact ID
+    - `orderNumber`: Filter orders by order number
+  - Response format:
+    ```json
+    {
+      "orders": [
+        {
+          "_id": "60d21b4667d0d8992e610c85",
+          "orderNumber": "BB-2024-0001",
+          "contactId": "60d21b4667d0d8992e610c84",
+          "items": [
+            {
+              "type": "bouncer",
+              "name": "Test Bouncer",
+              "quantity": 1,
+              "unitPrice": 150,
+              "totalPrice": 150
+            }
+          ],
+          "subtotal": 150,
+          "taxAmount": 12.38,
+          "discountAmount": 0,
+          "deliveryFee": 20,
+          "processingFee": 4.5,
+          "totalAmount": 186.88,
+          "depositAmount": 50,
+          "balanceDue": 136.88,
+          "status": "Pending",
+          "paymentStatus": "Pending",
+          "paymentMethod": "paypal",
+          "tasks": ["Delivery", "Setup", "Pickup"],
+          "createdAt": "2024-04-14T15:00:00.000Z",
+          "updatedAt": "2024-04-14T15:00:00.000Z"
+        }
+      ]
+    }
+    ```
+- `GET /api/v1/orders/:id` - Retrieve a specific order by ID (authenticated users only)
+- `POST /api/v1/orders` - Create a new order (public)
+  - Required fields: `items`, `paymentMethod`
+  - Either `contactId` or `customerEmail` must be provided
+  - Optional fields: `taxAmount`, `discountAmount`, `deliveryFee`, `depositAmount`, `notes`, `tasks`
+  - Auto-calculated fields: `subtotal`, `processingFee`, `totalAmount`, `balanceDue`, `orderNumber`
+- `PUT /api/v1/orders/:id` - Update an order by ID (authenticated users only)
+- `DELETE /api/v1/orders/:id` - Delete an order by ID (authenticated users only)
+  - Restrictions: Cannot delete orders with status "Paid" or "Confirmed"
+- `POST /api/v1/orders/:id/payment` - Initiate payment for an order
+  - Required fields: `amount`
+- `PATCH /api/v1/orders/:id/payment` - Record payment transaction for an order
+  - Required fields: `transactionId`, `amount`, `status`
+  - Optional fields: `payerId`, `payerEmail`, `currency`
+
 ## Products Implementation
 
 The Products API is implemented using MongoDB and Mongoose with TypeScript. It provides a comprehensive system for managing product data with advanced features like slug generation, text search, and category filtering.
@@ -716,6 +776,447 @@ const PromoOptinSchema = new Schema<IPromoOptinDocument, IPromoOptinModel>(
   },
 );
 ```
+
+## PayPal Integration
+
+The application integrates with PayPal for secure payment processing using the official PayPal React SDK (`@paypal/react-paypal-js`). This integration provides a seamless checkout experience with both PayPal and credit card payment options.
+
+### Key Components
+
+- **PayPalScriptProvider**: Manages the loading of the PayPal JavaScript SDK
+- **PayPalButtons**: Renders the PayPal Smart Payment Buttons with customizable styling
+
+### Configuration
+
+```typescript
+// PayPal configuration (src/config/paypal.ts)
+export const paypalConfig: ReactPayPalScriptOptions = {
+  clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "",
+  currency: "USD",
+  intent: "capture",
+  components: "buttons",
+};
+```
+
+### Implementation
+
+The PayPal integration is implemented in the checkout process:
+
+```typescript
+<PayPalScriptProvider options={paypalConfig}>
+  <PayPalButtons
+    style={{
+      layout: "vertical",
+      color: "gold",
+      shape: "rect",
+      label: "pay",
+      height: 45
+    }}
+    createOrder={(data, actions) => {
+      return actions.order.create({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            amount: {
+              value: totalAmount.toFixed(2),
+              currency_code: "USD",
+            },
+            description: "Bounce House Rental",
+          },
+        ],
+        application_context: {
+          shipping_preference: "NO_SHIPPING",
+          user_action: "PAY_NOW",
+        },
+      });
+    }}
+    onApprove={async (data, actions) => {
+      const orderDetails = await actions.order.capture();
+      // Process successful payment
+      handlePaymentSuccess(orderDetails.id);
+    }}
+    onError={(err) => {
+      // Handle payment errors
+      handlePaymentError(err);
+    }}
+  />
+</PayPalScriptProvider>
+```
+
+### Payment Flow
+
+1. User clicks the PayPal button
+2. PayPal modal opens for payment selection (PayPal account or credit card)
+3. User completes payment in the PayPal interface
+4. On successful payment, the `onApprove` callback is triggered
+5. The application captures the payment and updates the order status
+6. The order details are sent to the backend for processing
+
+### Testing
+
+A dedicated test page at `/paypal-test` allows for testing the PayPal integration with configurable amounts and detailed error reporting.
+
+## Orders Implementation
+
+The Orders API is implemented using MongoDB and Mongoose with TypeScript. It provides a comprehensive system for managing customer orders with advanced features like order status tracking, payment processing, and task management.
+
+### MongoDB Schema
+
+```typescript
+// Order item schema
+const OrderItemSchema = new Schema(
+  {
+    type: {
+      type: String,
+      enum: ["bouncer", "extra", "add-on"],
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+      default: 1,
+    },
+    unitPrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    totalPrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  },
+  { _id: false },
+);
+
+// PayPal transaction schema
+const PayPalTransactionSchema = new Schema(
+  {
+    transactionId: {
+      type: String,
+      required: true,
+    },
+    payerId: String,
+    payerEmail: String,
+    amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    currency: {
+      type: String,
+      enum: ["USD"],
+      default: "USD",
+    },
+    status: {
+      type: String,
+      enum: [
+        "CREATED",
+        "SAVED",
+        "APPROVED",
+        "VOIDED",
+        "COMPLETED",
+        "PAYER_ACTION_REQUIRED",
+        "FAILED",
+      ],
+      required: true,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: Date,
+  },
+  { _id: false },
+);
+
+// Main Order schema
+const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
+  {
+    contactId: {
+      type: Schema.Types.ObjectId,
+      ref: "Contact",
+      required: false,
+      index: true,
+    },
+
+    // Direct customer information fields
+    customerName: {
+      type: String,
+      trim: true,
+    },
+    customerEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      match: [
+        /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/,
+        "Please enter a valid email address",
+      ],
+    },
+    customerPhone: {
+      type: String,
+      trim: true,
+      match: [/^(\+?[\d\s\-()]{7,16})?$/, "Please enter a valid phone number"],
+    },
+    customerAddress: {
+      type: String,
+      trim: true,
+    },
+    customerCity: {
+      type: String,
+      trim: true,
+    },
+    customerState: {
+      type: String,
+      trim: true,
+    },
+    customerZipCode: {
+      type: String,
+      trim: true,
+    },
+
+    orderNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      index: true,
+    },
+    items: {
+      type: [OrderItemSchema],
+      required: true,
+      validate: [
+        (items: any[]) => items.length > 0,
+        "Order must contain at least one item",
+      ],
+    },
+    subtotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    taxAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    discountAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    deliveryFee: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 20, // Default $20 delivery fee
+    },
+    processingFee: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: function (this: IOrderDocument) {
+        // Default 3% of subtotal, rounded to nearest cent
+        return this.subtotal ? Math.round(this.subtotal * 0.03 * 100) / 100 : 0;
+      },
+    },
+    totalAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    depositAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    balanceDue: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    status: {
+      type: String,
+      enum: [
+        "Pending",
+        "Processing",
+        "Paid",
+        "Confirmed",
+        "Cancelled",
+        "Refunded",
+      ],
+      default: "Pending",
+      required: true,
+      index: true,
+    },
+    paymentStatus: {
+      type: String,
+      enum: [
+        "Pending",
+        "Authorized",
+        "Paid",
+        "Failed",
+        "Refunded",
+        "Partially Refunded",
+      ],
+      default: "Pending",
+      required: true,
+      index: true,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["paypal", "cash", "quickbooks", "free"],
+      required: true,
+    },
+    paypalTransactions: {
+      type: [PayPalTransactionSchema],
+      default: [],
+    },
+    notes: {
+      type: String,
+      trim: true,
+    },
+    tasks: {
+      type: [String],
+      default: [],
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+```
+
+### Features
+
+- **Order Status Tracking**: Track orders through their lifecycle (Pending, Processing, Paid, Confirmed, Cancelled, Refunded)
+- **Payment Status Tracking**: Track payment status separately from order status (Pending, Authorized, Paid, Failed, Refunded, Partially Refunded)
+- **Payment Processing**: Integration with PayPal for secure payment processing
+- **Contact-to-Order Conversion**: Convert contact inquiries to orders with reference to the original contact
+- **Task Management**: Associate tasks with orders for delivery, setup, pickup, etc.
+- **Automatic Calculations**: Auto-calculate subtotal, processing fee, total amount, and balance due
+- **Order Number Generation**: Automatically generate sequential order numbers (e.g., BB-2024-0001)
+- **Date Range Filtering**: Filter orders by creation date range
+- **Status Filtering**: Filter orders by order status or payment status
+- **Contact Association**: Filter orders by associated contact
+
+### TypeScript Interfaces
+
+The order model uses TypeScript interfaces to ensure type safety:
+
+```typescript
+export interface Order {
+  _id: string;
+  orderNumber: string;
+  contactId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  customerCity?: string;
+  customerState?: string;
+  customerZipCode?: string;
+  items: OrderItem[];
+  subtotal: number;
+  taxAmount: number;
+  discountAmount: number;
+  deliveryFee: number;
+  processingFee: number;
+  totalAmount: number;
+  depositAmount: number;
+  balanceDue: number;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
+  paypalTransactions?: PayPalTransactionDetails[];
+  notes?: string;
+  tasks?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OrderItem {
+  type: OrderItemType;
+  name: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface IOrderDocument extends Omit<Order, "_id">, Document {
+  generateOrderNumber(): Promise<string>;
+}
+
+export interface IOrderModel extends Model<IOrderDocument> {
+  findByOrderNumber(orderNumber: string): Promise<IOrderDocument | null>;
+  findByContactId(contactId: string): Promise<IOrderDocument[]>;
+  findByStatus(status: OrderStatus): Promise<IOrderDocument[]>;
+  findByDateRange(
+    startDate: string,
+    endDate: string,
+  ): Promise<IOrderDocument[]>;
+  generateOrderNumber(): Promise<string>;
+}
+```
+
+### API Endpoints
+
+The Orders API provides comprehensive endpoints with filtering, payment processing, and authentication:
+
+- **GET /api/v1/orders**: List all orders with filtering and pagination (authenticated users only)
+- **GET /api/v1/orders/:id**: Get a specific order by ID (authenticated users only)
+- **POST /api/v1/orders**: Create a new order (public)
+- **PUT /api/v1/orders/:id**: Update an order (authenticated users only)
+- **DELETE /api/v1/orders/:id**: Delete an order (authenticated users only)
+  - Restrictions: Cannot delete orders with status "Paid" or "Confirmed"
+- **POST /api/v1/orders/:id/payment**: Initiate payment for an order
+- **PATCH /api/v1/orders/:id/payment**: Record payment transaction for an order
+
+### Frontend Components
+
+- **Admin Interface**: Comprehensive admin interface for managing orders
+  - Order listing with filtering by date, status, and payment status
+  - Order detail view with editable fields
+  - Order creation form with automatic calculations
+  - Task management interface for adding and removing tasks
+- **Checkout Process**: Multi-step checkout wizard for customers
+  - Step1_RentalSelection: Select products and delivery dates
+  - Step2_DeliveryInfo: Enter customer and delivery information
+  - Step3_Extras: Add optional extras to the order
+  - Step4_OrderReview: Review order details before payment
+  - Step5_Payment: Complete payment via PayPal
+- **Supporting Components**:
+  - ProgressBar: Visual indicator of checkout progress
+  - NavigationButtons: Navigation between checkout steps
+  - OrderFormTracker: Analytics tracking for the checkout process
+  - PayPalButton: Integration with PayPal for payment processing
+
+### Contact-Order-Task Relationship
+
+The system implements a relationship between Contacts, Orders, and Tasks:
+
+1. **Contacts** represent customer inquiries and contain basic customer information
+2. **Orders** are created from contacts (or directly) and contain detailed information about products, pricing, and payment
+3. **Tasks** are generated from orders and represent specific jobs that need to be completed (delivery, setup, pickup, etc.)
+4. **Employees** can claim and complete tasks
+
+This relationship allows for a complete workflow from initial customer inquiry to order fulfillment and task completion.
 
 ### Features
 

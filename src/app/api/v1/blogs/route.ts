@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import { Blog, User } from "@/models"; // Import from central models file
-import { withAuth, AuthRequest } from "@/middleware/auth";
 import mongoose from "mongoose";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // Define a type for the blog query
 interface BlogQuery {
@@ -101,53 +102,57 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  return withAuth(request, async (req: AuthRequest) => {
-    try {
-      // Check if user is authenticated
-      if (!req.user) {
-        return NextResponse.json(
-          { error: "Unauthorized - Invalid token" },
-          { status: 401 },
-        );
-      }
+  try {
+    // Get the session using NextAuth's recommended approach
+    const session = await getServerSession(authOptions);
 
-      await dbConnect();
-
-      // Parse form data
-      const blogData = await req.json();
-
-      // Validate required fields
-      const requiredFields = ["title", "introduction", "body", "conclusion"];
-      const missingFields = requiredFields.filter((field) => !blogData[field]);
-
-      if (missingFields.length > 0) {
-        return NextResponse.json(
-          { error: `Missing required fields: ${missingFields.join(", ")}` },
-          { status: 400 },
-        );
-      }
-
-      // Set author to current user
-      blogData.author = req.user.id;
-
-      // Set publish date if status is published
-      if (blogData.status === "published" && !blogData.publishDate) {
-        blogData.publishDate = new Date().toISOString();
-      }
-
-      // Create blog
-      const blog = await Blog.create(blogData);
-
-      return NextResponse.json(blog, { status: 201 });
-    } catch (error) {
-      console.error("Error creating blog:", error);
+    // Check if user is authenticated
+    if (!session || !session.user) {
+      console.log("Authentication failed - no valid session");
       return NextResponse.json(
-        {
-          error: "Failed to create blog",
-          details: error instanceof Error ? error.message : String(error),
-        },
-        { status: 500 },
+        { error: "Unauthorized - Not authenticated" },
+        { status: 401 },
       );
     }
-  });
+
+    console.log("Authenticated user:", session.user);
+
+    await dbConnect();
+
+    // Parse form data
+    const blogData = await request.json();
+
+    // Validate required fields
+    const requiredFields = ["title", "introduction", "body", "conclusion"];
+    const missingFields = requiredFields.filter((field) => !blogData[field]);
+
+    if (missingFields.length > 0) {
+      return NextResponse.json(
+        { error: `Missing required fields: ${missingFields.join(", ")}` },
+        { status: 400 },
+      );
+    }
+
+    // Set author to current user
+    blogData.author = session.user.id;
+
+    // Set publish date if status is published
+    if (blogData.status === "published" && !blogData.publishDate) {
+      blogData.publishDate = new Date().toISOString();
+    }
+
+    // Create blog
+    const blog = await Blog.create(blogData);
+
+    return NextResponse.json(blog, { status: 201 });
+  } catch (error) {
+    console.error("Error creating blog:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to create blog",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
 }

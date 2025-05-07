@@ -20,8 +20,6 @@ export async function withAuth(
   req: NextRequest,
   handler: (req: AuthRequest) => Promise<NextResponse>,
 ) {
-
-
   try {
     // Check if user is already set (for testing purposes)
     if ((req as AuthRequest).user) {

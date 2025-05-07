@@ -21,17 +21,17 @@ export default function RoutePlannerPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [optimizedRoute, setOptimizedRoute] = useState<OptimizedRoute | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState<boolean>(false);
   const [startAddress, setStartAddress] = useState<string>(
-    "20711 Liatris Lane, San Antonio, TX 78259"
+    "20711 Liatris Lane, San Antonio, TX 78259",
   );
   const [startCoordinates, setStartCoordinates] = useState<[number, number]>([
     -98.4936, 29.4241,
   ]);
   const [startTime, setStartTime] = useState<Date>(
-    new Date(new Date().setHours(8, 0, 0, 0))
+    new Date(new Date().setHours(8, 0, 0, 0)),
   );
   const [returnToStart, setReturnToStart] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +61,7 @@ export default function RoutePlannerPage() {
         const formattedDate = new Date(
           selectedDate.getFullYear(),
           selectedDate.getMonth(),
-          selectedDate.getDate()
+          selectedDate.getDate(),
         ).toLocaleDateString("en-US");
 
         // Use the API utility instead of direct fetch
@@ -116,7 +116,7 @@ export default function RoutePlannerPage() {
         contacts,
         startAddress,
         startTime,
-        returnToStart
+        returnToStart,
       );
 
       // Update the start coordinates with the geocoded coordinates
@@ -130,18 +130,18 @@ export default function RoutePlannerPage() {
         // Check for specific error messages
         if (error.message.includes("San Antonio area")) {
           setError(
-            `Address not found in San Antonio area. Please verify all addresses are in San Antonio, TX.`
+            `Address not found in San Antonio area. Please verify all addresses are in San Antonio, TX.`,
           );
         } else if (error.message.includes("Could not geocode any addresses")) {
           setError(
-            "Could not locate any addresses. Please check that all addresses are complete and in San Antonio, TX."
+            "Could not locate any addresses. Please check that all addresses are complete and in San Antonio, TX.",
           );
         } else {
           setError(`Error optimizing route: ${error.message}`);
         }
       } else {
         setError(
-          "Error optimizing route. Please check addresses and try again."
+          "Error optimizing route. Please check addresses and try again.",
         );
       }
     } finally {
@@ -311,7 +311,7 @@ export default function RoutePlannerPage() {
                       Phone: {contact.phone || "N/A"}
                     </span>
                   </li>
-                )
+                ),
               )}
             </ol>
           </div>

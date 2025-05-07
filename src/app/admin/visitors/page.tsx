@@ -27,6 +27,7 @@ import VisitorTimePatterns from "@/components/analytics/VisitorTimePatterns";
 import ConversionFunnelAnalytics from "@/components/analytics/ConversionFunnelAnalytics";
 import MarketingAttributionAnalytics from "@/components/analytics/MarketingAttributionAnalytics";
 import FormEngagementAnalytics from "@/components/analytics/FormEngagementAnalytics";
+import CheckoutAnalytics from "@/components/analytics/CheckoutAnalytics";
 
 interface PaginationData {
   total: number;
@@ -46,7 +47,7 @@ export default function VisitorsPage() {
     pages: 0,
   });
   const [activeTab, setActiveTab] = useState<
-    "overview" | "visitors" | "insights" | "formEngagement"
+    "overview" | "visitors" | "insights" | "formEngagement" | "checkout"
   >("overview");
   const router = useRouter();
 
@@ -167,6 +168,16 @@ export default function VisitorsPage() {
           onClick={() => setActiveTab("formEngagement")}
         >
           Form Engagement
+        </button>
+        <button
+          className={`py-2 px-4 font-medium text-sm focus:outline-none ${
+            activeTab === "checkout"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("checkout")}
+        >
+          Checkout Analytics
         </button>
         <button
           className={`py-2 px-4 font-medium text-sm focus:outline-none ${
@@ -292,6 +303,11 @@ export default function VisitorsPage() {
           {/* Form Engagement Tab */}
           {activeTab === "formEngagement" && (
             <FormEngagementAnalytics visitors={visitors} />
+          )}
+
+          {/* Checkout Analytics Tab */}
+          {activeTab === "checkout" && (
+            <CheckoutAnalytics visitors={visitors} />
           )}
 
           {/* Visitor List Tab */}

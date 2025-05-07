@@ -137,6 +137,7 @@ export async function PUT(
             "Called / Texted",
             "Declined",
             "Cancelled",
+            "Converted",
           ];
           if (validValues.includes(contactData.confirmed)) {
             contactDoc.confirmed = contactData.confirmed;
@@ -251,6 +252,7 @@ export async function PATCH(
               "Called / Texted",
               "Declined",
               "Cancelled",
+              "Converted",
             ];
             if (validValues.includes(contactData.confirmed)) {
               contactDoc.confirmed = contactData.confirmed;

@@ -20,13 +20,16 @@ const LoginForm = () => {
   // Check if we were redirected from a protected page
   useEffect(() => {
     const from = searchParams.get("from");
+    const returnUrl = searchParams.get("returnUrl");
+
     if (from) {
       setError(`You need to be logged in to access ${from}`);
     }
 
     // If already authenticated, redirect
     if (status === "authenticated") {
-      router.push(from || "/admin");
+      // Prioritize returnUrl over from if both are present
+      router.push(returnUrl || from || "/admin");
     }
 
     // Debug session on mount
@@ -93,8 +96,10 @@ const LoginForm = () => {
       } else if (result?.ok) {
         // Redirect to admin dashboard or the page they were trying to access
         const from = searchParams.get("from");
+        const returnUrl = searchParams.get("returnUrl");
 
-        router.push(from || "/admin");
+        // Prioritize returnUrl over from if both are present
+        router.push(returnUrl || from || "/admin");
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -105,7 +110,7 @@ const LoginForm = () => {
           err.message.includes("connection")
         ) {
           setError(
-            "Network error. Please check your internet connection and try again."
+            "Network error. Please check your internet connection and try again.",
           );
         } else {
           setError(err.message);

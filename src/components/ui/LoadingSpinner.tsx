@@ -1,14 +1,20 @@
 interface LoadingSpinnerProps {
   className?: string;
+  role?: string;
 }
 
-export function LoadingSpinner({ className = "w-4 h-4" }: LoadingSpinnerProps) {
+export function LoadingSpinner({
+  className = "w-4 h-4",
+  role,
+}: LoadingSpinnerProps) {
   return (
     <svg
       className={`animate-spin ${className}`}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
+      role={role || "status"}
+      aria-label="Loading"
     >
       <circle
         className="opacity-25"

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePackageDeals } from "../contexts/PackageDealsContext";
 import ConditionalPackageLink from "./ConditionalPackageLink";
 import {
   Phone,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 
 const Footer = () => {
-  const { hasCompletedForm } = usePackageDeals();
   return (
     <footer className="bg-white border-t border-gray-100">
       <div className="container mx-auto px-4 py-16">
@@ -32,7 +30,7 @@ const Footer = () => {
               rentals in San Antonio.
             </p>
             <Link
-              href="/contact"
+              href="/order"
               className="inline-flex items-center gap-2 text-primary-blue hover:text-primary-purple transition-colors duration-300 font-semibold group"
             >
               Book Now
@@ -52,6 +50,7 @@ const Footer = () => {
                 { href: "/products", label: "Products" },
                 { href: "/about", label: "About" },
                 { href: "/faq", label: "FAQ" },
+                { href: "/contact", label: "Contact" },
               ].map((link) => (
                 <li key={link.href}>
                   <Link

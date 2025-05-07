@@ -28,6 +28,7 @@ const publicEndpoints = [
   "/api/v1/contacts",
   "/api/v1/package-promo",
   "/api/v1/promo-optins",
+  // Removed settings endpoint as we're now using proper NextAuth authentication
 ];
 
 // Request interceptor for API calls
@@ -40,20 +41,26 @@ api.interceptors.request.use(
 
     // Skip authentication for public endpoints
     if (isPublicEndpoint) {
+      // Add debug header to show this is a public endpoint
+      config.headers["X-Auth-Debug"] = "public-endpoint";
       return config;
     }
 
     if (typeof window !== "undefined") {
       try {
-        // Get session from NextAuth.js
+        // Get session from NextAuth.js - ensure we properly await this
         const session = await getSession();
+
+        // Add debug information to console
+        console.log(`Auth debug for ${config.url}:`, {
+          hasSession: !!session,
+          hasUserId: !!session?.user?.id,
+          method: config.method,
+        });
 
         if (session?.user?.id) {
           // Use session user ID for authorization
-          // Support both formats for backward compatibility
           config.headers.Authorization = `Bearer ${session.user.id}`;
-
-          // Add a custom header for debugging
           config.headers["X-Auth-Debug"] = "nextauth-session";
         } else {
           // Check if we have a token in localStorage (legacy method)
@@ -61,15 +68,22 @@ api.interceptors.request.use(
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
             config.headers["X-Auth-Debug"] = "legacy-token";
+          } else {
+            console.warn(
+              `No authentication token available for request to ${config.url}`,
+            );
+            config.headers["X-Auth-Debug"] = "no-auth-token";
           }
         }
       } catch (error) {
         console.error("Error getting session in API interceptor:", error);
+        config.headers["X-Auth-Debug"] = "auth-error";
       }
     }
     return config;
   },
   (error) => {
+    console.error("Request interceptor error:", error);
     return Promise.reject(error);
   },
 );
@@ -545,6 +559,116 @@ export const getPartyPackageBySlug = async (slug: string) => {
     }
     throw error;
   }
+};
+
+// Orders API calls
+export const getOrders = async (params?: {
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  paymentStatus?: string;
+  contactId?: string;
+  orderNumber?: string;
+}) => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.startDate) queryParams.append("startDate", params.startDate);
+  if (params?.endDate) queryParams.append("endDate", params.endDate);
+  if (params?.status) queryParams.append("status", params.status);
+  if (params?.paymentStatus)
+    queryParams.append("paymentStatus", params.paymentStatus);
+  if (params?.contactId) queryParams.append("contactId", params.contactId);
+  if (params?.orderNumber)
+    queryParams.append("orderNumber", params.orderNumber);
+
+  const queryString = queryParams.toString();
+  const url = queryString ? `/api/v1/orders?${queryString}` : "/api/v1/orders";
+
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getOrderById = async (id: string) => {
+  const response = await api.get(`/api/v1/orders/${id}`);
+  return response.data;
+};
+
+export const createOrder = async (orderData: {
+  contactId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  customerCity?: string;
+  customerState?: string;
+  customerZipCode?: string;
+  items: Array<{
+    type: string;
+    name: string;
+    description?: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }>;
+  subtotal?: number;
+  taxAmount?: number;
+  discountAmount?: number;
+  deliveryFee?: number;
+  processingFee?: number;
+  totalAmount?: number;
+  depositAmount?: number;
+  balanceDue?: number;
+  status?: string;
+  paymentStatus?: string;
+  paymentMethod: string;
+  notes?: string;
+  tasks?: string[];
+}) => {
+  const response = await api.post("/api/v1/orders", orderData);
+  return response.data;
+};
+
+export const updateOrder = async (
+  id: string,
+  orderData: Partial<Parameters<typeof createOrder>[0]>,
+) => {
+  const response = await api.put(`/api/v1/orders/${id}`, orderData);
+  return response.data;
+};
+
+export const deleteOrder = async (id: string) => {
+  const response = await api.delete(`/api/v1/orders/${id}`);
+  return response.data;
+};
+
+export const createOrderFromContact = async (
+  contactId: string,
+  orderData: Partial<
+    Omit<Parameters<typeof createOrder>[0], "items" | "paymentMethod">
+  > & {
+    items: Parameters<typeof createOrder>[0]["items"];
+    paymentMethod: Parameters<typeof createOrder>[0]["paymentMethod"];
+  },
+) => {
+  // Check if an order already exists for this contact
+  const existingOrders = await getOrders({ contactId });
+  if (existingOrders.orders && existingOrders.orders.length > 0) {
+    throw new Error("An order already exists for this contact");
+  }
+
+  // Combine contact ID with order data
+  const data = {
+    ...orderData,
+    contactId,
+  };
+
+  // Create the order
+  const order = await createOrder(data);
+
+  // Mark the contact as converted
+  await updateContact(contactId, { confirmed: "Converted" });
+
+  return order;
 };
 
 export default api;
