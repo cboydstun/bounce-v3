@@ -38,6 +38,8 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
   const [selectedBouncerId, setSelectedBouncerId] = useState<string>("");
   const [selectedBouncerImage, setSelectedBouncerImage] = useState<string>("");
   const [isAddingMore, setIsAddingMore] = useState<boolean>(false);
+  const [isDateAtCapacity, setIsDateAtCapacity] = useState<boolean>(false);
+  const [dateCapacityMessage, setDateCapacityMessage] = useState<string>("");
 
   // Helper function to determine if a product is available
   const isProductAvailable = (bouncer: Bouncer) => {
@@ -488,6 +490,22 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                     selectedDate,
                   );
 
+                  // Check if the date is a blackout date or at capacity
+                  if (results._meta && results._meta.isBlackoutDate) {
+                    setIsDateAtCapacity(true);
+                    setDateCapacityMessage(
+                      "This date is unavailable for booking. Please select another date or call 512-210-0194 to inquire about additional availability."
+                    );
+                  } else if (results._meta && results._meta.dateAtCapacity) {
+                    setIsDateAtCapacity(true);
+                    setDateCapacityMessage(
+                      `This date has reached its maximum booking capacity (${results._meta.totalBookings}/${results._meta.maxBookings}). Please select another date or call 512-210-0194 to inquire about additional availability.`
+                    );
+                  } else {
+                    setIsDateAtCapacity(false);
+                    setDateCapacityMessage("");
+                  }
+
                   // Update state with results
                   dispatch({
                     type: "SET_AVAILABILITY_RESULTS",
@@ -543,6 +561,15 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               </div>
             )}
 
+            {/* Show date capacity message if date is at capacity */}
+            {isDateAtCapacity && (
+              <div className="mt-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md">
+                <p className="text-sm">
+                  {dateCapacityMessage}
+                </p>
+              </div>
+            )}
+
             {/* Show error message if availability check fails */}
             {state.availabilityChecks.status === "error" && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded mt-2 text-sm">
@@ -565,6 +592,22 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                         bouncers,
                         state.deliveryDate,
                       );
+
+                      // Check if the date is a blackout date or at capacity
+                      if (results._meta && results._meta.isBlackoutDate) {
+                        setIsDateAtCapacity(true);
+                        setDateCapacityMessage(
+                          "This date is unavailable for booking. Please select another date or call 512-210-0194 to inquire about additional availability."
+                        );
+                      } else if (results._meta && results._meta.dateAtCapacity) {
+                        setIsDateAtCapacity(true);
+                        setDateCapacityMessage(
+                          `This date has reached its maximum booking capacity (${results._meta.totalBookings}/${results._meta.maxBookings}). Please select another date or call 512-210-0194 to inquire about additional availability.`
+                        );
+                      } else {
+                        setIsDateAtCapacity(false);
+                        setDateCapacityMessage("");
+                      }
 
                       // Update state with results
                       dispatch({

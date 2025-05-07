@@ -28,6 +28,7 @@ const publicEndpoints = [
   "/api/v1/contacts",
   "/api/v1/package-promo",
   "/api/v1/promo-optins",
+  // Removed settings endpoint as we're now using proper NextAuth authentication
 ];
 
 // Request interceptor for API calls
@@ -40,20 +41,26 @@ api.interceptors.request.use(
 
     // Skip authentication for public endpoints
     if (isPublicEndpoint) {
+      // Add debug header to show this is a public endpoint
+      config.headers["X-Auth-Debug"] = "public-endpoint";
       return config;
     }
 
     if (typeof window !== "undefined") {
       try {
-        // Get session from NextAuth.js
+        // Get session from NextAuth.js - ensure we properly await this
         const session = await getSession();
+        
+        // Add debug information to console
+        console.log(`Auth debug for ${config.url}:`, {
+          hasSession: !!session,
+          hasUserId: !!session?.user?.id,
+          method: config.method,
+        });
 
         if (session?.user?.id) {
           // Use session user ID for authorization
-          // Support both formats for backward compatibility
           config.headers.Authorization = `Bearer ${session.user.id}`;
-
-          // Add a custom header for debugging
           config.headers["X-Auth-Debug"] = "nextauth-session";
         } else {
           // Check if we have a token in localStorage (legacy method)
@@ -61,15 +68,20 @@ api.interceptors.request.use(
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
             config.headers["X-Auth-Debug"] = "legacy-token";
+          } else {
+            console.warn(`No authentication token available for request to ${config.url}`);
+            config.headers["X-Auth-Debug"] = "no-auth-token";
           }
         }
       } catch (error) {
         console.error("Error getting session in API interceptor:", error);
+        config.headers["X-Auth-Debug"] = "auth-error";
       }
     }
     return config;
   },
   (error) => {
+    console.error("Request interceptor error:", error);
     return Promise.reject(error);
   },
 );

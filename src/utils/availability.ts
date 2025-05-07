@@ -2,12 +2,12 @@
  * Checks availability for multiple products on a specific date
  * @param products Array of product objects to check
  * @param date Date string in YYYY-MM-DD format
- * @returns Object mapping product IDs to availability results
+ * @returns Object mapping product IDs to availability results, with metadata
  */
 export const checkAvailabilityForProducts = async (
   products: Array<{ _id: string; name: string }>,
   date: string,
-): Promise<Record<string, { available: boolean; reason?: string }>> => {
+): Promise<Record<string, { available: boolean; reason?: string }> & { _meta?: any }> => {
   try {
     // Extract product IDs
     const productIds = products.map((product) => product._id);
@@ -32,7 +32,13 @@ export const checkAvailabilityForProducts = async (
     const data = await response.json();
 
     // Format the results to match the expected return type
-    const results: Record<string, { available: boolean; reason?: string }> = {};
+    const results: Record<string, { available: boolean; reason?: string }> & { _meta?: any } = {};
+
+    // Extract metadata if present
+    if (data._meta) {
+      results._meta = data._meta;
+      delete data._meta;
+    }
 
     // Process each product result
     Object.keys(data).forEach((productId) => {
