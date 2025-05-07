@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "Bounce Houses & Party Rentals | SATX Bounce",
   description:
     "Browse our selection of bounce houses, water slides, and party equipment for rent in San Antonio. Filter by type, size, and price. Free delivery within Loop 1604!",
+  alternates: {
+    canonical: "/products",
+  },
   keywords:
     "bounce house rental, water slides, party equipment, San Antonio rentals, inflatable rentals, party supplies, event rentals",
   openGraph: {

@@ -41,6 +41,9 @@ export const metadata: Metadata = {
   title: "SATX Bounce | San Antonio Bounce House Rentals",
   description:
     "Making your events memorable with safe and clean bounce house rentals in San Antonio. Professional, insured party equipment rentals for birthdays, corporate events, and special occasions.",
+  alternates: {
+    canonical: "/",
+  },
   keywords: [
     "bounce house rentals",
     "San Antonio party rentals",

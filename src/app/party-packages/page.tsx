@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "Party Packages | SATX Bounce",
   description:
     "Browse our pre-configured party packages with multiple bounce houses, water slides, and party equipment. Save with our bundle deals!",
+  alternates: {
+    canonical: "/party-packages",
+  },
   keywords:
     "party packages, bounce house packages, water slide packages, party bundle, San Antonio party rentals, event packages",
   openGraph: {

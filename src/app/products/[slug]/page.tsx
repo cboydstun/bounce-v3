@@ -35,6 +35,9 @@ export async function generateMetadata({
   return {
     title: `${product.name} | SATX Bounce House Rentals`,
     description: product.description,
+    alternates: {
+      canonical: `/products/${slug}`,
+    },
     openGraph: {
       title: product.name,
       description: product.description,

@@ -49,6 +49,9 @@ export async function generateMetadata({
       blog.seo?.metaDescription ||
       blog.excerpt ||
       blog.introduction.substring(0, 160),
+    alternates: {
+      canonical: `/blogs/${slug}`,
+    },
     openGraph: {
       title: blog.title,
       description: blog.excerpt || blog.introduction.substring(0, 160),

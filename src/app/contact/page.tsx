@@ -33,6 +33,9 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "Contact SATX Bounce | Reach Out for Bounce House Rentals",
     description:
       "Contact SATX Bounce House Rentals for party equipment rentals in San Antonio. Free delivery within Loop 1604! Call us at 512-210-0194 or fill out our contact form.",
+    alternates: {
+      canonical: "/contact",
+    },
     keywords:
       "contact SATX Bounce House, bounce house rental contact, San Antonio party rentals, rental inquiry, free delivery, party equipment contact",
     openGraph: {
