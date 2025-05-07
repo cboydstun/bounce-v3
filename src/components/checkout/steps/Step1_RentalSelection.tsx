@@ -354,12 +354,12 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
             <>
               {/* Show dropdown for first selection or when adding more */}
               {state.selectedBouncers.length === 0 || isAddingMore ? (
-                <div className="flex gap-2 mt-2">
+                <div className="flex flex-col sm:flex-row gap-2 mt-2">
                   <select
                     id="bouncer-select"
                     value={selectedBouncerId}
                     onChange={handleBouncerChange}
-                    className="flex-grow rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50"
+                    className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50 text-sm sm:text-base"
                     disabled={state.selectedBouncers.length >= 3}
                   >
                     <option value="">Choose a bouncer...</option>
