@@ -16,7 +16,8 @@ This document provides comprehensive documentation for the Orders system in the 
 4. [Multiple Bouncers Feature](#multiple-bouncers-feature)
 5. [Slushy Mixer Feature](#slushy-mixer-feature)
 6. [Availability Checking Feature](#availability-checking-feature)
-7. [Examples](#examples)
+7. [Maximum Daily Bookings Feature](#maximum-daily-bookings-feature)
+8. [Examples](#examples)
 
 ## Availability Checking Feature
 
@@ -68,6 +69,12 @@ The system uses a dedicated endpoint for checking availability of multiple produ
       "status": "available"
     },
     "reason": "Product is already booked for this date"
+  },
+  "_meta": {
+    "isBlackoutDate": false,
+    "dateAtCapacity": false,
+    "totalBookings": 2,
+    "maxBookings": 6
   }
 }
 ```
@@ -88,7 +95,7 @@ The checkout process uses a utility function to check availability:
 ```typescript
 export const checkAvailabilityForProducts = async (
   products: Array<{ _id: string; name: string }>,
-  date: string,
+  date: string
 ): Promise<Record<string, { available: boolean; reason?: string }>> => {
   try {
     // Extract product IDs
@@ -176,6 +183,128 @@ const availabilityText = !available
 2. **Reduced Administrative Overhead**: Prevents double-bookings and reduces the need for manual intervention
 3. **Efficient API Usage**: Single API call for checking multiple products minimizes network traffic and server load
 4. **Real-time Feedback**: Immediate availability information helps customers make informed decisions
+
+## Maximum Daily Bookings Feature
+
+The system includes a maximum daily bookings feature that limits the number of bookings that can be made on a single day, preventing overbooking and ensuring operational capacity is not exceeded.
+
+### Key Features
+
+1. **Configurable Limit**: Administrators can set the maximum number of bookings allowed per day
+2. **Real-time Enforcement**: The system checks the booking limit in real-time during the checkout process
+3. **Clear User Feedback**: Customers receive clear notifications when a date has reached its booking capacity
+4. **Admin Control**: Administrators can adjust the limit as needed through the admin dashboard
+5. **Blackout Dates**: Administrators can also set specific blackout dates when no bookings are allowed
+
+### Implementation Details
+
+#### Settings Model
+
+The maximum daily bookings limit is stored in the Settings model:
+
+```typescript
+interface ISettingsDocument extends mongoose.Document {
+  maxDailyBookings: number;
+  blackoutDates: Date[];
+}
+
+const SettingsSchema = new Schema<ISettingsDocument, ISettingsModel>({
+  maxDailyBookings: {
+    type: Number,
+    required: true,
+    default: 6, // Default to 6 bookings per day
+    min: 1,
+  },
+  blackoutDates: {
+    type: [Date],
+    default: [],
+    index: true,
+  },
+});
+```
+
+#### Availability Check Integration
+
+The maximum daily bookings check is integrated into the batch availability endpoint:
+
+```typescript
+// Get the settings including blackout dates and max daily bookings
+const settings = await Settings.getSettings();
+const maxDailyBookings = settings.maxDailyBookings;
+
+// Get the total number of confirmed bookings for this date
+const totalBookingsForDate = await Contact.countDocuments({
+  partyDate: {
+    $gte: startOfDay,
+    $lte: endOfDay,
+  },
+  confirmed: "Confirmed",
+});
+
+// Check if the date has reached its booking limit
+const dateAtCapacity = totalBookingsForDate >= maxDailyBookings;
+
+// Add date capacity information to the response
+return NextResponse.json({
+  ...results,
+  _meta: {
+    isBlackoutDate: false,
+    dateAtCapacity,
+    totalBookings: totalBookingsForDate,
+    maxBookings: maxDailyBookings,
+  },
+});
+```
+
+#### Admin Dashboard Controls
+
+Administrators can manage the maximum daily bookings and blackout dates through the admin dashboard:
+
+1. **Set Maximum Bookings**: Adjust the maximum number of bookings allowed per day
+2. **Add Blackout Dates**: Set specific dates when no bookings are allowed
+3. **Remove Blackout Dates**: Remove previously set blackout dates
+
+#### Client-Side Implementation
+
+The checkout process checks if a date is at capacity and displays appropriate messages:
+
+```typescript
+// Check if the date is a blackout date or at capacity
+if (results._meta && results._meta.isBlackoutDate) {
+  setIsDateAtCapacity(true);
+  setDateCapacityMessage(
+    "This date is unavailable for booking. Please select another date or call 512-210-0194 to inquire about additional availability."
+  );
+} else if (results._meta && results._meta.dateAtCapacity) {
+  setIsDateAtCapacity(true);
+  setDateCapacityMessage(
+    `This date has reached its maximum booking capacity (${results._meta.totalBookings}/${results._meta.maxBookings}). Please select another date or call 512-210-0194 to inquire about additional availability.`
+  );
+} else {
+  setIsDateAtCapacity(false);
+  setDateCapacityMessage("");
+}
+```
+
+The UI displays a clear message when a date is at capacity:
+
+```jsx
+{
+  isDateAtCapacity && (
+    <div className="mt-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md">
+      <p className="text-sm">{dateCapacityMessage}</p>
+    </div>
+  );
+}
+```
+
+### Benefits
+
+1. **Operational Efficiency**: Ensures the business doesn't overcommit beyond its capacity
+2. **Improved Customer Experience**: Prevents disappointment by clearly showing when dates are unavailable
+3. **Resource Management**: Helps balance workload across different days
+4. **Flexibility**: Administrators can adjust the limit based on staffing levels or seasonal demands
+5. **Reduced Administrative Overhead**: Automatically prevents overbooking without manual intervention
 
 ## Order Data Model
 
@@ -751,488 +880,5 @@ The PayPal integration is implemented in the Step5_Payment component of the chec
     "paymentMethod": "paypal",
     "paypalTransactions": [
       {
-        "transactionId": "PAY-123456789",
-        "payerId": "PAYER-123",
-        "payerEmail": "customer@example.com",
-        "amount": 186.88,
-        "currency": "USD",
-        "status": "COMPLETED",
-        "createdAt": "2024-04-14T15:10:00.000Z"
-      }
-    ],
-    "createdAt": "2024-04-14T15:00:00.000Z",
-    "updatedAt": "2024-04-14T15:10:00.000Z"
-  }
-}
-```
-
-#### Troubleshooting PayPal Integration
-
-Common issues and solutions:
-
-1. **PayPal SDK Loading Errors**:
-
-   - Ensure the `NEXT_PUBLIC_PAYPAL_CLIENT_ID` environment variable is correctly set
-   - Check for browser console errors related to script loading
-   - Verify network connectivity to PayPal domains
-
-2. **Payment Button Not Appearing**:
-
-   - Confirm the PayPalScriptProvider is properly configured
-   - Ensure the PayPal client ID is valid and has the correct permissions
-   - Check for any Content Security Policy (CSP) restrictions
-
-3. **Payment Processing Errors**:
-
-   - Verify the order amount is valid and properly formatted
-   - Ensure the PayPal account is properly configured for accepting payments
-   - Check the browser console for detailed error messages
-
-4. **Testing in Development**:
-   - Use PayPal Sandbox accounts for testing
-   - Create test buyer and seller accounts in the PayPal Developer Dashboard
-   - Use the PayPal Sandbox mode by setting the appropriate client ID
-
-## Order Status Flow
-
-The typical flow of an order is as follows:
-
-1. **Pending**: Initial state when an order is created
-2. **Processing**: Order is being processed (optional)
-3. **Paid**: Payment has been received in full
-4. **Confirmed**: Order has been confirmed and scheduled
-5. **Cancelled** or **Refunded**: If the order is cancelled or refunded
-
-The payment status follows a similar flow:
-
-1. **Pending**: Initial state when an order is created
-2. **Authorized**: Deposit payment has been received
-3. **Paid**: Full payment has been received
-4. **Failed**: Payment attempt failed
-5. **Refunded** or **Partially Refunded**: If the payment is refunded
-
-### Payment Method Specific Flows
-
-#### PayPal Payment Flow
-
-1. Order created with `paymentMethod: "paypal"`
-2. If full payment:
-   - Payment processed via PayPal
-   - Order status updated to "Paid"
-   - Payment status updated to "Paid"
-3. If deposit payment:
-   - Deposit processed via PayPal
-   - Order status remains "Pending"
-   - Payment status updated to "Authorized"
-   - Balance due collected at delivery or pickup
-
-#### Cash Payment Flow
-
-1. Order created with `paymentMethod: "cash"`
-2. Order status set to "Pending"
-3. Payment status set to "Pending"
-4. Full payment collected at delivery
-5. Admin updates order status to "Paid" after receiving payment
-
-## Multiple Bouncers Feature
-
-The system supports ordering multiple bounce houses in a single transaction, with automatic discount pricing.
-
-### Key Features
-
-1. **Multiple Selection**: Customers can select up to 3 different bounce houses per order
-2. **Automatic Discount**: The most expensive bouncer is charged at full price, while additional bouncers receive a 50% discount
-3. **Price Sorting**: Bouncers are automatically sorted by price (highest to lowest) to ensure the most expensive bouncer is always charged at full price
-4. **Clear Pricing Display**: The UI clearly indicates which bouncer is full price and which ones are discounted
-
-### Implementation Details
-
-#### Data Structure
-
-Each order can contain multiple bouncer items in the `items` array:
-
-```json
-"items": [
-  {
-    "type": "bouncer",
-    "name": "Double Lane Waterslide",
-    "quantity": 1,
-    "unitPrice": 399.95,
-    "totalPrice": 399.95
-  },
-  {
-    "type": "bouncer",
-    "name": "Castle Bounce House",
-    "quantity": 1,
-    "unitPrice": 199.95,
-    "totalPrice": 99.98
-  },
-  {
-    "type": "bouncer",
-    "name": "Obstacle Course",
-    "quantity": 1,
-    "unitPrice": 299.95,
-    "totalPrice": 149.98
-  }
-]
-```
-
-#### Discount Logic
-
-The discount logic is applied as follows:
-
-1. Bouncers are sorted by price (highest to lowest)
-2. The first (most expensive) bouncer is charged at full price
-3. All additional bouncers receive a 50% discount
-4. The discounted prices are reflected in the `totalPrice` field of each item
-
-#### UI Implementation
-
-The checkout UI provides a streamlined experience for selecting multiple bouncers:
-
-1. First bouncer selection is automatically added to the order
-2. An "Add More Bouncers" button appears after the first selection
-3. Users can add up to 3 different bouncers to their order
-4. Each selected bouncer is displayed with clear pricing information:
-   - Most expensive bouncer: "Full Price" badge
-   - Additional bouncers: "50% Off" badge with strikethrough original price
-
-#### Order Summary
-
-The order summary displays each bouncer as a separate line item, with clear indication of pricing:
-
-```
-Order Summary
-------------
-Bouncers:
-- Double Lane Waterslide (Full Price): $399.95
-- Obstacle Course (50% Off): $149.98
-- Castle Bounce House (50% Off): $99.98
-
-Extras:
-- Generator: $50.00
-- Single Tank Slushy Machine: $124.95
-  - Grape Kool Aid Mixer: $19.95
-
-Delivery Fee: $20.00
-Subtotal: $864.81
-Tax (8.25%): $71.35
-Processing Fee (3%): $28.09 (PayPal only)
-Total: $964.25
-```
-
-### API Considerations
-
-When creating or updating orders with multiple bouncers:
-
-1. Each bouncer should be included as a separate item in the `items` array
-2. The `totalPrice` field should reflect any applicable discounts
-3. The system will automatically sort bouncers by price and apply discounts
-
-## Slushy Mixer Feature
-
-The system supports adding slushy machines with customizable mixer flavors to orders.
-
-### Key Features
-
-1. **Slushy Machine Types**: Three types of slushy machines are available:
-
-   - Single Tank Slushy Machine ($124.95)
-   - Double Tank Slushy Machine ($149.95)
-   - Triple Tank Slushy Machine ($174.95)
-
-2. **Mixer Selection**: Each tank in a slushy machine can be filled with a different mixer flavor
-
-   - Standard Kool Aid flavors ($19.95 each): Grape, Cherry
-   - Premium flavors ($24.95 each): Margarita, Strawberry Daiquiri, Piña Colada
-   - "None" option (free): For customers who want to use their own mixers
-
-3. **Tank Management**: The system tracks which mixer is assigned to each tank number
-
-   - Single machines: 1 tank
-   - Double machines: 2 tanks
-   - Triple machines: 3 tanks
-
-4. **Machine-Mixer Association**: Each mixer is associated with a specific machine ID to ensure proper tracking
-
-### Implementation Details
-
-#### Data Structure
-
-Slushy mixers are stored in the `slushyMixers` array in the checkout state:
-
-```typescript
-interface SlushyMixer {
-  machineId: string; // ID of the slushy machine this mixer belongs to
-  tankNumber: number; // Tank number (1, 2, or 3)
-  mixerId: string; // ID of the mixer flavor
-  name: string; // Display name of the mixer
-  price: number; // Price of the mixer
-}
-```
-
-Available mixer options are defined as constants:
-
-```typescript
-const SLUSHY_MIXERS = [
-  { id: "none", name: "None", price: 0.0 },
-  { id: "grape", name: "Grape Kool Aid", price: 19.95 },
-  { id: "cherry", name: "Cherry Kool Aid", price: 19.95 },
-  { id: "margarita", name: "Margarita", price: 19.95 },
-  { id: "strawberry", name: "Strawberry Daiquiri", price: 24.95 },
-  { id: "pinacolada", name: "Piña Colada", price: 24.95 },
-];
-```
-
-#### Checkout Actions
-
-The checkout system supports the following actions for slushy mixer management:
-
-1. **SELECT_SLUSHY_MIXER**: Adds or updates a mixer for a specific tank in a slushy machine
-2. **CLEAR_SLUSHY_MIXERS**: Removes all mixers from the order
-3. **TOGGLE_EXTRA**: When a slushy machine is deselected, all associated mixers are automatically removed
-
-#### Price Calculation
-
-Mixer prices are included in the order total calculation:
-
-1. The system filters out "none" mixers (price = 0) from price calculations
-2. Each selected mixer's price is added to the order subtotal
-3. The total is displayed in the order summary with a breakdown by machine and mixer
-
-#### API Representation
-
-When submitting an order with slushy mixers, each mixer is included as a separate item in the `items` array:
-
-```json
-"items": [
-  {
-    "type": "extra",
-    "name": "Double Tank Slushy Machine",
-    "quantity": 1,
-    "unitPrice": 149.95,
-    "totalPrice": 149.95
-  },
-  {
-    "type": "extra",
-    "name": "Grape Kool Aid Mixer (Tank 1)",
-    "quantity": 1,
-    "unitPrice": 19.95,
-    "totalPrice": 19.95
-  },
-  {
-    "type": "extra",
-    "name": "Strawberry Daiquiri Mixer (Tank 2)",
-    "quantity": 1,
-    "unitPrice": 24.95,
-    "totalPrice": 24.95
-  }
-]
-```
-
-### UI Implementation
-
-The checkout UI provides an intuitive experience for selecting slushy mixers:
-
-1. When a slushy machine is selected in the Extras step, a mixer selection interface appears
-2. Users can select a mixer flavor for each tank in the machine
-3. The UI clearly displays the price of each mixer
-4. Users can change their mixer selections at any time before completing the order
-5. The order summary displays each selected mixer with its price
-
-## Examples
-
-### Creating a New Order
-
-```javascript
-// Example: Creating a new order with a contact ID
-const createOrder = async (contactId) => {
-  const response = await fetch("/api/v1/orders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contactId,
-      items: [
-        {
-          type: "bouncer",
-          name: "Castle Bounce House",
-          quantity: 1,
-          unitPrice: 150,
-          totalPrice: 150,
-        },
-        {
-          type: "extra",
-          name: "Generator",
-          quantity: 1,
-          unitPrice: 50,
-          totalPrice: 50,
-        },
-      ],
-      taxAmount: 16.5,
-      discountAmount: 0,
-      paymentMethod: "paypal",
-      notes: "Please deliver before noon",
-    }),
-  });
-
-  return await response.json();
-};
-
-// Example: Creating a new order with multiple bouncers
-const createOrderWithMultipleBouncers = async () => {
-  const response = await fetch("/api/v1/orders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      customerName: "John Doe",
-      customerEmail: "john@example.com",
-      customerPhone: "123-456-7890",
-      customerAddress: "123 Main St",
-      customerCity: "San Antonio",
-      customerState: "TX",
-      customerZipCode: "78701",
-      items: [
-        {
-          type: "bouncer",
-          name: "Double Lane Waterslide",
-          quantity: 1,
-          unitPrice: 399.95,
-          totalPrice: 399.95,
-        },
-        {
-          type: "bouncer",
-          name: "Castle Bounce House",
-          quantity: 1,
-          unitPrice: 199.95,
-          totalPrice: 99.98, // 50% discount applied
-        },
-        {
-          type: "extra",
-          name: "Generator",
-          quantity: 1,
-          unitPrice: 50,
-          totalPrice: 50,
-        },
-      ],
-      taxAmount: 45.41,
-      discountAmount: 0,
-      paymentMethod: "paypal",
-    }),
-  });
-
-  return await response.json();
-};
-
-// Example: Creating a new order with direct customer information
-const createOrderWithCustomerInfo = async () => {
-  const response = await fetch("/api/v1/orders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      customerName: "John Doe",
-      customerEmail: "john@example.com",
-      customerPhone: "123-456-7890",
-      customerAddress: "123 Main St",
-      customerCity: "San Antonio",
-      customerState: "TX",
-      customerZipCode: "78701",
-      items: [
-        {
-          type: "bouncer",
-          name: "Castle Bounce House",
-          quantity: 1,
-          unitPrice: 150,
-          totalPrice: 150,
-        },
-      ],
-      taxAmount: 12.38,
-      discountAmount: 0,
-      paymentMethod: "paypal",
-    }),
-  });
-
-  return await response.json();
-};
-
-// Example: Creating an order with a slushy machine and mixers
-const createOrderWithSlushyMixers = async () => {
-  const response = await fetch("/api/v1/orders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      customerName: "Jane Smith",
-      customerEmail: "jane@example.com",
-      customerPhone: "987-654-3210",
-      customerAddress: "456 Oak St",
-      customerCity: "San Antonio",
-      customerState: "TX",
-      customerZipCode: "78702",
-      items: [
-        {
-          type: "bouncer",
-          name: "Castle Bounce House",
-          quantity: 1,
-          unitPrice: 150,
-          totalPrice: 150,
-        },
-        {
-          type: "extra",
-          name: "Double Tank Slushy Machine",
-          quantity: 1,
-          unitPrice: 149.95,
-          totalPrice: 149.95,
-        },
-        {
-          type: "extra",
-          name: "Grape Kool Aid Mixer (Tank 1)",
-          quantity: 1,
-          unitPrice: 19.95,
-          totalPrice: 19.95,
-        },
-        {
-          type: "extra",
-          name: "Strawberry Daiquiri Mixer (Tank 2)",
-          quantity: 1,
-          unitPrice: 24.95,
-          totalPrice: 24.95,
-        },
-      ],
-      taxAmount: 28.53,
-      discountAmount: 0,
-      paymentMethod: "paypal",
-    }),
-  });
-
-  return await response.json();
-};
-```
-
-### Processing a Payment
-
-```javascript
-// Example: Processing a payment for an order
-const processPayment = async (orderId, amount) => {
-  // Step 1: Initiate payment
-  const initiateResponse = await fetch(`/api/v1/orders/${orderId}/payment`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      amount,
-    }),
-  });
-
-  const paymentInit = await initiateResponse.json();
-
-  // Step 2: In a real implementation, you would redirect to PayPal for payment
-  // and then receive a callback with the transaction details
+        "transactionId": "PAY-123456789
 ```
