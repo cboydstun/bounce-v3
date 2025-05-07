@@ -75,7 +75,7 @@ export default function ContactPage() {
                 Ready to make your event unforgettable? Let&apos;s start
                 planning your perfect party!
               </p>
-              <p className="text-lg text-gray-600">
+              <p className="text-lg text-white">
                 Don&apos;t hesitate to reach out to us! We&apos;re here to help
                 make your event unforgettable.
               </p>

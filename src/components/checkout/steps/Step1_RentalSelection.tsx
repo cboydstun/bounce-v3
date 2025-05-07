@@ -7,6 +7,12 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { BouncerItem, CheckoutState, AvailabilityResult } from "../utils/types";
 import { checkAvailabilityForProducts } from "@/utils/availability";
 import { toast } from "react-hot-toast"; // Assuming you use this for notifications
+import {
+  formatDateCT,
+  parseDateCT,
+  formatDisplayDateCT,
+  getCurrentDateCT,
+} from "@/utils/dateUtils";
 
 interface Specification {
   name: string;
@@ -542,7 +548,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                   );
                 }
               }}
-              min={new Date().toISOString().split("T")[0]} // Today or later
+              min={formatDateCT(new Date())} // Today or later in Central Time
               className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50"
             />
             {state.errors.deliveryDate && (
@@ -759,7 +765,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               onChange={(e) =>
                 dispatch({ type: "SET_PICKUP_DATE", payload: e.target.value })
               }
-              min={state.deliveryDate || new Date().toISOString().split("T")[0]} // Delivery date or today
+              min={state.deliveryDate || formatDateCT(new Date())} // Delivery date or today in Central Time
               className={
                 "w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3 bg-gray-50"
               }
@@ -865,18 +871,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
           <p className="text-blue-800">
             Your rental will be delivered on{" "}
             <strong>
-              {(() => {
-                // Fix timezone issue by parsing the date parts
-                const [year, month, day] = state.deliveryDate
-                  .split("-")
-                  .map(Number);
-                const date = new Date(year, month - 1, day); // month is 0-indexed in JS Date
-                return date.toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                });
-              })()}
+              {formatDisplayDateCT(parseDateCT(state.deliveryDate))}
             </strong>
             {state.deliveryTimePreference === "specific" ? (
               <>
@@ -909,18 +904,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
             )}{" "}
             and picked up on{" "}
             <strong>
-              {(() => {
-                // Fix timezone issue by parsing the date parts
-                const [year, month, day] = state.pickupDate
-                  .split("-")
-                  .map(Number);
-                const date = new Date(year, month - 1, day); // month is 0-indexed in JS Date
-                return date.toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                });
-              })()}
+              {formatDisplayDateCT(parseDateCT(state.pickupDate))}
             </strong>
             {state.pickupTimePreference === "specific" ? (
               <>
@@ -963,30 +947,9 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
             )}
             {/* Multi-day pricing information */}
             {(() => {
-              // Parse dates to ensure consistent behavior
-              const [deliveryYear, deliveryMonth, deliveryDay] =
-                state.deliveryDate.split("-").map(Number);
-              const [pickupYear, pickupMonth, pickupDay] = state.pickupDate
-                .split("-")
-                .map(Number);
-
-              // Create date objects (using noon to avoid timezone issues)
-              const delivery = new Date(
-                deliveryYear,
-                deliveryMonth - 1,
-                deliveryDay,
-                12,
-                0,
-                0,
-              );
-              const pickup = new Date(
-                pickupYear,
-                pickupMonth - 1,
-                pickupDay,
-                12,
-                0,
-                0,
-              );
+              // Parse dates using our centralized date utility
+              const delivery = parseDateCT(state.deliveryDate);
+              const pickup = parseDateCT(state.pickupDate);
 
               // Calculate the difference in days
               const diffTime = pickup.getTime() - delivery.getTime();
