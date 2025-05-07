@@ -6,7 +6,7 @@ import { formatDisplayDateCT } from "./dateUtils";
 sgMail.setApiKey(process.env.SENDGRID_API_KEY as string);
 
 export interface EmailData {
-  to: string;
+  to: string | string[];
   from: string;
   subject: string;
   text: string;
