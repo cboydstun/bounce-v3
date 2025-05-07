@@ -7,7 +7,9 @@
 export const checkAvailabilityForProducts = async (
   products: Array<{ _id: string; name: string }>,
   date: string,
-): Promise<Record<string, { available: boolean; reason?: string }> & { _meta?: any }> => {
+): Promise<
+  Record<string, { available: boolean; reason?: string }> & { _meta?: any }
+> => {
   try {
     // Extract product IDs
     const productIds = products.map((product) => product._id);
@@ -32,7 +34,9 @@ export const checkAvailabilityForProducts = async (
     const data = await response.json();
 
     // Format the results to match the expected return type
-    const results: Record<string, { available: boolean; reason?: string }> & { _meta?: any } = {};
+    const results: Record<string, { available: boolean; reason?: string }> & {
+      _meta?: any;
+    } = {};
 
     // Extract metadata if present
     if (data._meta) {

@@ -50,7 +50,7 @@ api.interceptors.request.use(
       try {
         // Get session from NextAuth.js - ensure we properly await this
         const session = await getSession();
-        
+
         // Add debug information to console
         console.log(`Auth debug for ${config.url}:`, {
           hasSession: !!session,
@@ -69,7 +69,9 @@ api.interceptors.request.use(
             config.headers.Authorization = `Bearer ${token}`;
             config.headers["X-Auth-Debug"] = "legacy-token";
           } else {
-            console.warn(`No authentication token available for request to ${config.url}`);
+            console.warn(
+              `No authentication token available for request to ${config.url}`,
+            );
             config.headers["X-Auth-Debug"] = "no-auth-token";
           }
         }

@@ -494,12 +494,12 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                   if (results._meta && results._meta.isBlackoutDate) {
                     setIsDateAtCapacity(true);
                     setDateCapacityMessage(
-                      "This date is unavailable for booking. Please select another date or call 512-210-0194 to inquire about additional availability."
+                      "This date is unavailable for booking. Please select another date or call 512-210-0194 to inquire about additional availability.",
                     );
                   } else if (results._meta && results._meta.dateAtCapacity) {
                     setIsDateAtCapacity(true);
                     setDateCapacityMessage(
-                      `This date has reached its maximum booking capacity (${results._meta.totalBookings}/${results._meta.maxBookings}). Please select another date or call 512-210-0194 to inquire about additional availability.`
+                      `This date has reached its maximum booking capacity (${results._meta.totalBookings}/${results._meta.maxBookings}). Please select another date or call 512-210-0194 to inquire about additional availability.`,
                     );
                   } else {
                     setIsDateAtCapacity(false);
@@ -564,9 +564,7 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
             {/* Show date capacity message if date is at capacity */}
             {isDateAtCapacity && (
               <div className="mt-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md">
-                <p className="text-sm">
-                  {dateCapacityMessage}
-                </p>
+                <p className="text-sm">{dateCapacityMessage}</p>
               </div>
             )}
 
@@ -597,12 +595,15 @@ const Step1_RentalSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                       if (results._meta && results._meta.isBlackoutDate) {
                         setIsDateAtCapacity(true);
                         setDateCapacityMessage(
-                          "This date is unavailable for booking. Please select another date or call 512-210-0194 to inquire about additional availability."
+                          "This date is unavailable for booking. Please select another date or call 512-210-0194 to inquire about additional availability.",
                         );
-                      } else if (results._meta && results._meta.dateAtCapacity) {
+                      } else if (
+                        results._meta &&
+                        results._meta.dateAtCapacity
+                      ) {
                         setIsDateAtCapacity(true);
                         setDateCapacityMessage(
-                          `This date has reached its maximum booking capacity (${results._meta.totalBookings}/${results._meta.maxBookings}). Please select another date or call 512-210-0194 to inquire about additional availability.`
+                          `This date has reached its maximum booking capacity (${results._meta.totalBookings}/${results._meta.maxBookings}). Please select another date or call 512-210-0194 to inquire about additional availability.`,
                         );
                       } else {
                         setIsDateAtCapacity(false);

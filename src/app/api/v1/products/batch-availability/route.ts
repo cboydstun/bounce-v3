@@ -83,13 +83,13 @@ export async function POST(request: NextRequest) {
     selectedDate.setHours(0, 0, 0, 0);
 
     const isBlackoutDate = settings.blackoutDates.some(
-      (blackoutDate: Date) => blackoutDate.getTime() === selectedDate.getTime()
+      (blackoutDate: Date) => blackoutDate.getTime() === selectedDate.getTime(),
     );
 
     // If it's a blackout date, mark all products as unavailable
     if (isBlackoutDate) {
       const results: Record<string, any> = {};
-      
+
       (products as ProductDocument[]).forEach((product) => {
         results[product._id.toString()] = {
           available: false,
@@ -98,18 +98,18 @@ export async function POST(request: NextRequest) {
             slug: product.slug,
             status: product.availability,
           },
-          reason: "This date is unavailable for booking (blackout date)"
+          reason: "This date is unavailable for booking (blackout date)",
         };
       });
-      
+
       return NextResponse.json({
         ...results,
         _meta: {
           isBlackoutDate: true,
           dateAtCapacity: true, // Treat blackout dates as at capacity
           totalBookings: totalBookingsForDate,
-          maxBookings: maxDailyBookings
-        }
+          maxBookings: maxDailyBookings,
+        },
       });
     }
 
@@ -157,8 +157,8 @@ export async function POST(request: NextRequest) {
         isBlackoutDate: false,
         dateAtCapacity,
         totalBookings: totalBookingsForDate,
-        maxBookings: maxDailyBookings
-      }
+        maxBookings: maxDailyBookings,
+      },
     });
   } catch (error) {
     console.error("Error checking batch availability:", error);

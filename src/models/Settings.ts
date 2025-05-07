@@ -25,11 +25,11 @@ const SettingsSchema = new Schema<ISettingsDocument, ISettingsModel>(
     },
     // Other settings can be added here
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Static method to get settings (creates default if none exist)
-SettingsSchema.statics.getSettings = async function() {
+SettingsSchema.statics.getSettings = async function () {
   let settings = await this.findOne();
   if (!settings) {
     settings = await this.create({ maxDailyBookings: 6 });
