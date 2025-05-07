@@ -6,10 +6,19 @@ interface KeywordManagerProps {
   keywords: SearchKeyword[];
   selectedKeywordId: string | null;
   onSelectKeyword: (keywordId: string) => void;
-  onAddKeyword: (keyword: string) => Promise<{ success: boolean; error?: string }>;
-  onDeleteKeyword: (keywordId: string) => Promise<{ success: boolean; error?: string }>;
-  onToggleKeyword: (keywordId: string, isActive: boolean) => Promise<{ success: boolean; error?: string }>;
-  onCheckRanking: (keywordId: string) => Promise<{ success: boolean; error?: string }>;
+  onAddKeyword: (
+    keyword: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  onDeleteKeyword: (
+    keywordId: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  onToggleKeyword: (
+    keywordId: string,
+    isActive: boolean,
+  ) => Promise<{ success: boolean; error?: string }>;
+  onCheckRanking: (
+    keywordId: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   isCheckingRanking: boolean;
 }
 
@@ -29,18 +38,18 @@ export default function KeywordManager({
 
   const handleAddKeyword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newKeyword.trim()) {
       setError("Keyword cannot be empty");
       return;
     }
-    
+
     setIsAdding(true);
     setError(null);
-    
+
     try {
       const result = await onAddKeyword(newKeyword.trim());
-      
+
       if (result.success) {
         setNewKeyword("");
       } else {
@@ -57,9 +66,9 @@ export default function KeywordManager({
     if (!confirm("Are you sure you want to delete this keyword?")) {
       return;
     }
-    
+
     const result = await onDeleteKeyword(keywordId);
-    
+
     if (!result.success) {
       alert(result.error || "Failed to delete keyword");
     }
@@ -67,7 +76,7 @@ export default function KeywordManager({
 
   const handleToggleKeyword = async (keywordId: string, isActive: boolean) => {
     const result = await onToggleKeyword(keywordId, isActive);
-    
+
     if (!result.success) {
       alert(result.error || "Failed to update keyword");
     }
@@ -75,7 +84,7 @@ export default function KeywordManager({
 
   const handleCheckRanking = async (keywordId: string) => {
     const result = await onCheckRanking(keywordId);
-    
+
     if (!result.success) {
       alert(result.error || "Failed to check ranking");
     }
@@ -114,9 +123,7 @@ export default function KeywordManager({
               )}
             </button>
           </div>
-          {error && (
-            <p className="mt-2 text-sm text-red-600">{error}</p>
-          )}
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         </form>
       </div>
 

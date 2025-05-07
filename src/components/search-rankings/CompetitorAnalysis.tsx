@@ -1,5 +1,9 @@
 import { useMemo, useState } from "react";
-import { SearchRanking, Competitor, ManagedCompetitor } from "@/types/searchRanking";
+import {
+  SearchRanking,
+  Competitor,
+  ManagedCompetitor,
+} from "@/types/searchRanking";
 
 interface CompetitorAnalysisProps {
   rankings: SearchRanking[];
@@ -10,14 +14,16 @@ export default function CompetitorAnalysis({
   rankings,
   managedCompetitors,
 }: CompetitorAnalysisProps) {
-  const [selectedCompetitorId, setSelectedCompetitorId] = useState<string | null>(
-    managedCompetitors.length > 0 ? managedCompetitors[0]._id : null
-  );
+  const [selectedCompetitorId, setSelectedCompetitorId] = useState<
+    string | null
+  >(managedCompetitors.length > 0 ? managedCompetitors[0]._id : null);
 
   // Get the selected competitor
   const selectedCompetitor = useMemo(() => {
     if (!selectedCompetitorId) return null;
-    return managedCompetitors.find(c => c._id === selectedCompetitorId) || null;
+    return (
+      managedCompetitors.find((c) => c._id === selectedCompetitorId) || null
+    );
   }, [selectedCompetitorId, managedCompetitors]);
 
   // Get the competitor URL
@@ -30,7 +36,7 @@ export default function CompetitorAnalysis({
 
     // Sort rankings by date (newest first)
     const sortedRankings = [...rankings].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
 
     return sortedRankings[0];
@@ -81,7 +87,10 @@ export default function CompetitorAnalysis({
         <div className="space-y-6">
           {/* Competitor Selector */}
           <div className="mb-4">
-            <label htmlFor="competitor-select" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="competitor-select"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Select Competitor
             </label>
             <select

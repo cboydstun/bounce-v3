@@ -30,7 +30,7 @@ const CompetitorSchema = new Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Create a unique compound index on name and url
@@ -42,6 +42,8 @@ CompetitorSchema.statics.findActiveCompetitors = function () {
 };
 
 // Export the model
-const Competitor = mongoose.models.Competitor || mongoose.model<ICompetitorDocument>("Competitor", CompetitorSchema);
+const Competitor =
+  mongoose.models.Competitor ||
+  mongoose.model<ICompetitorDocument>("Competitor", CompetitorSchema);
 
 export default Competitor;

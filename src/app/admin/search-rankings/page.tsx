@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/utils/api";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -8,7 +8,20 @@ import KeywordManager from "@/components/search-rankings/KeywordManager";
 import RankingHistory from "@/components/search-rankings/RankingHistory";
 import RankingMetrics from "@/components/search-rankings/RankingMetrics";
 import CompetitorAnalysis from "@/components/search-rankings/CompetitorAnalysis";
-import { SearchKeyword, SearchRanking, ManagedCompetitor } from "@/types/searchRanking";
+import {
+  SearchKeyword,
+  SearchRanking,
+  ManagedCompetitor,
+} from "@/types/searchRanking";
+
+// Type for the rankings cache
+interface RankingsCacheItem {
+  rankings: SearchRanking[];
+  period: string;
+  lastFetched: Date;
+}
+
+type RankingsCache = Record<string, RankingsCacheItem>;
 
 export default function SearchRankingsPage() {
   const router = useRouter();
@@ -21,21 +34,26 @@ export default function SearchRankingsPage() {
   const [isCheckingRanking, setIsCheckingRanking] = useState(false);
   const [competitors, setCompetitors] = useState<ManagedCompetitor[]>([]);
 
+  // Cache to store rankings by keyword ID and period
+  const [rankingsCache, setRankingsCache] = useState<RankingsCache>({});
+
   // Fetch keywords and competitors on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Fetch keywords
-        const keywordsResponse = await api.get("/api/v1/search-rankings/keywords");
+        const keywordsResponse = await api.get(
+          "/api/v1/search-rankings/keywords",
+        );
         setKeywords(keywordsResponse.data.keywords);
-        
+
         // Select the first keyword by default if available
         if (keywordsResponse.data.keywords.length > 0) {
           setSelectedKeyword(keywordsResponse.data.keywords[0]._id);
         }
-        
+
         // Fetch competitors
         try {
           const competitorsResponse = await api.get("/api/v1/competitors");
@@ -44,10 +62,10 @@ export default function SearchRankingsPage() {
           console.error("Error fetching competitors:", competitorError);
           // Don't set an error for competitors, as it's not critical
         }
-      } catch (error:any) {
+      } catch (error: any) {
         console.error("Error fetching keywords:", error);
         setError("Failed to fetch keywords. Please try again later.");
-        
+
         // Handle authentication errors
         if (error.response?.status === 401) {
           router.push("/login");
@@ -64,13 +82,24 @@ export default function SearchRankingsPage() {
   useEffect(() => {
     const fetchRankings = async () => {
       if (!selectedKeyword) return;
-      
+
       try {
         setIsLoading(true);
-        
+
+        // Check if we have cached rankings for this keyword and period
+        const cacheKey = selectedKeyword;
+        const cachedData = rankingsCache[cacheKey];
+
+        if (cachedData && cachedData.period === period) {
+          // Use cached rankings if available for this period
+          setRankings(cachedData.rankings);
+          setIsLoading(false);
+          return;
+        }
+
         // Get date range based on selected period
         const { startDate, endDate } = getDateRangeForPeriod(period);
-        
+
         const response = await api.get("/api/v1/search-rankings/history", {
           params: {
             keywordId: selectedKeyword,
@@ -78,8 +107,21 @@ export default function SearchRankingsPage() {
             endDate,
           },
         });
-        
-        setRankings(response.data.rankings);
+
+        const newRankings = response.data.rankings;
+
+        // Update the rankings state
+        setRankings(newRankings);
+
+        // Update the cache
+        setRankingsCache((prevCache) => ({
+          ...prevCache,
+          [cacheKey]: {
+            rankings: newRankings,
+            period,
+            lastFetched: new Date(),
+          },
+        }));
       } catch (error) {
         console.error("Error fetching rankings:", error);
         setError("Failed to fetch ranking history. Please try again later.");
@@ -89,7 +131,7 @@ export default function SearchRankingsPage() {
     };
 
     fetchRankings();
-  }, [selectedKeyword, period]);
+  }, [selectedKeyword, period, rankingsCache]);
 
   // Helper function to get date range based on period
   function getDateRangeForPeriod(period: string) {
@@ -134,19 +176,19 @@ export default function SearchRankingsPage() {
       const response = await api.post("/api/v1/search-rankings/keywords", {
         keyword,
       });
-      
+
       // Add the new keyword to the list
       setKeywords([...keywords, response.data.keyword]);
-      
+
       // Select the new keyword
       setSelectedKeyword(response.data.keyword._id);
-      
+
       return { success: true };
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Error adding keyword:", error);
-      return { 
-        success: false, 
-        error: error.response?.data?.message || "Failed to add keyword" 
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to add keyword",
       };
     }
   };
@@ -155,22 +197,24 @@ export default function SearchRankingsPage() {
   const handleDeleteKeyword = async (keywordId: string) => {
     try {
       await api.delete(`/api/v1/search-rankings/keywords/${keywordId}`);
-      
+
       // Remove the keyword from the list
       const updatedKeywords = keywords.filter((k) => k._id !== keywordId);
       setKeywords(updatedKeywords);
-      
+
       // If the deleted keyword was selected, select the first available keyword
       if (selectedKeyword === keywordId) {
-        setSelectedKeyword(updatedKeywords.length > 0 ? updatedKeywords[0]._id : null);
+        setSelectedKeyword(
+          updatedKeywords.length > 0 ? updatedKeywords[0]._id : null,
+        );
       }
-      
+
       return { success: true };
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Error deleting keyword:", error);
-      return { 
-        success: false, 
-        error: error.response?.data?.message || "Failed to delete keyword" 
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to delete keyword",
       };
     }
   };
@@ -178,23 +222,26 @@ export default function SearchRankingsPage() {
   // Handle keyword toggle (active/inactive)
   const handleToggleKeyword = async (keywordId: string, isActive: boolean) => {
     try {
-      const response = await api.patch(`/api/v1/search-rankings/keywords/${keywordId}`, {
-        isActive,
-      });
-      
+      const response = await api.patch(
+        `/api/v1/search-rankings/keywords/${keywordId}`,
+        {
+          isActive,
+        },
+      );
+
       // Update the keyword in the list
       const updatedKeywords = keywords.map((k) =>
-        k._id === keywordId ? response.data.keyword : k
+        k._id === keywordId ? response.data.keyword : k,
       );
-      
+
       setKeywords(updatedKeywords);
-      
+
       return { success: true };
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Error toggling keyword:", error);
-      return { 
-        success: false, 
-        error: error.response?.data?.message || "Failed to update keyword" 
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to update keyword",
       };
     }
   };
@@ -203,20 +250,49 @@ export default function SearchRankingsPage() {
   const handleCheckRanking = async (keywordId: string) => {
     try {
       setIsCheckingRanking(true);
-      
+
       const response = await api.post("/api/v1/search-rankings/check", {
         keywordId,
       });
-      
-      // Add the new ranking to the list
-      setRankings([response.data.ranking, ...rankings]);
-      
+
+      const newRanking = response.data.ranking;
+
+      // Add the new ranking to the current rankings list
+      const updatedRankings = [newRanking, ...rankings];
+      setRankings(updatedRankings);
+
+      // Update the cache with the new ranking
+      const cacheKey = keywordId;
+      setRankingsCache((prevCache) => {
+        // If we have cached data for this keyword, update it
+        if (prevCache[cacheKey]) {
+          return {
+            ...prevCache,
+            [cacheKey]: {
+              ...prevCache[cacheKey],
+              rankings: [newRanking, ...prevCache[cacheKey].rankings],
+              lastFetched: new Date(),
+            },
+          };
+        }
+
+        // Otherwise, create a new cache entry
+        return {
+          ...prevCache,
+          [cacheKey]: {
+            rankings: updatedRankings,
+            period,
+            lastFetched: new Date(),
+          },
+        };
+      });
+
       return { success: true };
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Error checking ranking:", error);
-      return { 
-        success: false, 
-        error: error.response?.data?.message || "Failed to check ranking" 
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to check ranking",
       };
     } finally {
       setIsCheckingRanking(false);
@@ -248,8 +324,8 @@ export default function SearchRankingsPage() {
             Search Rankings
           </h2>
           <div className="mt-1">
-            <a 
-              href="/admin/competitors" 
+            <a
+              href="/admin/competitors"
               className="text-sm text-indigo-600 hover:text-indigo-800"
             >
               Manage Competitors →

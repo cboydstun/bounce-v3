@@ -1,6 +1,6 @@
 // Script to add the initial keyword "san antonio bounce house rentals" to the database
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
+import mongoose from "mongoose";
+import dotenv from "dotenv";
 
 // Load environment variables
 dotenv.config();
@@ -9,9 +9,9 @@ dotenv.config();
 async function connectToDatabase() {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('Connected to MongoDB');
+    console.log("Connected to MongoDB");
   } catch (error) {
-    console.error('Failed to connect to MongoDB:', error);
+    console.error("Failed to connect to MongoDB:", error);
     process.exit(1);
   }
 }
@@ -30,17 +30,17 @@ const SearchKeywordSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Create the model
 let SearchKeyword;
 try {
   // Try to get the model if it already exists
-  SearchKeyword = mongoose.model('SearchKeyword');
+  SearchKeyword = mongoose.model("SearchKeyword");
 } catch (error) {
   // Create the model if it doesn't exist
-  SearchKeyword = mongoose.model('SearchKeyword', SearchKeywordSchema);
+  SearchKeyword = mongoose.model("SearchKeyword", SearchKeywordSchema);
 }
 
 // Add the initial keyword
@@ -48,23 +48,23 @@ async function addInitialKeyword() {
   try {
     // Check if the keyword already exists
     const existingKeyword = await SearchKeyword.findOne({
-      keyword: 'san antonio bounce house rentals',
+      keyword: "san antonio bounce house rentals",
     });
 
     if (existingKeyword) {
-      console.log('Keyword already exists:', existingKeyword);
+      console.log("Keyword already exists:", existingKeyword);
       return;
     }
 
     // Create the keyword
     const newKeyword = await SearchKeyword.create({
-      keyword: 'san antonio bounce house rentals',
+      keyword: "san antonio bounce house rentals",
       isActive: true,
     });
 
-    console.log('Initial keyword added successfully:', newKeyword);
+    console.log("Initial keyword added successfully:", newKeyword);
   } catch (error) {
-    console.error('Failed to add initial keyword:', error);
+    console.error("Failed to add initial keyword:", error);
   }
 }
 

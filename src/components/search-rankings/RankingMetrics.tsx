@@ -21,7 +21,7 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
 
     // Sort rankings by date (newest first)
     const sortedRankings = [...rankings].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
 
     // Current position (most recent)
@@ -40,9 +40,8 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
         : "N/A";
 
     // Best position
-    const bestPosition = validPositions.length > 0
-      ? Math.min(...validPositions)
-      : "N/A";
+    const bestPosition =
+      validPositions.length > 0 ? Math.min(...validPositions) : "N/A";
 
     // Position change (compared to previous check)
     let positionChange = null;
@@ -51,10 +50,10 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
 
     if (sortedRankings.length >= 2) {
       const previousPosition = sortedRankings[1].position;
-      
+
       if (previousPosition > 0 && currentPosition > 0) {
         positionChange = previousPosition - currentPosition;
-        
+
         // Positive change means improvement (moving up in rankings)
         if (positionChange > 0) {
           positionChangeText = `↑ ${positionChange}`;
@@ -85,7 +84,7 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
 
     // Sort rankings by date (newest first)
     const sortedRankings = [...rankings].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
 
     // Format the date
@@ -102,12 +101,16 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">Ranking Metrics</h3>
-      
+      <h3 className="text-lg font-medium text-gray-900 mb-4">
+        Ranking Metrics
+      </h3>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Current Position */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-sm font-medium text-gray-500">Current Position</div>
+          <div className="text-sm font-medium text-gray-500">
+            Current Position
+          </div>
           <div className="mt-1 text-3xl font-semibold text-gray-900">
             {metrics.currentPosition}
           </div>
@@ -115,15 +118,17 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
             {metrics.positionChangeText}
           </div>
         </div>
-        
+
         {/* Average Position */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-sm font-medium text-gray-500">Average Position</div>
+          <div className="text-sm font-medium text-gray-500">
+            Average Position
+          </div>
           <div className="mt-1 text-3xl font-semibold text-gray-900">
             {metrics.averagePosition}
           </div>
         </div>
-        
+
         {/* Best Position */}
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="text-sm font-medium text-gray-500">Best Position</div>
@@ -131,7 +136,7 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
             {metrics.bestPosition}
           </div>
         </div>
-        
+
         {/* Last Check */}
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="text-sm font-medium text-gray-500">Last Check</div>
@@ -140,9 +145,10 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
           </div>
         </div>
       </div>
-      
+
       <div className="mt-4 text-sm text-gray-500 text-center">
-        Position refers to where your website appears in Google search results (1 = top result)
+        Position refers to where your website appears in Google search results
+        (1 = top result)
       </div>
     </div>
   );

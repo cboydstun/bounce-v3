@@ -4,9 +4,18 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface CompetitorManagerProps {
   competitors: ManagedCompetitor[];
-  onAddCompetitor: (name: string, url: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
-  onUpdateCompetitor: (id: string, data: { name?: string; url?: string; notes?: string; isActive?: boolean }) => Promise<{ success: boolean; error?: string }>;
-  onDeleteCompetitor: (id: string) => Promise<{ success: boolean; error?: string }>;
+  onAddCompetitor: (
+    name: string,
+    url: string,
+    notes?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  onUpdateCompetitor: (
+    id: string,
+    data: { name?: string; url?: string; notes?: string; isActive?: boolean },
+  ) => Promise<{ success: boolean; error?: string }>;
+  onDeleteCompetitor: (
+    id: string,
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 export default function CompetitorManager({
@@ -15,7 +24,11 @@ export default function CompetitorManager({
   onUpdateCompetitor,
   onDeleteCompetitor,
 }: CompetitorManagerProps) {
-  const [newCompetitor, setNewCompetitor] = useState({ name: "", url: "", notes: "" });
+  const [newCompetitor, setNewCompetitor] = useState({
+    name: "",
+    url: "",
+    notes: "",
+  });
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -23,22 +36,22 @@ export default function CompetitorManager({
 
   const handleAddCompetitor = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newCompetitor.name.trim() || !newCompetitor.url.trim()) {
       setError("Name and URL are required");
       return;
     }
-    
+
     setIsAdding(true);
     setError(null);
-    
+
     try {
       const result = await onAddCompetitor(
         newCompetitor.name.trim(),
         newCompetitor.url.trim(),
-        newCompetitor.notes.trim() || undefined
+        newCompetitor.notes.trim() || undefined,
       );
-      
+
       if (result.success) {
         setNewCompetitor({ name: "", url: "", notes: "" });
       } else {
@@ -55,9 +68,9 @@ export default function CompetitorManager({
     if (!confirm("Are you sure you want to delete this competitor?")) {
       return;
     }
-    
+
     const result = await onDeleteCompetitor(id);
-    
+
     if (!result.success) {
       alert(result.error || "Failed to delete competitor");
     }
@@ -65,7 +78,7 @@ export default function CompetitorManager({
 
   const handleToggleCompetitor = async (id: string, isActive: boolean) => {
     const result = await onUpdateCompetitor(id, { isActive });
-    
+
     if (!result.success) {
       alert(result.error || "Failed to update competitor");
     }
@@ -90,13 +103,13 @@ export default function CompetitorManager({
       alert("Name and URL are required");
       return;
     }
-    
+
     const result = await onUpdateCompetitor(id, {
       name: editForm.name.trim(),
       url: editForm.url.trim(),
       notes: editForm.notes.trim() || undefined,
     });
-    
+
     if (result.success) {
       cancelEditing();
     } else {
@@ -118,50 +131,65 @@ export default function CompetitorManager({
         <form onSubmit={handleAddCompetitor}>
           <div className="space-y-3">
             <div>
-              <label htmlFor="competitor-name" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="competitor-name"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Name
               </label>
               <input
                 id="competitor-name"
                 type="text"
                 value={newCompetitor.name}
-                onChange={(e) => setNewCompetitor({ ...newCompetitor, name: e.target.value })}
+                onChange={(e) =>
+                  setNewCompetitor({ ...newCompetitor, name: e.target.value })
+                }
                 placeholder="Competitor name"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 disabled={isAdding}
               />
             </div>
-            
+
             <div>
-              <label htmlFor="competitor-url" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="competitor-url"
+                className="block text-sm font-medium text-gray-700"
+              >
                 URL
               </label>
               <input
                 id="competitor-url"
                 type="text"
                 value={newCompetitor.url}
-                onChange={(e) => setNewCompetitor({ ...newCompetitor, url: e.target.value })}
+                onChange={(e) =>
+                  setNewCompetitor({ ...newCompetitor, url: e.target.value })
+                }
                 placeholder="https://example.com"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 disabled={isAdding}
               />
             </div>
-            
+
             <div>
-              <label htmlFor="competitor-notes" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="competitor-notes"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Notes (optional)
               </label>
               <textarea
                 id="competitor-notes"
                 value={newCompetitor.notes}
-                onChange={(e) => setNewCompetitor({ ...newCompetitor, notes: e.target.value })}
+                onChange={(e) =>
+                  setNewCompetitor({ ...newCompetitor, notes: e.target.value })
+                }
                 placeholder="Additional notes"
                 rows={2}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 disabled={isAdding}
               />
             </div>
-            
+
             <button
               type="submit"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
@@ -177,10 +205,8 @@ export default function CompetitorManager({
               )}
             </button>
           </div>
-          
-          {error && (
-            <p className="mt-2 text-sm text-red-600">{error}</p>
-          )}
+
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         </form>
       </div>
 
@@ -204,11 +230,13 @@ export default function CompetitorManager({
                       <input
                         type="text"
                         value={editForm.name}
-                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, name: e.target.value })
+                        }
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
                         URL
@@ -216,23 +244,27 @@ export default function CompetitorManager({
                       <input
                         type="text"
                         value={editForm.url}
-                        onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, url: e.target.value })
+                        }
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
                         Notes
                       </label>
                       <textarea
                         value={editForm.notes}
-                        onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, notes: e.target.value })
+                        }
                         rows={2}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                       />
                     </div>
-                    
+
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleUpdateCompetitor(competitor._id)}
@@ -264,7 +296,12 @@ export default function CompetitorManager({
                       </div>
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => handleToggleCompetitor(competitor._id, !competitor.isActive)}
+                          onClick={() =>
+                            handleToggleCompetitor(
+                              competitor._id,
+                              !competitor.isActive,
+                            )
+                          }
                           className="text-gray-400 hover:text-gray-500"
                           title={competitor.isActive ? "Disable" : "Enable"}
                         >
@@ -307,9 +344,7 @@ export default function CompetitorManager({
                             viewBox="0 0 20 20"
                             fill="currentColor"
                           >
-                            <path
-                              d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-                            />
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                           </svg>
                         </button>
                         <button

@@ -11,7 +11,10 @@ export interface ISearchKeywordModel extends Model<ISearchKeywordDocument> {
   findActiveKeywords(): Promise<ISearchKeywordDocument[]>;
 }
 
-const SearchKeywordSchema = new Schema<ISearchKeywordDocument, ISearchKeywordModel>(
+const SearchKeywordSchema = new Schema<
+  ISearchKeywordDocument,
+  ISearchKeywordModel
+>(
   {
     keyword: {
       type: String,
@@ -24,13 +27,16 @@ const SearchKeywordSchema = new Schema<ISearchKeywordDocument, ISearchKeywordMod
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Static method to find active keywords
-SearchKeywordSchema.statics.findActiveKeywords = function() {
+SearchKeywordSchema.statics.findActiveKeywords = function () {
   return this.find({ isActive: true });
 };
 
-export default (mongoose.models.SearchKeyword as ISearchKeywordModel) || 
-  mongoose.model<ISearchKeywordDocument, ISearchKeywordModel>("SearchKeyword", SearchKeywordSchema);
+export default (mongoose.models.SearchKeyword as ISearchKeywordModel) ||
+  mongoose.model<ISearchKeywordDocument, ISearchKeywordModel>(
+    "SearchKeyword",
+    SearchKeywordSchema,
+  );

@@ -10,36 +10,33 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
  */
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: { id: string } },
 ) {
   try {
     await dbConnect();
     const session = await getServerSession(authOptions);
-    
+
     if (!session) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = context.params;
-    
+
     const competitor = await Competitor.findById(id);
-    
+
     if (!competitor) {
       return NextResponse.json(
         { message: "Competitor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    
+
     return NextResponse.json({ competitor });
   } catch (error) {
     console.error("Error fetching competitor:", error);
     return NextResponse.json(
       { message: "Failed to fetch competitor" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -50,51 +47,52 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: { id: string } },
 ) {
   try {
     await dbConnect();
     const session = await getServerSession(authOptions);
-    
+
     if (!session) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = context.params;
+    const params = await context.params;
+    const { id } = params;
     const { name, url, notes, isActive } = await req.json();
-    
+
     // Validate required fields
     if (name !== undefined && !name.trim()) {
       return NextResponse.json(
         { message: "Name cannot be empty" },
-        { status: 400 }
+        { status: 400 },
       );
     }
-    
+
     if (url !== undefined && !url.trim()) {
       return NextResponse.json(
         { message: "URL cannot be empty" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Prepare update data
     const updateData: any = {};
-    
+
     if (name !== undefined) updateData.name = name.trim();
-    
+
     if (url !== undefined) {
       // Normalize URL (ensure it has http/https prefix)
       let normalizedUrl = url.trim();
-      if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
-        normalizedUrl = 'https://' + normalizedUrl;
+      if (
+        !normalizedUrl.startsWith("http://") &&
+        !normalizedUrl.startsWith("https://")
+      ) {
+        normalizedUrl = "https://" + normalizedUrl;
       }
       updateData.url = normalizedUrl;
     }
-    
+
     if (notes !== undefined) updateData.notes = notes.trim();
     if (isActive !== undefined) updateData.isActive = isActive;
 
@@ -103,37 +101,37 @@ export async function PATCH(
       const existingCompetitor = await Competitor.findOne({
         _id: { $ne: id },
         name: updateData.name,
-        url: updateData.url
+        url: updateData.url,
       });
-      
+
       if (existingCompetitor) {
         return NextResponse.json(
-          { message: "Another competitor with this name and URL already exists" },
-          { status: 400 }
+          {
+            message: "Another competitor with this name and URL already exists",
+          },
+          { status: 400 },
         );
       }
     }
 
     // Update the competitor
-    const competitor = await Competitor.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true }
-    );
-    
+    const competitor = await Competitor.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+
     if (!competitor) {
       return NextResponse.json(
         { message: "Competitor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    
+
     return NextResponse.json({ competitor });
   } catch (error) {
     console.error("Error updating competitor:", error);
     return NextResponse.json(
       { message: "Failed to update competitor" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -144,36 +142,34 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: { id: string } },
 ) {
   try {
     await dbConnect();
     const session = await getServerSession(authOptions);
-    
+
     if (!session) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = context.params;
-    
+    const params = await context.params;
+    const { id } = params;
+
     const competitor = await Competitor.findByIdAndDelete(id);
-    
+
     if (!competitor) {
       return NextResponse.json(
         { message: "Competitor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    
+
     return NextResponse.json({ message: "Competitor deleted successfully" });
   } catch (error) {
     console.error("Error deleting competitor:", error);
     return NextResponse.json(
       { message: "Failed to delete competitor" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

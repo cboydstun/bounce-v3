@@ -8,7 +8,9 @@ interface RankingHistoryProps {
 export default function RankingHistory({ rankings }: RankingHistoryProps) {
   // Sort rankings by date
   const sortedRankings = useMemo(() => {
-    return [...rankings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return [...rankings].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
   }, [rankings]);
 
   // Prepare data for chart
@@ -17,9 +19,9 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
       const date = new Date(ranking.date);
       return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
     });
-    
+
     const positions = sortedRankings.map((ranking) => ranking.position);
-    
+
     return { dates, positions };
   }, [sortedRankings]);
 
@@ -31,7 +33,8 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
   const graphHeight = chartHeight - padding.top - padding.bottom;
 
   // Calculate scales
-  const xScale = (index: number) => (graphWidth * index) / Math.max(chartData.dates.length - 1, 1);
+  const xScale = (index: number) =>
+    (graphWidth * index) / Math.max(chartData.dates.length - 1, 1);
   const yScale = (position: number) => {
     const maxPosition = Math.max(...chartData.positions, 10);
     // Invert the scale since lower position numbers are better
@@ -39,25 +42,29 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
   };
 
   // Generate path for the line
-  const linePath = chartData.positions.length > 0
-    ? chartData.positions
-        .map((position, i) => {
-          const x = xScale(i);
-          const y = yScale(position);
-          return `${i === 0 ? "M" : "L"} ${x} ${y}`;
-        })
-        .join(" ")
-    : "";
+  const linePath =
+    chartData.positions.length > 0
+      ? chartData.positions
+          .map((position, i) => {
+            const x = xScale(i);
+            const y = yScale(position);
+            return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+          })
+          .join(" ")
+      : "";
 
   // Generate area under the line
-  const areaPath = chartData.positions.length > 0
-    ? `${linePath} L ${xScale(chartData.positions.length - 1)} ${graphHeight} L ${xScale(0)} ${graphHeight} Z`
-    : "";
+  const areaPath =
+    chartData.positions.length > 0
+      ? `${linePath} L ${xScale(chartData.positions.length - 1)} ${graphHeight} L ${xScale(0)} ${graphHeight} Z`
+      : "";
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">Ranking History</h3>
-      
+      <h3 className="text-lg font-medium text-gray-900 mb-4">
+        Ranking History
+      </h3>
+
       {rankings.length === 0 ? (
         <div className="text-center text-gray-500 py-8">
           No ranking data available
@@ -77,7 +84,7 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
               stroke="none"
               transform={`translate(${padding.left}, ${padding.top})`}
             />
-            
+
             {/* Line */}
             <path
               d={linePath}
@@ -86,7 +93,7 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
               strokeWidth="2"
               transform={`translate(${padding.left}, ${padding.top})`}
             />
-            
+
             {/* Data points */}
             {chartData.positions.map((position, i) => (
               <circle
@@ -97,7 +104,7 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
                 fill="#4F46E5"
               />
             ))}
-            
+
             {/* X-axis */}
             <line
               x1={padding.left}
@@ -106,13 +113,13 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
               y2={graphHeight + padding.top}
               stroke="#E5E7EB"
             />
-            
+
             {/* X-axis labels (dates) */}
             {chartData.dates.map((date, i) => {
               // Only show every nth label to avoid overcrowding
               const n = Math.ceil(chartData.dates.length / 10);
               if (i % n !== 0 && i !== chartData.dates.length - 1) return null;
-              
+
               return (
                 <text
                   key={i}
@@ -126,7 +133,7 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
                 </text>
               );
             })}
-            
+
             {/* Y-axis */}
             <line
               x1={padding.left}
@@ -135,7 +142,7 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
               y2={graphHeight + padding.top}
               stroke="#E5E7EB"
             />
-            
+
             {/* Y-axis labels (positions) */}
             {[1, 3, 5, 10].map((position) => (
               <g key={position}>
@@ -158,7 +165,7 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
                 />
               </g>
             ))}
-            
+
             {/* Axis labels */}
             <text
               x={chartWidth / 2}
@@ -182,15 +189,17 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
           </svg>
         </div>
       )}
-      
+
       {/* Legend */}
       <div className="mt-4 flex items-center justify-center">
         <div className="flex items-center">
           <div className="w-3 h-3 bg-indigo-600 rounded-full mr-2"></div>
-          <span className="text-sm text-gray-600">Position in search results</span>
+          <span className="text-sm text-gray-600">
+            Position in search results
+          </span>
         </div>
       </div>
-      
+
       {/* Note */}
       <div className="mt-2 text-center text-xs text-gray-500">
         Lower position numbers are better (1 = top result)

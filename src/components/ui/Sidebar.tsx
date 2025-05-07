@@ -41,7 +41,11 @@ const navItems: NavItem[] = [
   { name: "Routes", href: "/admin/routes", icon: MapIcon },
   { name: "Reviews", href: "/admin/reviews", icon: StarIcon },
   { name: "Performance", href: "/admin/performance", icon: ChartBarIcon },
-  { name: "Search Rankings", href: "/admin/search-rankings", icon: MagnifyingGlassIcon },
+  {
+    name: "Search Rankings",
+    href: "/admin/search-rankings",
+    icon: MagnifyingGlassIcon,
+  },
   { name: "Competitors", href: "/admin/competitors", icon: UserGroupIcon },
   { name: "Visitors", href: "/admin/visitors", icon: UsersIcon },
   { name: "Promo Optins", href: "/admin/promo-optins", icon: TagIcon },

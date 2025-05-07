@@ -35,11 +35,17 @@ export interface ISearchRankingDocument extends Document {
 
 export interface ISearchRankingModel extends Model<ISearchRankingDocument> {
   findByKeywordId(keywordId: string): Promise<ISearchRankingDocument[]>;
-  findByDateRange(startDate: Date, endDate: Date): Promise<ISearchRankingDocument[]>;
+  findByDateRange(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<ISearchRankingDocument[]>;
   findLatestRankings(): Promise<ISearchRankingDocument[]>;
 }
 
-const SearchRankingSchema = new Schema<ISearchRankingDocument, ISearchRankingModel>(
+const SearchRankingSchema = new Schema<
+  ISearchRankingDocument,
+  ISearchRankingModel
+>(
   {
     keywordId: {
       type: Schema.Types.ObjectId,
@@ -67,15 +73,18 @@ const SearchRankingSchema = new Schema<ISearchRankingDocument, ISearchRankingMod
     },
     competitors: [CompetitorSchema],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Static methods
-SearchRankingSchema.statics.findByKeywordId = function(keywordId: string) {
+SearchRankingSchema.statics.findByKeywordId = function (keywordId: string) {
   return this.find({ keywordId }).sort({ date: -1 });
 };
 
-SearchRankingSchema.statics.findByDateRange = function(startDate: Date, endDate: Date) {
+SearchRankingSchema.statics.findByDateRange = function (
+  startDate: Date,
+  endDate: Date,
+) {
   return this.find({
     date: {
       $gte: startDate,
@@ -84,20 +93,20 @@ SearchRankingSchema.statics.findByDateRange = function(startDate: Date, endDate:
   }).sort({ date: -1 });
 };
 
-SearchRankingSchema.statics.findLatestRankings = function() {
+SearchRankingSchema.statics.findLatestRankings = function () {
   return this.aggregate([
     {
-      $sort: { date: -1 }
+      $sort: { date: -1 },
     },
     {
       $group: {
         _id: "$keywordId",
-        doc: { $first: "$$ROOT" }
-      }
+        doc: { $first: "$$ROOT" },
+      },
     },
     {
-      $replaceRoot: { newRoot: "$doc" }
-    }
+      $replaceRoot: { newRoot: "$doc" },
+    },
   ]);
 };
 
@@ -105,5 +114,8 @@ SearchRankingSchema.statics.findLatestRankings = function() {
 SearchRankingSchema.index({ keywordId: 1, date: -1 });
 SearchRankingSchema.index({ keyword: 1, date: -1 });
 
-export default (mongoose.models.SearchRanking as ISearchRankingModel) || 
-  mongoose.model<ISearchRankingDocument, ISearchRankingModel>("SearchRanking", SearchRankingSchema);
+export default (mongoose.models.SearchRanking as ISearchRankingModel) ||
+  mongoose.model<ISearchRankingDocument, ISearchRankingModel>(
+    "SearchRanking",
+    SearchRankingSchema,
+  );

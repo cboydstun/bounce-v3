@@ -26,19 +26,22 @@ interface RankingResult {
  */
 export async function checkKeywordRanking(
   keyword: string,
-  targetDomain: string
+  targetDomain: string,
 ): Promise<RankingResult> {
   try {
     const apiKey = process.env.GOOGLE_API_KEY;
     const cx = process.env.GOOGLE_CX;
-    
+
     if (!apiKey || !cx) {
       throw new Error("Google API credentials are not configured");
     }
 
     // Normalize the target domain for comparison
-    const normalizedTargetDomain = targetDomain.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
-    
+    const normalizedTargetDomain = targetDomain
+      .toLowerCase()
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "");
+
     // Make request to Google Custom Search API
     const response = await axios.get(
       `https://www.googleapis.com/customsearch/v1`,
@@ -49,7 +52,7 @@ export async function checkKeywordRanking(
           q: keyword,
           num: 10, // Maximum results per page
         },
-      }
+      },
     );
 
     const items = response.data.items || [];
@@ -63,7 +66,7 @@ export async function checkKeywordRanking(
     // Find our website's position
     let ourPosition = -1;
     let ourUrl = "";
-    
+
     const competitors: Array<{
       position: number;
       title: string;
@@ -73,8 +76,11 @@ export async function checkKeywordRanking(
 
     results.forEach((result) => {
       // Normalize the result URL for comparison
-      const normalizedResultUrl = result.url.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
-      
+      const normalizedResultUrl = result.url
+        .toLowerCase()
+        .replace(/^https?:\/\//, "")
+        .replace(/^www\./, "");
+
       if (normalizedResultUrl.includes(normalizedTargetDomain)) {
         ourPosition = result.position;
         ourUrl = result.url;
@@ -87,6 +93,14 @@ export async function checkKeywordRanking(
         });
       }
     });
+
+    // If our website is not found in the results, use a default URL
+    if (ourPosition === -1 || !ourUrl) {
+      // Ensure the target domain has a protocol
+      ourUrl = targetDomain.startsWith("http")
+        ? targetDomain
+        : `https://${targetDomain}`;
+    }
 
     return {
       position: ourPosition,
