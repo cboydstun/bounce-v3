@@ -3,12 +3,14 @@ import dbConnect from "@/lib/db/mongoose";
 import Product from "@/models/Product";
 import Contact from "@/models/Contact";
 import Settings from "@/models/Settings";
+import { formatDateCT, parseDateCT } from "@/utils/dateUtils";
 
 /**
  * POST /api/v1/products/batch-availability
  * Check availability for multiple products on a specific date
  * Request body:
  * - productIds: Array of product IDs to check
+ * - productSlugs: Array of product slugs to check (alternative to productIds)
  * - date: The date to check availability for (YYYY-MM-DD)
  */
 export async function POST(request: NextRequest) {
@@ -16,11 +18,19 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     // Parse request body
-    const { productIds, date: dateStr } = await request.json();
+    const { productIds, productSlugs, date: dateStr } = await request.json();
 
-    if (!productIds || !Array.isArray(productIds) || !dateStr) {
+    // Validate that either productIds or productSlugs is provided
+    if (
+      ((!productIds || !Array.isArray(productIds)) &&
+        (!productSlugs || !Array.isArray(productSlugs))) ||
+      !dateStr
+    ) {
       return NextResponse.json(
-        { error: "Product IDs array and date are required" },
+        {
+          error:
+            "Either product IDs or product slugs array and date are required",
+        },
         { status: 400 },
       );
     }
@@ -34,8 +44,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find all products in a single query
-    const products = await Product.find({ _id: { $in: productIds } }).lean();
+    // Find all products in a single query based on either IDs or slugs
+    let products;
+    if (productIds && productIds.length > 0) {
+      products = await Product.find({ _id: { $in: productIds } }).lean();
+    } else if (productSlugs && productSlugs.length > 0) {
+      products = await Product.find({ slug: { $in: productSlugs } }).lean();
+    } else {
+      return NextResponse.json(
+        { error: "No valid product identifiers provided" },
+        { status: 400 },
+      );
+    }
 
     // Type assertion for products
     interface ProductDocument {
@@ -78,13 +98,29 @@ export async function POST(request: NextRequest) {
     const settings = await Settings.getSettings();
     const maxDailyBookings = settings.maxDailyBookings;
 
-    // Check if the selected date is a blackout date
-    const selectedDate = new Date(date);
-    selectedDate.setHours(0, 0, 0, 0);
+    // Check if the selected date is a blackout date using our centralized date utility
+    // Parse the input date string to a Date object in Central Time
+    const selectedDateCT = parseDateCT(dateStr);
 
-    const isBlackoutDate = settings.blackoutDates.some(
-      (blackoutDate: Date) => blackoutDate.getTime() === selectedDate.getTime(),
+    // Format the selected date in Central Time as YYYY-MM-DD for comparison
+    const selectedDateString = formatDateCT(selectedDateCT);
+
+    // Log for debugging
+    console.log(
+      `Checking if ${selectedDateString} (Central Time) is a blackout date`,
     );
+
+    // Convert all blackout dates to Central Time strings for comparison using our utility
+    const blackoutDatesCT = settings.blackoutDates.map((d: Date) =>
+      formatDateCT(new Date(d)),
+    );
+
+    console.log(`Available blackout dates (Central Time):`, blackoutDatesCT);
+
+    // Use string comparison in Central Time
+    const isBlackoutDate = blackoutDatesCT.includes(selectedDateString);
+
+    console.log(`Is ${selectedDateString} a blackout date? ${isBlackoutDate}`);
 
     // If it's a blackout date, mark all products as unavailable
     if (isBlackoutDate) {

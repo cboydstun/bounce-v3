@@ -10,6 +10,11 @@ import { Review } from "@/types/review";
 import RevenueChart from "@/components/analytics/RevenueChart";
 import BookingsTrend from "@/components/analytics/BookingsTrend";
 import ProductPopularity from "@/components/analytics/ProductPopularity";
+import {
+  formatDateCT,
+  parseDateCT,
+  formatDisplayDateCT,
+} from "@/utils/dateUtils";
 
 interface ReviewStats {
   averageRating: number;
@@ -47,14 +52,9 @@ export default function AdminDashboard() {
         setMaxDailyBookings(settingsRes.data.maxDailyBookings);
 
         // Format blackout dates as YYYY-MM-DD strings for the date input
-        // Use the date directly from the ISO string to avoid timezone issues
+        // Use our centralized date utility to ensure consistent formatting
         const formattedDates = settingsRes.data.blackoutDates.map(
-          (date: string) => {
-            // Parse the date and ensure we're using the date in the correct timezone
-            const parsedDate = new Date(date);
-            // Format as YYYY-MM-DD using the date in the ISO string
-            return parsedDate.toISOString().split("T")[0];
-          },
+          (date: string) => formatDateCT(new Date(date)),
         );
         setBlackoutDates(formattedDates);
       } catch (error) {
@@ -395,20 +395,8 @@ export default function AdminDashboard() {
                       className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-md"
                     >
                       <span className="text-sm">
-                        {/* Use the date string directly to create a date object in the local timezone */}
-                        {(() => {
-                          const [year, month, day] = date
-                            .split("-")
-                            .map(Number);
-                          // Create date using local timezone (not UTC)
-                          const displayDate = new Date(year, month - 1, day);
-                          return displayDate.toLocaleDateString("en-US", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          });
-                        })()}
+                        {/* Use our centralized date utility for consistent display */}
+                        {formatDisplayDateCT(parseDateCT(date))}
                       </span>
                       <button
                         type="button"

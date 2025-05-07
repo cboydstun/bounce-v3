@@ -464,6 +464,45 @@ export const checkProductAvailability = async (
   return response.data;
 };
 
+/**
+ * Check availability for a product on a specific date using the batch endpoint
+ * @param productSlug The slug of the product to check
+ * @param date The date to check availability for in YYYY-MM-DD format (Central Time)
+ * @returns Availability information including metadata about the date
+ */
+export const checkBatchProductAvailability = async (
+  productSlug: string,
+  date: string,
+): Promise<{
+  [key: string]:
+    | {
+        available: boolean;
+        product: {
+          name: string;
+          slug: string;
+          status: string;
+        };
+        reason?: string;
+      }
+    | {
+        isBlackoutDate: boolean;
+        dateAtCapacity: boolean;
+        totalBookings: number;
+        maxBookings: number;
+      };
+}> => {
+  console.log(
+    `Checking availability for product ${productSlug} on date ${date} (Central Time)`,
+  );
+
+  const response = await api.post("/api/v1/products/batch-availability", {
+    productSlugs: [productSlug],
+    date,
+  });
+
+  return response.data;
+};
+
 // Promo Opt-ins API calls
 export const getPromoOptins = async (params?: {
   email?: string;

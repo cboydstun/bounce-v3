@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db/mongoose";
 import Settings from "@/models/Settings";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { parseDateCT, formatDateCT } from "@/utils/dateUtils";
 
 // GET /api/v1/settings
 export async function GET(request: NextRequest) {
@@ -67,41 +68,39 @@ export async function PATCH(request: NextRequest) {
 
     // Handle blackout dates operations
     if (data.addBlackoutDate) {
-      // Add a new blackout date
-      // Use UTC date to avoid timezone issues
-      const [year, month, day] = data.addBlackoutDate.split("-").map(Number);
-      const newDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+      // Add a new blackout date using our centralized date utility
+      const centralTimeDate = parseDateCT(data.addBlackoutDate);
 
-      if (!isNaN(newDate.getTime())) {
+      if (!isNaN(centralTimeDate.getTime())) {
         console.log(
-          `Adding blackout date: ${data.addBlackoutDate}, UTC date: ${newDate.toISOString()}`,
+          `Adding blackout date: ${data.addBlackoutDate}, Central Time date: ${centralTimeDate.toString()}`,
         );
 
-        // Check if date already exists - compare by YYYY-MM-DD string to avoid timezone issues
+        // Check if date already exists - compare by YYYY-MM-DD string in Central Time
         const dateString = data.addBlackoutDate;
         const dateExists =
           Array.isArray(settings.blackoutDates) &&
           settings.blackoutDates.some((date: Date) => {
-            const existingDateString = new Date(date)
-              .toISOString()
-              .split("T")[0];
+            // Convert existing date to Central Time string format (YYYY-MM-DD)
+            const existingDateString = formatDateCT(new Date(date));
             return existingDateString === dateString;
           });
 
         if (!dateExists) {
-          settings.blackoutDates.push(newDate);
+          settings.blackoutDates.push(centralTimeDate);
         }
       }
     }
 
     if (data.removeBlackoutDate) {
       // Remove a blackout date
-      // Use the date string for comparison to avoid timezone issues
+      // Use the date string for comparison in Central Time
       const dateString = data.removeBlackoutDate;
 
       if (Array.isArray(settings.blackoutDates)) {
         settings.blackoutDates = settings.blackoutDates.filter((date: Date) => {
-          const existingDateString = new Date(date).toISOString().split("T")[0];
+          // Convert existing date to Central Time string format (YYYY-MM-DD)
+          const existingDateString = formatDateCT(new Date(date));
           return existingDateString !== dateString;
         });
       }

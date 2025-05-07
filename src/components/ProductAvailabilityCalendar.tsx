@@ -3,11 +3,24 @@
 import { useState, useEffect } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { checkProductAvailability } from "@/utils/api";
+import {
+  checkProductAvailability,
+  checkBatchProductAvailability,
+} from "@/utils/api";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
+import {
+  formatDateCT,
+  parseDateCT,
+  getFirstDayOfMonthCT,
+  getLastDayOfMonthCT,
+  debugDate,
+  CENTRAL_TIMEZONE,
+} from "@/utils/dateUtils";
 
-// Create a date localizer
-const moment = require("moment");
+// Create a date localizer with Central Time zone
+const moment = require("moment-timezone");
+// Set the default timezone to Central Time
+moment.tz.setDefault(CENTRAL_TIMEZONE);
 moment.parseZone = true;
 const localizer = momentLocalizer(moment);
 
@@ -18,6 +31,8 @@ interface AvailabilityEvent {
   end: Date;
   allDay: boolean;
   available: boolean;
+  reason?: string;
+  isBlackoutDate?: boolean;
 }
 
 interface ProductAvailabilityCalendarProps {
@@ -34,13 +49,33 @@ export default function ProductAvailabilityCalendar({
   const [error, setError] = useState<string | null>(null);
   const [date, setDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [checkedDates, setCheckedDates] = useState<Record<string, boolean>>({});
+  const [checkedDates, setCheckedDates] = useState<
+    Record<
+      string,
+      {
+        available: boolean;
+        reason?: string;
+        isBlackoutDate?: boolean;
+      }
+    >
+  >({});
   const [visibleDates, setVisibleDates] = useState<Date[]>([]);
+
+  // We're now using the centralized date utility functions from dateUtils.ts
 
   // Calculate visible dates for the current month view
   useEffect(() => {
-    const start = new Date(date.getFullYear(), date.getMonth(), 1);
-    const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    // Create dates in Central Time using our utility functions
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // Month is 1-12 in our utility
+
+    // First day of month in Central Time
+    const start = getFirstDayOfMonthCT(year, month);
+    // Last day of month in Central Time
+    const end = getLastDayOfMonthCT(year, month);
+
+    debugDate("First day of month", start);
+    debugDate("Last day of month", end);
 
     const dates: Date[] = [];
     const currentDate = new Date(start);
@@ -52,6 +87,14 @@ export default function ProductAvailabilityCalendar({
 
     setVisibleDates(dates);
     setIsLoading(true);
+
+    console.log(
+      `Calculating visible dates for ${year}-${month} in Central Time`,
+    );
+    console.log(`First date in Central Time: ${formatDateCT(dates[0])}`);
+    console.log(
+      `Last date in Central Time: ${formatDateCT(dates[dates.length - 1])}`,
+    );
   }, [date]);
 
   // Check availability for visible dates
@@ -59,7 +102,6 @@ export default function ProductAvailabilityCalendar({
     if (visibleDates.length === 0) return;
 
     const newEvents: AvailabilityEvent[] = [];
-    let pendingChecks = 0;
     let hasError = false;
 
     // Start with loading state
@@ -68,24 +110,32 @@ export default function ProductAvailabilityCalendar({
 
     // Filter dates that haven't been checked yet
     const uncheckedDates = visibleDates.filter((date) => {
-      const dateStr = date.toISOString().split("T")[0];
+      const dateStr = formatDateCT(date);
       return checkedDates[dateStr] === undefined;
     });
 
     // If all dates are already checked, just create events from cache
     if (uncheckedDates.length === 0) {
       visibleDates.forEach((date) => {
-        const dateStr = date.toISOString().split("T")[0];
-        const available = checkedDates[dateStr];
+        const dateStr = formatDateCT(date);
+        const dateInfo = checkedDates[dateStr];
 
-        newEvents.push({
-          id: dateStr,
-          title: available ? "Available" : "Unavailable",
-          start: date,
-          end: date,
-          allDay: true,
-          available,
-        });
+        if (dateInfo) {
+          newEvents.push({
+            id: dateStr,
+            title: dateInfo.available
+              ? "Available"
+              : dateInfo.isBlackoutDate
+                ? "Blackout Date"
+                : "Unavailable",
+            start: date,
+            end: date,
+            allDay: true,
+            available: dateInfo.available,
+            reason: dateInfo.reason,
+            isBlackoutDate: dateInfo.isBlackoutDate,
+          });
+        }
       });
 
       setEvents(
@@ -95,72 +145,146 @@ export default function ProductAvailabilityCalendar({
       return;
     }
 
-    // Prepare to collect all new availability data
-    const newCheckedDates: Record<string, boolean> = {};
-    pendingChecks = uncheckedDates.length;
+    // Check each unchecked date one at a time using the batch endpoint
+    // This is still checking one date at a time, but using the batch endpoint
+    // which provides more metadata about the date
+    const checkDates = async () => {
+      const newCheckedDates: Record<
+        string,
+        {
+          available: boolean;
+          reason?: string;
+          isBlackoutDate?: boolean;
+        }
+      > = {};
 
-    // Check each unchecked date
-    uncheckedDates.forEach(async (date) => {
-      const dateStr = date.toISOString().split("T")[0];
+      for (const date of uncheckedDates) {
+        const dateStr = formatDateCT(date);
 
-      try {
-        // Check availability for this date
-        const result = await checkProductAvailability(productSlug, dateStr);
+        try {
+          // Check availability for this date using the batch endpoint
+          const result = await checkBatchProductAvailability(
+            productSlug,
+            dateStr,
+          );
 
-        // Store the result (but don't update state yet)
-        newCheckedDates[dateStr] = result.available;
-      } catch (err) {
-        console.error(`Error checking availability for ${dateStr}:`, err);
-        hasError = true;
-      } finally {
-        pendingChecks--;
+          // The result contains data for our product ID and metadata about the date
+          // We need to find the product result by looking for an entry with our slug
+          // The response keys are MongoDB ObjectIDs, so we need to find the right entry
+          const productEntries = Object.entries(result).filter(
+            ([key, value]) =>
+              key !== "_meta" &&
+              "product" in value &&
+              value.product.slug === productSlug,
+          );
 
-        // When all checks are complete, update state once
-        if (pendingChecks === 0) {
-          // Update checkedDates state once with all new data
-          setCheckedDates((prev) => ({
-            ...prev,
-            ...newCheckedDates,
-          }));
+          const productResult =
+            productEntries.length > 0 ? productEntries[0][1] : null;
+          const meta = result["_meta"];
 
-          // Create events from both cached and new data
-          visibleDates.forEach((date) => {
-            const dateStr = date.toISOString().split("T")[0];
-            const available =
-              newCheckedDates[dateStr] !== undefined
-                ? newCheckedDates[dateStr]
-                : checkedDates[dateStr];
-
-            if (available !== undefined) {
-              newEvents.push({
-                id: dateStr,
-                title: available ? "Available" : "Unavailable",
-                start: date,
-                end: date,
-                allDay: true,
-                available,
-              });
-            }
+          console.log(`Date ${dateStr} result:`, {
+            productResult,
+            meta,
+            isBlackoutDate:
+              meta && "isBlackoutDate" in meta ? meta.isBlackoutDate : false,
           });
 
-          if (hasError) {
-            setError(
-              "Failed to load some availability data. Please try again.",
-            );
-          }
+          if (productResult && "available" in productResult) {
+            // Store the result with additional metadata
+            newCheckedDates[dateStr] = {
+              available: productResult.available,
+              reason: productResult.reason,
+              isBlackoutDate:
+                meta && "isBlackoutDate" in meta ? meta.isBlackoutDate : false,
+            };
 
-          setEvents(
-            newEvents.sort((a, b) => a.start.getTime() - b.start.getTime()),
-          );
-          setIsLoading(false);
+            // Log detailed information about unavailable dates
+            if (!productResult.available) {
+              console.log(`Date ${dateStr} is unavailable:`, {
+                reason: productResult.reason,
+                isBlackoutDate:
+                  meta && "isBlackoutDate" in meta
+                    ? meta.isBlackoutDate
+                    : false,
+              });
+            }
+          }
+        } catch (err) {
+          console.error(`Error checking availability for ${dateStr}:`, err);
+          hasError = true;
         }
       }
-    });
-  }, [visibleDates, productSlug]); // Remove checkedDates from dependencies
+
+      // Update checkedDates state once with all new data
+      setCheckedDates((prev) => ({
+        ...prev,
+        ...newCheckedDates,
+      }));
+
+      // Create events from both cached and new data
+      visibleDates.forEach((date) => {
+        const dateStr = formatDateCT(date);
+        const dateInfo =
+          newCheckedDates[dateStr] !== undefined
+            ? newCheckedDates[dateStr]
+            : checkedDates[dateStr];
+
+        if (dateInfo) {
+          // Create a new date object for the event to ensure it's properly set
+          // This is crucial for correct date display in the calendar
+          const eventDate = new Date(date);
+
+          const title = dateInfo.isBlackoutDate
+            ? "Blackout Date"
+            : dateInfo.available
+              ? "Available"
+              : "Unavailable";
+
+          console.log(`Creating event for ${dateStr}:`, {
+            date: eventDate.toString(),
+            isBlackoutDate: dateInfo.isBlackoutDate,
+            available: dateInfo.available,
+          });
+
+          newEvents.push({
+            id: dateStr,
+            title,
+            start: eventDate,
+            end: eventDate,
+            allDay: true,
+            available: dateInfo.available,
+            reason: dateInfo.reason,
+            isBlackoutDate: dateInfo.isBlackoutDate,
+          });
+        }
+      });
+
+      if (hasError) {
+        setError("Failed to load some availability data. Please try again.");
+      }
+
+      setEvents(
+        newEvents.sort((a, b) => a.start.getTime() - b.start.getTime()),
+      );
+      setIsLoading(false);
+    };
+
+    // Start the checking process
+    checkDates();
+  }, [visibleDates, productSlug, checkedDates]);
 
   // Custom event styling based on availability
   const eventStyleGetter = (event: AvailabilityEvent) => {
-    const backgroundColor = event.available ? "#10B981" : "#EF4444"; // Green if available, red if not
+    // Different colors for different unavailability reasons
+    let backgroundColor;
+    if (event.available) {
+      backgroundColor = "#10B981"; // Green if available
+    } else if (event.isBlackoutDate) {
+      backgroundColor = "#6B21A8"; // Purple for blackout dates
+    } else {
+      backgroundColor = "#EF4444"; // Red for other unavailability reasons
+    }
+
     const textColor = "white";
 
     return {
@@ -177,18 +301,26 @@ export default function ProductAvailabilityCalendar({
 
   // Custom day styling to show availability
   const dayPropGetter = (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = formatDateCT(date);
     const event = events.find((e) => e.id === dateStr);
 
     if (!event) return {};
 
+    // Apply different styling based on availability and blackout status
+    let className = "unavailable-day";
+    let backgroundColor = "rgba(239, 68, 68, 0.1)"; // Default red for unavailable
+
+    if (event.available) {
+      className = "available-day";
+      backgroundColor = "rgba(16, 185, 129, 0.1)"; // Green for available
+    } else if (event.isBlackoutDate) {
+      className = "blackout-day";
+      backgroundColor = "rgba(107, 33, 168, 0.1)"; // Purple for blackout dates
+    }
+
     return {
-      className: event.available ? "available-day" : "unavailable-day",
-      style: {
-        backgroundColor: event.available
-          ? "rgba(16, 185, 129, 0.1)"
-          : "rgba(239, 68, 68, 0.1)",
-      },
+      className,
+      style: { backgroundColor },
     };
   };
 
@@ -253,6 +385,10 @@ export default function ProductAvailabilityCalendar({
               <div className="w-3 h-3 bg-red-500 rounded-full mr-1"></div>
               <span className="text-xs">Unavailable</span>
             </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-purple-700 rounded-full mr-1"></div>
+              <span className="text-xs">Blackout Date</span>
+            </div>
           </div>
         </span>
       </div>
@@ -303,28 +439,36 @@ export default function ProductAvailabilityCalendar({
 
       {selectedDate && (
         <div
-          className={`mt-4 p-4 rounded-lg ${
-            events.find(
-              (e) => e.id === selectedDate.toISOString().split("T")[0],
-            )?.available
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
+          className={`mt-4 p-4 rounded-lg ${(() => {
+            const event = events.find(
+              (e) => e.id === formatDateCT(selectedDate),
+            );
+            if (!event) return "bg-gray-100 text-gray-700";
+            if (event.available) return "bg-green-100 text-green-700";
+            if (event.isBlackoutDate) return "bg-purple-100 text-purple-700";
+            return "bg-red-100 text-red-700";
+          })()}`}
         >
           <p className="font-medium">
             {productName} is{" "}
-            {events.find(
-              (e) => e.id === selectedDate.toISOString().split("T")[0],
-            )?.available
+            {events.find((e) => e.id === formatDateCT(selectedDate))?.available
               ? "available"
               : "not available"}{" "}
             on {selectedDate.toLocaleDateString()}.
           </p>
-          {!events.find(
-            (e) => e.id === selectedDate.toISOString().split("T")[0],
-          )?.available && (
+          {!events.find((e) => e.id === formatDateCT(selectedDate))
+            ?.available && (
             <p className="text-sm mt-1">
-              This date is already booked or the product is unavailable.
+              {(() => {
+                const event = events.find(
+                  (e) => e.id === formatDateCT(selectedDate),
+                );
+                if (!event) return "Information not available for this date.";
+                if (event.isBlackoutDate)
+                  return "This date is marked as a blackout date and is unavailable for booking.";
+                if (event.reason) return event.reason;
+                return "This date is already booked or the product is unavailable.";
+              })()}
             </p>
           )}
         </div>
@@ -336,6 +480,12 @@ export default function ProductAvailabilityCalendar({
         }
         .unavailable-day {
           background-color: rgba(239, 68, 68, 0.1);
+        }
+        .blackout-day {
+          background-color: rgba(107, 33, 168, 0.1);
+        }
+        .rbc-event.rbc-selected {
+          background-color: #4338ca;
         }
       `}</style>
     </div>

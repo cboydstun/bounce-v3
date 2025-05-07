@@ -7,6 +7,7 @@ import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getOrders, deleteOrder } from "@/utils/api";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
+import { formatDisplayDateCT } from "@/utils/dateUtils";
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -107,10 +108,10 @@ export default function OrdersPage() {
     }, 0);
   };
 
-  // Format date for display
+  // Format date for display using our centralized date utility
   const formatDate = (dateString: string | Date) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString();
+    return formatDisplayDateCT(date);
   };
 
   // Handle order deletion

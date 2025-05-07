@@ -4,6 +4,7 @@ import Order from "@/models/Order";
 import Contact from "@/models/Contact";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { parseDateCT, formatDateCT } from "@/utils/dateUtils";
 
 /**
  * GET endpoint to list all orders
@@ -36,16 +37,16 @@ export async function GET(request: NextRequest) {
     // Build query
     const query: Record<string, unknown> = {};
 
-    // Date range filter for createdAt
+    // Date range filter for createdAt using Central Time
     if (startDate && endDate) {
       query.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
+        $gte: parseDateCT(startDate),
+        $lte: parseDateCT(endDate),
       };
     } else if (startDate) {
-      query.createdAt = { $gte: new Date(startDate) };
+      query.createdAt = { $gte: parseDateCT(startDate) };
     } else if (endDate) {
-      query.createdAt = { $lte: new Date(endDate) };
+      query.createdAt = { $lte: parseDateCT(endDate) };
     }
 
     // Filter by status
