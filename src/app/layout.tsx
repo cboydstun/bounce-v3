@@ -95,9 +95,6 @@ export const metadata: Metadata = {
     creator: "@satxbounce",
     site: "@satxbounce",
   },
-  verification: {
-    google: "your-google-verification-code", // You'll need to add your actual Google verification code
-  },
   appleWebApp: {
     title: "SATX Bounce",
     statusBarStyle: "black-translucent",
