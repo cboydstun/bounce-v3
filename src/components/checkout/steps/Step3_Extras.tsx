@@ -643,7 +643,7 @@ const Step3_Extras: React.FC<Step3Props> = ({ state, dispatch }) => {
         <div className="border-t border-gray-200 my-2"></div>
         <div className="flex justify-between items-center font-semibold">
           <span>Subtotal:</span>
-          <span>${state.subtotal.toFixed(2)}</span>
+          <span>${(state.subtotal - 20).toFixed(2)}</span>
         </div>
       </div>
 
