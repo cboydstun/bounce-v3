@@ -213,6 +213,7 @@ export async function POST(request: NextRequest) {
         ],
         subject: `New Order: ${order.orderNumber}`,
         text: generateNewOrderEmailAdmin(order),
+        html: generateNewOrderEmailAdmin(order),
       });
     } catch (emailError) {
       console.error("Error sending admin notification email:", emailError);
@@ -227,6 +228,7 @@ export async function POST(request: NextRequest) {
           to: order.customerEmail,
           subject: `Your Order Confirmation: ${order.orderNumber}`,
           text: generateNewOrderEmailCustomer(order),
+          html: generateNewOrderEmailCustomer(order),
         });
       } catch (emailError) {
         console.error("Error sending customer confirmation email:", emailError);

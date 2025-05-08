@@ -7,27 +7,150 @@ import { formatDateCT } from "@/utils/dateUtils";
  * @returns Formatted email text
  */
 export function generateNewOrderEmailAdmin(order: IOrderDocument): string {
+  // Create a simple HTML version for admin emails
+  const itemsList = order.items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding: 4px 0;">- ${item.quantity}x ${item.name}: $${item.totalPrice.toFixed(2)}</td>
+        </tr>`,
+    )
+    .join("");
+
   return `
-    New Order Received: ${order.orderNumber}
-    
-    Customer: ${order.customerName || "N/A"}
-    Email: ${order.customerEmail || "N/A"}
-    Phone: ${order.customerPhone || "N/A"}
-    
-    Order Details:
-    ${order.items.map((item) => `- ${item.quantity}x ${item.name}: $${item.totalPrice.toFixed(2)}`).join("\n")}
-    
-    Subtotal: $${order.subtotal.toFixed(2)}
-    Delivery Fee: $${order.deliveryFee.toFixed(2)}
-    Processing Fee: $${order.processingFee.toFixed(2)}
-    Tax: $${order.taxAmount.toFixed(2)}
-    Discount: $${order.discountAmount.toFixed(2)}
-    
-    Total Amount: $${order.totalAmount.toFixed(2)}
-    Payment Method: ${order.paymentMethod}
-    Payment Status: ${order.paymentStatus}
-    
-    Notes: ${order.notes || "None"}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Order Notification</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; color: #4a5568; background-color: #f7fafc;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+      <td align="center" style="padding: 20px 0;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="background-color: rgba(255, 255, 255, 0.9); border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border: 2px solid rgba(66, 153, 225, 0.2); max-width: 600px; margin: 0 auto;">
+          <tr>
+            <td style="padding: 30px;">
+              <!-- Header -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td align="center" style="padding-bottom: 20px;">
+                    <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #805ad5;">New Order Received: ${order.orderNumber}</h1>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Customer Info -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 20px;">
+                <tr>
+                  <td style="background: linear-gradient(to right, #3182ce, #805ad5); color: white; padding: 10px; text-align: center; border-radius: 8px 8px 0 0;">
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">👤 CUSTOMER INFORMATION</h2>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: rgba(66, 153, 225, 0.05); padding: 15px; border-radius: 0 0 8px 8px; border: 1px solid rgba(66, 153, 225, 0.2); border-top: none;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="padding: 4px 0;"><strong>Customer:</strong> ${order.customerName || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0;"><strong>Email:</strong> ${order.customerEmail || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0;"><strong>Phone:</strong> ${order.customerPhone || "N/A"}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Order Details -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 20px;">
+                <tr>
+                  <td style="background: linear-gradient(to right, #3182ce, #805ad5); color: white; padding: 10px; text-align: center; border-radius: 8px 8px 0 0;">
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">📋 ORDER DETAILS</h2>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: rgba(66, 153, 225, 0.05); padding: 15px; border-radius: 0 0 8px 8px; border: 1px solid rgba(66, 153, 225, 0.2); border-top: none;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      ${itemsList}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Order Totals -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 20px;">
+                <tr>
+                  <td style="background: linear-gradient(to right, #3182ce, #805ad5); color: white; padding: 10px; text-align: center; border-radius: 8px 8px 0 0;">
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">💰 ORDER TOTALS</h2>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: rgba(66, 153, 225, 0.05); padding: 15px; border-radius: 0 0 8px 8px; border: 1px solid rgba(66, 153, 225, 0.2); border-top: none;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="padding: 4px 0;"><strong>Items Subtotal:</strong> $${order.subtotal.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0;"><strong>Delivery Fee:</strong> $${order.deliveryFee.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0;"><strong>Tax (8.25%):</strong> $${order.taxAmount.toFixed(2)}</td>
+                      </tr>
+                      ${
+                        order.paymentMethod !== "cash"
+                          ? `<tr>
+                        <td style="padding: 4px 0;"><strong>Processing Fee (3%):</strong> $${order.processingFee.toFixed(2)}</td>
+                      </tr>`
+                          : ""
+                      }
+                      ${
+                        order.discountAmount > 0
+                          ? `<tr>
+                        <td style="padding: 4px 0;"><strong>Discount:</strong> -$${order.discountAmount.toFixed(2)}</td>
+                      </tr>`
+                          : ""
+                      }
+                      <tr>
+                        <td style="padding: 8px 0; border-top: 1px solid rgba(66, 153, 225, 0.2); font-size: 16px; font-weight: 600;">
+                          <strong>TOTAL:</strong> $${order.totalAmount.toFixed(2)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0;"><strong>Payment Method:</strong> ${order.paymentMethod}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0;"><strong>Payment Status:</strong> ${order.paymentStatus}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Notes -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td style="background: linear-gradient(to right, #3182ce, #805ad5); color: white; padding: 10px; text-align: center; border-radius: 8px 8px 0 0;">
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">📝 NOTES</h2>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: rgba(66, 153, 225, 0.05); padding: 15px; border-radius: 0 0 8px 8px; border: 1px solid rgba(66, 153, 225, 0.2); border-top: none;">
+                    <p style="margin: 0;">${order.notes || "None"}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
   `;
 }
 
@@ -137,20 +260,28 @@ export function generateNewOrderEmailCustomer(order: IOrderDocument): string {
                   <td style="background-color: rgba(66, 153, 225, 0.05); padding: 15px; border-radius: 0 0 8px 8px; border: 1px solid rgba(66, 153, 225, 0.2); border-top: none;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <td style="padding: 8px 0;"><strong>Subtotal:</strong> $${order.subtotal.toFixed(2)}</td>
+                        <td style="padding: 8px 0;"><strong>Items Subtotal:</strong> $${order.subtotal.toFixed(2)}</td>
                       </tr>
                       <tr>
                         <td style="padding: 8px 0;"><strong>Delivery Fee:</strong> $${order.deliveryFee.toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0;"><strong>Processing Fee:</strong> $${order.processingFee.toFixed(2)}</td>
+                        <td style="padding: 8px 0;"><strong>Tax (8.25%):</strong> $${order.taxAmount.toFixed(2)}</td>
                       </tr>
-                      <tr>
-                        <td style="padding: 8px 0;"><strong>Tax:</strong> $${order.taxAmount.toFixed(2)}</td>
-                      </tr>
-                      <tr>
+                      ${
+                        order.paymentMethod !== "cash"
+                          ? `<tr>
+                        <td style="padding: 8px 0;"><strong>Processing Fee (3%):</strong> $${order.processingFee.toFixed(2)}</td>
+                      </tr>`
+                          : ""
+                      }
+                      ${
+                        order.discountAmount > 0
+                          ? `<tr>
                         <td style="padding: 8px 0;"><strong>Discount:</strong> -$${order.discountAmount.toFixed(2)}</td>
-                      </tr>
+                      </tr>`
+                          : ""
+                      }
                       <tr>
                         <td style="padding: 12px 0; border-top: 1px solid rgba(66, 153, 225, 0.2); font-size: 18px; font-weight: 600;">
                           <strong>TOTAL:</strong> $${order.totalAmount.toFixed(2)}
@@ -363,6 +494,29 @@ export function generateOrderStatusUpdateEmail(order: IOrderDocument): string {
                         <td style="padding: 8px 0;"><strong>Current Status:</strong> ${statusEmoji} ${order.status}</td>
                       </tr>
                       <tr>
+                        <td style="padding: 8px 0;"><strong>Items Subtotal:</strong> $${order.subtotal.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0;"><strong>Delivery Fee:</strong> $${order.deliveryFee.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0;"><strong>Tax (8.25%):</strong> $${order.taxAmount.toFixed(2)}</td>
+                      </tr>
+                      ${
+                        order.paymentMethod !== "cash"
+                          ? `<tr>
+                        <td style="padding: 8px 0;"><strong>Processing Fee (3%):</strong> $${order.processingFee.toFixed(2)}</td>
+                      </tr>`
+                          : ""
+                      }
+                      ${
+                        order.discountAmount > 0
+                          ? `<tr>
+                        <td style="padding: 8px 0;"><strong>Discount:</strong> -$${order.discountAmount.toFixed(2)}</td>
+                      </tr>`
+                          : ""
+                      }
+                      <tr>
                         <td style="padding: 8px 0;"><strong>Total Amount:</strong> $${order.totalAmount.toFixed(2)}</td>
                       </tr>
                       ${order.balanceDue > 0 ? `<tr><td style="padding: 8px 0;"><strong>Balance Due:</strong> $${order.balanceDue.toFixed(2)}</td></tr>` : ""}
@@ -520,6 +674,29 @@ export function generatePaymentConfirmationEmail(
                       <tr>
                         <td style="padding: 8px 0;"><strong>📅 Date:</strong> ${formatDateCT(order.createdAt)}</td>
                       </tr>
+                      <tr>
+                        <td style="padding: 8px 0;"><strong>Items Subtotal:</strong> $${order.subtotal.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0;"><strong>Delivery Fee:</strong> $${order.deliveryFee.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0;"><strong>Tax (8.25%):</strong> $${order.taxAmount.toFixed(2)}</td>
+                      </tr>
+                      ${
+                        order.paymentMethod !== "cash"
+                          ? `<tr>
+                        <td style="padding: 8px 0;"><strong>Processing Fee (3%):</strong> $${order.processingFee.toFixed(2)}</td>
+                      </tr>`
+                          : ""
+                      }
+                      ${
+                        order.discountAmount > 0
+                          ? `<tr>
+                        <td style="padding: 8px 0;"><strong>Discount:</strong> -$${order.discountAmount.toFixed(2)}</td>
+                      </tr>`
+                          : ""
+                      }
                       <tr>
                         <td style="padding: 8px 0;"><strong>Total Amount:</strong> $${order.totalAmount.toFixed(2)}</td>
                       </tr>

@@ -19,6 +19,8 @@ export interface EmailData {
  */
 export async function sendEmail(emailData: EmailData): Promise<void> {
   try {
+    // Just use the standard approach with text and html properties
+    // SendGrid will handle the MIME types correctly
     await sgMail.send(emailData);
   } catch (error) {
     console.error("Error sending email with SendGrid:", error);

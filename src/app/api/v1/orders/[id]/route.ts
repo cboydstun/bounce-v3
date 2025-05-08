@@ -182,6 +182,7 @@ export async function PUT(
             to: updatedOrder.customerEmail,
             subject: `Order Status Update: ${updatedOrder.orderNumber}`,
             text: generateOrderStatusUpdateEmail(updatedOrder),
+            html: generateOrderStatusUpdateEmail(updatedOrder),
           });
         } catch (emailError) {
           console.error("Error sending status update email:", emailError);
@@ -197,6 +198,7 @@ export async function PUT(
             to: process.env.EMAIL as string,
             subject: `Order ${updatedOrder.status}: ${updatedOrder.orderNumber}`,
             text: generateOrderStatusUpdateEmail(updatedOrder),
+            html: generateOrderStatusUpdateEmail(updatedOrder),
           });
         } catch (emailError) {
           console.error(

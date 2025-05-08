@@ -169,6 +169,7 @@ export async function PATCH(
           to: order.customerEmail,
           subject: `Payment Confirmation: ${order.orderNumber}`,
           text: generatePaymentConfirmationEmail(order, latestTransaction),
+          html: generatePaymentConfirmationEmail(order, latestTransaction),
         });
       } catch (emailError) {
         console.error("Error sending payment confirmation email:", emailError);
@@ -183,6 +184,7 @@ export async function PATCH(
         to: process.env.EMAIL as string,
         subject: `Payment Received: ${order.orderNumber} - $${latestTransaction.amount.toFixed(2)}`,
         text: generatePaymentConfirmationEmail(order, latestTransaction),
+        html: generatePaymentConfirmationEmail(order, latestTransaction),
       });
     } catch (emailError) {
       console.error(
