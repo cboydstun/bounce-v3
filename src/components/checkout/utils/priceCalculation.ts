@@ -74,7 +74,7 @@ export const calculatePrices = (state: CheckoutState) => {
   let bouncerSubtotal = 0;
 
   // If we have bouncers in the new array, use those
-  if (state.selectedBouncers.length > 0) {
+  if (state.selectedBouncers && state.selectedBouncers.length > 0) {
     // IMPORTANT: Always sort bouncers by price (highest to lowest)
     // This ensures the most expensive bouncer gets full price
     // and cheaper bouncers get the 50% discount, regardless of selection order
@@ -104,20 +104,29 @@ export const calculatePrices = (state: CheckoutState) => {
 
   // Calculate mixer total (exclude 'none' mixers)
   const mixerTotal = state.slushyMixers
-    .filter((mixer) => mixer.mixerId !== "none")
-    .reduce((sum, mixer) => sum + mixer.price * dayMultiplier, 0);
+    ? state.slushyMixers
+        .filter((mixer) => mixer.mixerId !== "none")
+        .reduce((sum, mixer) => sum + mixer.price * dayMultiplier, 0)
+    : 0;
 
   // Calculate extras total (including mixers)
   const extrasTotal =
-    state.extras
-      .filter((extra) => extra.selected)
-      .reduce((sum: number, extra) => {
-        // Only apply quantity for Tables & Chairs
-        const quantity = extra.id === "tablesChairs" ? extra.quantity : 1;
+    (state.extras
+      ? state.extras
+          .filter(
+            (extra) =>
+              extra.selected &&
+              // Exclude the overnight extra when it's an overnight rental to avoid double-charging
+              !(extra.id === "overnight" && daysDifference === 1),
+          )
+          .reduce((sum: number, extra) => {
+            // Only apply quantity for Tables & Chairs
+            const quantity = extra.id === "tablesChairs" ? extra.quantity : 1;
 
-        // Apply day multiplier to extras
-        return sum + extra.price * quantity * dayMultiplier;
-      }, 0) + mixerTotal;
+            // Apply day multiplier to extras
+            return sum + extra.price * quantity * dayMultiplier;
+          }, 0)
+      : 0) + mixerTotal;
 
   // Include specific time charge and delivery fee in the subtotal
   // Note: These are NOT multiplied by the day count
