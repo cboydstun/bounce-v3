@@ -1,6 +1,9 @@
 "use client";
 
+import { metadata } from "./metadata";
 import { Suspense, useState, useEffect } from "react";
+
+export { metadata };
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession, getSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";

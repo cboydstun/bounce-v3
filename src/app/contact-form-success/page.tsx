@@ -1,6 +1,9 @@
 "use client";
 
+import { metadata } from "./metadata";
 import React from "react";
+
+export { metadata };
 import Link from "next/link";
 import { useEffect } from "react";
 import { trackContactForm } from "@/utils/trackConversion";
