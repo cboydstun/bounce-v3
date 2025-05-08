@@ -207,7 +207,10 @@ export async function POST(request: NextRequest) {
     try {
       await sendEmail({
         from: process.env.EMAIL as string,
-        to: process.env.EMAIL as string,
+        to: [
+          process.env.OTHER_EMAIL as string,
+          process.env.SECOND_EMAIL as string,
+        ],
         subject: `New Order: ${order.orderNumber}`,
         text: generateNewOrderEmailAdmin(order),
       });
