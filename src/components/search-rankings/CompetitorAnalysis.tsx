@@ -67,7 +67,15 @@ export default function CompetitorAnalysis({
   const topCompetitors = useMemo(() => {
     if (!latestRanking) return [];
 
-    // Filter competitors that are ranking above your site
+    // If our site is not found in the results (position <= 0),
+    // show all competitors sorted by position
+    if (latestRanking.position <= 0) {
+      return [...latestRanking.competitors].sort(
+        (a, b) => a.position - b.position,
+      );
+    }
+
+    // Otherwise, filter competitors that are ranking above your site
     return latestRanking.competitors
       .filter((competitor) => competitor.position < latestRanking.position)
       .sort((a, b) => a.position - b.position);
@@ -216,7 +224,9 @@ export default function CompetitorAnalysis({
                 Your Position
               </span>
               <span className="text-sm font-semibold text-gray-900">
-                #{latestRanking.position}
+                {latestRanking.position > 0
+                  ? `#${latestRanking.position}`
+                  : "Not Found"}
               </span>
             </div>
             <div className="mb-2">

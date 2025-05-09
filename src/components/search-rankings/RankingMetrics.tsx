@@ -26,6 +26,8 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
 
     // Current position (most recent)
     const currentPosition = sortedRankings[0].position;
+    const displayCurrentPosition =
+      currentPosition > 0 ? currentPosition : "Not Found";
 
     // Average position
     const validPositions = sortedRankings
@@ -70,6 +72,7 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
 
     return {
       currentPosition,
+      displayCurrentPosition,
       averagePosition,
       bestPosition,
       positionChange,
@@ -112,7 +115,7 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
             Current Position
           </div>
           <div className="mt-1 text-3xl font-semibold text-gray-900">
-            {metrics.currentPosition}
+            {metrics.displayCurrentPosition}
           </div>
           <div className={`mt-1 text-sm ${metrics.positionChangeColor}`}>
             {metrics.positionChangeText}

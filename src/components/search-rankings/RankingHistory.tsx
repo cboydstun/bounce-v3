@@ -15,12 +15,17 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
 
   // Prepare data for chart
   const chartData = useMemo(() => {
-    const dates = sortedRankings.map((ranking) => {
+    // Filter out rankings where position is <= 0 (not found)
+    const validRankings = sortedRankings.filter(
+      (ranking) => ranking.position > 0,
+    );
+
+    const dates = validRankings.map((ranking) => {
       const date = new Date(ranking.date);
       return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
     });
 
-    const positions = sortedRankings.map((ranking) => ranking.position);
+    const positions = validRankings.map((ranking) => ranking.position);
 
     return { dates, positions };
   }, [sortedRankings]);
@@ -68,6 +73,11 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
       {rankings.length === 0 ? (
         <div className="text-center text-gray-500 py-8">
           No ranking data available
+        </div>
+      ) : chartData.positions.length === 0 ? (
+        <div className="text-center text-gray-500 py-8">
+          No valid ranking positions found. Your site may not be appearing in
+          search results yet.
         </div>
       ) : (
         <div className="overflow-x-auto">

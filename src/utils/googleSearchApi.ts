@@ -81,7 +81,13 @@ export async function checkKeywordRanking(
         .replace(/^https?:\/\//, "")
         .replace(/^www\./, "");
 
-      if (normalizedResultUrl.includes(normalizedTargetDomain)) {
+      // Check if the result URL is from our domain
+      // The URL should either be exactly our domain or a subdomain/path of our domain
+      if (
+        normalizedResultUrl === normalizedTargetDomain ||
+        normalizedResultUrl.startsWith(normalizedTargetDomain + "/") ||
+        normalizedResultUrl.startsWith(normalizedTargetDomain + ".")
+      ) {
         ourPosition = result.position;
         ourUrl = result.url;
       } else {
