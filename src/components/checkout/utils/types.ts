@@ -218,6 +218,7 @@ export interface Step4Props extends BaseStepProps {
 // Define props for Step5_Payment
 export interface Step5Props extends BaseStepProps {
   onPaymentSuccess: (details: any) => void;
+  onPaymentInitiation?: () => void;
 }
 
 // Union type for all step props

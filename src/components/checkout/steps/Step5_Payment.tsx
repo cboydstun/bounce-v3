@@ -2,19 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
-import { CheckoutState } from "../utils/types";
+import { CheckoutState, Step5Props } from "../utils/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-
-interface Step5Props {
-  state: CheckoutState;
-  dispatch: React.Dispatch<any>;
-  onPaymentSuccess: (details: any) => void;
-}
 
 const Step5_Payment: React.FC<Step5Props> = ({
   state,
   dispatch,
   onPaymentSuccess,
+  onPaymentInitiation,
 }) => {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
@@ -194,10 +189,12 @@ const Step5_Payment: React.FC<Step5Props> = ({
       // Update order status based on payment
       if (state.depositAmount > 0 && state.depositAmount < state.totalAmount) {
         // If this was a deposit payment
-        dispatch({ type: "SET_PAYMENT_STATUS", payload: "Authorized" });
+        // Note: SET_PAYMENT_STATUS is not defined in CheckoutAction, so we don't dispatch it
+        // Instead, we'll rely on the backend to update the payment status
       } else {
         // If this was a full payment
-        dispatch({ type: "SET_PAYMENT_STATUS", payload: "Paid" });
+        // Note: SET_PAYMENT_STATUS is not defined in CheckoutAction, so we don't dispatch it
+        // Instead, we'll rely on the backend to update the payment status
         dispatch({ type: "SET_ORDER_STATUS", payload: "Paid" });
       }
 
@@ -474,7 +471,7 @@ const Step5_Payment: React.FC<Step5Props> = ({
         <div className="text-center mt-6">
           <button
             type="button"
-            onClick={() => dispatch({ type: "PAYMENT_ERROR", payload: null })}
+            onClick={() => dispatch({ type: "PAYMENT_ERROR", payload: "" })}
             className="inline-block px-6 py-3 bg-primary-purple text-white rounded-lg font-medium hover:bg-primary-purple/90 transition-colors"
           >
             Try Again
@@ -548,7 +545,7 @@ const Step5_Payment: React.FC<Step5Props> = ({
           <button
             type="button"
             onClick={() => {
-              dispatch({ type: "PAYMENT_ERROR", payload: null });
+              dispatch({ type: "PAYMENT_ERROR", payload: "" });
               dispatch({ type: "GO_TO_STEP", payload: "review" });
             }}
             className="inline-block px-6 py-3 bg-primary-purple text-white rounded-lg font-medium hover:bg-primary-purple/90 transition-colors"
@@ -645,6 +642,12 @@ const Step5_Payment: React.FC<Step5Props> = ({
                         "Creating PayPal order for amount:",
                         paymentAmount,
                       );
+
+                      // Call the payment initiation handler if provided
+                      if (onPaymentInitiation) {
+                        onPaymentInitiation();
+                      }
+
                       return actions.order.create({
                         intent: "CAPTURE",
                         purchase_units: [

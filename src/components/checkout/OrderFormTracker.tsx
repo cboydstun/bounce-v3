@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { OrderStep, CheckoutState } from "./utils/types";
 import { trackInteraction } from "@/utils/trackInteraction";
 
@@ -25,10 +25,58 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
   // Store a flag to detect if the user abandons the form
   const formActiveRef = useRef<boolean>(true);
 
+  // Track if we've already recorded a completion for this session
+  const [hasRecordedCompletion, setHasRecordedCompletion] = useState(false);
+
+  // Check on mount if we're returning from a completed payment
+  useEffect(() => {
+    const checkPaymentCompletion = async () => {
+      const paymentCompleteFlag = localStorage.getItem(
+        "checkoutPaymentComplete",
+      );
+      const orderData = localStorage.getItem("checkoutOrderData");
+
+      if (
+        paymentCompleteFlag === "true" &&
+        orderData &&
+        !hasRecordedCompletion
+      ) {
+        try {
+          const parsedOrderData = JSON.parse(orderData);
+
+          // Track completion events
+          await trackCheckoutEvent("booking_submitted", parsedOrderData);
+          await trackConversionEvent("booking_completed", {
+            completed: true,
+            value: parsedOrderData.totalAmount,
+            product: parsedOrderData.bouncerName || "Bounce House",
+          });
+
+          // Mark as recorded and clean up
+          setHasRecordedCompletion(true);
+          localStorage.removeItem("checkoutPaymentComplete");
+          localStorage.removeItem("checkoutOrderData");
+          localStorage.removeItem("checkoutPaymentInProgress");
+
+          console.log("Tracked returning payment completion");
+        } catch (error) {
+          console.error("Error processing returning payment:", error);
+        }
+      }
+    };
+
+    checkPaymentCompletion();
+  }, []);
+
   // Track form abandonment
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (currentStep !== "payment" || !formData.paymentComplete) {
+      // Only track abandonment if payment is not in progress or complete
+      if (
+        (currentStep !== "payment" || !formData.paymentComplete) &&
+        localStorage.getItem("checkoutPaymentInProgress") !== "true" &&
+        localStorage.getItem("checkoutPaymentComplete") !== "true"
+      ) {
         trackCheckoutEvent("booking_abandoned", {
           step: currentStep,
           step_label: getStepLabel(currentStep),
@@ -44,8 +92,16 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
+
       // If component unmounts and form is still active, consider it abandoned
-      if (formActiveRef.current && currentStep !== "payment") {
+      // But only if we're not in the middle of a payment process
+      if (
+        formActiveRef.current &&
+        currentStep !== "payment" &&
+        !formData.paymentComplete &&
+        localStorage.getItem("checkoutPaymentInProgress") !== "true" &&
+        localStorage.getItem("checkoutPaymentComplete") !== "true"
+      ) {
         trackCheckoutEvent("booking_abandoned", {
           step: currentStep,
           step_label: getStepLabel(currentStep),
@@ -109,16 +165,31 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
 
   // Track form completion
   useEffect(() => {
-    if (currentStep === "payment" && formData.paymentComplete) {
+    if (
+      currentStep === "payment" &&
+      formData.paymentComplete &&
+      !hasRecordedCompletion
+    ) {
       // Mark form as inactive since it's completed
       formActiveRef.current = false;
 
-      trackCheckoutEvent("booking_submitted", {
+      // Store completion data in localStorage in case we navigate away
+      const orderData = {
         orderId: formData.orderId,
         orderNumber: formData.orderNumber,
         totalAmount: formData.totalAmount,
         paymentMethod: formData.paymentMethod,
-      });
+        bouncerName: formData.bouncerName,
+      };
+
+      localStorage.setItem("checkoutPaymentComplete", "true");
+      localStorage.setItem("checkoutOrderData", JSON.stringify(orderData));
+      localStorage.removeItem("checkoutPaymentInProgress");
+
+      // Mark that we've recorded this completion
+      setHasRecordedCompletion(true);
+
+      trackCheckoutEvent("booking_submitted", orderData);
 
       // Track conversion event
       trackConversionEvent("booking_completed", {
@@ -153,8 +224,10 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
           ],
         });
       }
+
+      console.log("Tracked payment completion");
     }
-  }, [currentStep, formData.paymentComplete, formData]);
+  }, [currentStep, formData.paymentComplete, formData, hasRecordedCompletion]);
 
   // Helper function to track checkout events
   const trackCheckoutEvent = async (type: string, data: any) => {

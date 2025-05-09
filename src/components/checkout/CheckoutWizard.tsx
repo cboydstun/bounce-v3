@@ -76,10 +76,26 @@ const CheckoutWizard: React.FC = () => {
     }
   }, [state.selectedBouncers, state.bouncerPrice, state.extras]);
 
+  // Clean up localStorage when component unmounts if payment is complete
+  useEffect(() => {
+    return () => {
+      // Only clean up if payment is complete to avoid clearing data needed for tracking
+      if (state.paymentComplete) {
+        console.log("Cleaning up localStorage data after successful payment");
+        // We don't want to remove these as they're needed for tracking in OrderFormTracker
+        // localStorage.removeItem('checkoutPaymentComplete');
+        // localStorage.removeItem('checkoutOrderData');
+      }
+    };
+  }, [state.paymentComplete]);
+
   // Function to create order for cash payments
   const createCashOrder = async () => {
     // Set loading state
     dispatch({ type: "SET_LOADING", payload: true });
+
+    // Mark payment as in progress
+    localStorage.setItem("checkoutPaymentInProgress", "true");
 
     // Track booking started conversion event
     trackConversionEvent("booking_started", {
@@ -206,6 +222,18 @@ const CheckoutWizard: React.FC = () => {
         product: state.bouncerName,
       });
 
+      // Store order data for tracking
+      const trackingData = {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        totalAmount: state.totalAmount,
+        paymentMethod: "cash",
+        bouncerName: state.bouncerName,
+      };
+      localStorage.setItem("checkoutOrderData", JSON.stringify(trackingData));
+      localStorage.setItem("checkoutPaymentComplete", "true");
+      localStorage.removeItem("checkoutPaymentInProgress");
+
       // Mark as complete (but with different status than PayPal)
       dispatch({ type: "CASH_ORDER_SUCCESS" });
 
@@ -266,6 +294,20 @@ const CheckoutWizard: React.FC = () => {
 
   // Handle payment success
   const handlePaymentSuccess = (details: any) => {
+    // Mark payment as complete
+    localStorage.setItem("checkoutPaymentComplete", "true");
+    localStorage.removeItem("checkoutPaymentInProgress");
+
+    // Store order data for tracking
+    const orderData = {
+      orderId: state.orderId,
+      orderNumber: state.orderNumber,
+      totalAmount: state.totalAmount,
+      paymentMethod: state.paymentMethod,
+      bouncerName: state.bouncerName,
+    };
+    localStorage.setItem("checkoutOrderData", JSON.stringify(orderData));
+
     // Track booking completed conversion event
     trackConversionEvent("booking_completed", {
       completed: true,
@@ -274,6 +316,15 @@ const CheckoutWizard: React.FC = () => {
     });
 
     dispatch({ type: "PAYMENT_SUCCESS" });
+  };
+
+  // Handle payment initiation
+  const handlePaymentInitiation = () => {
+    // Mark payment as in progress
+    localStorage.setItem("checkoutPaymentInProgress", "true");
+
+    // Log for debugging
+    console.log("Payment initiation tracked");
   };
 
   // Helper function to track conversion events
@@ -337,6 +388,7 @@ const CheckoutWizard: React.FC = () => {
             state={state}
             dispatch={dispatch}
             onPaymentSuccess={handlePaymentSuccess}
+            onPaymentInitiation={handlePaymentInitiation}
           />
         );
       default:
