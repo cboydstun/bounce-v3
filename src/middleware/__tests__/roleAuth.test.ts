@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withRoleAuth, withAdminAuth, withUserAuth } from "../roleAuth";
 import { getServerSession } from "next-auth";
+import { getToken } from "next-auth/jwt";
 import { AuthRequest } from "../auth";
 
 // Mock dependencies
@@ -15,6 +16,10 @@ jest.mock("next/server", () => ({
 
 jest.mock("next-auth", () => ({
   getServerSession: jest.fn(),
+}));
+
+jest.mock("next-auth/jwt", () => ({
+  getToken: jest.fn(),
 }));
 
 jest.mock("@/app/api/auth/[...nextauth]/route", () => ({
@@ -36,10 +41,18 @@ describe("Role Auth Middleware", () => {
 
   // Helper to create a mock request
   const createMockRequest = () => {
-    return {
+    // Create a mock object with the minimum properties needed
+    const req = {
       headers: new Headers(),
       cookies: { get: jest.fn() },
-    } as unknown as NextRequest;
+      clone: jest.fn(),
+    };
+
+    // Set up the clone method to return the same object
+    req.clone.mockReturnValue(req);
+
+    // Cast to NextRequest
+    return req as unknown as NextRequest;
   };
 
   describe("withRoleAuth", () => {
@@ -138,7 +151,7 @@ describe("Role Auth Middleware", () => {
       const req = createMockRequest();
       await withRoleAuth(req, mockHandler, "admin");
 
-      // Should return 401 Unauthorized
+      // Should return 401 Unauthorized with the correct error message
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: "Unauthorized - Authentication error" },
         { status: 401 },
@@ -146,6 +159,57 @@ describe("Role Auth Middleware", () => {
 
       // Handler should not be called
       expect(mockHandler).not.toHaveBeenCalled();
+    });
+
+    it("tries to use JWT token if session is not available", async () => {
+      // Mock getServerSession to return null
+      (getServerSession as jest.Mock).mockResolvedValue(null);
+
+      // Mock getToken to return a valid token
+      (getToken as jest.Mock).mockResolvedValue({
+        id: "token-user-123",
+        email: "token-user@example.com",
+        role: "customer",
+      });
+
+      const req = createMockRequest();
+      await withRoleAuth(req, mockHandler, "customer");
+
+      // Handler should be called with user data from token
+      expect(mockHandler).toHaveBeenCalled();
+      const authReq = mockHandler.mock.calls[0][0] as AuthRequest;
+      expect(authReq.user).toEqual({
+        id: "token-user-123",
+        email: "token-user@example.com",
+        role: "customer",
+      });
+    });
+
+    it("checks Authorization header if session and token are not available", async () => {
+      // Mock getServerSession and getToken to return null
+      (getServerSession as jest.Mock).mockResolvedValue(null);
+      (getToken as jest.Mock).mockResolvedValue(null);
+
+      // Create request with Authorization header
+      const req = createMockRequest();
+      const headers = new Headers();
+      headers.set("Authorization", "Bearer test-token-123");
+      headers.set("X-User-Role", "customer");
+      Object.defineProperty(req, "headers", {
+        value: headers,
+        writable: true,
+      });
+
+      await withRoleAuth(req, mockHandler, "customer");
+
+      // Handler should be called with user data from header
+      expect(mockHandler).toHaveBeenCalled();
+      const authReq = mockHandler.mock.calls[0][0] as AuthRequest;
+      expect(authReq.user).toEqual({
+        id: "test-token-123",
+        email: "",
+        role: "customer",
+      });
     });
   });
 

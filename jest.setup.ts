@@ -34,6 +34,9 @@ global.TextDecoder = function TextDecoder() {
   };
 };
 
+// Suppress Mongoose warning about Jest's default jsdom test environment
+process.env.SUPPRESS_JEST_WARNINGS = "true";
+
 // Mock next/navigation
 jest.mock("next/navigation", () => ({
   useRouter() {

@@ -103,8 +103,12 @@ export async function withAuth(
         authReq.user = {
           id: token,
           email: "", // We don't have the email from the token
-          role: userRoleHeader || "customer", // Use the role from the header if available
         };
+
+        // Only add role if userRoleHeader is present
+        if (userRoleHeader) {
+          authReq.user.role = userRoleHeader;
+        }
 
         return await handler(authReq);
       }
