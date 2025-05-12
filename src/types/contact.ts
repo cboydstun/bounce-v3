@@ -18,7 +18,7 @@ export interface Contact {
   partyDate: Date;
   partyZipCode: string;
   message?: string;
-  confirmed: ConfirmationStatus;
+  confirmed: ConfirmationStatus | boolean; // Allow boolean for backward compatibility
   tablesChairs?: boolean;
   generator?: boolean;
   popcornMachine?: boolean;
@@ -68,7 +68,7 @@ export interface ContactFormData {
   partyDate: string;
   partyZipCode: string;
   message?: string;
-  confirmed?: ConfirmationStatus;
+  confirmed?: ConfirmationStatus | boolean; // Allow boolean for backward compatibility
   tablesChairs?: boolean;
   generator?: boolean;
   popcornMachine?: boolean;

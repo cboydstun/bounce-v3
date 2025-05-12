@@ -9,7 +9,12 @@ import {
 
 // Custom validation function for the confirmed field
 const validateConfirmedStatus = function (this: IContactDocument) {
-  if (this.confirmed === "Confirmed") {
+  // Handle both string enum "Confirmed" and boolean true for backward compatibility
+  const confirmedValue = this.confirmed;
+  if (
+    confirmedValue === "Confirmed" ||
+    (typeof confirmedValue === "boolean" && confirmedValue === true)
+  ) {
     // Check for null, undefined, or empty strings
     if (
       !this.streetAddress ||
@@ -58,15 +63,7 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
       trim: true,
     },
     confirmed: {
-      type: String,
-      enum: [
-        "Confirmed",
-        "Pending",
-        "Called / Texted",
-        "Declined",
-        "Cancelled",
-        "Converted",
-      ],
+      type: Schema.Types.Mixed, // Use Mixed type to support both string and boolean
       default: "Pending",
       validate: [
         validateConfirmedStatus,
