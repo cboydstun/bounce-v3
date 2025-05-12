@@ -12,21 +12,41 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, loading, isAdmin } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     // The loading state is managed by the useAuth hook
     setIsLoading(false);
-  }, []);
+
+    // Redirect non-admin users
+    if (!loading && !isAdmin) {
+      router.push("/login?message=Admin access required");
+    }
+  }, [loading, isAdmin, router]);
 
   const handleLogout = () => {
     logout();
   };
 
-  if (isLoading) {
-    return <div className="min-h-screen bg-gray-100"></div>;
+  if (isLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-xl font-semibold">Loading...</div>
+      </div>
+    );
+  }
+
+  // Don't render admin content for non-admin users
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-xl font-semibold text-red-600">
+          Unauthorized - Admin access required
+        </div>
+      </div>
+    );
   }
 
   return (

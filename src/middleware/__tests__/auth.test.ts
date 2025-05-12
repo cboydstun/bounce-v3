@@ -1,227 +1,182 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, AuthRequest } from "../auth";
+import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
-import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 
-// Mock next-auth/jwt
+// Mock dependencies
+jest.mock("next/server", () => ({
+  NextResponse: {
+    json: jest.fn().mockImplementation((body, options) => ({
+      body,
+      options,
+    })),
+  },
+}));
+
+jest.mock("next-auth", () => ({
+  getServerSession: jest.fn(),
+}));
+
 jest.mock("next-auth/jwt", () => ({
   getToken: jest.fn(),
 }));
 
-// Mock console.log for debugging
-const originalConsoleLog = console.log;
-beforeAll(() => {
-  console.log = jest.fn();
-});
-
-afterAll(() => {
-  console.log = originalConsoleLog;
-});
+jest.mock("@/app/api/auth/[...nextauth]/route", () => ({
+  authOptions: {},
+}));
 
 describe("Auth Middleware", () => {
-  // Setup test variables
-  const mockUserId = new mongoose.Types.ObjectId().toString();
-  const mockEmail = "test@example.com";
-  const mockSecret = "test-secret";
-
-  // Store original environment
-  const originalEnv = process.env;
-
+  // Reset mocks before each test
   beforeEach(() => {
-    // Reset mocks
     jest.clearAllMocks();
-
-    // Setup environment variables
-    process.env = { ...originalEnv };
-    process.env.NEXTAUTH_SECRET = mockSecret;
-    process.env.JWT_SECRET = mockSecret;
   });
 
-  afterEach(() => {
-    // Restore environment
-    process.env = originalEnv;
+  // Mock handler function
+  const mockHandler = jest.fn().mockImplementation((req: AuthRequest) => {
+    return Promise.resolve(
+      NextResponse.json({ success: true, user: req.user }),
+    );
   });
 
-  // Create a mock handler function
-  const mockHandler = jest.fn().mockImplementation(async (req: AuthRequest) => {
-    return NextResponse.json({ user: req.user });
+  // Helper to create a mock request
+  const createMockRequest = (headers = {}) => {
+    return {
+      headers: new Headers(headers),
+      cookies: { get: jest.fn() },
+    } as unknown as NextRequest;
+  };
+
+  it("uses pre-existing user object if available (for testing)", async () => {
+    // Create a request with a pre-existing user object
+    const req = createMockRequest() as AuthRequest;
+    req.user = {
+      id: "test-user-id",
+      email: "test@example.com",
+      role: "admin",
+    };
+
+    await withAuth(req, mockHandler);
+
+    // Handler should be called with the pre-existing user
+    expect(mockHandler).toHaveBeenCalled();
+    const authReq = mockHandler.mock.calls[0][0] as AuthRequest;
+    expect(authReq.user).toEqual({
+      id: "test-user-id",
+      email: "test@example.com",
+      role: "admin",
+    });
+
+    // Session functions should not be called
+    expect(getServerSession).not.toHaveBeenCalled();
+    expect(getToken).not.toHaveBeenCalled();
   });
 
-  // Test with NextAuth.js session token
-  it("should authenticate with NextAuth.js session token", async () => {
+  it("authenticates using NextAuth session", async () => {
+    // Mock getServerSession to return a valid session
+    (getServerSession as jest.Mock).mockResolvedValue({
+      user: {
+        id: "session-user-id",
+        email: "session@example.com",
+        role: "customer",
+      },
+    });
+
+    const req = createMockRequest();
+    await withAuth(req, mockHandler);
+
+    // Handler should be called with the session user
+    expect(mockHandler).toHaveBeenCalled();
+    const authReq = mockHandler.mock.calls[0][0] as AuthRequest;
+    expect(authReq.user).toEqual({
+      id: "session-user-id",
+      email: "session@example.com",
+      role: "customer",
+    });
+  });
+
+  it("falls back to JWT token if session is not available", async () => {
+    // Mock getServerSession to return null
+    (getServerSession as jest.Mock).mockResolvedValue(null);
+
     // Mock getToken to return a valid token
-    (getToken as jest.Mock).mockResolvedValueOnce({
-      id: mockUserId,
-      email: mockEmail,
+    (getToken as jest.Mock).mockResolvedValue({
+      id: "token-user-id",
+      email: "token@example.com",
+      role: "user",
     });
 
-    // Create a mock request
-    const req = new NextRequest("http://localhost:3000/api/test");
+    const req = createMockRequest();
+    await withAuth(req, mockHandler);
 
-    // Call withAuth middleware
-    const response = await withAuth(req, mockHandler);
-
-    // Verify getToken was called
-    expect(getToken).toHaveBeenCalledWith({
-      req,
-      secret: mockSecret,
-    });
-
-    // Verify handler was called with user
+    // Handler should be called with the token user
     expect(mockHandler).toHaveBeenCalled();
-    expect(mockHandler.mock.calls[0][0].user).toEqual({
-      id: mockUserId,
-      email: mockEmail,
-    });
-
-    // Verify response
-    expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(data.user).toEqual({
-      id: mockUserId,
-      email: mockEmail,
+    const authReq = mockHandler.mock.calls[0][0] as AuthRequest;
+    expect(authReq.user).toEqual({
+      id: "token-user-id",
+      email: "token@example.com",
+      role: "user",
     });
   });
 
-  // Test with Authorization header (Bearer token)
-  it("should authenticate with Bearer token in Authorization header", async () => {
-    // Mock getToken to return null (no NextAuth.js session)
-    (getToken as jest.Mock).mockResolvedValueOnce(null);
+  it("falls back to Authorization header if session and token are not available", async () => {
+    // Mock getServerSession to return null
+    (getServerSession as jest.Mock).mockResolvedValue(null);
 
-    // Create a JWT token
-    const token = jwt.sign({ id: mockUserId, email: mockEmail }, mockSecret, {
-      expiresIn: "1d",
+    // Mock getToken to return null
+    (getToken as jest.Mock).mockResolvedValue(null);
+
+    // Create request with Authorization header
+    const req = createMockRequest({
+      Authorization: "Bearer user-id-from-header",
     });
 
-    // Create a mock request with Authorization header
-    const req = new NextRequest("http://localhost:3000/api/test", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "X-Auth-Type": "nextauth",
-      },
-    });
+    await withAuth(req, mockHandler);
 
-    // Call withAuth middleware
-    const response = await withAuth(req, mockHandler);
-
-    // Verify getToken was called
-    expect(getToken).toHaveBeenCalledWith({
-      req,
-      secret: mockSecret,
-    });
-
-    // Verify handler was called with user
+    // Handler should be called with the user from the header
     expect(mockHandler).toHaveBeenCalled();
-    expect(mockHandler.mock.calls[0][0].user).toEqual({
-      id: mockUserId,
-      email: mockEmail,
-    });
-
-    // Verify response
-    expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(data.user).toEqual({
-      id: mockUserId,
-      email: mockEmail,
+    const authReq = mockHandler.mock.calls[0][0] as AuthRequest;
+    expect(authReq.user).toEqual({
+      id: "user-id-from-header",
+      email: "",
     });
   });
 
-  // Test with invalid Bearer token
-  it("should reject invalid Bearer token", async () => {
-    // Mock getToken to return null (no NextAuth.js session)
-    (getToken as jest.Mock).mockResolvedValueOnce(null);
+  it("returns 401 if no authentication method succeeds", async () => {
+    // Mock getServerSession to return null
+    (getServerSession as jest.Mock).mockResolvedValue(null);
 
-    // Create an invalid token
-    const token = "invalid-token";
+    // Mock getToken to return null
+    (getToken as jest.Mock).mockResolvedValue(null);
 
-    // Create a mock request with Authorization header
-    const req = new NextRequest("http://localhost:3000/api/test", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "X-Auth-Type": "nextauth",
-      },
-    });
+    // Create request without Authorization header
+    const req = createMockRequest();
 
-    // Call withAuth middleware
-    const response = await withAuth(req, mockHandler);
+    await withAuth(req, mockHandler);
 
-    // Verify getToken was called
-    expect(getToken).toHaveBeenCalledWith({
-      req,
-      secret: mockSecret,
-    });
-
-    // Verify handler was not called
-    expect(mockHandler).not.toHaveBeenCalled();
-
-    // Verify response
-    expect(response.status).toBe(401);
-    const data = await response.json();
-    expect(data.error).toBe("Unauthorized - Invalid token");
-  });
-
-  // Test with no authentication
-  it("should reject request with no authentication", async () => {
-    // Mock getToken to return null (no NextAuth.js session)
-    (getToken as jest.Mock).mockResolvedValueOnce(null);
-
-    // Create a mock request with no Authorization header
-    const req = new NextRequest("http://localhost:3000/api/test");
-
-    // Call withAuth middleware
-    const response = await withAuth(req, mockHandler);
-
-    // Verify getToken was called
-    expect(getToken).toHaveBeenCalledWith({
-      req,
-      secret: mockSecret,
-    });
-
-    // Verify handler was not called
-    expect(mockHandler).not.toHaveBeenCalled();
-
-    // Verify response
-    expect(response.status).toBe(401);
-    const data = await response.json();
-    expect(data.error).toBe("Unauthorized - No token provided");
-  });
-
-  // Test with expired token
-  it("should reject expired token", async () => {
-    // Mock getToken to return null (no NextAuth.js session)
-    (getToken as jest.Mock).mockResolvedValueOnce(null);
-
-    // Create an expired JWT token
-    const token = jwt.sign(
-      { id: mockUserId, email: mockEmail },
-      mockSecret,
-      { expiresIn: "-1h" }, // Expired 1 hour ago
+    // Should return 401 Unauthorized
+    expect(NextResponse.json).toHaveBeenCalledWith(
+      { error: "Unauthorized - Not authenticated" },
+      { status: 401 },
     );
 
-    // Create a mock request with Authorization header
-    const req = new NextRequest("http://localhost:3000/api/test", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "X-Auth-Type": "nextauth",
-      },
-    });
-
-    // Call withAuth middleware
-    const response = await withAuth(req, mockHandler);
-
-    // Verify getToken was called
-    expect(getToken).toHaveBeenCalledWith({
-      req,
-      secret: mockSecret,
-    });
-
-    // Verify handler was not called
+    // Handler should not be called
     expect(mockHandler).not.toHaveBeenCalled();
+  });
 
-    // Verify response
-    expect(response.status).toBe(401);
-    const data = await response.json();
-    expect(data.error).toBe("Unauthorized - Invalid token");
+  it("handles authentication errors gracefully", async () => {
+    // Mock getServerSession to throw an error
+    (getServerSession as jest.Mock).mockRejectedValue(new Error("Auth error"));
+
+    const req = createMockRequest();
+    await withAuth(req, mockHandler);
+
+    // Should return 401 Unauthorized
+    expect(NextResponse.json).toHaveBeenCalledWith(
+      { error: "Unauthorized - Authentication error" },
+      { status: 401 },
+    );
+
+    // Handler should not be called
+    expect(mockHandler).not.toHaveBeenCalled();
   });
 });

@@ -8,6 +8,7 @@ export interface AuthRequest extends NextRequest {
   user?: {
     id: string;
     email: string;
+    role?: string;
   };
 }
 
@@ -35,6 +36,7 @@ export async function withAuth(
       authReq.user = {
         id: session.user.id,
         email: session.user.email || "",
+        role: session.user.role || "customer",
       };
 
       return await handler(authReq);
@@ -53,6 +55,7 @@ export async function withAuth(
       authReq.user = {
         id: token.id,
         email: (token.email as string) || "",
+        role: (token.role as string) || "customer",
       };
 
       return await handler(authReq);

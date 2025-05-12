@@ -14,6 +14,16 @@ const UserSchema = new Schema<IUserDocument, IUserModel>(
       required: true,
       select: false, // Don't return password by default in queries
     },
+    name: {
+      type: String,
+      required: false,
+    },
+    role: {
+      type: String,
+      enum: ["admin", "customer", "user"],
+      default: "customer",
+      required: true,
+    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt
@@ -25,6 +35,11 @@ UserSchema.pre("save", async function (next) {
   try {
     // Check if password is modified
     if (!this.isModified("password")) return next();
+
+    // Ensure password is defined
+    if (!this.password) {
+      return next(new Error("Password is required"));
+    }
 
     // Generate salt
     const salt = await bcryptjs.genSalt(10);

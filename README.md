@@ -27,13 +27,18 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 - **Analytics Dashboard**: Comprehensive analytics with revenue tracking, booking trends, and product popularity
 - **Calendar View**: Visual calendar for tracking bookings with color-coded status indicators
 - **Customer Reviews**: Display and management of customer feedback
-- **Authentication**: Secure JWT-based authentication with:
+- **Authentication & Authorization**: Secure JWT-based authentication with comprehensive role-based access control:
   - Token storage in both localStorage and cookies for robust auth persistence
   - "Remember Me" functionality with configurable token expiration
   - Protected routes with middleware-based access control
   - Secure password hashing with bcrypt
   - Rate limiting for login attempts
   - NextAuth.js integration with simplified configuration for production stability
+  - Role-based access control (RBAC) at multiple levels:
+    - Database level: User model with role validation
+    - API level: Role-based middleware for route protection
+    - UI level: Conditional rendering based on user role
+    - Application level: Route protection in Next.js middleware
 - **Responsive Design**: Mobile-friendly interface with modern UI components
 - **Analytics**: Built-in analytics tracking with Google Analytics and Google Tag Manager
 - **SEO Optimization**: Comprehensive metadata, OpenGraph, and Twitter cards
@@ -1792,6 +1797,70 @@ npm run build
 ```
 
 This will generate optimized production files in the `.next` directory. After building, a sitemap will be automatically generated.
+
+## Role-Based Access Control (RBAC) Implementation
+
+The application implements a comprehensive role-based access control system that secures content and functionality at multiple levels:
+
+### User Roles
+
+The system supports three user roles:
+
+- **Admin**: Full access to all features and content
+- **Customer**: Standard user access with limited administrative capabilities
+- **User**: Basic access with minimal privileges
+
+### Database Level
+
+- **User Model**: Implements role validation in the MongoDB schema
+  - Default role is "customer"
+  - Enum validation ensures only valid roles ("admin", "customer", "user") can be assigned
+  - Pre-save hooks ensure secure password hashing
+  - Role information is stored in JWT tokens for authentication
+
+### API Level
+
+- **Role-Based Middleware**: API routes are protected based on user roles
+
+  - `withRoleAuth`: Core middleware that checks user role against required role
+  - `withAdminAuth`: Helper middleware for admin-only routes
+  - `withUserAuth`: Helper middleware for authenticated user routes
+  - Proper error responses (401 for unauthenticated, 403 for unauthorized)
+
+- **Resource Ownership**: Additional layer of protection for user-specific resources
+  - `checkOwnership`: Utility function to verify if a user owns a resource
+  - `requireOwnership`: Middleware to enforce ownership requirements
+  - Admins automatically pass ownership checks
+
+### UI Level
+
+- **Conditional Rendering**: Components render differently based on user role
+  - `AdminOnly` component: Renders content only for admin users
+  - `isAdmin` helper in AuthContext: Simplifies role checking in components
+  - Fallback content for non-admin users
+
+### Application Level
+
+- **Route Protection**: Next.js middleware protects entire routes based on user role
+  - Admin routes (/admin/\*) are only accessible to admin users
+  - Automatic redirection to login page for unauthenticated users
+  - Custom error messages for unauthorized access attempts
+
+### Authentication Context
+
+- **React Context API**: Provides authentication state throughout the application
+  - User information including role is available via useAuth() hook
+  - Automatic role validation when processing session data
+  - Logout functionality with proper cleanup
+
+### Testing
+
+The RBAC system is thoroughly tested at all levels:
+
+- **User Model Tests**: Verify role validation and defaults
+- **Middleware Tests**: Ensure proper access control in API routes
+- **Component Tests**: Validate conditional rendering based on roles
+- **Utility Tests**: Confirm ownership checking functions work correctly
 
 ## Configuration Files
 

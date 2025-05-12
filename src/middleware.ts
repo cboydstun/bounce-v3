@@ -4,8 +4,7 @@ import type { NextRequest } from "next/server";
 import { isPackageDealsVisible } from "./utils/cookieUtils";
 
 /**
- * Phase 3: Enforce Admin Authentication Only
- * This middleware enforces authentication for admin routes only
+ * This middleware enforces authentication and role-based access control
  */
 export async function middleware(request: NextRequest) {
   // Check if the request is for the party-packages page
@@ -17,10 +16,6 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Enhanced request and cookie logging
-  const allCookies = request.cookies.getAll();
-  const cookieNames = allCookies.map((c) => c.name);
-
   try {
     const token = await getToken({
       req: request,
@@ -30,18 +25,30 @@ export async function middleware(request: NextRequest) {
     // Determine authentication status
     const isAuthenticated = !!token;
     const isAdminPath = request.nextUrl.pathname.startsWith("/admin");
+    const userRole = (token?.role as string) || "customer";
+    const isAdmin = userRole === "admin";
 
-    // Only enforce authentication for admin routes
-    if (isAdminPath && !isAuthenticated) {
-      // Redirect to login page with callback URL
-      const url = new URL(`/login`, request.url);
-      url.searchParams.set("from", request.nextUrl.pathname);
+    // Enforce authentication for admin routes
+    if (isAdminPath) {
+      // If not authenticated, redirect to login
+      if (!isAuthenticated) {
+        const url = new URL(`/login`, request.url);
+        url.searchParams.set("from", request.nextUrl.pathname);
+        url.searchParams.set("message", "Please login to access admin area");
+        return NextResponse.redirect(url);
+      }
 
-      return NextResponse.redirect(url);
+      // If authenticated but not admin, redirect to login with message
+      if (!isAdmin) {
+        const url = new URL(`/login`, request.url);
+        url.searchParams.set("message", "Admin access required");
+        return NextResponse.redirect(url);
+      }
     }
 
     return NextResponse.next();
   } catch (error) {
+    console.error("Middleware error:", error);
     return NextResponse.next();
   }
 }

@@ -4,12 +4,23 @@ import * as dbHandler from "@/lib/test/db-handler";
 import User from "@/models/User";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-import { withAuth } from "@/middleware/auth";
 
-// Mock the auth middleware
-jest.mock("@/middleware/auth", () => ({
-  withAuth: jest.fn((req, handler) => handler(req)),
+// Mock NextAuth and getServerSession
+jest.mock("next-auth", () => {
+  const originalModule = jest.requireActual("next-auth");
+  return {
+    ...originalModule,
+    getServerSession: jest.fn(() => Promise.resolve(null)),
+  };
+});
+
+// Mock the NextAuth route
+jest.mock("@/app/api/auth/[...nextauth]/route", () => ({
+  authOptions: {},
 }));
+
+// Import after mocking
+import { getServerSession } from "next-auth";
 
 beforeAll(async () => await dbHandler.connect());
 afterEach(async () => await dbHandler.clearDatabase());
@@ -38,15 +49,12 @@ describe("Profile API", () => {
 
   describe("GET /api/v1/users/profile", () => {
     it("should return 404 if user not found", async () => {
-      // Mock the auth middleware to return a non-existent user ID
-      (withAuth as jest.Mock).mockImplementationOnce((req, handler) => {
-        return handler({
-          ...req,
-          user: {
-            id: new mongoose.Types.ObjectId().toString(),
-            email: "nonexistent@example.com",
-          },
-        });
+      // Mock getServerSession to return a non-existent user ID
+      (getServerSession as jest.Mock).mockResolvedValueOnce({
+        user: {
+          id: new mongoose.Types.ObjectId().toString(),
+          email: "nonexistent@example.com",
+        },
       });
 
       const req = new NextRequest(
@@ -67,12 +75,13 @@ describe("Profile API", () => {
     });
 
     it("should return user profile", async () => {
-      // Mock the auth middleware to return our test user
-      (withAuth as jest.Mock).mockImplementationOnce((req, handler) => {
-        return handler({
-          ...req,
-          user: { id: userId, email: "test@example.com" },
-        });
+      // Mock getServerSession to return our test user
+      (getServerSession as jest.Mock).mockResolvedValueOnce({
+        user: {
+          id: userId,
+          email: "test@example.com",
+          role: "user",
+        },
       });
 
       const req = new NextRequest(
@@ -95,13 +104,13 @@ describe("Profile API", () => {
 
   describe("PUT /api/v1/users/profile", () => {
     it("should update user profile", async () => {
-      // Mock the auth middleware and request body
-      (withAuth as jest.Mock).mockImplementationOnce((req, handler) => {
-        return handler({
-          ...req,
-          user: { id: userId, email: "test@example.com" },
-          json: () => Promise.resolve({ email: "updated@example.com" }),
-        });
+      // Mock getServerSession to return our test user
+      (getServerSession as jest.Mock).mockResolvedValueOnce({
+        user: {
+          id: userId,
+          email: "test@example.com",
+          role: "user",
+        },
       });
 
       const req = new NextRequest(
@@ -131,13 +140,13 @@ describe("Profile API", () => {
       const originalUser = await User.findById(userId).select("+password");
       const originalPassword = originalUser!.password;
 
-      // Mock the auth middleware and request body
-      (withAuth as jest.Mock).mockImplementationOnce((req, handler) => {
-        return handler({
-          ...req,
-          user: { id: userId, email: "test@example.com" },
-          json: () => Promise.resolve({ password: "newpassword123" }),
-        });
+      // Mock getServerSession to return our test user
+      (getServerSession as jest.Mock).mockResolvedValueOnce({
+        user: {
+          id: userId,
+          email: "test@example.com",
+          role: "user",
+        },
       });
 
       const req = new NextRequest(

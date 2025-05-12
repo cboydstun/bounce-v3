@@ -42,6 +42,7 @@ const authOptions: NextAuthOptions = {
             id: user._id ? user._id.toString() : user.id,
             email: user.email,
             name: user.name || undefined,
+            role: user.role || "customer", // Include role
           };
 
           return authUser;
@@ -56,6 +57,20 @@ const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  callbacks: {
+    jwt: async ({ token, user }) => {
+      if (user) {
+        token.role = user.role;
+      }
+      return token;
+    },
+    session: async ({ session, token }) => {
+      if (token && session.user) {
+        session.user.role = token.role as string;
+      }
+      return session;
+    },
   },
   // Enable debug mode
   debug: true,

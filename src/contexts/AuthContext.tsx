@@ -16,6 +16,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   logout: () => void;
+  isAdmin: boolean; // Add role-based helper
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   error: null,
   logout: () => {},
+  isAdmin: false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -59,9 +61,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (status === "authenticated" && session?.user) {
       // Convert NextAuth session user to our IUser type
+      const role = session.user.role || "customer";
+      // Validate role is one of the allowed values
+      const validRole =
+        role === "admin" || role === "customer" || role === "user"
+          ? (role as "admin" | "customer" | "user")
+          : "customer";
+
       const userObj = {
         email: session.user.email || "",
         name: session.user.name || undefined,
+        role: validRole,
       };
 
       setUser(userObj);
@@ -96,8 +106,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Compute admin status
+  const isAdmin = user?.role === "admin";
+
   return (
-    <AuthContext.Provider value={{ user, loading, error, logout }}>
+    <AuthContext.Provider value={{ user, loading, error, logout, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
