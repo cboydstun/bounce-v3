@@ -15,25 +15,3 @@ export interface IUserDocument extends IUser, Document {
 export interface IUserModel extends Model<IUserDocument> {
   findByEmail(email: string): Promise<IUserDocument | null>;
 }
-
-// NextAuth type extensions
-declare module "next-auth" {
-  interface User {
-    role?: string;
-  }
-
-  interface Session {
-    user: {
-      id: string;
-      email: string;
-      name?: string;
-      role: string;
-    };
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    role?: string;
-  }
-}

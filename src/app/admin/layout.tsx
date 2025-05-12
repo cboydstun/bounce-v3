@@ -12,7 +12,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { logout, loading, isAdmin } = useAuth();
+  const { logout, loading, isAdmin, user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -43,7 +43,7 @@ export default function AdminLayout({
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-xl font-semibold text-red-600">
-          Unauthorized - Admin access required
+          Unauthorized - Admin role required
         </div>
       </div>
     );
@@ -51,11 +51,12 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Sidebar with logout */}
+      {/* Sidebar with logout and role indicator */}
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={setIsSidebarCollapsed}
         onLogout={handleLogout}
+        userRole={user?.role}
       />
 
       {/* Main content */}

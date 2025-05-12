@@ -8,7 +8,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      // Role has been removed from session
+      role: string;
     } & DefaultSession["user"];
   }
 
@@ -17,7 +17,7 @@ declare module "next-auth" {
    * or the second parameter of the `session` callback, when using a database.
    */
   interface User extends NextAuthUser {
-    // Role has been removed from user
+    role: string;
   }
 }
 
@@ -27,7 +27,7 @@ declare module "next-auth/jwt" {
    */
   interface JWT {
     id: string;
-    // Role has been removed from JWT
+    role: string;
     rememberMe?: boolean;
   }
 }

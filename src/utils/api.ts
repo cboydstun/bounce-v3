@@ -25,7 +25,6 @@ export interface ApiError {
 
 // Define public endpoints that don't require authentication
 const publicEndpoints = [
-  "/api/v1/contacts",
   "/api/v1/package-promo",
   "/api/v1/promo-optins",
   // Removed settings endpoint as we're now using proper NextAuth authentication
@@ -52,28 +51,30 @@ api.interceptors.request.use(
         const session = await getSession();
 
         // Add debug information to console
-        console.log(`Auth debug for ${config.url}:`, {
+        console.debug(`Auth debug for ${config.url}:`, {
           hasSession: !!session,
+          hasUser: !!session?.user,
           hasUserId: !!session?.user?.id,
+          userRole: session?.user?.role || "none",
           method: config.method,
         });
 
-        if (session?.user?.id) {
-          // Use session user ID for authorization
+        if (session?.user) {
+          // Set the Authorization header with the session token
+          // This is what the withAuth middleware expects
           config.headers.Authorization = `Bearer ${session.user.id}`;
+
+          // Also set the user role in a custom header for debugging
+          config.headers["X-User-Role"] = session.user.role || "customer";
           config.headers["X-Auth-Debug"] = "nextauth-session";
         } else {
-          // Check if we have a token in localStorage (legacy method)
-          const token = localStorage.getItem("auth_token");
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-            config.headers["X-Auth-Debug"] = "legacy-token";
-          } else {
-            console.warn(
-              `No authentication token available for request to ${config.url}`,
-            );
-            config.headers["X-Auth-Debug"] = "no-auth-token";
-          }
+          console.warn(
+            `No active session found for request to ${config.url}. Try logging in again.`,
+          );
+          config.headers["X-Auth-Debug"] = "no-session";
+
+          // Don't try to use localStorage token anymore - rely only on NextAuth
+          // This ensures consistent authentication method
         }
       } catch (error) {
         console.error("Error getting session in API interceptor:", error);
@@ -94,8 +95,26 @@ api.interceptors.response.use(
   (error: AxiosError<ApiError>) => {
     // Check if this is an authentication error
     if (error.response?.status === 401) {
-      // Don't automatically clear the token on 401 errors
-      // This allows the app to try other authentication methods
+      console.error("Authentication error:", error.response.data);
+
+      // If we're in the browser, redirect to login on auth errors
+      if (typeof window !== "undefined") {
+        // Store the current URL to redirect back after login
+        const currentPath = window.location.pathname;
+
+        // Only redirect if we're not already on the login page
+        if (!currentPath.includes("/login")) {
+          console.warn("Authentication failed - Redirecting to login page");
+
+          // Use window.location for a full page reload to clear any stale state
+          window.location.href = `/login?from=${encodeURIComponent(currentPath)}&message=${encodeURIComponent("Your session has expired. Please log in again.")}`;
+
+          // Return a clearer error for debugging
+          return Promise.reject(
+            new Error("Authentication failed - Redirecting to login page"),
+          );
+        }
+      }
 
       // Return a more specific error message for authentication errors
       return Promise.reject(

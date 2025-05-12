@@ -27,10 +27,32 @@ export async function withAuth(
       return await handler(req as AuthRequest);
     }
 
+    // Debug headers
+    const authHeader = req.headers.get("Authorization");
+    const userRoleHeader = req.headers.get("X-User-Role");
+    const authDebugHeader = req.headers.get("X-Auth-Debug");
+
+    console.debug("Auth middleware debug:", {
+      hasAuthHeader: !!authHeader,
+      authHeaderType: authHeader
+        ? authHeader.startsWith("Bearer ")
+          ? "Bearer"
+          : "Other"
+        : "None",
+      userRoleHeader,
+      authDebugHeader,
+    });
+
+    // Method 1: Try to get the session from the server
     const session = await getServerSession(authOptions);
 
     // If we have a valid session, use it
     if (session?.user?.id) {
+      console.debug("Auth middleware: Using server session", {
+        userId: session.user.id,
+        userRole: session.user.role,
+      });
+
       // Add user to request
       const authReq = req as AuthRequest;
       authReq.user = {
@@ -43,13 +65,17 @@ export async function withAuth(
     }
 
     // Method 2: Try to get the token directly from the request cookies
-
     const token = await getToken({
       req,
       secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
     });
 
     if (token?.id) {
+      console.debug("Auth middleware: Using JWT token", {
+        userId: token.id,
+        userRole: token.role,
+      });
+
       // Add user to request
       const authReq = req as AuthRequest;
       authReq.user = {
@@ -61,19 +87,23 @@ export async function withAuth(
       return await handler(authReq);
     }
 
-    const authHeader = req.headers.get("Authorization");
-
-    if (authHeader) {
+    // Method 3: Check for Authorization header (Bearer token)
+    if (authHeader && authHeader.startsWith("Bearer ")) {
       // Extract the token from the Authorization header
-      // Format: "Bearer <userId>"
       const token = authHeader.replace("Bearer ", "");
 
       if (token) {
+        console.debug("Auth middleware: Using Authorization header", {
+          token: token.substring(0, 8) + "...", // Only log part of the token for security
+          userRoleHeader,
+        });
+
         // Add user to request
         const authReq = req as AuthRequest;
         authReq.user = {
           id: token,
           email: "", // We don't have the email from the token
+          role: userRoleHeader || "customer", // Use the role from the header if available
         };
 
         return await handler(authReq);
@@ -81,6 +111,11 @@ export async function withAuth(
     }
 
     // If we get here, no valid authentication was found
+    console.warn("Auth middleware: No valid authentication found", {
+      url: req.url,
+      method: req.method,
+    });
+
     return NextResponse.json(
       { error: "Unauthorized - Not authenticated" },
       { status: 401 },

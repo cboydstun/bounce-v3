@@ -3,107 +3,79 @@ import dbConnect from "@/lib/db/mongoose";
 import Contact from "@/models/Contact";
 import { sendEmail } from "@/utils/emailService";
 import twilio from "twilio";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { withAuth, AuthRequest } from "@/middleware/auth";
 
 /**
  * GET endpoint to list all contacts
  * This endpoint is protected and requires authentication
  */
 export async function GET(request: NextRequest) {
-  try {
-    // Check for Authorization header
-    const authHeader = request.headers.get("Authorization");
-    const isTestMode = process.env.TEST_MODE === "true";
+  return withAuth(request, async (req: AuthRequest) => {
+    try {
+      await dbConnect();
 
-    // If no Authorization header, return 401
-    if (!authHeader) {
+      // Parse query parameters
+      const url = new URL(request.url);
+      const startDate = url.searchParams.get("startDate");
+      const endDate = url.searchParams.get("endDate");
+      const deliveryDay = url.searchParams.get("deliveryDay");
+      const confirmed = url.searchParams.get("confirmed");
+
+      // Build query
+      const query: Record<string, unknown> = {};
+
+      // Date range filter for party date
+      if (startDate && endDate) {
+        query.partyDate = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate),
+        };
+      } else if (startDate) {
+        query.partyDate = { $gte: new Date(startDate) };
+      } else if (endDate) {
+        query.partyDate = { $lte: new Date(endDate) };
+      }
+
+      // Filter by delivery day
+      if (deliveryDay) {
+        // Create a date range for the entire day
+        const startOfDay = new Date(deliveryDay);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(deliveryDay);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        query.deliveryDay = {
+          $gte: startOfDay,
+          $lte: endOfDay,
+        };
+      }
+
+      // Confirmation status filter
+      if (confirmed !== null && confirmed !== undefined) {
+        if (confirmed === "true") {
+          query.confirmed = "Confirmed";
+        } else if (confirmed === "false") {
+          query.confirmed = "Pending";
+        }
+        // For backward compatibility, also handle the case where confirmed is a boolean in the database
+        // This can be removed once all documents have been migrated to use the string enum
+      }
+
+      // Execute query without pagination to allow client-side filtering and pagination
+      const contacts = await Contact.find(query).sort({ partyDate: 1 });
+
+      return NextResponse.json({
+        contacts,
+      });
+    } catch (error: unknown) {
+      console.error("Error fetching contacts:", error);
       return NextResponse.json(
-        { error: "Unauthorized - No token provided" },
-        { status: 401 },
+        { error: "Failed to fetch contacts" },
+        { status: 500 },
       );
     }
-
-    // Verify the token is valid
-    // This is a simple check for the test, in production you'd want to verify the token
-    if (authHeader.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      if (!token) {
-        return NextResponse.json(
-          { error: "Unauthorized - Invalid token" },
-          { status: 401 },
-        );
-      }
-    } else {
-      return NextResponse.json(
-        { error: "Unauthorized - Invalid authorization format" },
-        { status: 401 },
-      );
-    }
-
-    await dbConnect();
-
-    // Parse query parameters
-    const url = new URL(request.url);
-    const startDate = url.searchParams.get("startDate");
-    const endDate = url.searchParams.get("endDate");
-    const deliveryDay = url.searchParams.get("deliveryDay");
-    const confirmed = url.searchParams.get("confirmed");
-
-    // Build query
-    const query: Record<string, unknown> = {};
-
-    // Date range filter for party date
-    if (startDate && endDate) {
-      query.partyDate = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
-      };
-    } else if (startDate) {
-      query.partyDate = { $gte: new Date(startDate) };
-    } else if (endDate) {
-      query.partyDate = { $lte: new Date(endDate) };
-    }
-
-    // Filter by delivery day
-    if (deliveryDay) {
-      // Create a date range for the entire day
-      const startOfDay = new Date(deliveryDay);
-      startOfDay.setHours(0, 0, 0, 0);
-
-      const endOfDay = new Date(deliveryDay);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      query.deliveryDay = {
-        $gte: startOfDay,
-        $lte: endOfDay,
-      };
-    }
-
-    // Confirmation status filter
-    if (confirmed !== null && confirmed !== undefined) {
-      if (confirmed === "true") {
-        query.confirmed = "Confirmed";
-      } else if (confirmed === "false") {
-        query.confirmed = "Pending";
-      }
-      // For backward compatibility, also handle the case where confirmed is a boolean in the database
-      // This can be removed once all documents have been migrated to use the string enum
-    }
-
-    // Execute query without pagination to allow client-side filtering and pagination
-    const contacts = await Contact.find(query).sort({ partyDate: 1 });
-
-    return NextResponse.json({
-      contacts,
-    });
-  } catch (error: unknown) {
-    console.error("Error fetching contacts:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch contacts" },
-      { status: 500 },
-    );
-  }
+  });
 }
 
 /**

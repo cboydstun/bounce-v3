@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { AuthRequest } from "./auth";
 
@@ -18,38 +19,149 @@ export async function withRoleAuth(
   requiredRole: Role,
 ) {
   try {
-    // First authenticate the user
+    // First use the standard auth middleware to authenticate the user
+    // This will handle all authentication methods (session, token, header)
+    const authReq = req.clone() as AuthRequest;
+
+    // Debug headers
+    const authHeader = req.headers.get("Authorization");
+    const userRoleHeader = req.headers.get("X-User-Role");
+    const authDebugHeader = req.headers.get("X-Auth-Debug");
+
+    console.debug("Role auth middleware debug:", {
+      requiredRole,
+      hasAuthHeader: !!authHeader,
+      userRoleHeader,
+      authDebugHeader,
+    });
+
+    // Method 1: Try to get the session from the server
     const session = await getServerSession(authOptions);
 
-    // Check if user is authenticated
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized - Not authenticated" },
-        { status: 401 },
-      );
+    // If we have a valid session, use it
+    if (session?.user?.id) {
+      console.debug("Role auth middleware: Using server session", {
+        userId: session.user.id,
+        userRole: session.user.role,
+      });
+
+      // Check if user has the required role
+      // Admin role has access to all routes
+      const userRole = session.user.role || "customer";
+      if (
+        userRole !== requiredRole &&
+        !(requiredRole === "customer" && userRole === "admin")
+      ) {
+        console.warn("Role auth middleware: Insufficient role", {
+          userRole,
+          requiredRole,
+        });
+
+        return NextResponse.json(
+          { error: `Unauthorized - Requires ${requiredRole} role` },
+          { status: 403 },
+        );
+      }
+
+      // Add user to request
+      authReq.user = {
+        id: session.user.id,
+        email: session.user.email || "",
+        role: userRole,
+      };
+
+      return await handler(authReq);
     }
 
-    // Check if user has the required role
-    // Admin role has access to all routes
-    if (
-      session.user.role !== requiredRole &&
-      !(requiredRole === "customer" && session.user.role === "admin")
-    ) {
-      return NextResponse.json(
-        { error: `Unauthorized - Requires ${requiredRole} role` },
-        { status: 403 },
-      );
+    // Method 2: Try to get the token directly from the request cookies
+    const token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
+    });
+
+    if (token?.id) {
+      console.debug("Role auth middleware: Using JWT token", {
+        userId: token.id,
+        userRole: token.role,
+      });
+
+      // Check if user has the required role
+      const userRole = (token.role as string) || "customer";
+      if (
+        userRole !== requiredRole &&
+        !(requiredRole === "customer" && userRole === "admin")
+      ) {
+        console.warn("Role auth middleware: Insufficient role from token", {
+          userRole,
+          requiredRole,
+        });
+
+        return NextResponse.json(
+          { error: `Unauthorized - Requires ${requiredRole} role` },
+          { status: 403 },
+        );
+      }
+
+      // Add user to request
+      authReq.user = {
+        id: token.id,
+        email: (token.email as string) || "",
+        role: userRole,
+      };
+
+      return await handler(authReq);
     }
 
-    // Add user to request
-    const authReq = req as AuthRequest;
-    authReq.user = {
-      id: session.user.id,
-      email: session.user.email || "",
-      role: session.user.role,
-    };
+    // Method 3: Check for Authorization header (Bearer token)
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      // Extract the token from the Authorization header
+      const tokenValue = authHeader.replace("Bearer ", "");
 
-    return await handler(authReq);
+      if (tokenValue) {
+        console.debug("Role auth middleware: Using Authorization header", {
+          token: tokenValue.substring(0, 8) + "...", // Only log part of the token for security
+          userRoleHeader,
+        });
+
+        // For Bearer tokens, we rely on the X-User-Role header
+        const userRole = userRoleHeader || "customer";
+
+        if (
+          userRole !== requiredRole &&
+          !(requiredRole === "customer" && userRole === "admin")
+        ) {
+          console.warn("Role auth middleware: Insufficient role from header", {
+            userRole,
+            requiredRole,
+          });
+
+          return NextResponse.json(
+            { error: `Unauthorized - Requires ${requiredRole} role` },
+            { status: 403 },
+          );
+        }
+
+        // Add user to request
+        authReq.user = {
+          id: tokenValue,
+          email: "", // We don't have the email from the token
+          role: userRole,
+        };
+
+        return await handler(authReq);
+      }
+    }
+
+    // If we get here, no valid authentication was found
+    console.warn("Role auth middleware: No valid authentication found", {
+      url: req.url,
+      method: req.method,
+    });
+
+    return NextResponse.json(
+      { error: "Unauthorized - Not authenticated" },
+      { status: 401 },
+    );
   } catch (error) {
     console.error("Role auth middleware error:", error);
     return NextResponse.json(

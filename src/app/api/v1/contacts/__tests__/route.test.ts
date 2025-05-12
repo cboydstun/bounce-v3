@@ -1,39 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 // Import actual route handlers
 import { POST } from "../route"; // Keep POST as is since it doesn't require auth
+import { withAuth, AuthRequest } from "@/middleware/auth";
 
 // Define mock implementations directly in the test file
 async function GET(request: NextRequest) {
-  // Check for Authorization header
-  const authHeader = request.headers.get("Authorization");
-
-  // If no Authorization header, return 401
-  if (!authHeader) {
-    return NextResponse.json(
-      { error: "Unauthorized - No token provided" },
-      { status: 401 },
-    );
-  }
-
-  // Return mock data for authenticated requests
-  return NextResponse.json({
-    contacts: [
-      {
-        bouncer: "John Doe",
-        email: "john@example.com",
-        confirmed: "Confirmed",
-      },
-      {
-        bouncer: "Jane Smith",
-        email: "jane@example.com",
-        confirmed: "Pending",
-      },
-      {
-        bouncer: "Bob Johnson",
-        email: "bob@example.com",
-        confirmed: "Pending",
-      },
-    ],
+  return withAuth(request, async (req: AuthRequest) => {
+    // Return mock data for authenticated requests
+    return NextResponse.json({
+      contacts: [
+        {
+          bouncer: "John Doe",
+          email: "john@example.com",
+          confirmed: "Confirmed",
+        },
+        {
+          bouncer: "Jane Smith",
+          email: "jane@example.com",
+          confirmed: "Pending",
+        },
+        {
+          bouncer: "Bob Johnson",
+          email: "bob@example.com",
+          confirmed: "Pending",
+        },
+      ],
+    });
   });
 }
 
@@ -41,22 +33,13 @@ async function GET_BY_ID(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  // Check for Authorization header
-  const authHeader = request.headers.get("Authorization");
-
-  // If no Authorization header, return 401
-  if (!authHeader) {
-    return NextResponse.json(
-      { error: "Unauthorized - No token provided" },
-      { status: 401 },
-    );
-  }
-
-  // Return mock data for authenticated requests
-  return NextResponse.json({
-    _id: (await params).id,
-    bouncer: "Test Contact",
-    email: "test@example.com",
+  return withAuth(request, async (req: AuthRequest) => {
+    // Return mock data for authenticated requests
+    return NextResponse.json({
+      _id: (await params).id,
+      bouncer: "Test Contact",
+      email: "test@example.com",
+    });
   });
 }
 
@@ -64,22 +47,13 @@ async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  // Check for Authorization header
-  const authHeader = request.headers.get("Authorization");
-
-  // If no Authorization header, return 401
-  if (!authHeader) {
-    return NextResponse.json(
-      { error: "Unauthorized - No token provided" },
-      { status: 401 },
-    );
-  }
-
-  // Return mock data for authenticated requests
-  const body = await request.json().catch(() => ({}));
-  return NextResponse.json({
-    _id: (await params).id,
-    ...body,
+  return withAuth(request, async (req: AuthRequest) => {
+    // Return mock data for authenticated requests
+    const body = await request.json().catch(() => ({}));
+    return NextResponse.json({
+      _id: (await params).id,
+      ...body,
+    });
   });
 }
 
@@ -87,23 +61,14 @@ async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  // Check for Authorization header
-  const authHeader = request.headers.get("Authorization");
-
-  // If no Authorization header, return 401
-  if (!authHeader) {
-    return NextResponse.json(
-      { error: "Unauthorized - No token provided" },
-      { status: 401 },
-    );
-  }
-
-  // Return mock data for authenticated requests
-  const body = await request.json().catch(() => ({}));
-  return NextResponse.json({
-    _id: (await params).id,
-    bouncer: "Jane Smith", // Default value
-    ...body,
+  return withAuth(request, async (req: AuthRequest) => {
+    // Return mock data for authenticated requests
+    const body = await request.json().catch(() => ({}));
+    return NextResponse.json({
+      _id: (await params).id,
+      bouncer: "Jane Smith", // Default value
+      ...body,
+    });
   });
 }
 
@@ -111,19 +76,10 @@ async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  // Check for Authorization header
-  const authHeader = request.headers.get("Authorization");
-
-  // If no Authorization header, return 401
-  if (!authHeader) {
-    return NextResponse.json(
-      { error: "Unauthorized - No token provided" },
-      { status: 401 },
-    );
-  }
-
-  // Return mock data for authenticated requests
-  return NextResponse.json({ message: "Contact deleted successfully" });
+  return withAuth(request, async (req: AuthRequest) => {
+    // Return mock data for authenticated requests
+    return NextResponse.json({ message: "Contact deleted successfully" });
+  });
 }
 
 // Set a test environment variable to indicate we're in a test environment
