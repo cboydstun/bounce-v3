@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     description:
       "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with flat rate delivery and no deposit required.",
     type: "website",
-    url: "https://satxbounce.com",
+    url: "https://www.satxbounce.com",
     images: [
       {
         url: "https://www.satxbounce.com/og-image.jpg",
@@ -52,8 +52,8 @@ const localBusinessSchema = {
   image: "https://www.satxbounce.com/og-image.jpg",
   description:
     "San Antonio's premier bounce house and party rental service offering inflatable bounce houses, water slides, and party equipment with flat rate delivery.",
-  "@id": "https://satxbounce.com",
-  url: "https://satxbounce.com",
+  "@id": "https://www.satxbounce.com",
+  url: "https://www.satxbounce.com",
   telephone: "(512) 210-0194",
   priceRange: "$$",
   address: {

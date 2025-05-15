@@ -37,7 +37,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://satxbounce.com"),
+  metadataBase: new URL("https://www.satxbounce.com"),
   title: "SATX Bounce | San Antonio Bounce House Rentals",
   description:
     "Making your events memorable with safe and clean bounce house rentals in San Antonio. Professional, insured party equipment rentals for birthdays, corporate events, and special occasions.",
@@ -73,13 +73,13 @@ export const metadata: Metadata = {
     title: "SATX Bounce | San Antonio Bounce House Rentals",
     description:
       "Making your events memorable with safe and clean bounce house rentals in San Antonio. Professional, insured party equipment rentals.",
-    url: "https://satxbounce.com",
+    url: "https://www.satxbounce.com",
     siteName: "SATX Bounce",
     locale: "en_US",
     type: "website",
     images: [
       {
-        url: "https://satxbounce.com/og-image.jpg",
+        url: "https://www.satxbounce.com/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "SATX Bounce House Rentals",
@@ -91,7 +91,7 @@ export const metadata: Metadata = {
     title: "SATX Bounce | San Antonio Bounce House Rentals",
     description:
       "Professional bounce house and party equipment rentals in San Antonio.",
-    images: ["https://satxbounce.com/twitter-image.jpg"],
+    images: ["https://www.satxbounce.com/twitter-image.jpg"],
     creator: "@satxbounce",
     site: "@satxbounce",
   },
@@ -178,8 +178,8 @@ export default function RootLayout({
         <JsonLd
           organizationData={{
             name: "SATX Bounce",
-            url: "https://satxbounce.com",
-            logo: "https://satxbounce.com/logo.png",
+            url: "https://www.satxbounce.com",
+            logo: "https://www.satxbounce.com/logo.png",
             description:
               "Professional bounce house and party equipment rentals in San Antonio, TX. Making your events memorable with safe and clean bounce house rentals.",
             address: {

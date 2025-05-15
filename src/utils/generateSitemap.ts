@@ -48,9 +48,12 @@ function isValidSlug(slug: string | undefined): boolean {
 // Function to fetch all products
 async function fetchProducts() {
   try {
-    const response = await axios.get("https://satxbounce.com/api/v1/products", {
-      timeout: 10000, // 10 second timeout
-    });
+    const response = await axios.get(
+      "https://www.satxbounce.com/api/v1/products",
+      {
+        timeout: 10000, // 10 second timeout
+      },
+    );
     const data = response.data;
     const products = Array.isArray(data) ? data : data.products || [];
 
@@ -68,7 +71,7 @@ async function fetchProducts() {
 async function fetchPartyPackages() {
   try {
     const response = await axios.get(
-      "https://satxbounce.com/api/v1/partypackages",
+      "https://www.satxbounce.com/api/v1/partypackages",
       {
         timeout: 10000, // 10 second timeout
       },
@@ -89,9 +92,12 @@ async function fetchPartyPackages() {
 // Function to fetch all blogs
 async function fetchBlogs() {
   try {
-    const response = await axios.get("https://satxbounce.com/api/v1/blogs", {
-      timeout: 10000, // 10 second timeout
-    });
+    const response = await axios.get(
+      "https://www.satxbounce.com/api/v1/blogs",
+      {
+        timeout: 10000, // 10 second timeout
+      },
+    );
     const data = response.data;
 
     // Handle different response formats
@@ -142,7 +148,7 @@ async function generate() {
           .replace("/index", "");
 
         return {
-          url: `https://satxbounce.com${route}`,
+          url: `https://www.satxbounce.com${route}`,
           lastmod: currentDate,
           changefreq: "weekly" as const,
           priority: 0.7,
@@ -151,44 +157,44 @@ async function generate() {
       .filter((urlObj) => {
         // Filter out excluded routes
         return !EXCLUDED_ROUTES.some((excludedRoute) =>
-          urlObj.url.startsWith(`https://satxbounce.com${excludedRoute}`),
+          urlObj.url.startsWith(`https://www.satxbounce.com${excludedRoute}`),
         );
       });
 
     // Base URLs with higher priority overrides
     const staticUrls: SitemapUrl[] = [
       {
-        url: "https://satxbounce.com",
+        url: "https://www.satxbounce.com",
         lastmod: currentDate,
         changefreq: "weekly",
         priority: 1.0,
       },
       {
-        url: "https://satxbounce.com/about",
+        url: "https://www.satxbounce.com/about",
         lastmod: currentDate,
         changefreq: "monthly",
         priority: 0.8,
       },
       {
-        url: "https://satxbounce.com/products",
+        url: "https://www.satxbounce.com/products",
         lastmod: currentDate,
         changefreq: "weekly",
         priority: 0.9,
       },
       {
-        url: "https://satxbounce.com/contact",
+        url: "https://www.satxbounce.com/contact",
         lastmod: currentDate,
         changefreq: "monthly",
         priority: 0.8,
       },
       {
-        url: "https://satxbounce.com/blogs",
+        url: "https://www.satxbounce.com/blogs",
         lastmod: currentDate,
         changefreq: "weekly",
         priority: 0.7,
       },
       {
-        url: "https://satxbounce.com/faq",
+        url: "https://www.satxbounce.com/faq",
         lastmod: currentDate,
         changefreq: "monthly",
         priority: 0.8,
@@ -200,7 +206,7 @@ async function generate() {
     const productUrls = products
       .filter((product: any) => isValidSlug(product.slug))
       .map((product: any) => ({
-        url: `https://satxbounce.com/products/${product.slug}`,
+        url: `https://www.satxbounce.com/products/${product.slug}`,
         lastmod: formatDate(product.updatedAt, currentDate),
         changefreq: "weekly" as const,
         priority: 0.8,
@@ -211,7 +217,7 @@ async function generate() {
     const blogUrls = blogs
       .filter((blog: any) => isValidSlug(blog.slug))
       .map((blog: any) => ({
-        url: `https://satxbounce.com/blogs/${blog.slug}`,
+        url: `https://www.satxbounce.com/blogs/${blog.slug}`,
         lastmod: formatDate(blog.lastModified || blog.publishDate, currentDate),
         changefreq: "weekly" as const,
         priority: 0.7,
@@ -222,7 +228,7 @@ async function generate() {
     const packageUrls = partyPackages
       .filter((pkg: any) => isValidSlug(pkg.slug))
       .map((pkg: any) => ({
-        url: `https://satxbounce.com/party-packages/${pkg.slug}`,
+        url: `https://www.satxbounce.com/party-packages/${pkg.slug}`,
         lastmod: formatDate(pkg.updatedAt, currentDate),
         changefreq: "weekly" as const,
         priority: 0.8,

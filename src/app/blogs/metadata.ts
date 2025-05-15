@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     description:
       "Stay updated with the latest news, tips, and insights about party rentals, event planning, and bounce house safety in San Antonio.",
     type: "website",
-    url: "https://satxbounce.com/blogs",
+    url: "https://www.satxbounce.com/blogs",
     images: ["/og-image.jpg"],
   },
 };
