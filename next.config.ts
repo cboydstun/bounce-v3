@@ -7,6 +7,7 @@ const nextConfig = {
       "media3.giphy.com",
       "res.cloudinary.com",
     ],
+    unoptimized: true, // disable Next.js image optimization
   },
   typescript: {
     // !! WARN !!
