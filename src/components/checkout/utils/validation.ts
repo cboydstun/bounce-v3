@@ -14,8 +14,10 @@ export const validateStep = (
 
   switch (step) {
     case "delivery": // Rental Selection
-      // We'll validate bouncer selection in the extras step
-      // to allow extras-only orders
+      // Validate bouncer selection
+      if (state.selectedBouncers.length === 0 && !state.selectedBouncer) {
+        errors.selectedBouncer = "Please select a bouncer";
+      }
 
       if (!state.deliveryDate) {
         errors.deliveryDate = "Please select a delivery date";
