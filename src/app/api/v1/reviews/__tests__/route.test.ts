@@ -5,6 +5,7 @@ import Review from "@/models/Review";
 import User from "@/models/User";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { getServerSession } from "next-auth";
 
 beforeAll(async () => await dbHandler.connect());
 afterEach(async () => await dbHandler.clearDatabase());
@@ -95,6 +96,7 @@ describe("Reviews API", () => {
 
   describe("POST /api/v1/reviews", () => {
     let authToken: string;
+    let userId: string;
 
     beforeEach(async () => {
       // Create test user
@@ -103,13 +105,20 @@ describe("Reviews API", () => {
         password: "password123",
       });
       const userObjectId = user._id as mongoose.Types.ObjectId;
+      userId = userObjectId.toString();
 
       // Generate auth token
       authToken = jwt.sign(
-        { id: userObjectId.toString(), email: user.email },
+        { id: userId, email: user.email },
         process.env.JWT_SECRET || "test-secret",
         { expiresIn: "1d" },
       );
+
+      // Set global mockAuthState to authenticated
+      global.mockAuthState = {
+        authenticated: true,
+        isAdmin: false,
+      };
     });
 
     it("should return 400 if required fields are missing", async () => {
@@ -132,6 +141,19 @@ describe("Reviews API", () => {
     });
 
     it("should create a new review successfully", async () => {
+      // Mock getServerSession to return a session with our test user ID
+      (getServerSession as jest.Mock).mockImplementationOnce(() => {
+        return Promise.resolve({
+          user: {
+            id: userId, // Use the actual user ID from our test
+            email: "test@example.com",
+            name: "Test User",
+            role: "user",
+          },
+          expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        });
+      });
+      
       const req = new NextRequest("http://localhost:3000/api/v1/reviews", {
         method: "POST",
         headers: {
