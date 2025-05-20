@@ -76,16 +76,7 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
           // Update pagination info
           totalPages = contactsData.pagination?.totalPages || 1;
           currentPage++;
-
-          // Log for debugging
-          console.log(
-            `BookingsTrend: Fetched page ${currentPage - 1} of ${totalPages}, got ${contactsData.contacts.length} contacts`,
-          );
         } while (currentPage <= totalPages);
-
-        console.log(
-          `BookingsTrend: Total contacts fetched: ${allContacts.length}`,
-        );
 
         // Calculate bookings data
         const bookingsData = groupContactsByPeriod(allContacts, period);

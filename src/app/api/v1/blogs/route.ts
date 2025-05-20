@@ -145,7 +145,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const authReq = req as AuthRequest;
     if (authReq.user && authReq.user.id) {
       userId = authReq.user.id;
-      console.log("Authenticated user:", authReq.user);
     } else {
       // In a real implementation, we would verify the token
       // For testing, we need to use a valid ObjectId

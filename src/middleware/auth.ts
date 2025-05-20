@@ -32,27 +32,11 @@ export async function withAuth(
     const userRoleHeader = req.headers.get("X-User-Role");
     const authDebugHeader = req.headers.get("X-Auth-Debug");
 
-    console.debug("Auth middleware debug:", {
-      hasAuthHeader: !!authHeader,
-      authHeaderType: authHeader
-        ? authHeader.startsWith("Bearer ")
-          ? "Bearer"
-          : "Other"
-        : "None",
-      userRoleHeader,
-      authDebugHeader,
-    });
-
     // Method 1: Try to get the session from the server
     const session = await getServerSession(authOptions);
 
     // If we have a valid session, use it
     if (session?.user?.id) {
-      console.debug("Auth middleware: Using server session", {
-        userId: session.user.id,
-        userRole: session.user.role,
-      });
-
       // Add user to request
       const authReq = req as AuthRequest;
       authReq.user = {
@@ -71,11 +55,6 @@ export async function withAuth(
     });
 
     if (token?.id) {
-      console.debug("Auth middleware: Using JWT token", {
-        userId: token.id,
-        userRole: token.role,
-      });
-
       // Add user to request
       const authReq = req as AuthRequest;
       authReq.user = {
@@ -93,11 +72,6 @@ export async function withAuth(
       const token = authHeader.replace("Bearer ", "");
 
       if (token) {
-        console.debug("Auth middleware: Using Authorization header", {
-          token: token.substring(0, 8) + "...", // Only log part of the token for security
-          userRoleHeader,
-        });
-
         // Add user to request
         const authReq = req as AuthRequest;
         authReq.user = {

@@ -87,14 +87,6 @@ export default function ProductAvailabilityCalendar({
 
     setVisibleDates(dates);
     setIsLoading(true);
-
-    console.log(
-      `Calculating visible dates for ${year}-${month} in Central Time`,
-    );
-    console.log(`First date in Central Time: ${formatDateCT(dates[0])}`);
-    console.log(
-      `Last date in Central Time: ${formatDateCT(dates[dates.length - 1])}`,
-    );
   }, [date]);
 
   // Check availability for visible dates
@@ -182,13 +174,6 @@ export default function ProductAvailabilityCalendar({
             productEntries.length > 0 ? productEntries[0][1] : null;
           const meta = result["_meta"];
 
-          console.log(`Date ${dateStr} result:`, {
-            productResult,
-            meta,
-            isBlackoutDate:
-              meta && "isBlackoutDate" in meta ? meta.isBlackoutDate : false,
-          });
-
           if (productResult && "available" in productResult) {
             // Store the result with additional metadata
             newCheckedDates[dateStr] = {
@@ -197,17 +182,6 @@ export default function ProductAvailabilityCalendar({
               isBlackoutDate:
                 meta && "isBlackoutDate" in meta ? meta.isBlackoutDate : false,
             };
-
-            // Log detailed information about unavailable dates
-            if (!productResult.available) {
-              console.log(`Date ${dateStr} is unavailable:`, {
-                reason: productResult.reason,
-                isBlackoutDate:
-                  meta && "isBlackoutDate" in meta
-                    ? meta.isBlackoutDate
-                    : false,
-              });
-            }
           }
         } catch (err) {
           console.error(`Error checking availability for ${dateStr}:`, err);
@@ -239,12 +213,6 @@ export default function ProductAvailabilityCalendar({
             : dateInfo.available
               ? "Available"
               : "Unavailable";
-
-          console.log(`Creating event for ${dateStr}:`, {
-            date: eventDate.toString(),
-            isBlackoutDate: dateInfo.isBlackoutDate,
-            available: dateInfo.available,
-          });
 
           newEvents.push({
             id: dateStr,

@@ -12,7 +12,6 @@ export default function PayPalTestPage() {
   );
 
   const handleSuccess = (details: any) => {
-    console.log("Payment successful:", details);
     setTestResult(JSON.stringify(details, null, 2));
     setTestError(null);
   };
@@ -96,7 +95,6 @@ export default function PayPalTestPage() {
                 }}
                 forceReRender={[amount]}
                 createOrder={(data, actions) => {
-                  console.log("Creating PayPal order for amount:", amount);
                   return actions.order.create({
                     intent: "CAPTURE",
                     purchase_units: [
@@ -116,13 +114,11 @@ export default function PayPalTestPage() {
                 }}
                 onApprove={async (data, actions) => {
                   try {
-                    console.log("Payment approved:", data);
                     if (!actions.order) {
                       throw new Error("PayPal order actions not available");
                     }
 
                     const orderDetails = await actions.order.capture();
-                    console.log("Payment successful:", orderDetails);
 
                     handleSuccess(orderDetails);
                   } catch (error) {
@@ -135,7 +131,6 @@ export default function PayPalTestPage() {
                   handleError(err);
                 }}
                 onCancel={() => {
-                  console.log("Payment cancelled by user");
                   setTestError("Payment was cancelled");
                 }}
               />

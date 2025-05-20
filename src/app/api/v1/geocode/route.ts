@@ -44,17 +44,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Log the first result for debugging
-    if (response.data.features && response.data.features.length > 0) {
-      const firstResult = response.data.features[0];
-      console.log("Geocoding result:", {
-        name: firstResult.properties.name,
-        coordinates: firstResult.geometry.coordinates,
-        country: firstResult.properties.country,
-        region: firstResult.properties.region,
-      });
-    }
-
     return NextResponse.json(response.data);
   } catch (error) {
     console.error("Geocoding error:", error);

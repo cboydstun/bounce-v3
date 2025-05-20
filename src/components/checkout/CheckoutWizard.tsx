@@ -322,9 +322,6 @@ const CheckoutWizard: React.FC = () => {
   const handlePaymentInitiation = () => {
     // Mark payment as in progress
     localStorage.setItem("checkoutPaymentInProgress", "true");
-
-    // Log for debugging
-    console.log("Payment initiation tracked");
   };
 
   // Helper function to track conversion events

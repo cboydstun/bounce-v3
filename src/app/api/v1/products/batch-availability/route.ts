@@ -104,23 +104,13 @@ export async function POST(request: NextRequest) {
 
     // Format the selected date in Central Time as YYYY-MM-DD for comparison
     const selectedDateString = formatDateCT(selectedDateCT);
-
-    // Log for debugging
-    console.log(
-      `Checking if ${selectedDateString} (Central Time) is a blackout date`,
-    );
-
     // Convert all blackout dates to Central Time strings for comparison using our utility
     const blackoutDatesCT = settings.blackoutDates.map((d: Date) =>
       formatDateCT(new Date(d)),
     );
 
-    console.log(`Available blackout dates (Central Time):`, blackoutDatesCT);
-
     // Use string comparison in Central Time
     const isBlackoutDate = blackoutDatesCT.includes(selectedDateString);
-
-    console.log(`Is ${selectedDateString} a blackout date? ${isBlackoutDate}`);
 
     // If it's a blackout date, mark all products as unavailable
     if (isBlackoutDate) {

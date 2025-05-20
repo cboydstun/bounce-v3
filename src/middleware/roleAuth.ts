@@ -28,23 +28,11 @@ export async function withRoleAuth(
     const userRoleHeader = req.headers.get("X-User-Role");
     const authDebugHeader = req.headers.get("X-Auth-Debug");
 
-    console.debug("Role auth middleware debug:", {
-      requiredRole,
-      hasAuthHeader: !!authHeader,
-      userRoleHeader,
-      authDebugHeader,
-    });
-
     // Method 1: Try to get the session from the server
     const session = await getServerSession(authOptions);
 
     // If we have a valid session, use it
     if (session?.user?.id) {
-      console.debug("Role auth middleware: Using server session", {
-        userId: session.user.id,
-        userRole: session.user.role,
-      });
-
       // Check if user has the required role
       // Admin role has access to all routes
       const userRole = session.user.role || "customer";
@@ -80,11 +68,6 @@ export async function withRoleAuth(
     });
 
     if (token?.id) {
-      console.debug("Role auth middleware: Using JWT token", {
-        userId: token.id,
-        userRole: token.role,
-      });
-
       // Check if user has the required role
       const userRole = (token.role as string) || "customer";
       if (
@@ -118,11 +101,6 @@ export async function withRoleAuth(
       const tokenValue = authHeader.replace("Bearer ", "");
 
       if (tokenValue) {
-        console.debug("Role auth middleware: Using Authorization header", {
-          token: tokenValue.substring(0, 8) + "...", // Only log part of the token for security
-          userRoleHeader,
-        });
-
         // For Bearer tokens, we rely on the X-User-Role header
         const userRole = userRoleHeader || "customer";
 

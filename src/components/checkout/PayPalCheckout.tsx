@@ -39,10 +39,6 @@ export function PayPalCheckout({
             height: 45,
           }}
           createOrder={(data, actions) => {
-            console.log(
-              "[PayPalCheckout] Creating order for amount:",
-              amount.toFixed(2),
-            );
             return actions.order.create({
               intent: "CAPTURE",
               purchase_units: [
@@ -61,14 +57,12 @@ export function PayPalCheckout({
             });
           }}
           onApprove={async (data, actions) => {
-            console.log("[PayPalCheckout] Payment approved:", data);
             try {
               if (!actions.order) {
                 throw new Error("PayPal order actions not available");
               }
 
               const orderDetails = await actions.order.capture();
-              console.log("[PayPalCheckout] Payment successful:", orderDetails);
 
               // Make sure we have an order ID
               if (!orderDetails.id) {

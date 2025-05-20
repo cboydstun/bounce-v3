@@ -30,11 +30,6 @@ function PackageGrid({
             ? productImages[firstItemId]
             : "/satx-bounce-house-rental-san-antonio-dry-xl.png";
 
-        // Log for debugging
-        console.log(
-          `Package: ${pkg.name}, First Item ID: ${firstItemId}, Found Image: ${productImages[firstItemId] ? "Yes" : "No"}`,
-        );
-
         return (
           <a
             key={pkg._id}
@@ -125,17 +120,7 @@ export function PartyPackagesContent() {
             // Also try using the product name as a key (converted to lowercase and spaces replaced with hyphens)
             const nameAsId = product.name.toLowerCase().replace(/\s+/g, "-");
             imageMap[nameAsId] = product.images[0].url;
-
-            // Log product info for debugging
-            console.log(
-              `Product: ${product.name}, _id: ${product._id}, slug: ${product.slug}, nameAsId: ${nameAsId}`,
-            );
           }
-        });
-
-        // Log the package items for debugging
-        packages.forEach((pkg: PartyPackageWithId) => {
-          console.log(`Package: ${pkg.name}, Items:`, pkg.items);
         });
 
         setProductImages(imageMap);

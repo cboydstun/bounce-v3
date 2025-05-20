@@ -310,10 +310,6 @@ export default function AdminDashboard() {
                     try {
                       // Force a session refresh before making the request
                       const session = await getSession();
-                      console.log(
-                        "Current session before adding blackout date:",
-                        session,
-                      );
 
                       if (!session || !session.user) {
                         // Redirect to login page if no session
@@ -325,11 +321,6 @@ export default function AdminDashboard() {
                       const response = await api.patch("/api/v1/settings", {
                         addBlackoutDate: newBlackoutDate,
                       });
-
-                      console.log(
-                        "Blackout date added successfully:",
-                        response.data,
-                      );
 
                       // Add to local state
                       if (!blackoutDates.includes(newBlackoutDate)) {
@@ -421,11 +412,6 @@ export default function AdminDashboard() {
                               {
                                 removeBlackoutDate: date,
                               },
-                            );
-
-                            console.log(
-                              "Blackout date removed successfully:",
-                              response.data,
                             );
 
                             // Remove from local state

@@ -56,27 +56,12 @@ export function calculateRevenueData(
   products: ProductWithId[],
   period: string,
 ) {
-  // Log the total number of contacts before processing
-  console.log(
-    `calculateRevenueData: Processing ${contacts.length} total contacts`,
-  );
-
   // Group contacts by time period (day, week, month)
   const groupedData = groupByTimePeriod(contacts, period);
-
-  // Log the number of unique time periods
-  console.log(
-    `calculateRevenueData: Grouped into ${Object.keys(groupedData).length} time periods`,
-  );
 
   // Calculate revenue for each period
   const revenueByPeriod = Object.entries(groupedData).reduce(
     (acc, [date, periodContacts]) => {
-      // Log the number of contacts for this period
-      console.log(
-        `calculateRevenueData: Period ${date} has ${periodContacts.length} contacts`,
-      );
-
       const periodRevenue = periodContacts.reduce((total, contact) => {
         // Find the product for this contact
         const product = products.find((p) => p.name === contact.bouncer);
@@ -96,9 +81,6 @@ export function calculateRevenueData(
     },
     {} as Record<string, number>,
   );
-
-  // Log the revenue by period
-  console.log("Revenue by period:", revenueByPeriod);
 
   // Format for chart.js
   const sortedDates = Object.keys(revenueByPeriod).sort();

@@ -49,16 +49,6 @@ api.interceptors.request.use(
       try {
         // Get session from NextAuth.js - ensure we properly await this
         const session = await getSession();
-
-        // Add debug information to console
-        console.debug(`Auth debug for ${config.url}:`, {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          hasUserId: !!session?.user?.id,
-          userRole: session?.user?.role || "none",
-          method: config.method,
-        });
-
         if (session?.user) {
           // Set the Authorization header with the session token
           // This is what the withAuth middleware expects
@@ -376,10 +366,8 @@ export const createContact = async (contactData: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any; // Allow for additional fields
 }) => {
-  console.log("Submitting contact form data:", contactData);
   try {
     const response = await api.post("/api/v1/contacts", contactData);
-    console.log("Contact form submission successful:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error in createContact function:", error);
@@ -510,10 +498,6 @@ export const checkBatchProductAvailability = async (
         maxBookings: number;
       };
 }> => {
-  console.log(
-    `Checking availability for product ${productSlug} on date ${date} (Central Time)`,
-  );
-
   const response = await api.post("/api/v1/products/batch-availability", {
     productSlugs: [productSlug],
     date,

@@ -28,19 +28,14 @@ export async function PATCH(request: NextRequest) {
 
     // Check if user is authenticated
     if (!session || !session.user) {
-      console.log("Authentication failed - no valid session");
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
       );
     }
 
-    console.log("Authenticated user:", session.user);
-
     await dbConnect();
     const data = await request.json();
-
-    console.log("Settings update request data:", data);
 
     // Validate input
     if (
@@ -72,10 +67,6 @@ export async function PATCH(request: NextRequest) {
       const centralTimeDate = parseDateCT(data.addBlackoutDate);
 
       if (!isNaN(centralTimeDate.getTime())) {
-        console.log(
-          `Adding blackout date: ${data.addBlackoutDate}, Central Time date: ${centralTimeDate.toString()}`,
-        );
-
         // Check if date already exists - compare by YYYY-MM-DD string in Central Time
         const dateString = data.addBlackoutDate;
         const dateExists =

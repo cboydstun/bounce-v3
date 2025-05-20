@@ -53,14 +53,11 @@ export async function PUT(
 
     // Check if user is authenticated
     if (!session || !session.user) {
-      console.log("Authentication failed - no valid session");
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
       );
     }
-
-    console.log("Authenticated user:", session.user);
 
     await dbConnect();
 
@@ -130,14 +127,11 @@ export async function DELETE(
 
     // Check if user is authenticated
     if (!session || !session.user) {
-      console.log("Authentication failed - no valid session");
       return NextResponse.json(
         { error: "Unauthorized - Not authenticated" },
         { status: 401 },
       );
     }
-
-    console.log("Authenticated user:", session.user);
 
     await dbConnect();
 
