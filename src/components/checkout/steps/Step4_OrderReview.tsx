@@ -3,29 +3,15 @@
 import { useEffect } from "react";
 import { CheckoutState, OrderStep } from "../utils/types";
 import { calculatePrices } from "../utils/priceCalculation";
+import { formatDisplayDateCT, parseDateCT } from "@/utils/dateUtils";
 
-// Helper function to calculate days between dates
+// Helper function to calculate days between dates using Central Time utility functions
 function calculateRentalDays(deliveryDate: string, pickupDate: string): number {
   if (!deliveryDate || !pickupDate) return 0;
 
-  // Parse dates to ensure consistent behavior
-  const [deliveryYear, deliveryMonth, deliveryDay] = deliveryDate
-    .split("-")
-    .map(Number);
-  const [pickupYear, pickupMonth, pickupDay] = pickupDate
-    .split("-")
-    .map(Number);
-
-  // Create date objects (using noon to avoid timezone issues)
-  const delivery = new Date(
-    deliveryYear,
-    deliveryMonth - 1,
-    deliveryDay,
-    12,
-    0,
-    0,
-  );
-  const pickup = new Date(pickupYear, pickupMonth - 1, pickupDay, 12, 0, 0);
+  // Parse dates using Central Time utility function
+  const delivery = parseDateCT(deliveryDate);
+  const pickup = parseDateCT(pickupDate);
 
   // Calculate the difference in days
   const diffTime = pickup.getTime() - delivery.getTime();
@@ -66,15 +52,10 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
     dispatch,
   ]);
 
-  // Format date for display
+  // Format date for display using Central Time utility functions
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
+    return formatDisplayDateCT(parseDateCT(dateString));
   };
 
   // Format time for display
