@@ -73,6 +73,8 @@ describe("Product Availability API", () => {
       message: "Birthday party",
       confirmed: "Confirmed",
       sourcePage: "website",
+      streetAddress: "123 Test Street",
+      partyStartTime: "14:00",
     });
   });
 
