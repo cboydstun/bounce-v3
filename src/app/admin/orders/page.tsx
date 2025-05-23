@@ -23,6 +23,7 @@ export default function OrdersPage() {
   const [paymentStatus, setPaymentStatus] = useState<string>("");
   const [orderNumber, setOrderNumber] = useState<string>("");
   const [customerSearch, setCustomerSearch] = useState<string>("");
+  const [taskStatus, setTaskStatus] = useState<string>("");
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -56,6 +57,7 @@ export default function OrdersPage() {
       if (paymentStatus) filters.paymentStatus = paymentStatus;
       if (orderNumber) filters.orderNumber = orderNumber;
       if (customerSearch) filters.customer = customerSearch;
+      if (taskStatus) filters.taskStatus = taskStatus;
 
       const data = await getOrders(filters);
       setOrders(data.orders || []);
@@ -102,6 +104,7 @@ export default function OrdersPage() {
     setPaymentStatus("");
     setOrderNumber("");
     setCustomerSearch("");
+    setTaskStatus("");
     // Reset filters and fetch all orders
     setTimeout(() => {
       fetchOrders(1); // Reset to first page when clearing filters
@@ -271,7 +274,7 @@ export default function OrdersPage() {
           </div>
 
           {/* Advanced Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Start Date
@@ -327,6 +330,23 @@ export default function OrdersPage() {
                   <option value="Failed">Failed</option>
                   <option value="Refunded">Refunded</option>
                   <option value="Partially Refunded">Partially Refunded</option>
+                </select>
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Task Status
+                <select
+                  value={taskStatus}
+                  onChange={(e) => setTaskStatus(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">All Task Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Assigned">Assigned</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
                 </select>
               </label>
             </div>

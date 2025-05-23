@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import Task from "@/models/Task";
+import TaskStatusHistory from "@/models/TaskStatusHistory";
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { TaskFormData } from "@/types/task";
+import { TaskFormData, TaskStatus } from "@/types/task";
 
 export async function PUT(
   request: NextRequest,
@@ -42,6 +43,9 @@ export async function PUT(
     }
 
     const updateData: Partial<TaskFormData> = await request.json();
+
+    // Store original status for history tracking
+    const originalStatus = task.status as TaskStatus;
 
     // Validate task type if provided
     if (updateData.type) {
@@ -125,6 +129,25 @@ export async function PUT(
     }
 
     const updatedTask = await task.save();
+
+    // Log status change if status was updated
+    if (updateData.status && updateData.status !== originalStatus) {
+      try {
+        await TaskStatusHistory.createStatusChange({
+          taskId: (updatedTask._id as mongoose.Types.ObjectId).toString(),
+          orderId: updatedTask.orderId,
+          previousStatus: originalStatus,
+          newStatus: updateData.status as TaskStatus,
+          changedBy: session.user.id,
+          changedByName:
+            session.user.name || session.user.email || "Unknown User",
+          reason: (updateData as any).statusChangeReason || undefined,
+        });
+      } catch (historyError) {
+        console.error("Error logging status change:", historyError);
+        // Don't fail the request if history logging fails
+      }
+    }
 
     return NextResponse.json(updatedTask);
   } catch (error: unknown) {

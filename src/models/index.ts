@@ -12,6 +12,7 @@ import SearchRanking from "./SearchRanking";
 import Competitor from "./Competitor";
 import Task from "./Task";
 import Contractor from "./Contractor";
+import TaskStatusHistory from "./TaskStatusHistory";
 
 // Export models for convenience
 export {
