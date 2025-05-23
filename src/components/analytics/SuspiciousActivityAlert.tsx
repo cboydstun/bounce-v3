@@ -33,7 +33,7 @@ const SuspiciousActivityAlert: React.FC<SuspiciousActivityAlertProps> = ({
 
     // Only keep groups with multiple visitors (suspicious)
     return Object.entries(groups)
-      .filter(([_, group]) => group.length > 1)
+      .filter(([group]) => group.length > 1)
       .map(([fingerprint, group]) => ({
         fingerprint,
         visitors: group,

@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { usePackageDeals } from "../contexts/PackageDealsContext";
 
 interface PackageDealsCTAProps {
   href: string;

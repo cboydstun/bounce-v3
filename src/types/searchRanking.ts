@@ -1,5 +1,3 @@
-import { Document, Model } from "mongoose";
-
 // Competitor in search results
 export interface Competitor {
   position: number;

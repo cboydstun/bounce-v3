@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Sidebar from "@/components/ui/Sidebar";
-import { ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 
 export default function AdminLayout({
   children,

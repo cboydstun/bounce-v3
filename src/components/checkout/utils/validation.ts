@@ -286,7 +286,7 @@ export const validateDeliveryTime = (time: string): boolean => {
   if (time === "ANY") return true;
 
   // Parse the time
-  const [hours, minutes] = time.split(":").map(Number);
+  const [hours] = time.split(":").map(Number);
 
   // Check if time is between 8:00 AM and 6:00 PM
   return hours >= 8 && hours <= 18;

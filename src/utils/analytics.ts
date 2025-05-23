@@ -191,10 +191,7 @@ export function groupContactsByPeriod(contacts: Contact[], period: string) {
 }
 
 // Calculate product popularity
-export function calculateProductPopularity(
-  contacts: Contact[],
-  products: ProductWithId[],
-) {
+export function calculateProductPopularity(contacts: Contact[]) {
   // Count occurrences of each product
   const productCounts = contacts.reduce(
     (acc, contact) => {

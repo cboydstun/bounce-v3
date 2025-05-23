@@ -31,10 +31,7 @@ const PromoModal: React.FC<PromoModalProps> = ({
     setIsClient(true);
   }, []);
 
-  const {
-    hasCompletedForm: packageDealsVisible,
-    setFormCompleted: setPackageDealsVisible,
-  } = usePackageDeals();
+  const { hasCompletedForm: packageDealsVisible } = usePackageDeals();
 
   useEffect(() => {
     if (!isClient) return; // Only run on client

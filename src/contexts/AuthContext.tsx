@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { useSession, signOut, getSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { IUser } from "@/types/user";
 
 interface AuthContextType {
@@ -33,31 +33,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { data: session, status } = useSession();
   const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
   const router = useRouter();
-
-  // Debug function to check cookies
-  const checkAuthCookies = () => {
-    const cookies = document.cookie.split(";").reduce(
-      (acc, cookie) => {
-        const [name, value] = cookie.trim().split("=");
-        if (name.includes("next-auth")) {
-          acc[name] = "exists";
-        }
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
-  };
 
   useEffect(() => {
     if (status === "loading") {
       setLoading(true);
       return;
     }
-
-    // Check cookies on status change
-    checkAuthCookies();
 
     if (status === "authenticated" && session?.user) {
       // Convert NextAuth session user to our IUser type
@@ -84,18 +67,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      // Check cookies before logout (for debugging)
-      checkAuthCookies();
-
       // Call NextAuth signOut with redirect: false to prevent automatic redirect
       // NextAuth.js will handle clearing cookies and session data
       await signOut({ redirect: false });
 
       // Clear user state
       setUser(null);
-
-      // Check cookies after logout (for debugging)
-      checkAuthCookies();
 
       // Redirect to login page
       router.push("/login");

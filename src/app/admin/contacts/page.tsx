@@ -127,7 +127,7 @@ export default function AdminContacts() {
   };
 
   // Get the NextAuth session
-  const { data: session, status } = useSession();
+  const { status } = useSession();
 
   // Redirect to login if not authenticated
   useEffect(() => {

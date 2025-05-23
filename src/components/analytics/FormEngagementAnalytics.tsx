@@ -505,7 +505,7 @@ export default function FormEngagementAnalytics({
                   .sort((a, b) => a[1] - b[1])
                   .slice(0, 1)
                   .map(
-                    ([field, count]) =>
+                    ([field]) =>
                       `The "${field}" field has the lowest completion rate. Consider making this field optional or providing more guidance.`,
                   )}
               </p>

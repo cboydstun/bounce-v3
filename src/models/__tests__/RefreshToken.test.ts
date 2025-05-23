@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import RefreshToken, { IRefreshToken } from "../RefreshToken";
+import RefreshToken from "../RefreshToken";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 describe("RefreshToken Model", () => {

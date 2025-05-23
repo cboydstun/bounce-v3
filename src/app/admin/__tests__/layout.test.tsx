@@ -3,7 +3,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import AdminLayout from "../layout";
-import { AuthProvider } from "@/contexts/AuthContext";
 
 // Mock the next/navigation module
 jest.mock("next/navigation", () => ({

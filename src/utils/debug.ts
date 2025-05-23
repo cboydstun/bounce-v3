@@ -24,6 +24,7 @@ export const debugLog = (
         safeData = JSON.stringify(sanitizedData, null, 2);
       } catch (err) {
         safeData = "[Circular or complex object]";
+        console.error(`${prefix} Error stringifying data:`, err);
       }
       console.log(`${prefix} ${message}`, safeData);
     } else {
@@ -95,7 +96,7 @@ export const checkAuthCookies = () => {
 
   const cookies = document.cookie.split(";").reduce(
     (acc, cookie) => {
-      const [name, value] = cookie.trim().split("=");
+      const [name] = cookie.trim().split("=");
       if (name && name.includes("next-auth")) {
         acc[name] = "exists";
       }

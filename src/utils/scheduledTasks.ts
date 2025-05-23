@@ -2,7 +2,6 @@ import { SearchKeyword, SearchRanking } from "@/models";
 import { checkKeywordRanking } from "./googleSearchApi";
 import dbConnect from "@/lib/db/mongoose";
 import { sendRankingChangeNotification } from "./emailService";
-import { createDateCT } from "./dateUtils";
 import { RankingChangeNotification } from "@/types/searchRanking";
 
 /**

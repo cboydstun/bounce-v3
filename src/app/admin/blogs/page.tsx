@@ -5,7 +5,7 @@ import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import api from "@/utils/api";
 import { Blog } from "@/types/blog";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { API_ROUTES } from "@/config/constants";
 
 export default function AdminBlogs() {
   const [blogs, setBlogs] = useState<Blog[]>([]);

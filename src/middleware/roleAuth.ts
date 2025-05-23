@@ -26,7 +26,6 @@ export async function withRoleAuth(
     // Debug headers
     const authHeader = req.headers.get("Authorization");
     const userRoleHeader = req.headers.get("X-User-Role");
-    const authDebugHeader = req.headers.get("X-Auth-Debug");
 
     // Method 1: Try to get the session from the server
     const session = await getServerSession(authOptions);

@@ -2,7 +2,6 @@ import mongoose, { Schema } from "mongoose";
 import {
   IContactDocument,
   IContactModel,
-  ConfirmationStatus,
   emailRegex,
   phoneRegex,
 } from "../types/contact";

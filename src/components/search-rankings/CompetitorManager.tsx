@@ -59,6 +59,7 @@ export default function CompetitorManager({
       }
     } catch (err) {
       setError("An unexpected error occurred");
+      err instanceof Error && console.error(err);
     } finally {
       setIsAdding(false);
     }

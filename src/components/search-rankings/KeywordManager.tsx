@@ -57,6 +57,7 @@ export default function KeywordManager({
       }
     } catch (err) {
       setError("An unexpected error occurred");
+      console.error(err);
     } finally {
       setIsAdding(false);
     }

@@ -41,10 +41,7 @@ export async function mockContactsGET(request: NextRequest) {
 /**
  * Mock implementation of the GET by ID handler for contacts API
  */
-export async function mockContactsGETById(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function mockContactsGETById(request: NextRequest) {
   // Check for Authorization header
   const authHeader = request.headers.get("Authorization");
 
@@ -79,10 +76,7 @@ export async function mockContactsGETById(
 /**
  * Mock implementation of the PUT handler for contacts API
  */
-export async function mockContactsPUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function mockContactsPUT(request: NextRequest) {
   // Check for Authorization header
   const authHeader = request.headers.get("Authorization");
 
@@ -117,10 +111,7 @@ export async function mockContactsPUT(
 /**
  * Mock implementation of the PATCH handler for contacts API
  */
-export async function mockContactsPATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function mockContactsPATCH(request: NextRequest) {
   // Check for Authorization header
   const authHeader = request.headers.get("Authorization");
 
@@ -155,10 +146,7 @@ export async function mockContactsPATCH(
 /**
  * Mock implementation of the DELETE handler for contacts API
  */
-export async function mockContactsDELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function mockContactsDELETE(request: NextRequest) {
   // Check for Authorization header
   const authHeader = request.headers.get("Authorization");
 

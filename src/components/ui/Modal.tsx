@@ -17,7 +17,6 @@ const Modal: React.FC<ModalProps> = ({
   onClose,
   onAfterOpen,
   children,
-  className = "",
   position = "center",
 }) => {
   // Track scroll position

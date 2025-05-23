@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { usePathname } from "next/navigation";
 import { detectBrowser, detectOS } from "@/utils/device";
@@ -13,6 +13,10 @@ import { detectBrowser, detectOS } from "@/utils/device";
 function Fingerprint() {
   const [fingerprint, setFingerprint] = useState<string>("");
   const pathname = usePathname();
+
+  // Function to get the fingerprint and other visitor data
+  // and send it to the API
+  console.log(fingerprint);
 
   useEffect(() => {
     const trackVisitor = async () => {

@@ -5,7 +5,7 @@ import {
   OrderStep,
   steps,
 } from "./types";
-import { PaymentStatus, OrderStatus, PaymentMethod } from "@/types/order";
+import { OrderStatus, PaymentMethod } from "@/types/order";
 
 // Helper function to calculate specific time charge
 const calculateSpecificTimeCharge = (

@@ -52,6 +52,7 @@ export function verifyAccessToken(token: string): AccessToken | null {
   try {
     return jwt.verify(token, process.env.JWT_SECRET!) as AccessToken;
   } catch (error) {
+    console.error("Error verifying access token:", error);
     return null;
   }
 }
@@ -61,6 +62,7 @@ export function verifyRefreshToken(token: string): RefreshToken | null {
   try {
     return jwt.verify(token, process.env.JWT_SECRET!) as RefreshToken;
   } catch (error) {
+    console.error("Error verifying refresh token:", error);
     return null;
   }
 }

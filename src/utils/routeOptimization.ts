@@ -130,7 +130,6 @@ export async function optimizeRoute(
     let currentLocationIndex = 0;
     let totalDistance = 0;
     let totalDuration = 0;
-    let currentTime = new Date(startTime.getTime()); // Clone the start time
 
     while (visited.size <= contactsWithCoords.length) {
       // Find the nearest unvisited location

@@ -15,7 +15,6 @@ interface PayPalCheckoutProps {
 export function PayPalCheckout({
   amount,
   currency,
-  rentalData,
   onSuccess,
   onError,
   disabled = false,

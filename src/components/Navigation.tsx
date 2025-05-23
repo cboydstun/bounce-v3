@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import { usePackageDeals } from "../contexts/PackageDealsContext";
 import ConditionalPackageLink from "./ConditionalPackageLink";
 
 const Navigation = () => {

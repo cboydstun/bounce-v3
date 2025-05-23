@@ -1,14 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import {
-  IOrderDocument,
-  IOrderModel,
-  OrderStatus,
-  PaymentStatus,
-  PaymentMethod,
-  OrderItemType,
-  Currency,
-  PayPalTransactionStatus,
-} from "../types/order";
+import { IOrderDocument, IOrderModel, OrderStatus } from "../types/order";
 import Counter from "./Counter";
 
 // PayPal transaction schema
