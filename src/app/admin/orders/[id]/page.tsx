@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { TaskSection } from "@/components/tasks/TaskSection";
 import { getOrderById } from "@/utils/api";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
 
@@ -476,29 +477,8 @@ export default function OrderDetailPage({ params }: PageProps) {
           </div>
         )}
 
-      {/* Tasks */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-        <h2 className="text-lg font-medium mb-4">Tasks</h2>
-        {order.tasks && order.tasks.length > 0 ? (
-          <ul className="space-y-2">
-            {order.tasks.map((task, index) => (
-              <li
-                key={index}
-                className="flex items-center p-2 bg-gray-50 rounded"
-              >
-                <span className="w-6 h-6 flex items-center justify-center bg-blue-100 text-blue-800 rounded-full mr-2">
-                  {index + 1}
-                </span>
-                <span className="text-sm text-gray-900">{task}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-gray-500">
-            No tasks assigned to this order.
-          </p>
-        )}
-      </div>
+      {/* Task Management Section */}
+      <TaskSection orderId={order._id} />
 
       {/* Notes */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-6">

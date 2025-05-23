@@ -10,6 +10,7 @@ import PartyPackage from "./PartyPackage";
 import SearchKeyword from "./SearchKeyword";
 import SearchRanking from "./SearchRanking";
 import Competitor from "./Competitor";
+import Task from "./Task";
 
 // Export models for convenience
 export {
@@ -24,6 +25,7 @@ export {
   SearchKeyword,
   SearchRanking,
   Competitor,
+  Task,
 };
 
 // This file ensures all models are registered together
