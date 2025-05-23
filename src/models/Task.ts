@@ -46,6 +46,17 @@ const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
       default: "Pending",
       index: true,
     },
+    assignedContractors: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: function (v: string[]) {
+          return v.every((id) => mongoose.Types.ObjectId.isValid(id));
+        },
+        message: "All contractor IDs must be valid ObjectIds",
+      },
+      index: true,
+    },
     assignedTo: {
       type: String,
       trim: true,
@@ -131,6 +142,7 @@ TaskSchema.statics.findByAssignee = function (assignedTo: string) {
 TaskSchema.index({ orderId: 1, status: 1 });
 TaskSchema.index({ scheduledDateTime: 1, status: 1 });
 TaskSchema.index({ assignedTo: 1, status: 1 });
+TaskSchema.index({ assignedContractors: 1, status: 1 });
 TaskSchema.index({ type: 1, scheduledDateTime: 1 });
 
 // Store original document for status transition validation

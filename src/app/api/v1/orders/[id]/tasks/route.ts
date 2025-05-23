@@ -148,6 +148,7 @@ export async function POST(
       scheduledDateTime: scheduledDate,
       priority: taskData.priority || "Medium",
       status: taskData.status || "Pending",
+      assignedContractors: taskData.assignedContractors || [],
       assignedTo: taskData.assignedTo?.trim() || undefined,
     });
 

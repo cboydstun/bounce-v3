@@ -37,6 +37,7 @@ const navItems: NavItem[] = [
   { name: "Blogs", href: "/admin/blogs", icon: NewspaperIcon },
   { name: "Products", href: "/admin/products", icon: ShoppingBagIcon },
   { name: "Contacts", href: "/admin/contacts", icon: UserGroupIcon },
+  { name: "Contractors", href: "/admin/contractors", icon: UsersIcon },
   { name: "Orders", href: "/admin/orders", icon: ShoppingCartIcon },
   { name: "Calendar", href: "/admin/calendar", icon: CalendarIcon },
   { name: "Routes", href: "/admin/routes", icon: MapIcon },
@@ -48,7 +49,7 @@ const navItems: NavItem[] = [
     icon: MagnifyingGlassIcon,
   },
   { name: "Competitors", href: "/admin/competitors", icon: UserGroupIcon },
-  { name: "Visitors", href: "/admin/visitors", icon: UsersIcon },
+  { name: "Visitors", href: "/admin/visitors", icon: UserGroupIcon },
   { name: "Promo Optins", href: "/admin/promo-optins", icon: TagIcon },
 ];
 

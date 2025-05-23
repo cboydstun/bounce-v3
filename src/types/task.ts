@@ -31,7 +31,8 @@ export interface Task {
   scheduledDateTime: Date; // When the task is scheduled
   priority: TaskPriority; // Task priority level
   status: TaskStatus; // Current task status
-  assignedTo?: string; // Optional: contractor name/company
+  assignedContractors: string[]; // Array of contractor IDs
+  assignedTo?: string; // Optional: computed field for backward compatibility
   createdAt: Date; // Task creation date
   updatedAt: Date; // Task last update date
 }
@@ -45,7 +46,8 @@ export interface TaskFormData {
   scheduledDateTime: Date | string; // When the task is scheduled
   priority: TaskPriority; // Task priority level
   status?: TaskStatus; // Optional: defaults to "Pending"
-  assignedTo?: string; // Optional: contractor name/company
+  assignedContractors?: string[]; // Optional: array of contractor IDs
+  assignedTo?: string; // Optional: contractor name/company (backward compatibility)
 }
 
 /**

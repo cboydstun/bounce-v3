@@ -105,6 +105,9 @@ export async function PUT(
             typeof updateData[key as keyof TaskFormData] === "string"
               ? (updateData[key as keyof TaskFormData] as string).trim()
               : updateData[key as keyof TaskFormData];
+        } else if (key === "assignedContractors") {
+          // Handle contractor assignments
+          (task as any)[key] = updateData[key as keyof TaskFormData] || [];
         } else {
           (task as any)[key] = updateData[key as keyof TaskFormData];
         }
@@ -114,6 +117,11 @@ export async function PUT(
     // Handle assignedTo field specially (can be set to empty string to clear)
     if ("assignedTo" in updateData) {
       task.assignedTo = updateData.assignedTo?.trim() || undefined;
+    }
+
+    // Handle assignedContractors field specially
+    if ("assignedContractors" in updateData) {
+      task.assignedContractors = updateData.assignedContractors || [];
     }
 
     const updatedTask = await task.save();

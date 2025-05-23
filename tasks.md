@@ -4,7 +4,7 @@
 
 A comprehensive task management system for bounce house rental operations, integrated into the existing order management workflow. This system allows admins to create, track, and manage delivery, setup, pickup, and maintenance tasks for each order.
 
-## Implementation Status: ✅ COMPLETE
+## Implementation Status: ✅ COMPLETE + ENHANCED
 
 ### Phase 1: Backend Foundation ✅
 
@@ -70,6 +70,44 @@ A comprehensive task management system for bounce house rental operations, integ
   - Added Task model to central model registry
   - Ensures proper model initialization
 
+### Phase 4: Contractor Assignment System ✅
+
+- **Contractor Model** (`src/models/Contractor.ts`)
+
+  - Comprehensive contractor management with skills tracking
+  - Active/inactive status management
+  - Contact information storage (email, phone)
+  - Flexible skills array for specialization tracking
+  - Soft delete functionality (deactivation)
+
+- **Contractor APIs** (`src/app/api/v1/contractors/`)
+
+  - `GET /api/v1/contractors` - List all contractors (with filtering)
+  - `POST /api/v1/contractors` - Create new contractor
+  - `GET /api/v1/contractors/[id]` - Get individual contractor
+  - `PUT /api/v1/contractors/[id]` - Update contractor details
+  - `DELETE /api/v1/contractors/[id]` - Deactivate contractor
+
+- **Enhanced Task Assignment**
+
+  - Multi-contractor assignment capability
+  - Visual contractor selection interface
+  - Skills-based contractor recommendations
+  - Real-time contractor loading and display
+  - Backward compatibility with legacy assignments
+
+- **Contractor Management Interface** (`src/app/admin/contractors/page.tsx`)
+
+  - Full CRUD contractor management
+  - Skills management with add/remove functionality
+  - Active/inactive status toggle
+  - Responsive grid layout with contractor cards
+  - Modal-based forms for create/edit operations
+
+- **Navigation Integration** (`src/components/ui/Sidebar.tsx`)
+  - Added "Contractors" link to admin navigation
+  - Positioned logically in the admin workflow
+
 ## Features Implemented
 
 ### Task Types
@@ -126,7 +164,20 @@ interface Task {
   scheduledDateTime: Date; // When task is scheduled
   priority: "High" | "Medium" | "Low";
   status: "Pending" | "Assigned" | "In Progress" | "Completed" | "Cancelled";
-  assignedTo?: string; // Optional contractor (max 200 chars)
+  assignedContractors: string[]; // Array of contractor IDs
+  assignedTo?: string; // Legacy field for backward compatibility
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Contractor {
+  _id: string;
+  name: string; // Contractor/company name
+  email?: string; // Contact email
+  phone?: string; // Contact phone
+  skills?: string[]; // Array of skills/specialties
+  isActive: boolean; // Whether contractor is active
+  notes?: string; // Admin notes about contractor
   createdAt: Date;
   updatedAt: Date;
 }

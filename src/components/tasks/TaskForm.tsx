@@ -8,6 +8,7 @@ import {
   TaskPriority,
   TaskStatus,
 } from "@/types/task";
+import { Contractor } from "@/types/contractor";
 
 interface TaskFormProps {
   isOpen: boolean;
@@ -30,10 +31,20 @@ export function TaskForm({
     scheduledDateTime: "",
     priority: "Medium",
     status: "Pending",
+    assignedContractors: [],
     assignedTo: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [contractors, setContractors] = useState<Contractor[]>([]);
+  const [loadingContractors, setLoadingContractors] = useState(false);
+
+  // Load contractors when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadContractors();
+    }
+  }, [isOpen]);
 
   // Reset form when modal opens/closes or task changes
   useEffect(() => {
@@ -48,6 +59,7 @@ export function TaskForm({
             .slice(0, 16),
           priority: task.priority,
           status: task.status,
+          assignedContractors: task.assignedContractors || [],
           assignedTo: task.assignedTo || "",
         });
       } else {
@@ -60,12 +72,30 @@ export function TaskForm({
           scheduledDateTime: now.toISOString().slice(0, 16),
           priority: "Medium",
           status: "Pending",
+          assignedContractors: [],
           assignedTo: "",
         });
       }
       setErrors({});
     }
   }, [isOpen, task]);
+
+  const loadContractors = async () => {
+    setLoadingContractors(true);
+    try {
+      const response = await fetch("/api/v1/contractors");
+      if (response.ok) {
+        const contractorData = await response.json();
+        setContractors(contractorData);
+      } else {
+        console.error("Failed to load contractors");
+      }
+    } catch (error) {
+      console.error("Error loading contractors:", error);
+    } finally {
+      setLoadingContractors(false);
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -79,6 +109,44 @@ export function TaskForm({
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+  };
+
+  const handleContractorToggle = (contractorId: string) => {
+    setFormData((prev) => {
+      const currentContractors = prev.assignedContractors || [];
+      const isSelected = currentContractors.includes(contractorId);
+
+      if (isSelected) {
+        // Remove contractor
+        return {
+          ...prev,
+          assignedContractors: currentContractors.filter(
+            (id) => id !== contractorId,
+          ),
+        };
+      } else {
+        // Add contractor
+        return {
+          ...prev,
+          assignedContractors: [...currentContractors, contractorId],
+        };
+      }
+    });
+  };
+
+  const getSelectedContractorNames = () => {
+    if (
+      !formData.assignedContractors ||
+      formData.assignedContractors.length === 0
+    ) {
+      return "No contractors assigned";
+    }
+
+    const selectedContractors = contractors.filter((contractor) =>
+      formData.assignedContractors?.includes(contractor._id),
+    );
+
+    return selectedContractors.map((contractor) => contractor.name).join(", ");
   };
 
   const validateForm = (): boolean => {
@@ -319,13 +387,68 @@ export function TaskForm({
             </div>
           )}
 
-          {/* Assigned To */}
+          {/* Contractor Assignment */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Assign Contractors
+            </label>
+            {loadingContractors ? (
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+                Loading contractors...
+              </div>
+            ) : contractors.length === 0 ? (
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+                No contractors available
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {/* Selected contractors display */}
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+                  {getSelectedContractorNames()}
+                </div>
+
+                {/* Contractor selection list */}
+                <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md">
+                  {contractors.map((contractor) => (
+                    <label
+                      key={contractor._id}
+                      className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={
+                          formData.assignedContractors?.includes(
+                            contractor._id,
+                          ) || false
+                        }
+                        onChange={() => handleContractorToggle(contractor._id)}
+                        className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        disabled={isLoading}
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">
+                          {contractor.name}
+                        </div>
+                        {contractor.skills && contractor.skills.length > 0 && (
+                          <div className="text-xs text-gray-500">
+                            Skills: {contractor.skills.join(", ")}
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Legacy Assigned To field (for backward compatibility) */}
           <div>
             <label
               htmlFor="assignedTo"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Assigned To
+              Additional Notes (Legacy)
             </label>
             <input
               type="text"
@@ -336,7 +459,7 @@ export function TaskForm({
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.assignedTo ? "border-red-500" : "border-gray-300"
               }`}
-              placeholder="Contractor name or company"
+              placeholder="Additional contractor notes (optional)"
               disabled={isLoading}
             />
             {errors.assignedTo && (
