@@ -27,9 +27,21 @@ jest.mock("@/app/api/auth/[...nextauth]/route", () => ({
 }));
 
 describe("Role Auth Middleware", () => {
+  let consoleWarnSpy: jest.SpyInstance;
+  let consoleErrorSpy: jest.SpyInstance;
+
   // Reset mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
+    // Spy on console methods to verify they're called and suppress output
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    // Restore console methods after each test
+    consoleWarnSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 
   // Mock handler function
@@ -56,9 +68,10 @@ describe("Role Auth Middleware", () => {
   };
 
   describe("withRoleAuth", () => {
-    it("returns 401 if user is not authenticated", async () => {
+    it("returns 401 if user is not authenticated and logs warning", async () => {
       // Mock getServerSession to return null (not authenticated)
       (getServerSession as jest.Mock).mockResolvedValue(null);
+      (getToken as jest.Mock).mockResolvedValue(null);
 
       const req = createMockRequest();
       const result = await withRoleAuth(req, mockHandler, "admin");
@@ -71,9 +84,18 @@ describe("Role Auth Middleware", () => {
 
       // Handler should not be called
       expect(mockHandler).not.toHaveBeenCalled();
+      
+      // Should log warning about no valid authentication
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "Role auth middleware: No valid authentication found",
+        { url: undefined, method: undefined }
+      );
+      
+      // Should not log error
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
-    it("returns 403 if user does not have required role", async () => {
+    it("returns 403 if user does not have required role and logs warning", async () => {
       // Mock getServerSession to return customer role
       (getServerSession as jest.Mock).mockResolvedValue({
         user: {
@@ -94,6 +116,15 @@ describe("Role Auth Middleware", () => {
 
       // Handler should not be called
       expect(mockHandler).not.toHaveBeenCalled();
+      
+      // Should log warning about insufficient role
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "Role auth middleware: Insufficient role",
+        { userRole: "customer", requiredRole: "admin" }
+      );
+      
+      // Should not log error
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
     it("allows access if user has exact required role", async () => {
@@ -117,6 +148,10 @@ describe("Role Auth Middleware", () => {
         email: "user@example.com",
         role: "customer",
       });
+      
+      // Console methods should not be called for successful auth
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
     it("allows admin access to customer routes", async () => {
@@ -140,13 +175,16 @@ describe("Role Auth Middleware", () => {
         email: "admin@example.com",
         role: "admin",
       });
+      
+      // Console methods should not be called for successful auth
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
-    it("handles authentication errors gracefully", async () => {
+    it("handles authentication errors gracefully and logs error", async () => {
       // Mock getServerSession to throw an error
-      (getServerSession as jest.Mock).mockRejectedValue(
-        new Error("Auth error"),
-      );
+      const authError = new Error("Auth error");
+      (getServerSession as jest.Mock).mockRejectedValue(authError);
 
       const req = createMockRequest();
       await withRoleAuth(req, mockHandler, "admin");
@@ -159,6 +197,15 @@ describe("Role Auth Middleware", () => {
 
       // Handler should not be called
       expect(mockHandler).not.toHaveBeenCalled();
+      
+      // Should log error
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Role auth middleware error:",
+        authError
+      );
+      
+      // Should not log warning
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
     });
 
     it("tries to use JWT token if session is not available", async () => {
@@ -183,6 +230,43 @@ describe("Role Auth Middleware", () => {
         email: "token-user@example.com",
         role: "customer",
       });
+      
+      // Console methods should not be called for successful auth
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it("returns 403 if JWT token user has insufficient role and logs warning", async () => {
+      // Mock getServerSession to return null
+      (getServerSession as jest.Mock).mockResolvedValue(null);
+
+      // Mock getToken to return a valid token with customer role
+      (getToken as jest.Mock).mockResolvedValue({
+        id: "token-user-123",
+        email: "token-user@example.com",
+        role: "customer",
+      });
+
+      const req = createMockRequest();
+      await withRoleAuth(req, mockHandler, "admin");
+
+      // Should return 403 Forbidden
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: "Unauthorized - Requires admin role" },
+        { status: 403 },
+      );
+
+      // Handler should not be called
+      expect(mockHandler).not.toHaveBeenCalled();
+      
+      // Should log warning about insufficient role from token
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "Role auth middleware: Insufficient role from token",
+        { userRole: "customer", requiredRole: "admin" }
+      );
+      
+      // Should not log error
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
     it("checks Authorization header if session and token are not available", async () => {
@@ -210,6 +294,46 @@ describe("Role Auth Middleware", () => {
         email: "",
         role: "customer",
       });
+      
+      // Console methods should not be called for successful auth
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it("returns 403 if Authorization header user has insufficient role and logs warning", async () => {
+      // Mock getServerSession and getToken to return null
+      (getServerSession as jest.Mock).mockResolvedValue(null);
+      (getToken as jest.Mock).mockResolvedValue(null);
+
+      // Create request with Authorization header but insufficient role
+      const req = createMockRequest();
+      const headers = new Headers();
+      headers.set("Authorization", "Bearer test-token-123");
+      headers.set("X-User-Role", "customer");
+      Object.defineProperty(req, "headers", {
+        value: headers,
+        writable: true,
+      });
+
+      await withRoleAuth(req, mockHandler, "admin");
+
+      // Should return 403 Forbidden
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: "Unauthorized - Requires admin role" },
+        { status: 403 },
+      );
+
+      // Handler should not be called
+      expect(mockHandler).not.toHaveBeenCalled();
+      
+      // Should log warning about insufficient role from header
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "Role auth middleware: Insufficient role from header",
+        { userRole: "customer", requiredRole: "admin" }
+      );
+      
+      // Should not log error
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -235,6 +359,10 @@ describe("Role Auth Middleware", () => {
         email: "admin@example.com",
         role: "admin",
       });
+      
+      // Console methods should not be called for successful auth
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -260,6 +388,10 @@ describe("Role Auth Middleware", () => {
         email: "user@example.com",
         role: "customer",
       });
+      
+      // Console methods should not be called for successful auth
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
     it("allows admin access to user routes", async () => {
@@ -283,6 +415,10 @@ describe("Role Auth Middleware", () => {
         email: "admin@example.com",
         role: "admin",
       });
+      
+      // Console methods should not be called for successful auth
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
   });
 });

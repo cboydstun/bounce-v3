@@ -26,9 +26,21 @@ jest.mock("@/app/api/auth/[...nextauth]/route", () => ({
 }));
 
 describe("Auth Middleware", () => {
+  let consoleWarnSpy: jest.SpyInstance;
+  let consoleErrorSpy: jest.SpyInstance;
+
   // Reset mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
+    // Spy on console methods to verify they're called and suppress output
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    // Restore console methods after each test
+    consoleWarnSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 
   // Mock handler function
@@ -69,6 +81,10 @@ describe("Auth Middleware", () => {
     // Session functions should not be called
     expect(getServerSession).not.toHaveBeenCalled();
     expect(getToken).not.toHaveBeenCalled();
+    
+    // Console methods should not be called for successful auth
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
   it("authenticates using NextAuth session", async () => {
@@ -92,6 +108,10 @@ describe("Auth Middleware", () => {
       email: "session@example.com",
       role: "customer",
     });
+    
+    // Console methods should not be called for successful auth
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
   it("falls back to JWT token if session is not available", async () => {
@@ -116,6 +136,10 @@ describe("Auth Middleware", () => {
       email: "token@example.com",
       role: "user",
     });
+    
+    // Console methods should not be called for successful auth
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
   it("falls back to Authorization header if session and token are not available", async () => {
@@ -139,9 +163,13 @@ describe("Auth Middleware", () => {
       id: "user-id-from-header",
       email: "",
     });
+    
+    // Console methods should not be called for successful auth
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
-  it("returns 401 if no authentication method succeeds", async () => {
+  it("returns 401 if no authentication method succeeds and logs warning", async () => {
     // Mock getServerSession to return null
     (getServerSession as jest.Mock).mockResolvedValue(null);
 
@@ -161,11 +189,21 @@ describe("Auth Middleware", () => {
 
     // Handler should not be called
     expect(mockHandler).not.toHaveBeenCalled();
+    
+    // Should log warning about no valid authentication
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      "Auth middleware: No valid authentication found",
+      { url: undefined, method: undefined }
+    );
+    
+    // Should not log error
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
-  it("handles authentication errors gracefully", async () => {
+  it("handles authentication errors gracefully and logs error", async () => {
     // Mock getServerSession to throw an error
-    (getServerSession as jest.Mock).mockRejectedValue(new Error("Auth error"));
+    const authError = new Error("Auth error");
+    (getServerSession as jest.Mock).mockRejectedValue(authError);
 
     const req = createMockRequest();
     await withAuth(req, mockHandler);
@@ -178,5 +216,14 @@ describe("Auth Middleware", () => {
 
     // Handler should not be called
     expect(mockHandler).not.toHaveBeenCalled();
+    
+    // Should log error
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Auth middleware error:",
+      authError
+    );
+    
+    // Should not log warning
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 });
