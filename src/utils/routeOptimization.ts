@@ -245,7 +245,7 @@ export async function optimizeRoute(
       endTime,
     };
   } catch (error) {
-    console.error("Route optimization error:", error);
+    // Removed console.error to prevent test pollution
     throw new Error(
       `Route optimization failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
