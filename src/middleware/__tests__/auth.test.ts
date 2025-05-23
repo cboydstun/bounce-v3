@@ -33,8 +33,8 @@ describe("Auth Middleware", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Spy on console methods to verify they're called and suppress output
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -81,7 +81,7 @@ describe("Auth Middleware", () => {
     // Session functions should not be called
     expect(getServerSession).not.toHaveBeenCalled();
     expect(getToken).not.toHaveBeenCalled();
-    
+
     // Console methods should not be called for successful auth
     expect(consoleWarnSpy).not.toHaveBeenCalled();
     expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -108,7 +108,7 @@ describe("Auth Middleware", () => {
       email: "session@example.com",
       role: "customer",
     });
-    
+
     // Console methods should not be called for successful auth
     expect(consoleWarnSpy).not.toHaveBeenCalled();
     expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -136,7 +136,7 @@ describe("Auth Middleware", () => {
       email: "token@example.com",
       role: "user",
     });
-    
+
     // Console methods should not be called for successful auth
     expect(consoleWarnSpy).not.toHaveBeenCalled();
     expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -163,7 +163,7 @@ describe("Auth Middleware", () => {
       id: "user-id-from-header",
       email: "",
     });
-    
+
     // Console methods should not be called for successful auth
     expect(consoleWarnSpy).not.toHaveBeenCalled();
     expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -189,13 +189,13 @@ describe("Auth Middleware", () => {
 
     // Handler should not be called
     expect(mockHandler).not.toHaveBeenCalled();
-    
+
     // Should log warning about no valid authentication
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       "Auth middleware: No valid authentication found",
-      { url: undefined, method: undefined }
+      { url: undefined, method: undefined },
     );
-    
+
     // Should not log error
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
@@ -216,13 +216,13 @@ describe("Auth Middleware", () => {
 
     // Handler should not be called
     expect(mockHandler).not.toHaveBeenCalled();
-    
+
     // Should log error
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       "Auth middleware error:",
-      authError
+      authError,
     );
-    
+
     // Should not log warning
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });

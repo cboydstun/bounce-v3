@@ -101,7 +101,7 @@ test("should handle errors gracefully", () => {
 
   // Assert - Verify error was logged
   expect(console.error).toHaveBeenCalledWith(
-    expect.stringContaining("Invalid input")
+    expect.stringContaining("Invalid input"),
   );
   expect(result).toBe(null);
 });
@@ -158,7 +158,7 @@ test("should log with correct format", () => {
   myLogger.info("user123", "logged in");
 
   expect(console.log).toHaveBeenCalledWith(
-    expect.stringMatching(/\[\d{4}-\d{2}-\d{2}\] user123: logged in/)
+    expect.stringMatching(/\[\d{4}-\d{2}-\d{2}\] user123: logged in/),
   );
 });
 ```
@@ -174,7 +174,7 @@ test("PayPal script should log initialization steps", () => {
 
   // Assert - Verify debug logs were called (but not visible in output)
   expect(console.log).toHaveBeenCalledWith(
-    expect.stringContaining("[PayPalScript] Initializing")
+    expect.stringContaining("[PayPalScript] Initializing"),
   );
 });
 ```

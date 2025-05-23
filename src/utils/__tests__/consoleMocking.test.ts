@@ -3,7 +3,7 @@
  * Following TDD - these tests define the expected behavior before implementation
  */
 
-describe('Console Mocking', () => {
+describe("Console Mocking", () => {
   let originalConsole: typeof console;
 
   beforeAll(() => {
@@ -16,49 +16,49 @@ describe('Console Mocking', () => {
     Object.assign(console, originalConsole);
   });
 
-  test('should mock console.log by default in test environment', () => {
+  test("should mock console.log by default in test environment", () => {
     // Arrange & Act
-    console.log('This should be mocked');
-    
+    console.log("This should be mocked");
+
     // Assert
-    expect(console.log).toHaveBeenCalledWith('This should be mocked');
+    expect(console.log).toHaveBeenCalledWith("This should be mocked");
   });
 
-  test('should mock console.error by default in test environment', () => {
+  test("should mock console.error by default in test environment", () => {
     // Arrange & Act
-    console.error('This error should be mocked');
-    
+    console.error("This error should be mocked");
+
     // Assert
-    expect(console.error).toHaveBeenCalledWith('This error should be mocked');
+    expect(console.error).toHaveBeenCalledWith("This error should be mocked");
   });
 
-  test('should mock console.warn by default in test environment', () => {
+  test("should mock console.warn by default in test environment", () => {
     // Arrange & Act
-    console.warn('This warning should be mocked');
-    
+    console.warn("This warning should be mocked");
+
     // Assert
-    expect(console.warn).toHaveBeenCalledWith('This warning should be mocked');
+    expect(console.warn).toHaveBeenCalledWith("This warning should be mocked");
   });
 
-  test('should provide access to original console methods when needed', () => {
+  test("should provide access to original console methods when needed", () => {
     // Arrange
     const mockFn = jest.fn();
     const originalLog = console.log;
-    
+
     // Act
     console.log = mockFn;
-    console.log('test message');
-    
+    console.log("test message");
+
     // Assert
-    expect(mockFn).toHaveBeenCalledWith('test message');
-    expect(typeof originalLog).toBe('function');
+    expect(mockFn).toHaveBeenCalledWith("test message");
+    expect(typeof originalLog).toBe("function");
   });
 
-  test('should allow selective console output restoration for debugging', () => {
+  test("should allow selective console output restoration for debugging", () => {
     // This test verifies that we can restore console output when needed
     // The implementation will provide utility functions for this
-    expect(typeof console.log).toBe('function');
-    expect(typeof console.error).toBe('function');
-    expect(typeof console.warn).toBe('function');
+    expect(typeof console.log).toBe("function");
+    expect(typeof console.error).toBe("function");
+    expect(typeof console.warn).toBe("function");
   });
 });

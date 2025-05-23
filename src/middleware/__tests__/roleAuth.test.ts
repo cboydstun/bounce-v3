@@ -34,8 +34,8 @@ describe("Role Auth Middleware", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Spy on console methods to verify they're called and suppress output
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -84,13 +84,13 @@ describe("Role Auth Middleware", () => {
 
       // Handler should not be called
       expect(mockHandler).not.toHaveBeenCalled();
-      
+
       // Should log warning about no valid authentication
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         "Role auth middleware: No valid authentication found",
-        { url: undefined, method: undefined }
+        { url: undefined, method: undefined },
       );
-      
+
       // Should not log error
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
@@ -116,13 +116,13 @@ describe("Role Auth Middleware", () => {
 
       // Handler should not be called
       expect(mockHandler).not.toHaveBeenCalled();
-      
+
       // Should log warning about insufficient role
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         "Role auth middleware: Insufficient role",
-        { userRole: "customer", requiredRole: "admin" }
+        { userRole: "customer", requiredRole: "admin" },
       );
-      
+
       // Should not log error
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
@@ -148,7 +148,7 @@ describe("Role Auth Middleware", () => {
         email: "user@example.com",
         role: "customer",
       });
-      
+
       // Console methods should not be called for successful auth
       expect(consoleWarnSpy).not.toHaveBeenCalled();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -175,7 +175,7 @@ describe("Role Auth Middleware", () => {
         email: "admin@example.com",
         role: "admin",
       });
-      
+
       // Console methods should not be called for successful auth
       expect(consoleWarnSpy).not.toHaveBeenCalled();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -197,13 +197,13 @@ describe("Role Auth Middleware", () => {
 
       // Handler should not be called
       expect(mockHandler).not.toHaveBeenCalled();
-      
+
       // Should log error
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "Role auth middleware error:",
-        authError
+        authError,
       );
-      
+
       // Should not log warning
       expect(consoleWarnSpy).not.toHaveBeenCalled();
     });
@@ -230,7 +230,7 @@ describe("Role Auth Middleware", () => {
         email: "token-user@example.com",
         role: "customer",
       });
-      
+
       // Console methods should not be called for successful auth
       expect(consoleWarnSpy).not.toHaveBeenCalled();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -258,13 +258,13 @@ describe("Role Auth Middleware", () => {
 
       // Handler should not be called
       expect(mockHandler).not.toHaveBeenCalled();
-      
+
       // Should log warning about insufficient role from token
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         "Role auth middleware: Insufficient role from token",
-        { userRole: "customer", requiredRole: "admin" }
+        { userRole: "customer", requiredRole: "admin" },
       );
-      
+
       // Should not log error
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
@@ -294,7 +294,7 @@ describe("Role Auth Middleware", () => {
         email: "",
         role: "customer",
       });
-      
+
       // Console methods should not be called for successful auth
       expect(consoleWarnSpy).not.toHaveBeenCalled();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -325,13 +325,13 @@ describe("Role Auth Middleware", () => {
 
       // Handler should not be called
       expect(mockHandler).not.toHaveBeenCalled();
-      
+
       // Should log warning about insufficient role from header
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         "Role auth middleware: Insufficient role from header",
-        { userRole: "customer", requiredRole: "admin" }
+        { userRole: "customer", requiredRole: "admin" },
       );
-      
+
       // Should not log error
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
@@ -359,7 +359,7 @@ describe("Role Auth Middleware", () => {
         email: "admin@example.com",
         role: "admin",
       });
-      
+
       // Console methods should not be called for successful auth
       expect(consoleWarnSpy).not.toHaveBeenCalled();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -388,7 +388,7 @@ describe("Role Auth Middleware", () => {
         email: "user@example.com",
         role: "customer",
       });
-      
+
       // Console methods should not be called for successful auth
       expect(consoleWarnSpy).not.toHaveBeenCalled();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -415,7 +415,7 @@ describe("Role Auth Middleware", () => {
         email: "admin@example.com",
         role: "admin",
       });
-      
+
       // Console methods should not be called for successful auth
       expect(consoleWarnSpy).not.toHaveBeenCalled();
       expect(consoleErrorSpy).not.toHaveBeenCalled();

@@ -151,7 +151,9 @@ describe("Middleware", () => {
 
   it("handles errors gracefully", async () => {
     // Mock console.error to suppress error output during testing
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
 
     // Mock getToken to throw an error
     (getToken as jest.Mock).mockRejectedValue(new Error("Test error"));
@@ -160,7 +162,10 @@ describe("Middleware", () => {
     await middleware(req);
 
     // Should log the error
-    expect(consoleSpy).toHaveBeenCalledWith("Middleware error:", expect.any(Error));
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Middleware error:",
+      expect.any(Error),
+    );
 
     // Should proceed to next middleware even on error
     expect(NextResponse.next).toHaveBeenCalled();

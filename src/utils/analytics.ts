@@ -68,7 +68,7 @@ export function calculateRevenueData(
 
         // If product not found, log a warning (but not during tests)
         if (!product) {
-          if (process.env.NODE_ENV !== 'test') {
+          if (process.env.NODE_ENV !== "test") {
             console.warn(`Product not found for bouncer: ${contact.bouncer}`);
           }
           return total;
