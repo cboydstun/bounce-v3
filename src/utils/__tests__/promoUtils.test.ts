@@ -8,12 +8,18 @@ describe("getCurrentPromotion", () => {
       startDate: "2025-01-01",
       endDate: "2025-01-10",
       message: "Test message 1",
+      promoTitle: "Promo Title 1",
+      promoDescription: "Promo Description 1",
+      promoImage: "promo1.png",
     },
     {
       name: "Test Holiday 2",
       startDate: "2025-03-15",
       endDate: "2025-03-25",
       message: "Test message 2",
+      promoTitle: "Promo Title 2",
+      promoDescription: "Promo Description 2",
+      promoImage: "promo2.png",
     },
   ];
 

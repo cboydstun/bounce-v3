@@ -2,7 +2,6 @@ import { writeFileSync } from "fs";
 import { globby } from "globby";
 import prettier from "prettier";
 import axios from "axios";
-import path from "path";
 
 interface SitemapUrl {
   url: string;
@@ -36,6 +35,7 @@ function formatDate(
     return date.toISOString().split("T")[0];
   } catch (error) {
     console.warn(`Invalid date format: ${dateString}, using fallback`);
+    console.error(error);
     return fallback;
   }
 }

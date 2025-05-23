@@ -23,6 +23,7 @@ interface SidebarProps {
   isCollapsed: boolean;
   setIsCollapsed: (isCollapsed: boolean) => void;
   onLogout?: () => void;
+  userRole?: string; // New prop for user role
 }
 
 interface NavItem {
@@ -55,6 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   setIsCollapsed,
   onLogout,
+  userRole,
 }) => {
   const pathname = usePathname();
 
@@ -66,9 +68,21 @@ const Sidebar: React.FC<SidebarProps> = ({
     >
       <div className="flex items-center justify-between h-16 px-4 border-b">
         {!isCollapsed && (
-          <h1 className="text-xl font-bold text-primary-purple truncate">
-            Admin Dashboard
-          </h1>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold text-primary-purple truncate">
+              Admin Dashboard
+            </h1>
+            {userRole && (
+              <div className="flex items-center mt-1">
+                <span className="text-xs font-medium text-gray-500 mr-1">
+                  Role:
+                </span>
+                <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 capitalize">
+                  {userRole}
+                </span>
+              </div>
+            )}
+          </div>
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}

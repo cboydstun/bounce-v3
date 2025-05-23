@@ -5,7 +5,6 @@ import {
   verifyAccessToken,
   verifyRefreshToken,
   AccessToken,
-  RefreshToken,
 } from "../tokens";
 import { IUserDocument } from "@/types/user";
 import mongoose from "mongoose";
@@ -16,7 +15,7 @@ process.env.JWT_SECRET = "test-jwt-secret";
 // Mock jsonwebtoken
 jest.mock("jsonwebtoken", () => ({
   sign: jest.fn().mockReturnValue("mock-jwt-token"),
-  verify: jest.fn().mockImplementation((token, secret) => {
+  verify: jest.fn().mockImplementation((token) => {
     if (token === "invalid-token" || token.includes("expired")) {
       throw new Error("Invalid token");
     }
@@ -39,7 +38,9 @@ jest.mock("jsonwebtoken", () => ({
     // Default case for tests that create their own tokens
     try {
       return JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
-    } catch (e) {
+    } catch (error) {
+      // If parsing fails, return null
+      console.error("Error parsing token:", error);
       return null;
     }
   }),

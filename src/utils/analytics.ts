@@ -56,34 +56,21 @@ export function calculateRevenueData(
   products: ProductWithId[],
   period: string,
 ) {
-  // Log the total number of contacts before processing
-  console.log(
-    `calculateRevenueData: Processing ${contacts.length} total contacts`,
-  );
-
   // Group contacts by time period (day, week, month)
   const groupedData = groupByTimePeriod(contacts, period);
-
-  // Log the number of unique time periods
-  console.log(
-    `calculateRevenueData: Grouped into ${Object.keys(groupedData).length} time periods`,
-  );
 
   // Calculate revenue for each period
   const revenueByPeriod = Object.entries(groupedData).reduce(
     (acc, [date, periodContacts]) => {
-      // Log the number of contacts for this period
-      console.log(
-        `calculateRevenueData: Period ${date} has ${periodContacts.length} contacts`,
-      );
-
       const periodRevenue = periodContacts.reduce((total, contact) => {
         // Find the product for this contact
         const product = products.find((p) => p.name === contact.bouncer);
 
-        // If product not found, log a warning
+        // If product not found, log a warning (but not during tests)
         if (!product) {
-          console.warn(`Product not found for bouncer: ${contact.bouncer}`);
+          if (process.env.NODE_ENV !== "test") {
+            console.warn(`Product not found for bouncer: ${contact.bouncer}`);
+          }
           return total;
         }
 
@@ -96,9 +83,6 @@ export function calculateRevenueData(
     },
     {} as Record<string, number>,
   );
-
-  // Log the revenue by period
-  console.log("Revenue by period:", revenueByPeriod);
 
   // Format for chart.js
   const sortedDates = Object.keys(revenueByPeriod).sort();
@@ -207,10 +191,7 @@ export function groupContactsByPeriod(contacts: Contact[], period: string) {
 }
 
 // Calculate product popularity
-export function calculateProductPopularity(
-  contacts: Contact[],
-  products: ProductWithId[],
-) {
+export function calculateProductPopularity(contacts: Contact[]) {
   // Count occurrences of each product
   const productCounts = contacts.reduce(
     (acc, contact) => {

@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckoutAction, SLUSHY_MIXERS, SlushyMixer } from "./utils/types";
+import { CheckoutAction, SLUSHY_MIXERS } from "./utils/types";
 
 interface MixerSelectionProps {
   machineId: string; // Add machineId parameter

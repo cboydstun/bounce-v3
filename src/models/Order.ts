@@ -1,14 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import {
-  IOrderDocument,
-  IOrderModel,
-  OrderStatus,
-  PaymentStatus,
-  PaymentMethod,
-  OrderItemType,
-  Currency,
-  PayPalTransactionStatus,
-} from "../types/order";
+import { IOrderDocument, IOrderModel, OrderStatus } from "../types/order";
 import Counter from "./Counter";
 
 // PayPal transaction schema
@@ -363,14 +354,37 @@ OrderSchema.statics.findByDateRange = function (
 OrderSchema.statics.generateOrderNumber = async function () {
   const currentDate = new Date();
   const year = currentDate.getFullYear();
+  const yearPrefix = `BB-${year}-`;
 
-  // Use the Counter model to get the next sequence atomically
-  // The counter name includes the year to reset sequence each year
+  // Find the highest existing order number for this year
+  const highestOrder = await this.findOne({
+    orderNumber: new RegExp(`^${yearPrefix}\\d{4}$`),
+  }).sort({ orderNumber: -1 });
+
+  // Get the current counter value
   const counterName = `orderNumber-${year}`;
+  let counter = await Counter.findOne({ _id: counterName });
+
+  // If we have existing orders with higher numbers than our counter, update the counter
+  if (highestOrder) {
+    const numericPart = parseInt(highestOrder.orderNumber.split("-")[2]);
+
+    // If no counter exists or the highest order number is greater than our counter
+    if (!counter || numericPart >= counter.seq) {
+      // Set the counter to the highest number + 1
+      counter = await Counter.findOneAndUpdate(
+        { _id: counterName },
+        { seq: numericPart + 1 },
+        { upsert: true, new: true },
+      );
+    }
+  }
+
+  // Now get the next sequence (which will be properly initialized)
   const sequence = await Counter.getNextSequence(counterName);
 
   // Format with padded zeros (e.g., BB-2024-0001)
-  return `BB-${year}-${sequence.toString().padStart(4, "0")}`;
+  return `${yearPrefix}${sequence.toString().padStart(4, "0")}`;
 };
 
 // Create text index for searching

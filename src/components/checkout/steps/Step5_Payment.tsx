@@ -160,8 +160,6 @@ const Step5_Payment: React.FC<Step5Props> = ({
   // Handle PayPal payment success
   const handlePaymentSuccess = async (orderId: string) => {
     try {
-      console.log("[Step5_Payment] Payment successful with order ID:", orderId);
-
       // Create PayPal transaction details
       const paymentDetails = {
         transactionId: orderId,
@@ -638,10 +636,6 @@ const Step5_Payment: React.FC<Step5Props> = ({
                         state.depositAmount > 0
                           ? state.depositAmount
                           : state.totalAmount;
-                      console.log(
-                        "Creating PayPal order for amount:",
-                        paymentAmount,
-                      );
 
                       // Call the payment initiation handler if provided
                       if (onPaymentInitiation) {
@@ -670,13 +664,11 @@ const Step5_Payment: React.FC<Step5Props> = ({
                     }}
                     onApprove={async (data, actions) => {
                       try {
-                        console.log("Payment approved:", data);
                         if (!actions.order) {
                           throw new Error("PayPal order actions not available");
                         }
 
                         const orderDetails = await actions.order.capture();
-                        console.log("Payment successful:", orderDetails);
 
                         // Call the success handler with the order ID
                         handlePaymentSuccess(

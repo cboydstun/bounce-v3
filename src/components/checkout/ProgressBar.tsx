@@ -25,7 +25,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ currentStep }) => {
               key={step.id}
               className={`text-xs font-sm ${
                 isActive
-                  ? "text-white"
+                  ? "text-primary-purple"
                   : isCompleted
                     ? "text-primary-blue"
                     : "text-gray-400"

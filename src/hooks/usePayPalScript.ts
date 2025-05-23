@@ -10,7 +10,7 @@ interface PayPalNamespace extends PayPalNamespaceFromSDK {}
 // Define the PayPal window interface
 declare global {
   interface Window {
-    // @ts-ignore
+    // @ts-expect-error PayPal SDK adds this property
     paypal?: PayPalNamespace;
   }
 }

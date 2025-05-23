@@ -5,6 +5,7 @@ import Blog from "@/models/Blog";
 import User from "@/models/User";
 import jwt from "jsonwebtoken";
 import { Document } from "mongoose";
+import { AuthRequest } from "@/middleware/auth";
 
 beforeAll(async () => await dbHandler.connect());
 afterEach(async () => await dbHandler.clearDatabase());
@@ -155,6 +156,7 @@ describe("Blogs API", () => {
     it("should return 401 if user is not authenticated", async () => {
       const req = new NextRequest("http://localhost:3000/api/v1/blogs", {
         method: "POST",
+        // No Authorization header
         body: JSON.stringify({
           title: "Test Blog",
           introduction: "Test introduction",
@@ -167,7 +169,7 @@ describe("Blogs API", () => {
       expect(response.status).toBe(401);
 
       const data = await response.json();
-      expect(data.error).toBe("Unauthorized - Invalid token");
+      expect(data.error).toBe("Unauthorized - Not authenticated");
     });
 
     it("should return 400 if required fields are missing", async () => {
@@ -210,11 +212,8 @@ describe("Blogs API", () => {
       });
 
       // Mock the auth middleware
-      interface AuthRequest extends NextRequest {
-        user: { id: string; role: string };
-      }
       const authReq = req as AuthRequest;
-      authReq.user = { id: userId, role: "user" };
+      authReq.user = { id: userId, email: "user@example.com", role: "user" };
 
       const response = await POST(req);
       expect(response.status).toBe(201);

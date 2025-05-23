@@ -14,7 +14,7 @@ import {
   PointElement,
   LineElement,
 } from "chart.js";
-import { Bar, Pie, Doughnut } from "react-chartjs-2";
+import { Bar, Doughnut } from "react-chartjs-2";
 import {
   getBookingCounts,
   getAverageCheckoutTime,

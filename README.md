@@ -4,46 +4,129 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 
 ## Tech Stack
 
-- **Frontend Framework**: React 19 with TypeScript
-- **Framework**: Next.js 15.1.3
-- **Build Tool**: Turbopack
-- **Styling**: TailwindCSS with aspect-ratio and line-clamp plugins
-- **Typography**: Geist and Geist_Mono fonts from Google Fonts
-- **Icons**: Lucide React
-- **Linting**: ESLint
-- **Formatting**: Prettier
-- **Testing**: Jest and React Testing Library
-- **Cloud Services**: Cloudinary for media management
+### Core Framework
+
+- **Frontend Framework**: React 19.0.0 with TypeScript 5
+- **Framework**: Next.js 15.2.3
+- **Build Tool**: Turbopack (experimental)
+- **Styling**: TailwindCSS 3.4.1 with aspect-ratio plugin
+- **Typography**: Geist and Geist_Mono fonts
+- **Icons**: Lucide React 0.469.0
+
+### Development Tools
+
+- **Linting**: ESLint 9 with Next.js configuration
+- **Formatting**: Prettier 3.4.2
+- **Testing**: Jest 29.7.0 and React Testing Library 16.1.0
+- **Type Checking**: TypeScript with strict configuration
+
+### Backend & Database
+
+- **Database**: MongoDB with Mongoose 8.12.1
+- **Authentication**: NextAuth.js 4.24.11 with JWT
+- **Password Hashing**: bcryptjs 3.0.2
+- **Rate Limiting**: express-rate-limit 7.5.0
+
+### External Services
+
+- **Cloud Storage**: Cloudinary 2.6.0 for media management
+- **Email Service**: SendGrid 8.1.5 for transactional emails
+- **SMS Service**: Twilio 5.5.0 for notifications
+- **Payment Processing**: PayPal React SDK 8.8.3
 - **Analytics**: Google Analytics and Google Tag Manager
-- **Deployment**: Vercel
+- **Maps & Routing**: Leaflet 1.9.4 with React-Leaflet 5.0.0
+- **Route Optimization**: OpenRouteService API
+
+### UI & Interaction Libraries
+
+- **Charts**: Chart.js 4.4.8 with React-ChartJS-2 5.3.0
+- **Calendar**: React Big Calendar 1.18.0
+- **Date Handling**: Date-fns 4.1.0 and Moment.js 2.30.1
+- **Drag & Drop**: DnD Kit 6.3.1
+- **Modals**: React Modal 3.16.3
+- **Notifications**: React Hot Toast 2.5.2
+- **Form Controls**: React DatePicker 8.2.1
+
+### Development Dependencies
+
+- **Testing Utilities**: MongoDB Memory Server 10.1.4
+- **Build Tools**: Babel, PostCSS, ts-node
+- **Code Quality**: ESLint, Prettier, TypeScript
+
+### Deployment
+
+- **Platform**: Vercel
+- **CI/CD**: GitHub Actions
 
 ## Features
 
-- **Blog Management**: Full-featured blog system with rich text editing
-- **Product Management**: Product catalog with detailed views and admin controls
-- **Product Availability**: Interactive calendar showing product availability by date
-- **Contact System**: Contact forms with admin management interface
-- **Admin Panel**: Secure administrative interface for content management
+### Core Business Features
+
+- **Blog Management**: Full-featured blog system with rich text editing and image uploads
+- **Product Management**: Product catalog with detailed views, admin controls, and availability tracking
+- **Product Availability**: Interactive calendar showing product availability by date with color-coded status
+- **Contact System**: Contact forms with admin management interface and automated notifications
+- **Order Management**: Complete order lifecycle from creation to fulfillment with PayPal integration
+- **Party Packages**: Pre-configured package deals with automatic pricing and savings calculations
+- **Customer Reviews**: Display and management of customer feedback with rating system
+- **Promotional System**: Promo opt-ins with targeted campaigns and visibility controls
+
+### Advanced Analytics & Insights
+
 - **Analytics Dashboard**: Comprehensive analytics with revenue tracking, booking trends, and product popularity
+- **Form Engagement Analytics**: Track user interactions across different forms with conversion funnel analysis
+- **Search Rankings Tracking**: Monitor SEO performance and competitor analysis
+- **Visitor Analytics**: Track user behavior, device fingerprinting, and engagement metrics
+- **Business Intelligence**: KPI tracking, seasonal analysis, and forecasting capabilities
 - **Calendar View**: Visual calendar for tracking bookings with color-coded status indicators
-- **Customer Reviews**: Display and management of customer feedback
-- **Authentication**: Secure JWT-based authentication with:
+
+### Technical Features
+
+- **Authentication & Authorization**: Secure JWT-based authentication with comprehensive role-based access control:
+
   - Token storage in both localStorage and cookies for robust auth persistence
   - "Remember Me" functionality with configurable token expiration
   - Protected routes with middleware-based access control
   - Secure password hashing with bcrypt
   - Rate limiting for login attempts
   - NextAuth.js integration with simplified configuration for production stability
+  - Role-based access control (RBAC) at multiple levels:
+    - Database level: User model with role validation
+    - API level: Role-based middleware for route protection
+    - UI level: Conditional rendering based on user role
+    - Application level: Route protection in Next.js middleware
+
+- **Route Optimization**: Delivery route planning with OpenRouteService integration
+- **Mobile Authentication**: Dedicated mobile API endpoints with device-specific authentication
+- **Testing Infrastructure**: Comprehensive test suite with console utilities and debugging tools
+- **Performance Monitoring**: Advanced analytics tracking and performance optimization
+
+### User Experience Features
+
 - **Responsive Design**: Mobile-friendly interface with modern UI components
-- **Analytics**: Built-in analytics tracking with Google Analytics and Google Tag Manager
-- **SEO Optimization**: Comprehensive metadata, OpenGraph, and Twitter cards
-- **Structured Data**: JsonLd implementation for improved search engine visibility
-- **Legal Pages**: Privacy Policy and Terms of Service
+- **Interactive Maps**: Leaflet-based mapping for delivery areas and route visualization
+- **Drag & Drop Interface**: DnD Kit integration for intuitive admin interfaces
+- **Real-time Notifications**: Toast notifications and email/SMS alerts
 - **Package Deals Visibility**: First-time visitors don't see "Package Deals" in navigation until they interact with a promotional popup:
   - Context-based state management for immediate UI updates without page refresh
   - Cookie-based persistence for returning visitors
   - Promotional popup with form submission to unlock Package Deals
   - Comprehensive test coverage for visibility conditions
+
+### SEO & Marketing
+
+- **SEO Optimization**: Comprehensive metadata, OpenGraph, and Twitter cards
+- **Structured Data**: JsonLd implementation for improved search engine visibility
+- **Analytics Integration**: Google Analytics and Google Tag Manager with custom event tracking
+- **Search Engine Monitoring**: Automated search ranking tracking and competitor analysis
+- **Legal Compliance**: Privacy Policy and Terms of Service pages
+
+### Payment & Communication
+
+- **PayPal Integration**: Secure payment processing with PayPal React SDK
+- **Email Notifications**: SendGrid integration for transactional emails
+- **SMS Notifications**: Twilio integration for order updates and alerts
+- **Multi-step Checkout**: Guided checkout process with progress tracking
 
 ## API Routes
 
@@ -1727,61 +1810,140 @@ public/             # Public assets
 └── window.svg
 ```
 
+## Continuous Integration and Deployment
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+- **CI Pipeline**: Runs automatically on push to the `main` branch and pull requests
+
+  - Runs linting, type checking, tests, and builds the application
+  - Ensures code quality and prevents regressions
+
+- **CD Pipeline**: Runs automatically after successful CI builds on the `main` branch
+  - Deploys the application to Vercel's production environment
+  - Generates and publishes the sitemap for SEO
+
+For detailed information about the CI/CD setup, see [.github/CI.md](.github/CI.md).
+
 ## Development
 
-1. Install dependencies:
+### Prerequisites
+
+- Node.js 18+ and npm
+- MongoDB database (local or cloud)
+- Git
+
+### Setup Instructions
+
+1. **Clone and install dependencies:**
 
 ```bash
+git clone <repository-url>
+cd bounce-v3
 npm install
 ```
 
-2. Set up environment variables:
+2. **Set up environment variables:**
 
-   - Copy `.env.sample` to `.env.local`
-   - Configure required environment variables:
+   Copy `.env.sample` to `.env.local` and configure the following variables:
 
-     ```
-     # MongoDB Connection
-     MONGODB_URI=your_mongodb_connection_string
+   ```bash
+   # Database
+   MONGODB_URI=your_mongodb_connection_string
 
-     # Authentication
-     JWT_SECRET=your_secure_jwt_secret_key
+   # Authentication & Security
+   JWT_SECRET=your_secure_jwt_secret_key_minimum_32_characters
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your_nextauth_secret_key
+   ADMIN_TOKEN=your_admin_api_token
 
-     # API Configuration (optional, for external API access)
-     API_BASE_URL=http://localhost:3000
-     ```
+   # API Configuration
+   API_BASE_URL=http://localhost:3000
+   NODE_ENV=development
 
-3. Start development server:
+   # Email Services
+   SENDGRID_API_KEY=your_sendgrid_api_key
+   EMAIL=your_email_address
+   PASSWORD=your_email_password
+
+   # SMS Services (Twilio)
+   TWILIO_ACCOUNT_SID=your_twilio_account_sid
+   TWILIO_AUTH_TOKEN=your_twilio_auth_token
+   TWILIO_PHONE_NUMBER=your_twilio_phone_number
+   USER_PHONE_NUMBER=your_notification_phone_number
+
+   # Payment Processing (PayPal)
+   NEXT_PUBLIC_PAYPAL_CLIENT_ID=your_paypal_client_id
+   PAYPAL_CLIENT_SECRET=your_paypal_client_secret
+   PAYPAL_LIVE_MODE=false
+
+   # Cloud Storage (Cloudinary)
+   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+   NEXT_CLOUDINARY_API_KEY=your_cloudinary_api_key
+   NEXT_CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+   NEXT_CLOUDINARY_API_CLOUDINARY_URL=your_cloudinary_url
+
+   # Analytics
+   NEXT_GOOGLE_ANALYTICS_ID=your_google_analytics_id
+   NEXT_GTM_ID=your_google_tag_manager_id
+
+   # Maps & Routing
+   OPENROUTESERVICE_API_KEY=your_openrouteservice_api_key
+
+   # Search & SEO
+   GOOGLE_API_KEY=your_google_api_key
+   GOOGLE_CX=your_google_custom_search_engine_id
+   TARGET_DOMAIN=your_domain_name
+   ```
+
+3. **Start development server:**
 
 ```bash
 npm run dev
 ```
 
-4. Run linting:
+The application will be available at `http://localhost:3000`
+
+### Development Commands
+
+4. **Code Quality:**
 
 ```bash
-npm run lint
+npm run lint          # Run ESLint
+npm run format        # Format code with Prettier
+npm run type-check    # TypeScript type checking
 ```
 
-5. Run tests:
+5. **Testing:**
 
 ```bash
-npm test           # Run tests once
-npm run test:watch # Run tests in watch mode
+npm test              # Run tests once
+npm run test:watch    # Run tests in watch mode
 npm run test:coverage # Run tests with coverage report
 ```
 
-6. Format code:
+6. **Build:**
 
 ```bash
-npm run format
+npm run build         # Build for production
+npm run start         # Start production server
 ```
 
-7. Type check:
+### Development Features
 
-```bash
-npm run type-check
-```
+- **Hot Reload**: Turbopack provides fast hot reloading during development
+- **Source Maps**: Enabled in development for better debugging experience
+- **Console Utilities**: Advanced console debugging tools for development
+- **Test Environment**: MongoDB Memory Server for isolated testing
+- **Type Safety**: Strict TypeScript configuration with comprehensive type checking
+
+### Troubleshooting
+
+- **Build Errors**: The Next.js config has `ignoreBuildErrors: true` for development flexibility, but ensure TypeScript errors are resolved before production
+- **Environment Variables**: Ensure all required environment variables are set, especially `MONGODB_URI` and `JWT_SECRET`
+- **Port Conflicts**: If port 3000 is in use, Next.js will automatically use the next available port
+- **Database Connection**: Verify MongoDB connection string and database accessibility
+- **API Keys**: Ensure all third-party service API keys are valid and have appropriate permissions
 
 ## Build
 
@@ -1792,6 +1954,70 @@ npm run build
 ```
 
 This will generate optimized production files in the `.next` directory. After building, a sitemap will be automatically generated.
+
+## Role-Based Access Control (RBAC) Implementation
+
+The application implements a comprehensive role-based access control system that secures content and functionality at multiple levels:
+
+### User Roles
+
+The system supports three user roles:
+
+- **Admin**: Full access to all features and content
+- **Customer**: Standard user access with limited administrative capabilities
+- **User**: Basic access with minimal privileges
+
+### Database Level
+
+- **User Model**: Implements role validation in the MongoDB schema
+  - Default role is "customer"
+  - Enum validation ensures only valid roles ("admin", "customer", "user") can be assigned
+  - Pre-save hooks ensure secure password hashing
+  - Role information is stored in JWT tokens for authentication
+
+### API Level
+
+- **Role-Based Middleware**: API routes are protected based on user roles
+
+  - `withRoleAuth`: Core middleware that checks user role against required role
+  - `withAdminAuth`: Helper middleware for admin-only routes
+  - `withUserAuth`: Helper middleware for authenticated user routes
+  - Proper error responses (401 for unauthenticated, 403 for unauthorized)
+
+- **Resource Ownership**: Additional layer of protection for user-specific resources
+  - `checkOwnership`: Utility function to verify if a user owns a resource
+  - `requireOwnership`: Middleware to enforce ownership requirements
+  - Admins automatically pass ownership checks
+
+### UI Level
+
+- **Conditional Rendering**: Components render differently based on user role
+  - `AdminOnly` component: Renders content only for admin users
+  - `isAdmin` helper in AuthContext: Simplifies role checking in components
+  - Fallback content for non-admin users
+
+### Application Level
+
+- **Route Protection**: Next.js middleware protects entire routes based on user role
+  - Admin routes (/admin/\*) are only accessible to admin users
+  - Automatic redirection to login page for unauthenticated users
+  - Custom error messages for unauthorized access attempts
+
+### Authentication Context
+
+- **React Context API**: Provides authentication state throughout the application
+  - User information including role is available via useAuth() hook
+  - Automatic role validation when processing session data
+  - Logout functionality with proper cleanup
+
+### Testing
+
+The RBAC system is thoroughly tested at all levels:
+
+- **User Model Tests**: Verify role validation and defaults
+- **Middleware Tests**: Ensure proper access control in API routes
+- **Component Tests**: Validate conditional rendering based on roles
+- **Utility Tests**: Confirm ownership checking functions work correctly
 
 ## Configuration Files
 

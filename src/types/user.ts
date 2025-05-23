@@ -1,14 +1,11 @@
 import { Document, Model } from "mongoose";
 
-// These interfaces are no longer needed as we're using NextAuth.js
-// They are kept for reference but should be removed in the future
-
 // Mongoose interfaces
 export interface IUser {
   email: string;
   password?: string; // Make password optional for session user objects
   name?: string;
-  role?: string;
+  role: "admin" | "customer" | "user"; // Role is required
 }
 
 export interface IUserDocument extends IUser, Document {

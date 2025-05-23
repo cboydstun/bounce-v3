@@ -63,17 +63,16 @@ interface Visitor {
 export default function VisitorDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const [visitor, setVisitor] = useState<Visitor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // Note: Direct access to params.id is deprecated in Next.js but still supported
-  // for migration purposes. In a future version, we'll need to update this to use
-  // the recommended approach for accessing params in Client Components.
-  const visitorId = params.id;
+  // Use React.use() to unwrap the params Promise for Next.js 15+ compatibility
+  const resolvedParams = React.use(params);
+  const visitorId = resolvedParams.id;
 
   useEffect(() => {
     const fetchVisitor = async () => {

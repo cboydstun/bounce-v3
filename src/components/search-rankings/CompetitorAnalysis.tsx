@@ -1,9 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  SearchRanking,
-  Competitor,
-  ManagedCompetitor,
-} from "@/types/searchRanking";
+import { SearchRanking, ManagedCompetitor } from "@/types/searchRanking";
 
 interface CompetitorAnalysisProps {
   rankings: SearchRanking[];

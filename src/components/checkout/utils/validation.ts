@@ -14,8 +14,10 @@ export const validateStep = (
 
   switch (step) {
     case "delivery": // Rental Selection
-      // We'll validate bouncer selection in the extras step
-      // to allow extras-only orders
+      // Validate bouncer selection
+      if (state.selectedBouncers.length === 0 && !state.selectedBouncer) {
+        errors.selectedBouncer = "Please select a bouncer";
+      }
 
       if (!state.deliveryDate) {
         errors.deliveryDate = "Please select a delivery date";
@@ -284,7 +286,7 @@ export const validateDeliveryTime = (time: string): boolean => {
   if (time === "ANY") return true;
 
   // Parse the time
-  const [hours, minutes] = time.split(":").map(Number);
+  const [hours] = time.split(":").map(Number);
 
   // Check if time is between 8:00 AM and 6:00 PM
   return hours >= 8 && hours <= 18;

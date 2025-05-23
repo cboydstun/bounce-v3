@@ -77,7 +77,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   // Get the NextAuth session
-  const { data: session, status } = useSession();
+  const { status } = useSession();
 
   // Redirect to login if not authenticated
   useEffect(() => {

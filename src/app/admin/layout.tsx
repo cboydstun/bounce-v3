@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Sidebar from "@/components/ui/Sidebar";
-import { ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 
 export default function AdminLayout({
   children,
@@ -12,30 +11,51 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, loading, isAdmin, user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     // The loading state is managed by the useAuth hook
     setIsLoading(false);
-  }, []);
+
+    // Redirect non-admin users
+    if (!loading && !isAdmin) {
+      router.push("/login?message=Admin access required");
+    }
+  }, [loading, isAdmin, router]);
 
   const handleLogout = () => {
     logout();
   };
 
-  if (isLoading) {
-    return <div className="min-h-screen bg-gray-100"></div>;
+  if (isLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-xl font-semibold">Loading...</div>
+      </div>
+    );
+  }
+
+  // Don't render admin content for non-admin users
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-xl font-semibold text-red-600">
+          Unauthorized - Admin role required
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Sidebar with logout */}
+      {/* Sidebar with logout and role indicator */}
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={setIsSidebarCollapsed}
         onLogout={handleLogout}
+        userRole={user?.role}
       />
 
       {/* Main content */}

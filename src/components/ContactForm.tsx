@@ -225,8 +225,6 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
     });
 
     try {
-      console.log("Submitting contact form:", formData);
-
       // Direct fetch call instead of using createContact from api.ts
       const response = await fetch("/api/v1/contacts", {
         method: "POST",

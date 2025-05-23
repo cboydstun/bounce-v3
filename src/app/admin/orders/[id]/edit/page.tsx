@@ -6,13 +6,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getOrderById, updateOrder, getContactById } from "@/utils/api";
-import {
-  Order,
-  OrderStatus,
-  PaymentStatus,
-  PaymentMethod,
-  OrderItemType,
-} from "@/types/order";
+import { Order, OrderItemType } from "@/types/order";
 import { Contact } from "@/types/contact";
 
 interface OrderItem {
@@ -318,6 +312,9 @@ export default function EditOrderPage({ params }: PageProps) {
       });
 
       setSuccess("Order updated successfully");
+
+      // Update local order state
+      setOrder(updatedOrder);
 
       // Refresh order data after a short delay
       setTimeout(() => {

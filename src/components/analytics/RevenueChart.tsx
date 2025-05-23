@@ -81,14 +81,7 @@ export default function RevenueChart({ period }: RevenueChartProps) {
           // Update pagination info
           totalPages = contactsData.pagination?.totalPages || 1;
           currentPage++;
-
-          // Log for debugging
-          console.log(
-            `Fetched page ${currentPage - 1} of ${totalPages}, got ${contactsData.contacts.length} contacts`,
-          );
         } while (currentPage <= totalPages);
-
-        console.log(`Total contacts fetched: ${allContacts.length}`);
 
         // Debug: Log contacts by month to see distribution
         const contactsByMonth = allContacts.reduce(
@@ -106,19 +99,11 @@ export default function RevenueChart({ period }: RevenueChartProps) {
           {} as Record<string, Contact[]>,
         );
 
-        // Log the count of contacts for each month
-        console.log("Contacts by month:");
-        Object.entries(contactsByMonth).forEach(([month, contacts]) => {
-          console.log(`${month}: ${contacts.length} contacts`);
-        });
-
         // Specifically check for April 2025
         const april2025Key = "2025-04";
         const april2025Contacts = contactsByMonth[april2025Key] || [];
-        console.log(`April 2025 contacts: ${april2025Contacts.length}`);
 
         if (april2025Contacts.length > 0) {
-          console.log("April 2025 contacts confirmation status distribution:");
           const statusCounts: Record<string, number> = {};
 
           april2025Contacts.forEach((contact) => {
@@ -130,10 +115,6 @@ export default function RevenueChart({ period }: RevenueChartProps) {
                 : contact.confirmed || "undefined"; // Handle string values or undefined
 
             statusCounts[status] = (statusCounts[status] || 0) + 1;
-          });
-
-          Object.entries(statusCounts).forEach(([status, count]) => {
-            console.log(`  ${status}: ${count}`);
           });
         }
 

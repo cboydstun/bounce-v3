@@ -17,11 +17,7 @@ interface DeliveryTimeSlotProps {
 
 const DeliveryTimeSlot: React.FC<DeliveryTimeSlotProps> = ({
   slot,
-  index,
   isEditable,
-  onSlotChange,
-  onDragStart,
-  onDragEnd,
 }) => {
   // Only use sortable functionality if in edit mode
   const {

@@ -127,7 +127,7 @@ export default function AdminContacts() {
   };
 
   // Get the NextAuth session
-  const { data: session, status } = useSession();
+  const { status } = useSession();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -165,15 +165,6 @@ export default function AdminContacts() {
 
         // Call the API with filters
         const data = await getContacts(params);
-
-        // Debug: Log the date format from the API
-        if (data.contacts && data.contacts.length > 0) {
-          console.log("Date format from API:", {
-            partyDate: data.contacts[0].partyDate,
-            type: typeof data.contacts[0].partyDate,
-            isDate: data.contacts[0].partyDate instanceof Date,
-          });
-        }
 
         // Map the contacts from the API response
         const mappedContacts = data.contacts

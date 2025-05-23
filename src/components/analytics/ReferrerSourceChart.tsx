@@ -19,9 +19,6 @@ const ReferrerSourceChart: React.FC<ReferrerSourceChartProps> = ({
   const values = Object.values(referrerData);
   const total = values.reduce((sum, value) => sum + value, 0);
 
-  // Calculate percentages
-  const percentages = values.map((value) => ((value / total) * 100).toFixed(1));
-
   // Color mapping for common referrers
   const getColor = (label: string, alpha: number = 0.7) => {
     const colorMap: { [key: string]: string } = {

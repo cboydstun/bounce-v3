@@ -1,10 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import {
-  IVisitor,
-  InteractionType,
-  ConversionEventType,
-  FunnelStage,
-} from "../types/visitor";
+import mongoose, { Schema } from "mongoose";
+import { IVisitor } from "../types/visitor";
 
 // Define sub-schemas for complex types
 const SessionSchema = new Schema(

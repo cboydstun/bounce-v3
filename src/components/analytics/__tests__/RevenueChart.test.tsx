@@ -81,6 +81,8 @@ describe("RevenueChart", () => {
       startDate: "2025-04-01",
       endDate: "2025-04-30",
       limit: 1000,
+      page: 1,
+      includeAllStatuses: true,
     });
 
     // The test fails because we only got 2 contacts when we should have 20

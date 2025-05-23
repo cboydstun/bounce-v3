@@ -130,7 +130,6 @@ export async function optimizeRoute(
     let currentLocationIndex = 0;
     let totalDistance = 0;
     let totalDuration = 0;
-    let currentTime = new Date(startTime.getTime()); // Clone the start time
 
     while (visited.size <= contactsWithCoords.length) {
       // Find the nearest unvisited location
@@ -245,7 +244,7 @@ export async function optimizeRoute(
       endTime,
     };
   } catch (error) {
-    console.error("Route optimization error:", error);
+    // Removed console.error to prevent test pollution
     throw new Error(
       `Route optimization failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     );

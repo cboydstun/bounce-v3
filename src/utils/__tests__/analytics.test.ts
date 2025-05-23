@@ -202,5 +202,35 @@ describe("analytics utility functions", () => {
       expect(result.chartData.datasets[0].data).toHaveLength(2);
       expect(result.total).toBe(100); // Only the first product is found, the second one returns 0
     });
+
+    test("should not log warnings during test execution", () => {
+      // Mock console.warn to capture calls
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+
+      // Sample contacts data with a product that doesn't exist
+      const contacts: Contact[] = [
+        {
+          _id: "1",
+          bouncer: "Non-existent Product",
+          email: "test1@example.com",
+          partyDate: new Date("2025-04-05"),
+          partyZipCode: "12345",
+          confirmed: "Confirmed",
+          sourcePage: "website",
+        },
+      ];
+
+      // Empty products array to ensure no match
+      const products: ProductWithId[] = [];
+
+      // Calculate revenue data
+      calculateRevenueData(contacts, products, "currentMonth");
+
+      // Verify that console.warn was not called during test execution
+      expect(consoleSpy).not.toHaveBeenCalled();
+
+      // Restore console.warn
+      consoleSpy.mockRestore();
+    });
   });
 });

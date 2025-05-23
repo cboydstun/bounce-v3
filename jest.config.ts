@@ -5,7 +5,9 @@ const createJestConfig = nextJest({
   dir: "./",
 });
 
-const config: Config = {
+// Create a custom config that will be merged with the Next.js config
+const customConfig: Config = {
+  // Default test environment
   testEnvironment: "jsdom",
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   moduleNameMapper: {
@@ -32,11 +34,27 @@ const config: Config = {
     "^.+\\.(ts|tsx|js|jsx|mjs)$": [
       "babel-jest",
       {
-        presets: ["next/babel"],
+        presets: [
+          "next/babel",
+          "@babel/preset-typescript",
+          ["@babel/preset-react", { runtime: "automatic" }],
+        ],
         plugins: ["@babel/plugin-transform-modules-commonjs"],
       },
     ],
   },
+  // Set environment variables for tests
+  globals: {
+    "ts-jest": {
+      useESM: true,
+    },
+    SUPPRESS_JEST_WARNINGS: true,
+  },
+  // Configure test environments based on file patterns
+  testMatch: [
+    "**/__tests__/**/*.test.[jt]s?(x)",
+    "**/?(*.)+(spec|test).[jt]s?(x)",
+  ],
 };
 
-export default createJestConfig(config);
+export default createJestConfig(customConfig);

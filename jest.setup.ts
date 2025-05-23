@@ -1,5 +1,49 @@
 import "@testing-library/jest-dom";
 
+// Store original console methods for potential restoration
+const originalConsole = {
+  log: console.log,
+  error: console.error,
+  warn: console.warn,
+  info: console.info,
+  debug: console.debug,
+};
+
+// Global console mocking to prevent console pollution in tests
+console.log = jest.fn();
+console.error = jest.fn();
+console.warn = jest.fn();
+console.info = jest.fn();
+console.debug = jest.fn();
+
+// Utility functions for selective console output control
+global.enableConsoleOutput = () => {
+  console.log = originalConsole.log;
+  console.error = originalConsole.error;
+  console.warn = originalConsole.warn;
+  console.info = originalConsole.info;
+  console.debug = originalConsole.debug;
+};
+
+global.disableConsoleOutput = () => {
+  console.log = jest.fn();
+  console.error = jest.fn();
+  console.warn = jest.fn();
+  console.info = jest.fn();
+  console.debug = jest.fn();
+};
+
+global.restoreOriginalConsole = () => {
+  Object.assign(console, originalConsole);
+};
+
+// Declare global types for TypeScript
+declare global {
+  var enableConsoleOutput: () => void;
+  var disableConsoleOutput: () => void;
+  var restoreOriginalConsole: () => void;
+}
+
 // Polyfill for TextEncoder/TextDecoder (needed for MongoDB)
 // @ts-ignore
 global.TextEncoder = function TextEncoder() {
@@ -33,6 +77,9 @@ global.TextDecoder = function TextDecoder() {
     ignoreBOM: false,
   };
 };
+
+// Suppress Mongoose warning about Jest's default jsdom test environment
+process.env.SUPPRESS_JEST_WARNINGS = "true";
 
 // Mock next/navigation
 jest.mock("next/navigation", () => ({

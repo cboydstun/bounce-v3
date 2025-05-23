@@ -57,8 +57,6 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
           localStorage.removeItem("checkoutPaymentComplete");
           localStorage.removeItem("checkoutOrderData");
           localStorage.removeItem("checkoutPaymentInProgress");
-
-          console.log("Tracked returning payment completion");
         } catch (error) {
           console.error("Error processing returning payment:", error);
         }
@@ -224,8 +222,6 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
           ],
         });
       }
-
-      console.log("Tracked payment completion");
     }
   }, [currentStep, formData.paymentComplete, formData, hasRecordedCompletion]);
 
