@@ -73,6 +73,9 @@ describe("Role Auth Middleware", () => {
       (getServerSession as jest.Mock).mockResolvedValue(null);
       (getToken as jest.Mock).mockResolvedValue(null);
 
+      const req = createMockRequest();
+      await withRoleAuth(req, mockHandler, "admin");
+
       // Should return 401 Unauthorized
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: "Unauthorized - Not authenticated" },
@@ -101,6 +104,9 @@ describe("Role Auth Middleware", () => {
           role: "customer",
         },
       });
+
+      const req = createMockRequest();
+      await withRoleAuth(req, mockHandler, "admin");
 
       // Should return 403 Forbidden
       expect(NextResponse.json).toHaveBeenCalledWith(
