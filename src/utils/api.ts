@@ -192,6 +192,7 @@ export const getProducts = async (params?: {
   category?: string;
   search?: string;
   availability?: string;
+  includeRetired?: boolean;
 }) => {
   const queryParams = new URLSearchParams();
 
@@ -205,6 +206,10 @@ export const getProducts = async (params?: {
 
   if (params?.availability) {
     queryParams.append("availability", params.availability);
+  }
+
+  if (params?.includeRetired) {
+    queryParams.append("includeRetired", "true");
   }
 
   const queryString = queryParams.toString();
