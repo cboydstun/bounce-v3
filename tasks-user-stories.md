@@ -96,6 +96,7 @@
 **Requirements:**
 
 - Express.js server with MongoDB Atlas connection
+- TypeScript for type safety and error detection
 - RESTful API endpoints for tasks and contractors
 - JWT authentication for contractors
 - Real-time notifications (WebSocket/Server-Sent Events)
