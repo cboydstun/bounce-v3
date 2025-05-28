@@ -7,7 +7,7 @@ import { AuthRequest, withAuth } from "@/middleware/auth";
 
 interface ProductQuery {
   category?: string;
-  availability?: string;
+  availability?: string | { $ne: string };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any; // For potential future query parameters, though ideally this would be more specific
 }
@@ -27,12 +27,16 @@ export async function GET(request: NextRequest) {
     const search = url.searchParams.get("search");
     const availability = url.searchParams.get("availability");
 
-    // Build query
-    const query: ProductQuery = {};
+    // Build query - exclude retired products by default for public consumption
+    const query: ProductQuery = {
+      availability: { $ne: "retired" }
+    };
+    
     if (category) {
       query.category = category;
     }
     if (availability) {
+      // If availability is specifically requested, override the default exclusion
       query.availability = availability;
     }
 
@@ -41,8 +45,20 @@ export async function GET(request: NextRequest) {
 
     // If search query is provided, use text search
     if (search) {
-      products = await Product.searchProducts(search);
-      total = await Product.countDocuments({ $text: { $search: search } });
+      // Build search query that also excludes retired products
+      const searchQuery: any = { 
+        $text: { $search: search },
+        availability: { $ne: "retired" }
+      };
+      
+      // If availability is specifically requested, override the default exclusion
+      if (availability) {
+        searchQuery.availability = availability;
+      }
+      
+      products = await Product.find(searchQuery, { score: { $meta: "textScore" } })
+        .sort({ score: { $meta: "textScore" } });
+      total = await Product.countDocuments(searchQuery);
     } else {
       // Otherwise, use regular query
       products = await Product.find(query).sort({ createdAt: -1 });
