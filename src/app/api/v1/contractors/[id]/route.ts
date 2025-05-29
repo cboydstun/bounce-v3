@@ -44,7 +44,22 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(contractor);
+    // Filter out sensitive auth fields for CRM display
+    const filteredContractor = {
+      _id: contractor._id,
+      name: contractor.name,
+      email: contractor.email,
+      phone: contractor.phone,
+      skills: contractor.skills,
+      isActive: contractor.isActive,
+      isVerified: contractor.isVerified,
+      notes: contractor.notes,
+      createdAt: contractor.createdAt,
+      updatedAt: contractor.updatedAt,
+      // Hide auth fields: password, refreshTokens, resetPasswordToken, etc.
+    };
+
+    return NextResponse.json(filteredContractor);
   } catch (error: unknown) {
     console.error("Error fetching contractor:", error);
     return NextResponse.json(
@@ -133,7 +148,7 @@ export async function PUT(
       contractor.name = updateData.name.trim();
     }
     if (updateData.email !== undefined) {
-      contractor.email = updateData.email?.trim() || undefined;
+      contractor.email = updateData.email.trim();
     }
     if (updateData.phone !== undefined) {
       contractor.phone = updateData.phone?.trim() || undefined;
@@ -143,6 +158,9 @@ export async function PUT(
     }
     if (updateData.isActive !== undefined) {
       contractor.isActive = updateData.isActive;
+    }
+    if (updateData.isVerified !== undefined) {
+      contractor.isVerified = updateData.isVerified;
     }
     if (updateData.notes !== undefined) {
       contractor.notes = updateData.notes?.trim() || undefined;

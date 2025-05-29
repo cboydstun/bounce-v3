@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { IContractorDocument, IContractorModel } from "../types/contractor";
 
-// Main Contractor schema
+// Main Contractor schema (now pointing to ContractorAuth collection)
 const ContractorSchema = new Schema<IContractorDocument, IContractorModel>(
   {
     name: {
@@ -13,20 +13,26 @@ const ContractorSchema = new Schema<IContractorDocument, IContractorModel>(
     },
     email: {
       type: String,
+      required: true,
+      unique: true,
       trim: true,
       lowercase: true,
       validate: {
         validator: function (v: string) {
-          if (!v) return true; // Optional field
           return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
         },
         message: "Invalid email format",
       },
+      index: true,
     },
     phone: {
       type: String,
       trim: true,
       maxlength: 20,
+    },
+    password: {
+      type: String,
+      minlength: 6,
     },
     skills: {
       type: [String],
@@ -46,14 +52,46 @@ const ContractorSchema = new Schema<IContractorDocument, IContractorModel>(
       default: true,
       index: true,
     },
+    isVerified: {
+      type: Boolean,
+      required: true,
+      default: false,
+      index: true,
+    },
     notes: {
       type: String,
       trim: true,
       maxlength: 1000,
     },
+    refreshTokens: {
+      type: [String],
+      default: [],
+    },
+    lastLogin: {
+      type: Date,
+    },
+    resetPasswordToken: {
+      type: String,
+      default: undefined,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: undefined,
+    },
+    quickbooksConnected: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    quickbooksTokens: {
+      accessToken: String,
+      refreshToken: String,
+      expiresAt: Date,
+    },
   },
   {
     timestamps: true,
+    collection: "contractorauths", // Point to the same collection as API server
   },
 );
 
@@ -84,12 +122,13 @@ ContractorSchema.pre("save", function (next) {
 
 // Static methods
 ContractorSchema.statics.findActive = function () {
-  return this.find({ isActive: true }).sort({ name: 1 });
+  return this.find({ isActive: true, isVerified: true }).sort({ name: 1 });
 };
 
 ContractorSchema.statics.findBySkill = function (skill: string) {
   return this.find({
     isActive: true,
+    isVerified: true,
     skills: { $regex: new RegExp(skill, "i") },
   }).sort({ name: 1 });
 };
@@ -101,8 +140,8 @@ ContractorSchema.statics.findByName = function (name: string) {
 };
 
 // Compound indexes for common queries
-ContractorSchema.index({ isActive: 1, name: 1 });
-ContractorSchema.index({ skills: 1, isActive: 1 });
+ContractorSchema.index({ isActive: 1, isVerified: 1, name: 1 });
+ContractorSchema.index({ skills: 1, isActive: 1, isVerified: 1 });
 
 // Use existing model if available (for Next.js hot reloading)
 export default (mongoose.models.Contractor as IContractorModel) ||

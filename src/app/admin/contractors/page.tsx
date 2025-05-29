@@ -16,6 +16,7 @@ export default function ContractorsPage() {
     phone: "",
     skills: [],
     isActive: true,
+    isVerified: true,
     notes: "",
   });
   const [skillInput, setSkillInput] = useState("");
@@ -48,10 +49,11 @@ export default function ContractorsPage() {
       setEditingContractor(contractor);
       setFormData({
         name: contractor.name,
-        email: contractor.email || "",
+        email: contractor.email,
         phone: contractor.phone || "",
         skills: contractor.skills || [],
         isActive: contractor.isActive,
+        isVerified: contractor.isVerified,
         notes: contractor.notes || "",
       });
     } else {
@@ -62,6 +64,7 @@ export default function ContractorsPage() {
         phone: "",
         skills: [],
         isActive: true,
+        isVerified: true,
         notes: "",
       });
     }
@@ -118,7 +121,9 @@ export default function ContractorsPage() {
       newErrors.name = "Contractor name is required";
     }
 
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Invalid email format";
     }
 
@@ -348,7 +353,7 @@ export default function ContractorsPage() {
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Email
+                  Email *
                 </label>
                 <input
                   type="email"
@@ -448,6 +453,23 @@ export default function ContractorsPage() {
                   />
                   <span className="text-sm font-medium text-gray-700">
                     Active
+                  </span>
+                </label>
+              </div>
+
+              {/* Verified Status */}
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="isVerified"
+                    checked={formData.isVerified}
+                    onChange={handleInputChange}
+                    className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    disabled={submitting}
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Verified
                   </span>
                 </label>
               </div>

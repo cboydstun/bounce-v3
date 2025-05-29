@@ -38,7 +38,22 @@ export async function GET(request: NextRequest) {
       contractors = await Contractor.find({}).sort({ name: 1 });
     }
 
-    return NextResponse.json(contractors);
+    // Filter out sensitive auth fields for CRM display
+    const filteredContractors = contractors.map(contractor => ({
+      _id: contractor._id,
+      name: contractor.name,
+      email: contractor.email,
+      phone: contractor.phone,
+      skills: contractor.skills,
+      isActive: contractor.isActive,
+      isVerified: contractor.isVerified,
+      notes: contractor.notes,
+      createdAt: contractor.createdAt,
+      updatedAt: contractor.updatedAt,
+      // Hide auth fields: password, refreshTokens, resetPasswordToken, etc.
+    }));
+
+    return NextResponse.json(filteredContractors);
   } catch (error: unknown) {
     console.error("Error fetching contractors:", error);
     return NextResponse.json(
@@ -73,15 +88,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate email format if provided
-    if (contractorData.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(contractorData.email)) {
-        return NextResponse.json(
-          { error: "Invalid email format" },
-          { status: 400 },
-        );
-      }
+    if (!contractorData.email || !contractorData.email.trim()) {
+      return NextResponse.json(
+        { error: "Email is required" },
+        { status: 400 },
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(contractorData.email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 },
+      );
     }
 
     // Check for duplicate name
@@ -99,10 +119,11 @@ export async function POST(request: NextRequest) {
     // Create new contractor
     const newContractor = new Contractor({
       name: contractorData.name.trim(),
-      email: contractorData.email?.trim() || undefined,
+      email: contractorData.email.trim(),
       phone: contractorData.phone?.trim() || undefined,
       skills: contractorData.skills || [],
       isActive: contractorData.isActive !== false, // Default to true
+      isVerified: contractorData.isVerified !== false, // Default to true for CRM
       notes: contractorData.notes?.trim() || undefined,
     });
 
