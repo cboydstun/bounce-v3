@@ -73,7 +73,7 @@ const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
         validator: function (v: any) {
           // Allow null/undefined for optional field
           if (!v) return true;
-          
+
           // Validate GeoJSON Point structure
           return (
             v.type === "Point" &&
