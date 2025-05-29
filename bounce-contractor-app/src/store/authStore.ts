@@ -64,13 +64,35 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
 
         try {
+          console.log("🔐 Attempting login with:", { email: credentials.email });
+          
           const response = await apiClient.post(
             "/auth/contractor/login",
             credentials,
           );
 
-          if (response.success && response.data) {
-            const { user, profile, tokens } = response.data;
+          console.log("📡 Login API Response:", response);
+          console.log("✅ Response success:", response.success);
+          console.log("📦 Response data:", response.data);
+
+          // Check if response has the data directly or wrapped in data field
+          const responseData = response.data || response;
+          
+          console.log("🔍 Parsed response data:", responseData);
+          console.log("🎫 Has accessToken:", !!responseData.accessToken);
+          console.log("👤 Has contractor:", !!responseData.contractor);
+          
+          if (responseData.accessToken && responseData.contractor) {
+            console.log("✅ Login successful! Setting auth state...");
+            const { contractor, accessToken, refreshToken } = responseData;
+
+            // Create tokens object
+            const tokens: AuthTokens = {
+              accessToken,
+              refreshToken,
+              expiresAt: new Date(Date.now() + APP_CONFIG.JWT_ACCESS_TOKEN_EXPIRY).toISOString(),
+              tokenType: "Bearer",
+            };
 
             // Set tokens in API client
             apiClient.setAuthTokens(tokens);
@@ -82,24 +104,41 @@ export const useAuthStore = create<AuthStore>()(
 
             set({
               isAuthenticated: true,
-              user,
-              profile,
+              user: contractor,
+              profile: contractor, // Use contractor data as profile initially
               tokens,
               sessionExpiry,
               isLoading: false,
               error: null,
             });
 
-            // Load full profile data
-            await get().loadProfile();
+            // Load full profile data (optional, don't fail login if this fails)
+            try {
+              await get().loadProfile();
+            } catch (profileError) {
+              console.warn("Failed to load profile after login:", profileError);
+              // Don't fail the login process if profile loading fails
+            }
           } else {
-            throw new Error(response.message || "Login failed");
+            console.error("❌ Invalid response format:", response);
+            throw new Error("Invalid login response format");
           }
         } catch (error) {
+          console.error("❌ Login error caught:", error);
+          console.error("🔍 Error details:", {
+            message: (error as any)?.message,
+            stack: (error as any)?.stack,
+            name: (error as any)?.name
+          });
+          
           const apiError = error as ApiError;
+          const errorMessage = apiError.message || "Login failed";
+          
+          console.error("💥 Setting error state:", errorMessage);
+          
           set({
             isLoading: false,
-            error: apiError.message,
+            error: errorMessage,
             isAuthenticated: false,
             user: null,
             profile: null,
