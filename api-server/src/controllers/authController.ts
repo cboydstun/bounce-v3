@@ -508,6 +508,166 @@ class AuthController {
   }
 
   /**
+   * Verify email address using verification token (GET request for browser links)
+   */
+  async verifyEmailGet(req: Request, res: Response): Promise<void> {
+    try {
+      const { token } = req.params;
+
+      if (!token) {
+        res.status(400).send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Email Verification Failed</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+              .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .error { color: #e74c3c; }
+              .icon { font-size: 48px; margin-bottom: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="icon">❌</div>
+              <h1 class="error">Verification Failed</h1>
+              <p>No verification token provided.</p>
+              <p>Please use the link from your verification email.</p>
+            </div>
+          </body>
+          </html>
+        `);
+        return;
+      }
+
+      logger.info("Email verification attempt via GET", {
+        token: token.substring(0, 8) + "...",
+      });
+
+      // Find contractor by verification token (stored in resetPasswordToken field)
+      const contractor = await ContractorAuth.findOne({
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: new Date() },
+        isVerified: false,
+      });
+
+      if (!contractor) {
+        logger.warn("Email verification failed - invalid or expired token", {
+          token: token.substring(0, 8) + "...",
+        });
+
+        // Return HTML response for browser
+        res.status(400).send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Email Verification Failed</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+              .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .error { color: #e74c3c; }
+              .icon { font-size: 48px; margin-bottom: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="icon">❌</div>
+              <h1 class="error">Verification Failed</h1>
+              <p>The verification link is invalid or has expired.</p>
+              <p>Please request a new verification email or contact support.</p>
+            </div>
+          </body>
+          </html>
+        `);
+        return;
+      }
+
+      // Verify email
+      contractor.isVerified = true;
+      contractor.resetPasswordToken = undefined;
+      contractor.resetPasswordExpires = undefined;
+      await contractor.save();
+
+      // Send welcome email
+      try {
+        await sendWelcomeEmail(contractor.email, contractor.name);
+        logger.info("Welcome email sent", {
+          contractorId: contractor._id.toString(),
+        });
+      } catch (emailError) {
+        logger.error("Failed to send welcome email", {
+          error: emailError,
+          contractorId: contractor._id.toString(),
+        });
+        // Continue with success response even if email fails
+      }
+
+      logger.info("Email verification successful via GET", {
+        contractorId: contractor._id.toString(),
+      });
+
+      // Return HTML success response for browser
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Email Verified Successfully</title>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+            .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .success { color: #27ae60; }
+            .icon { font-size: 48px; margin-bottom: 20px; }
+            .button { display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">✅</div>
+            <h1 class="success">Email Verified!</h1>
+            <p>Congratulations! Your email has been successfully verified.</p>
+            <p>Your contractor account is now active and you can start using the mobile app.</p>
+            <p><strong>Welcome to the Bounce House Contractor Network!</strong></p>
+            <a href="#" class="button">Download Mobile App</a>
+          </div>
+        </body>
+        </html>
+      `);
+    } catch (error) {
+      logger.error("Email verification error (GET):", error);
+      res.status(500).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Verification Error</title>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+            .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .error { color: #e74c3c; }
+            .icon { font-size: 48px; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">⚠️</div>
+            <h1 class="error">Something went wrong</h1>
+            <p>An error occurred while verifying your email.</p>
+            <p>Please try again or contact support.</p>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+  }
+
+  /**
    * Verify email address using verification token
    */
   async verifyEmail(req: Request, res: Response): Promise<void> {

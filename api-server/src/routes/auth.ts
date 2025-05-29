@@ -50,6 +50,9 @@ router.post(
   authController.resetPassword,
 );
 
+// GET /api/auth/contractor/verify-email/:token - Verify email address via browser link
+router.get("/contractor/verify-email/:token", authController.verifyEmailGet);
+
 // POST /api/auth/contractor/verify-email - Verify email address
 router.post(
   "/contractor/verify-email",

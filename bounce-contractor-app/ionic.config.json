@@ -1,0 +1,7 @@
+{
+  "name": "bounce-contractor-app",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}

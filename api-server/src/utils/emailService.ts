@@ -7,13 +7,13 @@ let isInitialized = false;
 // Initialize SendGrid with API key (called lazily)
 function initializeSendGrid() {
   if (isInitialized) return;
-  
+
   const apiKey = process.env.SENDGRID_API_KEY;
   if (!apiKey) {
     logger.warn("SENDGRID_API_KEY not set in environment variables");
     return;
   }
-  
+
   sgMail.setApiKey(apiKey);
   isInitialized = true;
 }
@@ -55,7 +55,7 @@ export async function sendVerificationEmail(
   name: string,
   verificationToken: string,
 ): Promise<void> {
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+  const verificationUrl = `http://localhost:4000/api/auth/contractor/verify-email/${verificationToken}`;
 
   const emailData: EmailData = {
     to: email,
