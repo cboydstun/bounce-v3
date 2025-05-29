@@ -1,8 +1,22 @@
 import sgMail from "@sendgrid/mail";
 import { logger } from "./logger.js";
 
-// Initialize with API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY as string);
+// Lazy initialization flag
+let isInitialized = false;
+
+// Initialize SendGrid with API key (called lazily)
+function initializeSendGrid() {
+  if (isInitialized) return;
+  
+  const apiKey = process.env.SENDGRID_API_KEY;
+  if (!apiKey) {
+    logger.warn("SENDGRID_API_KEY not set in environment variables");
+    return;
+  }
+  
+  sgMail.setApiKey(apiKey);
+  isInitialized = true;
+}
 
 export interface EmailData {
   to: string | string[];
@@ -17,6 +31,7 @@ export interface EmailData {
  * @param emailData The email data to send
  */
 export async function sendEmail(emailData: EmailData): Promise<void> {
+  initializeSendGrid();
   try {
     await sgMail.send(emailData);
     logger.info("Email sent successfully", {

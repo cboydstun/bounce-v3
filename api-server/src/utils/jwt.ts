@@ -15,18 +15,25 @@ export interface TokenPair {
 }
 
 class JWTService {
-  private accessTokenSecret: string;
-  private refreshTokenSecret: string;
-  private accessTokenExpiry: string | number;
-  private refreshTokenExpiry: string | number;
+  private _accessTokenSecret: string | null = null;
+  private _refreshTokenSecret: string | null = null;
+  private _accessTokenExpiry: string | number | null = null;
+  private _refreshTokenExpiry: string | number | null = null;
+  private _initialized = false;
 
   constructor() {
-    this.accessTokenSecret = process.env.JWT_SECRET || "fallback-secret";
-    this.refreshTokenSecret = process.env.JWT_SECRET || "fallback-secret";
-    this.accessTokenExpiry = this.validateExpiry(
+    // Don't initialize here - wait for first method call
+  }
+
+  private initialize() {
+    if (this._initialized) return;
+
+    this._accessTokenSecret = process.env.JWT_SECRET || "fallback-secret";
+    this._refreshTokenSecret = process.env.JWT_SECRET || "fallback-secret";
+    this._accessTokenExpiry = this.validateExpiry(
       process.env.JWT_ACCESS_EXPIRY || "15m",
     );
-    this.refreshTokenExpiry = this.validateExpiry(
+    this._refreshTokenExpiry = this.validateExpiry(
       process.env.JWT_REFRESH_EXPIRY || "7d",
     );
 
@@ -35,6 +42,28 @@ class JWTService {
         "JWT_SECRET not set in environment variables, using fallback",
       );
     }
+
+    this._initialized = true;
+  }
+
+  private get accessTokenSecret(): string {
+    this.initialize();
+    return this._accessTokenSecret!;
+  }
+
+  private get refreshTokenSecret(): string {
+    this.initialize();
+    return this._refreshTokenSecret!;
+  }
+
+  private get accessTokenExpiry(): string | number {
+    this.initialize();
+    return this._accessTokenExpiry!;
+  }
+
+  private get refreshTokenExpiry(): string | number {
+    this.initialize();
+    return this._refreshTokenExpiry!;
   }
 
   private validateExpiry(expiry: string): string | number {
