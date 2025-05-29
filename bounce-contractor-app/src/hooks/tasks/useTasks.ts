@@ -5,6 +5,20 @@ import { ApiResponse, PaginatedResponse } from "../../types/api.types";
 import { useGeolocation } from "../location/useGeolocation";
 import { APP_CONFIG } from "../../config/app.config";
 
+// Helper function to convert TypeScript status values to API format
+const convertStatusForAPI = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    assigned: "Assigned",
+    in_progress: "In Progress",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    accepted: "Accepted",
+    en_route: "En Route",
+    on_site: "On Site",
+  };
+  return statusMap[status] || status;
+};
+
 interface UseTasksOptions {
   filters?: TaskFilters;
   enabled?: boolean;
@@ -77,7 +91,7 @@ export const useTasks = (options: UseTasksOptions = {}) => {
 
       const response: ApiResponse<TasksResponse> = await apiClient.get(
         "/tasks/available",
-        params
+        params,
       );
 
       if (!response.success) {
@@ -149,7 +163,7 @@ export const useInfiniteTasks = (options: UseTasksOptions = {}) => {
 
       const response: ApiResponse<TasksResponse> = await apiClient.get(
         "/tasks/available",
-        params
+        params,
       );
 
       if (!response.success) {
@@ -184,15 +198,16 @@ export const useMyTasks = (options: UseTasksOptions = {}) => {
 
       // Add status filter for my tasks (typically assigned, in_progress, etc.)
       if (filters?.status) {
-        params.status = filters.status.join(",");
+        // Convert first status to API format and send
+        params.status = convertStatusForAPI(filters.status[0]);
       } else {
-        // Default to active task statuses
-        params.status = "assigned,accepted,in_progress,en_route,on_site";
+        // Default to assigned status (most common active status)
+        params.status = "Assigned";
       }
 
       const response: ApiResponse<TasksResponse> = await apiClient.get(
         "/tasks/my-tasks",
-        params
+        params,
       );
 
       if (!response.success) {
@@ -213,7 +228,7 @@ export const useTaskById = (taskId: string, enabled = true) => {
     queryKey: ["tasks", "detail", taskId],
     queryFn: async (): Promise<Task> => {
       const response: ApiResponse<Task> = await apiClient.get(
-        `/tasks/${taskId}`
+        `/tasks/${taskId}`,
       );
 
       if (!response.success) {
@@ -249,7 +264,7 @@ export const useNearbyTasks = (radius = 25, enabled = true) => {
 
       const response: ApiResponse<TasksResponse> = await apiClient.get(
         "/tasks/available",
-        params
+        params,
       );
 
       if (!response.success) {

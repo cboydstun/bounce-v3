@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../services/api/apiClient";
-import { 
-  Task, 
-  TaskClaimRequest, 
-  TaskStatusUpdate, 
-  TaskCompletionData 
+import {
+  Task,
+  TaskClaimRequest,
+  TaskStatusUpdate,
+  TaskCompletionData,
 } from "../../types/task.types";
 import { ApiResponse } from "../../types/api.types";
 import { useAuthStore } from "../../store/authStore";
@@ -21,7 +21,7 @@ export const useClaimTask = () => {
         {
           estimatedArrival: claimRequest.estimatedArrival,
           notes: claimRequest.notes,
-        }
+        },
       );
 
       if (!response.success) {
@@ -34,7 +34,7 @@ export const useClaimTask = () => {
       // Update the task in cache
       queryClient.setQueryData(
         ["tasks", "detail", claimedTask.id],
-        claimedTask
+        claimedTask,
       );
 
       // Invalidate and refetch related queries
@@ -63,7 +63,7 @@ export const useUpdateTaskStatus = () => {
           notes: statusUpdate.notes,
           photos: statusUpdate.photos,
           timestamp: statusUpdate.timestamp,
-        }
+        },
       );
 
       if (!response.success) {
@@ -76,7 +76,7 @@ export const useUpdateTaskStatus = () => {
       // Update the task in cache
       queryClient.setQueryData(
         ["tasks", "detail", updatedTask.id],
-        updatedTask
+        updatedTask,
       );
 
       // Invalidate related queries
@@ -97,9 +97,12 @@ export const useCompleteTask = () => {
     mutationFn: async (completionData: TaskCompletionData): Promise<Task> => {
       // Create FormData for file uploads
       const formData = new FormData();
-      
+
       // Add completion photos
-      if (completionData.completionPhotos && completionData.completionPhotos.length > 0) {
+      if (
+        completionData.completionPhotos &&
+        completionData.completionPhotos.length > 0
+      ) {
         completionData.completionPhotos.forEach((photo, index) => {
           formData.append(`photos`, photo);
         });
@@ -110,7 +113,10 @@ export const useCompleteTask = () => {
         formData.append("customerSignature", completionData.customerSignature);
       }
       if (completionData.customerRating) {
-        formData.append("customerRating", completionData.customerRating.toString());
+        formData.append(
+          "customerRating",
+          completionData.customerRating.toString(),
+        );
       }
       if (completionData.customerFeedback) {
         formData.append("customerFeedback", completionData.customerFeedback);
@@ -119,9 +125,15 @@ export const useCompleteTask = () => {
         formData.append("contractorNotes", completionData.contractorNotes);
       }
       if (completionData.issuesEncountered) {
-        formData.append("issuesEncountered", JSON.stringify(completionData.issuesEncountered));
+        formData.append(
+          "issuesEncountered",
+          JSON.stringify(completionData.issuesEncountered),
+        );
       }
-      formData.append("actualDuration", completionData.actualDuration.toString());
+      formData.append(
+        "actualDuration",
+        completionData.actualDuration.toString(),
+      );
       formData.append("completedAt", completionData.completedAt);
 
       const response: ApiResponse<Task> = await apiClient.request({
@@ -143,7 +155,7 @@ export const useCompleteTask = () => {
       // Update the task in cache
       queryClient.setQueryData(
         ["tasks", "detail", completedTask.id],
-        completedTask
+        completedTask,
       );
 
       // Invalidate related queries
@@ -162,16 +174,16 @@ export const useCancelTask = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      taskId, 
-      reason 
-    }: { 
-      taskId: string; 
-      reason: string; 
+    mutationFn: async ({
+      taskId,
+      reason,
+    }: {
+      taskId: string;
+      reason: string;
     }): Promise<Task> => {
       const response: ApiResponse<Task> = await apiClient.post(
         `/tasks/${taskId}/cancel`,
-        { reason }
+        { reason },
       );
 
       if (!response.success) {
@@ -184,7 +196,7 @@ export const useCancelTask = () => {
       // Update the task in cache
       queryClient.setQueryData(
         ["tasks", "detail", cancelledTask.id],
-        cancelledTask
+        cancelledTask,
       );
 
       // Invalidate related queries
@@ -203,15 +215,15 @@ export const useUploadTaskPhoto = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      taskId, 
-      photo, 
-      type, 
+    mutationFn: async ({
+      taskId,
+      photo,
+      type,
       caption,
-      onProgress 
-    }: { 
-      taskId: string; 
-      photo: File | Blob; 
+      onProgress,
+    }: {
+      taskId: string;
+      photo: File | Blob;
       type: string;
       caption?: string;
       onProgress?: (progress: number) => void;
@@ -226,7 +238,7 @@ export const useUploadTaskPhoto = () => {
       const response = await apiClient.uploadFile(
         `/tasks/${taskId}/photos`,
         photo,
-        onProgress
+        onProgress,
       );
 
       if (!response.success) {
@@ -237,8 +249,8 @@ export const useUploadTaskPhoto = () => {
     },
     onSuccess: (uploadResult, variables) => {
       // Invalidate task detail to refetch with new photo
-      queryClient.invalidateQueries({ 
-        queryKey: ["tasks", "detail", variables.taskId] 
+      queryClient.invalidateQueries({
+        queryKey: ["tasks", "detail", variables.taskId],
       });
     },
     onError: (error) => {
@@ -252,11 +264,11 @@ export const useReportTaskIssue = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      taskId, 
-      issue 
-    }: { 
-      taskId: string; 
+    mutationFn: async ({
+      taskId,
+      issue,
+    }: {
+      taskId: string;
       issue: {
         type: string;
         severity: string;
@@ -294,8 +306,8 @@ export const useReportTaskIssue = () => {
     },
     onSuccess: (result, variables) => {
       // Invalidate task detail to refetch with new issue
-      queryClient.invalidateQueries({ 
-        queryKey: ["tasks", "detail", variables.taskId] 
+      queryClient.invalidateQueries({
+        queryKey: ["tasks", "detail", variables.taskId],
       });
     },
     onError: (error) => {
@@ -307,18 +319,18 @@ export const useReportTaskIssue = () => {
 // Hook for getting task directions
 export const useGetTaskDirections = () => {
   return useMutation({
-    mutationFn: async ({ 
-      taskId, 
-      currentLocation 
-    }: { 
-      taskId: string; 
-      currentLocation: { latitude: number; longitude: number }; 
+    mutationFn: async ({
+      taskId,
+      currentLocation,
+    }: {
+      taskId: string;
+      currentLocation: { latitude: number; longitude: number };
     }): Promise<any> => {
       const response: ApiResponse<any> = await apiClient.post(
         `/tasks/${taskId}/directions`,
         {
           currentLocation,
-        }
+        },
       );
 
       if (!response.success) {

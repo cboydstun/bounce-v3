@@ -80,13 +80,113 @@ export class TaskController {
       // Get available tasks
       const result = await TaskService.getAvailableTasks(contractorId, filters);
 
+      // Transform tasks to include all fields expected by mobile app
+      const transformedTasks = result.tasks.map((task) => {
+        const taskObj = task.toObject();
+
+        // Map CRM status to mobile app status
+        const statusMap: Record<string, string> = {
+          Pending: "published",
+          Assigned: "assigned",
+          "In Progress": "in_progress",
+          Completed: "completed",
+          Cancelled: "cancelled",
+        };
+
+        // Map CRM priority to mobile app priority
+        const priorityMap: Record<string, string> = {
+          High: "high",
+          Medium: "medium",
+          Low: "low",
+        };
+
+        // Extract coordinates from location if available
+        let coordinates = {
+          latitude: 29.4241, // Default San Antonio coords
+          longitude: -98.4936,
+        };
+
+        if (taskObj.location && taskObj.location.coordinates) {
+          coordinates = {
+            longitude: taskObj.location.coordinates[0],
+            latitude: taskObj.location.coordinates[1],
+          };
+        }
+
+        return {
+          id: taskObj._id.toString(),
+          orderId: taskObj.orderId,
+          title: taskObj.title || `${taskObj.type} Task`,
+          description: taskObj.description,
+          type: taskObj.type.toLowerCase().replace(" ", "_"), // "Delivery" -> "delivery"
+          category: "bounce_house", // Default category
+          priority: priorityMap[taskObj.priority] || "medium",
+          status: statusMap[taskObj.status] || "published",
+          requiredSkills: [], // Default empty array
+          estimatedDuration: 120, // Default 2 hours in minutes
+          scheduledDate: taskObj.scheduledDateTime,
+          scheduledTimeSlot: {
+            startTime: taskObj.scheduledDateTime,
+            endTime: new Date(
+              new Date(taskObj.scheduledDateTime).getTime() +
+                2 * 60 * 60 * 1000,
+            ).toISOString(), // +2 hours
+            isFlexible: true,
+          },
+          location: {
+            coordinates,
+            address: {
+              street: taskObj.address || "Address not specified",
+              city: "San Antonio",
+              state: "TX",
+              zipCode: "78201",
+              country: "USA",
+              formattedAddress: taskObj.address || "San Antonio, TX",
+            },
+            contactOnArrival: true,
+          },
+          customer: {
+            id: "customer-1",
+            firstName: "Customer",
+            lastName: "Name",
+            email: "customer@example.com",
+            phone: "(555) 123-4567",
+            preferredContactMethod: "phone" as const,
+          },
+          equipment: [], // Default empty array
+          instructions: [], // Default empty array
+          compensation: {
+            baseAmount: 50,
+            bonuses: [],
+            totalAmount: 50,
+            currency: "USD",
+            paymentMethod: "direct_deposit" as const,
+            paymentSchedule: "weekly" as const,
+          },
+          contractor:
+            taskObj.assignedContractors.length > 0
+              ? {
+                  contractorId: taskObj.assignedContractors[0],
+                  contractor: {} as any, // Will be populated by mobile app if needed
+                  assignedAt: taskObj.createdAt,
+                }
+              : undefined,
+          createdAt: taskObj.createdAt,
+          updatedAt: taskObj.updatedAt,
+          completedAt: taskObj.completedAt,
+        };
+      });
+
       return res.json({
-        tasks: result.tasks,
-        pagination: {
-          page: result.page,
-          limit: filters.limit,
-          total: result.total,
-          totalPages: result.totalPages,
+        success: true,
+        data: {
+          tasks: transformedTasks,
+          pagination: {
+            page: result.page,
+            limit: filters.limit,
+            total: result.total,
+            totalPages: result.totalPages,
+          },
         },
       });
     } catch (error) {
@@ -137,13 +237,113 @@ export class TaskController {
         filters,
       );
 
+      // Transform tasks using the same logic as getAvailableTasks
+      const transformedTasks = result.tasks.map((task) => {
+        const taskObj = task.toObject();
+
+        // Map CRM status to mobile app status
+        const statusMap: Record<string, string> = {
+          Pending: "published",
+          Assigned: "assigned",
+          "In Progress": "in_progress",
+          Completed: "completed",
+          Cancelled: "cancelled",
+        };
+
+        // Map CRM priority to mobile app priority
+        const priorityMap: Record<string, string> = {
+          High: "high",
+          Medium: "medium",
+          Low: "low",
+        };
+
+        // Extract coordinates from location if available
+        let coordinates = {
+          latitude: 29.4241, // Default San Antonio coords
+          longitude: -98.4936,
+        };
+
+        if (taskObj.location && taskObj.location.coordinates) {
+          coordinates = {
+            longitude: taskObj.location.coordinates[0],
+            latitude: taskObj.location.coordinates[1],
+          };
+        }
+
+        return {
+          id: taskObj._id.toString(),
+          orderId: taskObj.orderId,
+          title: taskObj.title || `${taskObj.type} Task`,
+          description: taskObj.description,
+          type: taskObj.type.toLowerCase().replace(" ", "_"),
+          category: "bounce_house",
+          priority: priorityMap[taskObj.priority] || "medium",
+          status: statusMap[taskObj.status] || "assigned",
+          requiredSkills: [],
+          estimatedDuration: 120,
+          scheduledDate: taskObj.scheduledDateTime,
+          scheduledTimeSlot: {
+            startTime: taskObj.scheduledDateTime,
+            endTime: new Date(
+              new Date(taskObj.scheduledDateTime).getTime() +
+                2 * 60 * 60 * 1000,
+            ).toISOString(),
+            isFlexible: true,
+          },
+          location: {
+            coordinates,
+            address: {
+              street: taskObj.address || "Address not specified",
+              city: "San Antonio",
+              state: "TX",
+              zipCode: "78201",
+              country: "USA",
+              formattedAddress: taskObj.address || "San Antonio, TX",
+            },
+            contactOnArrival: true,
+          },
+          customer: {
+            id: "customer-1",
+            firstName: "Customer",
+            lastName: "Name",
+            email: "customer@example.com",
+            phone: "(555) 123-4567",
+            preferredContactMethod: "phone" as const,
+          },
+          equipment: [],
+          instructions: [],
+          compensation: {
+            baseAmount: 50,
+            bonuses: [],
+            totalAmount: 50,
+            currency: "USD",
+            paymentMethod: "direct_deposit" as const,
+            paymentSchedule: "weekly" as const,
+          },
+          contractor:
+            taskObj.assignedContractors.length > 0
+              ? {
+                  contractorId: taskObj.assignedContractors[0],
+                  contractor: {} as any,
+                  assignedAt: taskObj.createdAt,
+                }
+              : undefined,
+          createdAt: taskObj.createdAt,
+          updatedAt: taskObj.updatedAt,
+          completedAt: taskObj.completedAt,
+        };
+      });
+
       return res.json({
-        tasks: result.tasks,
-        pagination: {
-          page: result.page,
-          limit: filters.limit,
-          total: result.total,
-          totalPages: result.totalPages,
+        success: true,
+        data: {
+          tasks: transformedTasks,
+          pagination: {
+            page: result.page,
+            limit: filters.limit,
+            total: result.total,
+            totalPages: result.totalPages,
+          },
         },
       });
     } catch (error) {

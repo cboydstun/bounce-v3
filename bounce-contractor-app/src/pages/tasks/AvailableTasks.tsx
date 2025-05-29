@@ -28,7 +28,11 @@ const AvailableTasks: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
-  const { location, isLoading: locationLoading, error: locationError } = useGeolocation();
+  const {
+    location,
+    isLoading: locationLoading,
+    error: locationError,
+  } = useGeolocation();
 
   const {
     data,
@@ -83,11 +87,7 @@ const AvailableTasks: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonTitle>Available Tasks</IonTitle>
-          <IonButton
-            slot="end"
-            fill="clear"
-            onClick={handleFilters}
-          >
+          <IonButton slot="end" fill="clear" onClick={handleFilters}>
             <IonIcon icon={filterOutline} />
           </IonButton>
         </IonToolbar>
@@ -166,7 +166,8 @@ const AvailableTasks: React.FC = () => {
               </div>
               <h2 className="text-lg font-semibold mb-2">Map View</h2>
               <p className="text-gray-600 text-sm">
-                Map integration coming soon! You'll be able to see tasks on a map.
+                Map integration coming soon! You'll be able to see tasks on a
+                map.
               </p>
             </div>
           </div>

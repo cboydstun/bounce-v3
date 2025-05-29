@@ -46,7 +46,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
   const distance = getDistanceFromCurrent(
     task.location.coordinates.latitude,
-    task.location.coordinates.longitude
+    task.location.coordinates.longitude,
   );
 
   const getStatusColor = (status: string) => {
@@ -84,10 +84,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const formatScheduledDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    
+
     if (date.toDateString() === now.toDateString()) {
       return `Today at ${format(date, "h:mm a")}`;
-    } else if (date.toDateString() === new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString()) {
+    } else if (
+      date.toDateString() ===
+      new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString()
+    ) {
       return `Tomorrow at ${format(date, "h:mm a")}`;
     } else {
       return format(date, "MMM d 'at' h:mm a");
@@ -106,7 +109,10 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <IonBadge color={getStatusColor(task.status)} className="text-xs">
                 {task.status.replace("_", " ").toUpperCase()}
               </IonBadge>
-              <IonBadge color={getPriorityColor(task.priority)} className="text-xs">
+              <IonBadge
+                color={getPriorityColor(task.priority)}
+                className="text-xs"
+              >
                 {task.priority.toUpperCase()}
               </IonBadge>
             </div>
@@ -152,7 +158,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
           <div className="flex items-center text-gray-600">
             <IonIcon icon={timeOutline} className="mr-2 text-orange-500" />
             <IonText className="text-sm">
-              Est. {Math.round(task.estimatedDuration / 60)}h {task.estimatedDuration % 60}m
+              Est. {Math.round(task.estimatedDuration / 60)}h{" "}
+              {task.estimatedDuration % 60}m
             </IonText>
           </div>
 
@@ -179,7 +186,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           {task.equipment.length > 0 && (
             <div className="mt-2">
               <IonText className="text-xs text-gray-500 font-medium">
-                Equipment: {task.equipment.map(eq => eq.name).join(", ")}
+                Equipment: {task.equipment.map((eq) => eq.name).join(", ")}
               </IonText>
             </div>
           )}

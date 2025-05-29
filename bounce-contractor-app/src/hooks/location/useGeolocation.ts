@@ -49,78 +49,80 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
   const checkPermissions = useCallback(async () => {
     try {
       const permissions = await Geolocation.checkPermissions();
-      
+
       if (permissions.location === "granted") {
-        setState(prev => ({ ...prev, hasPermission: true }));
+        setState((prev) => ({ ...prev, hasPermission: true }));
         return true;
       } else if (permissions.location === "prompt") {
         const requestResult = await Geolocation.requestPermissions();
         const granted = requestResult.location === "granted";
-        setState(prev => ({ ...prev, hasPermission: granted }));
+        setState((prev) => ({ ...prev, hasPermission: granted }));
         return granted;
       } else {
-        setState(prev => ({ 
-          ...prev, 
+        setState((prev) => ({
+          ...prev,
           hasPermission: false,
-          error: "Location permission denied"
+          error: "Location permission denied",
         }));
         return false;
       }
     } catch (error) {
-      setState(prev => ({ 
-        ...prev, 
+      setState((prev) => ({
+        ...prev,
         hasPermission: false,
-        error: `Permission check failed: ${error}`
+        error: `Permission check failed: ${error}`,
       }));
       return false;
     }
   }, []);
 
   // Get current position
-  const getCurrentPosition = useCallback(async (): Promise<LocationCoordinates | null> => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
+  const getCurrentPosition =
+    useCallback(async (): Promise<LocationCoordinates | null> => {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    try {
-      const hasPermission = await checkPermissions();
-      if (!hasPermission) {
-        setState(prev => ({ ...prev, isLoading: false }));
+      try {
+        const hasPermission = await checkPermissions();
+        if (!hasPermission) {
+          setState((prev) => ({ ...prev, isLoading: false }));
+          return null;
+        }
+
+        const position: Position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy,
+          timeout,
+          maximumAge,
+        });
+
+        const coordinates: LocationCoordinates = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          altitude: position.coords.altitude || undefined,
+          altitudeAccuracy: position.coords.altitudeAccuracy || undefined,
+          heading: position.coords.heading || undefined,
+          speed: position.coords.speed || undefined,
+        };
+
+        setState((prev) => ({
+          ...prev,
+          location: coordinates,
+          isLoading: false,
+          error: null,
+        }));
+
+        return coordinates;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to get location";
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: errorMessage,
+        }));
         return null;
       }
-
-      const position: Position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy,
-        timeout,
-        maximumAge,
-      });
-
-      const coordinates: LocationCoordinates = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracy: position.coords.accuracy,
-        altitude: position.coords.altitude || undefined,
-        altitudeAccuracy: position.coords.altitudeAccuracy || undefined,
-        heading: position.coords.heading || undefined,
-        speed: position.coords.speed || undefined,
-      };
-
-      setState(prev => ({
-        ...prev,
-        location: coordinates,
-        isLoading: false,
-        error: null,
-      }));
-
-      return coordinates;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to get location";
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: errorMessage,
-      }));
-      return null;
-    }
-  }, [enableHighAccuracy, timeout, maximumAge, checkPermissions]);
+    }, [enableHighAccuracy, timeout, maximumAge, checkPermissions]);
 
   // Start watching position
   const startWatching = useCallback(async () => {
@@ -142,7 +144,7 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
         },
         (position, error) => {
           if (error) {
-            setState(prev => ({
+            setState((prev) => ({
               ...prev,
               error: error.message,
               isLoading: false,
@@ -161,34 +163,44 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
               speed: position.coords.speed || undefined,
             };
 
-            setState(prev => ({
+            setState((prev) => ({
               ...prev,
               location: coordinates,
               isLoading: false,
               error: null,
             }));
           }
-        }
+        },
       );
 
       setWatchId(id);
-      setState(prev => ({ ...prev, isWatching: true }));
+      setState((prev) => ({ ...prev, isWatching: true }));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to start watching location";
-      setState(prev => ({
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to start watching location";
+      setState((prev) => ({
         ...prev,
         error: errorMessage,
         isWatching: false,
       }));
     }
-  }, [state.isWatching, watchId, enableHighAccuracy, timeout, maximumAge, checkPermissions]);
+  }, [
+    state.isWatching,
+    watchId,
+    enableHighAccuracy,
+    timeout,
+    maximumAge,
+    checkPermissions,
+  ]);
 
   // Stop watching position
   const stopWatching = useCallback(async () => {
     if (watchId) {
       await Geolocation.clearWatch({ id: watchId });
       setWatchId(null);
-      setState(prev => ({ ...prev, isWatching: false }));
+      setState((prev) => ({ ...prev, isWatching: false }));
     }
   }, [watchId]);
 
@@ -207,7 +219,7 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       return R * c;
     },
-    []
+    [],
   );
 
   // Get distance from current location
@@ -220,10 +232,10 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
         state.location.latitude,
         state.location.longitude,
         latitude,
-        longitude
+        longitude,
       );
     },
-    [state.location, calculateDistance]
+    [state.location, calculateDistance],
   );
 
   // Initialize geolocation on mount
@@ -256,7 +268,8 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
 // Hook for background location tracking
 export const useBackgroundLocation = () => {
   const [isTracking, setIsTracking] = useState(false);
-  const [lastKnownLocation, setLastKnownLocation] = useState<LocationCoordinates | null>(null);
+  const [lastKnownLocation, setLastKnownLocation] =
+    useState<LocationCoordinates | null>(null);
 
   const startBackgroundTracking = useCallback(async () => {
     // This would integrate with Capacitor Background Mode plugin

@@ -45,6 +45,11 @@ export class TaskService {
     totalPages: number;
   }> {
     try {
+      logger.info(
+        `[DEBUG] getAvailableTasks called with contractorId: ${contractorId}`,
+      );
+      logger.info(`[DEBUG] Filters:`, filters);
+
       const {
         lat,
         lng,
@@ -57,6 +62,8 @@ export class TaskService {
       // Get contractor skills for filtering
       const contractor = await ContractorAuth.findById(contractorId);
       const contractorSkills = contractor?.skills || [];
+      logger.info(`[DEBUG] Contractor found:`, contractor ? "Yes" : "No");
+      logger.info(`[DEBUG] Contractor skills:`, contractorSkills);
 
       // Location-based filtering if coordinates provided
       if (lat && lng) {
@@ -86,8 +93,13 @@ export class TaskService {
       // Non-location based filtering
       let query: any = {
         status: "Pending",
-        assignedContractors: { $ne: contractorId },
+        $and: [
+          { assignedContractors: { $ne: contractorId } }, // Not assigned to this contractor
+          { assignedContractors: { $size: 0 } }, // Not assigned to anyone
+        ],
       };
+
+      logger.info(`[DEBUG] Base query:`, JSON.stringify(query, null, 2));
 
       // Skills matching for non-location queries
       if (skills.length > 0) {
@@ -124,12 +136,28 @@ export class TaskService {
         }
       }
 
+      logger.info(`[DEBUG] Final query:`, JSON.stringify(query, null, 2));
+
       const total = await Task.countDocuments(query);
+      logger.info(`[DEBUG] Total tasks found:`, total);
+
       const tasks = await Task.find(query)
         .sort({ priority: -1, scheduledDateTime: 1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .exec();
+
+      logger.info(`[DEBUG] Tasks returned:`, tasks.length);
+      logger.info(
+        `[DEBUG] Task details:`,
+        tasks.map((t) => ({
+          id: t._id,
+          status: t.status,
+          type: t.type,
+          assignedContractors: t.assignedContractors,
+          description: t.description,
+        })),
+      );
 
       return {
         tasks,
@@ -530,6 +558,54 @@ export class TaskService {
    */
   static kilometersToMeters(kilometers: number): number {
     return kilometers * 1000;
+  }
+
+  /**
+   * Debug method to get all tasks without any filtering
+   */
+  static async getAllTasksDebug(): Promise<{
+    tasks: ITaskDocument[];
+    total: number;
+    collectionName: string;
+    dbName: string;
+  }> {
+    try {
+      logger.info(`[DEBUG] getAllTasksDebug called`);
+
+      // Get database and collection info
+      const dbName = Task.db.name;
+      const collectionName = Task.collection.name;
+
+      logger.info(`[DEBUG] Database name: ${dbName}`);
+      logger.info(`[DEBUG] Collection name: ${collectionName}`);
+
+      // Get all tasks without any filtering
+      const tasks = await Task.find({}).exec();
+      const total = await Task.countDocuments({});
+
+      logger.info(`[DEBUG] Total tasks in database: ${total}`);
+      logger.info(
+        `[DEBUG] Tasks found:`,
+        tasks.map((t) => ({
+          id: t._id,
+          status: t.status,
+          type: t.type,
+          assignedContractors: t.assignedContractors,
+          description: t.description,
+          createdAt: t.createdAt,
+        })),
+      );
+
+      return {
+        tasks,
+        total,
+        collectionName,
+        dbName,
+      };
+    } catch (error) {
+      logger.error("Error in getAllTasksDebug:", error);
+      throw new Error("Failed to retrieve debug tasks");
+    }
   }
 }
 

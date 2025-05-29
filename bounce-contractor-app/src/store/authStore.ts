@@ -64,8 +64,10 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
 
         try {
-          console.log("🔐 Attempting login with:", { email: credentials.email });
-          
+          console.log("🔐 Attempting login with:", {
+            email: credentials.email,
+          });
+
           const response = await apiClient.post(
             "/auth/contractor/login",
             credentials,
@@ -77,11 +79,11 @@ export const useAuthStore = create<AuthStore>()(
 
           // Check if response has the data directly or wrapped in data field
           const responseData = response.data || response;
-          
+
           console.log("🔍 Parsed response data:", responseData);
           console.log("🎫 Has accessToken:", !!responseData.accessToken);
           console.log("👤 Has contractor:", !!responseData.contractor);
-          
+
           if (responseData.accessToken && responseData.contractor) {
             console.log("✅ Login successful! Setting auth state...");
             const { contractor, accessToken, refreshToken } = responseData;
@@ -90,7 +92,9 @@ export const useAuthStore = create<AuthStore>()(
             const tokens: AuthTokens = {
               accessToken,
               refreshToken,
-              expiresAt: new Date(Date.now() + APP_CONFIG.JWT_ACCESS_TOKEN_EXPIRY).toISOString(),
+              expiresAt: new Date(
+                Date.now() + APP_CONFIG.JWT_ACCESS_TOKEN_EXPIRY,
+              ).toISOString(),
               tokenType: "Bearer",
             };
 
@@ -128,14 +132,14 @@ export const useAuthStore = create<AuthStore>()(
           console.error("🔍 Error details:", {
             message: (error as any)?.message,
             stack: (error as any)?.stack,
-            name: (error as any)?.name
+            name: (error as any)?.name,
           });
-          
+
           const apiError = error as ApiError;
           const errorMessage = apiError.message || "Login failed";
-          
+
           console.error("💥 Setting error state:", errorMessage);
-          
+
           set({
             isLoading: false,
             error: errorMessage,

@@ -32,11 +32,11 @@ const MyTasks: React.FC = () => {
     switch (filter) {
       case "active":
         return {
-          status: ["assigned", "accepted", "in_progress", "en_route", "on_site"] as TaskStatus[],
+          status: ["assigned", "in_progress"],
         };
       case "completed":
         return {
-          status: ["completed"] as TaskStatus[],
+          status: ["completed"],
         };
       case "all":
       default:
