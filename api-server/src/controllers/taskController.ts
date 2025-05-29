@@ -1,0 +1,420 @@
+import { Request, Response } from "express";
+import { AuthenticatedRequest } from "../middleware/auth.js";
+import TaskService, {
+  TaskFilters,
+  TaskCompletionData,
+} from "../services/taskService.js";
+import { logger } from "../utils/logger.js";
+import mongoose from "mongoose";
+
+export class TaskController {
+  /**
+   * GET /api/tasks/available
+   * Get available tasks with location and skills filtering
+   */
+  static async getAvailableTasks(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.contractor) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const contractorId = req.contractor.contractorId;
+
+      // Parse query parameters
+      const { lat, lng, radius, skills, page = "1", limit = "20" } = req.query;
+
+      // Build filters object
+      const filters: TaskFilters = {
+        page: parseInt(page as string, 10),
+        limit: Math.min(parseInt(limit as string, 10), 50), // Max 50 items per page
+      };
+
+      // Parse location parameters
+      if (lat && lng) {
+        const latitude = parseFloat(lat as string);
+        const longitude = parseFloat(lng as string);
+
+        if (isNaN(latitude) || isNaN(longitude)) {
+          return res.status(400).json({
+            error: "Invalid latitude or longitude values",
+          });
+        }
+
+        if (
+          latitude < -90 ||
+          latitude > 90 ||
+          longitude < -180 ||
+          longitude > 180
+        ) {
+          return res.status(400).json({
+            error:
+              "Latitude must be between -90 and 90, longitude between -180 and 180",
+          });
+        }
+
+        filters.lat = latitude;
+        filters.lng = longitude;
+
+        // Parse radius (optional, defaults to 50km in service)
+        if (radius) {
+          const radiusValue = parseFloat(radius as string);
+          if (!isNaN(radiusValue) && radiusValue > 0) {
+            filters.radius = radiusValue;
+          }
+        }
+      }
+
+      // Parse skills filter
+      if (skills) {
+        if (typeof skills === "string") {
+          filters.skills = skills
+            .split(",")
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+        } else if (Array.isArray(skills)) {
+          filters.skills = skills
+            .map((s) => String(s).trim())
+            .filter((s) => s.length > 0);
+        }
+      }
+
+      // Get available tasks
+      const result = await TaskService.getAvailableTasks(contractorId, filters);
+
+      return res.json({
+        tasks: result.tasks,
+        pagination: {
+          page: result.page,
+          limit: filters.limit,
+          total: result.total,
+          totalPages: result.totalPages,
+        },
+      });
+    } catch (error) {
+      logger.error("Error in getAvailableTasks:", error);
+      return res.status(500).json({
+        error: "Failed to retrieve available tasks",
+      });
+    }
+  }
+
+  /**
+   * GET /api/tasks/my-tasks
+   * Get contractor's assigned tasks
+   */
+  static async getMyTasks(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.contractor) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const contractorId = req.contractor.contractorId;
+
+      const { status, page = "1", limit = "20" } = req.query;
+
+      const filters: TaskFilters = {
+        page: parseInt(page as string, 10),
+        limit: Math.min(parseInt(limit as string, 10), 50),
+      };
+
+      if (status && typeof status === "string") {
+        const validStatuses = [
+          "Assigned",
+          "In Progress",
+          "Completed",
+          "Cancelled",
+        ];
+        if (validStatuses.includes(status)) {
+          filters.status = status;
+        } else {
+          return res.status(400).json({
+            error: "Invalid status value",
+            validStatuses,
+          });
+        }
+      }
+
+      const result = await TaskService.getContractorTasks(
+        contractorId,
+        filters,
+      );
+
+      return res.json({
+        tasks: result.tasks,
+        pagination: {
+          page: result.page,
+          limit: filters.limit,
+          total: result.total,
+          totalPages: result.totalPages,
+        },
+      });
+    } catch (error) {
+      logger.error("Error in getMyTasks:", error);
+      return res.status(500).json({
+        error: "Failed to retrieve your tasks",
+      });
+    }
+  }
+
+  /**
+   * POST /api/tasks/:id/claim
+   * Claim an available task
+   */
+  static async claimTask(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.contractor) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const { id: taskId } = req.params;
+      const contractorId = req.contractor.contractorId;
+
+      // Validate task ID
+      if (
+        typeof taskId !== "string" ||
+        !mongoose.Types.ObjectId.isValid(taskId)
+      ) {
+        return res.status(400).json({
+          error: "Invalid task ID format",
+        });
+      }
+
+      const result = await TaskService.claimTask(taskId, contractorId);
+
+      if (result.success) {
+        return res.json({
+          task: result.task,
+          message: result.message,
+        });
+      } else {
+        // Determine appropriate status code based on error type
+        let statusCode = 400;
+        if (
+          result.message.includes("not found") ||
+          result.message.includes("not authorized")
+        ) {
+          statusCode = 404;
+        } else if (result.message.includes("already assigned")) {
+          statusCode = 409; // Conflict
+        }
+
+        return res.status(statusCode).json({
+          error: result.message,
+        });
+      }
+    } catch (error) {
+      logger.error("Error in claimTask:", error);
+      return res.status(500).json({
+        error: "Failed to claim task",
+      });
+    }
+  }
+
+  /**
+   * PUT /api/tasks/:id/status
+   * Update task status
+   */
+  static async updateTaskStatus(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.contractor) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const { id: taskId } = req.params;
+      const { status } = req.body;
+      const contractorId = req.contractor.contractorId;
+
+      // Validate task ID
+      if (
+        typeof taskId !== "string" ||
+        !mongoose.Types.ObjectId.isValid(taskId)
+      ) {
+        return res.status(400).json({
+          error: "Invalid task ID format",
+        });
+      }
+
+      // Validate status
+      if (!status || typeof status !== "string") {
+        return res.status(400).json({
+          error: "Status is required and must be a string",
+        });
+      }
+
+      const result = await TaskService.updateTaskStatus(
+        taskId,
+        contractorId,
+        status,
+      );
+
+      if (result.success) {
+        return res.json({
+          task: result.task,
+          message: result.message,
+        });
+      } else {
+        let statusCode = 400;
+        if (result.message.includes("not found")) {
+          statusCode = 404;
+        } else if (result.message.includes("not assigned")) {
+          statusCode = 403; // Forbidden - task exists but not authorized
+        } else if (result.message.includes("Invalid status transition")) {
+          statusCode = 422; // Unprocessable Entity
+        }
+
+        return res.status(statusCode).json({
+          error: result.message,
+        });
+      }
+    } catch (error) {
+      logger.error("Error in updateTaskStatus:", error);
+      return res.status(500).json({
+        error: "Failed to update task status",
+      });
+    }
+  }
+
+  /**
+   * POST /api/tasks/:id/complete
+   * Complete a task with optional photos and notes
+   */
+  static async completeTask(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.contractor) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const { id: taskId } = req.params;
+      const { notes, photos } = req.body;
+      const contractorId = req.contractor.contractorId;
+
+      // Validate task ID
+      if (
+        typeof taskId !== "string" ||
+        !mongoose.Types.ObjectId.isValid(taskId)
+      ) {
+        return res.status(400).json({
+          error: "Invalid task ID format",
+        });
+      }
+
+      // Validate completion data
+      const completionData: TaskCompletionData = {};
+
+      if (notes) {
+        if (typeof notes !== "string") {
+          return res.status(400).json({
+            error: "Notes must be a string",
+          });
+        }
+        if (notes.length > 2000) {
+          return res.status(400).json({
+            error: "Notes cannot exceed 2000 characters",
+          });
+        }
+        completionData.notes = notes;
+      }
+
+      if (photos) {
+        if (!Array.isArray(photos)) {
+          return res.status(400).json({
+            error: "Photos must be an array of URLs",
+          });
+        }
+        if (photos.length > 5) {
+          return res.status(400).json({
+            error: "Maximum 5 photos allowed",
+          });
+        }
+
+        // Validate photo URLs
+        const validPhotos = photos.filter(
+          (photo) => typeof photo === "string" && photo.trim().length > 0,
+        );
+
+        if (validPhotos.length !== photos.length) {
+          return res.status(400).json({
+            error: "All photos must be valid URL strings",
+          });
+        }
+
+        completionData.photos = validPhotos;
+      }
+
+      const result = await TaskService.completeTask(
+        taskId,
+        contractorId,
+        completionData,
+      );
+
+      if (result.success) {
+        return res.json({
+          task: result.task,
+          message: result.message,
+        });
+      } else {
+        let statusCode = 400;
+        if (result.message.includes("not found")) {
+          statusCode = 404;
+        } else if (result.message.includes("not assigned")) {
+          statusCode = 403; // Forbidden - task exists but not authorized
+        } else if (result.message.includes("must be in progress")) {
+          statusCode = 400;
+        }
+
+        return res.status(statusCode).json({
+          error: result.message,
+        });
+      }
+    } catch (error) {
+      logger.error("Error in completeTask:", error);
+      return res.status(500).json({
+        error: "Failed to complete task",
+      });
+    }
+  }
+
+  /**
+   * GET /api/tasks/:id
+   * Get task details by ID
+   */
+  static async getTaskById(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.contractor) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const { id: taskId } = req.params;
+      const contractorId = req.contractor.contractorId;
+
+      // Validate task ID
+      if (
+        typeof taskId !== "string" ||
+        !mongoose.Types.ObjectId.isValid(taskId)
+      ) {
+        return res.status(400).json({
+          error: "Invalid task ID format",
+        });
+      }
+
+      const result = await TaskService.getTaskById(taskId, contractorId);
+
+      if (!result.exists) {
+        return res.status(404).json({
+          error: "Task not found",
+        });
+      }
+
+      if (!result.hasAccess) {
+        return res.status(403).json({
+          error: "You do not have access to this task",
+        });
+      }
+
+      return res.json({
+        task: result.task,
+      });
+    } catch (error) {
+      logger.error("Error in getTaskById:", error);
+      return res.status(500).json({
+        error: "Failed to retrieve task details",
+      });
+    }
+  }
+}
+
+export default TaskController;
