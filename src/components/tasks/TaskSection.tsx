@@ -8,9 +8,10 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface TaskSectionProps {
   orderId: string;
+  orderAddress?: string; // Optional order address to pre-populate tasks
 }
 
-export function TaskSection({ orderId }: TaskSectionProps) {
+export function TaskSection({ orderId, orderAddress }: TaskSectionProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -259,6 +260,7 @@ export function TaskSection({ orderId }: TaskSectionProps) {
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         task={editingTask}
         isLoading={isSubmitting}
+        orderAddress={orderAddress}
       />
     </div>
   );

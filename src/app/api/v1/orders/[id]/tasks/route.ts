@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { TaskFormData } from "@/types/task";
+import { geocodeAddress } from "@/utils/geocoding";
 
 export async function GET(
   request: NextRequest,
@@ -140,17 +141,72 @@ export async function POST(
       );
     }
 
-    // Create new task
-    const newTask = new Task({
+    // Get address from order if not provided in task data
+    let address = taskData.address;
+    if (!address) {
+      // Construct address from order's customer information
+      const addressParts = [
+        order.customerAddress,
+        order.customerCity,
+        order.customerState,
+        order.customerZipCode,
+      ].filter(Boolean);
+
+      if (addressParts.length === 0) {
+        return NextResponse.json(
+          {
+            error:
+              "No address information available in order. Please add customer address to the order first.",
+          },
+          { status: 400 },
+        );
+      }
+
+      address = addressParts.join(", ");
+    }
+
+    // Handle location data - try to geocode but don't fail if it doesn't work
+    let location = taskData.location;
+    if (!location && address) {
+      try {
+        // Attempt to geocode the address to get coordinates
+        const geocodedLocation = await geocodeAddress(address);
+        if (geocodedLocation) {
+          location = geocodedLocation;
+          console.log(`Successfully geocoded address: ${address}`);
+        } else {
+          console.warn(
+            `Could not geocode address: ${address}. Task will be created without coordinates.`,
+          );
+        }
+      } catch (error) {
+        console.warn(`Geocoding failed for address: ${address}. Error:`, error);
+        // Continue without geocoding - don't block task creation
+      }
+    }
+
+    // Create new task - only include location if we have valid coordinates
+    const taskFields: any = {
       orderId: resolvedParams.id,
       type: taskData.type,
+      title: taskData.title?.trim() || undefined,
       description: taskData.description.trim(),
       scheduledDateTime: scheduledDate,
       priority: taskData.priority || "Medium",
       status: taskData.status || "Pending",
       assignedContractors: taskData.assignedContractors || [],
       assignedTo: taskData.assignedTo?.trim() || undefined,
-    });
+      address: address.trim(),
+      completionPhotos: taskData.completionPhotos || [],
+      completionNotes: taskData.completionNotes?.trim() || undefined,
+    };
+
+    // Only add location if we have valid coordinates
+    if (location && location.coordinates && location.coordinates.length === 2) {
+      taskFields.location = location;
+    }
+
+    const newTask = new Task(taskFields);
 
     const savedTask = await newTask.save();
 

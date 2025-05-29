@@ -16,6 +16,7 @@ interface TaskFormProps {
   onSubmit: (taskData: TaskFormData) => Promise<void>;
   task?: Task | null; // For editing existing tasks
   isLoading?: boolean;
+  orderAddress?: string; // Pre-populate address from order
 }
 
 export function TaskForm({
@@ -24,15 +25,19 @@ export function TaskForm({
   onSubmit,
   task,
   isLoading = false,
+  orderAddress,
 }: TaskFormProps) {
   const [formData, setFormData] = useState<TaskFormData>({
     type: "Delivery",
+    title: "",
     description: "",
     scheduledDateTime: "",
     priority: "Medium",
     status: "Pending",
     assignedContractors: [],
     assignedTo: "",
+    completionPhotos: [],
+    completionNotes: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -53,6 +58,7 @@ export function TaskForm({
         // Editing existing task
         setFormData({
           type: task.type,
+          title: task.title || "",
           description: task.description,
           scheduledDateTime: new Date(task.scheduledDateTime)
             .toISOString()
@@ -61,6 +67,8 @@ export function TaskForm({
           status: task.status,
           assignedContractors: task.assignedContractors || [],
           assignedTo: task.assignedTo || "",
+          completionPhotos: task.completionPhotos || [],
+          completionNotes: task.completionNotes || "",
         });
       } else {
         // Creating new task
@@ -68,12 +76,15 @@ export function TaskForm({
         now.setMinutes(now.getMinutes() + 30); // Default to 30 minutes from now
         setFormData({
           type: "Delivery",
+          title: "",
           description: "",
           scheduledDateTime: now.toISOString().slice(0, 16),
           priority: "Medium",
           status: "Pending",
           assignedContractors: [],
           assignedTo: "",
+          completionPhotos: [],
+          completionNotes: "",
         });
       }
       setErrors({});
@@ -162,6 +173,15 @@ export function TaskForm({
       newErrors.description = "Description must be less than 1000 characters";
     }
 
+    if (formData.title && formData.title.length > 200) {
+      newErrors.title = "Title must be less than 200 characters";
+    }
+
+    if (formData.completionNotes && formData.completionNotes.length > 2000) {
+      newErrors.completionNotes =
+        "Completion notes must be less than 2000 characters";
+    }
+
     if (!formData.scheduledDateTime) {
       newErrors.scheduledDateTime = "Scheduled date/time is required";
     } else {
@@ -205,8 +225,10 @@ export function TaskForm({
     try {
       await onSubmit({
         ...formData,
+        title: formData.title?.trim() || undefined,
         description: formData.description.trim(),
         assignedTo: formData.assignedTo?.trim() || undefined,
+        completionNotes: formData.completionNotes?.trim() || undefined,
       });
       onClose();
     } catch (error) {
@@ -274,6 +296,31 @@ export function TaskForm({
             )}
           </div>
 
+          {/* Title */}
+          <div>
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Title (Optional)
+            </label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.title ? "border-red-500" : "border-gray-300"
+              }`}
+              placeholder="Brief title for the task (optional)"
+              disabled={isLoading}
+            />
+            {errors.title && (
+              <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+            )}
+          </div>
+
           {/* Description */}
           <div>
             <label
@@ -298,6 +345,21 @@ export function TaskForm({
               <p className="text-red-500 text-xs mt-1">{errors.description}</p>
             )}
           </div>
+
+          {/* Address Info (read-only display) */}
+          {orderAddress && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Task Location
+              </label>
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-700">
+                {orderAddress}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Address will be automatically derived from the order
+              </p>
+            </div>
+          )}
 
           {/* Scheduled Date/Time */}
           <div>
@@ -466,6 +528,35 @@ export function TaskForm({
               <p className="text-red-500 text-xs mt-1">{errors.assignedTo}</p>
             )}
           </div>
+
+          {/* Completion Notes (only show when editing and status is Completed) */}
+          {task && formData.status === "Completed" && (
+            <div>
+              <label
+                htmlFor="completionNotes"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Completion Notes
+              </label>
+              <textarea
+                id="completionNotes"
+                name="completionNotes"
+                value={formData.completionNotes}
+                onChange={handleInputChange}
+                rows={3}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.completionNotes ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="Notes about task completion (optional)"
+                disabled={isLoading}
+              />
+              {errors.completionNotes && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.completionNotes}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Form Actions */}
           <div className="flex justify-end space-x-3 pt-4">

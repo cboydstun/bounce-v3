@@ -392,21 +392,21 @@ export class ApiService {
   register(data: RegisterData): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(
       `${this.baseUrl}/auth/contractor/register`,
-      data
+      data,
     );
   }
 
   login(credentials: LoginCredentials): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(
       `${this.baseUrl}/auth/contractor/login`,
-      credentials
+      credentials,
     );
   }
 
   refreshToken(token: string): Observable<TokenResponse> {
     return this.http.post<TokenResponse>(
       `${this.baseUrl}/auth/contractor/refresh`,
-      { refreshToken: token }
+      { refreshToken: token },
     );
   }
 
@@ -426,30 +426,30 @@ export class ApiService {
   claimTask(taskId: string): Observable<TaskResponse> {
     return this.http.post<TaskResponse>(
       `${this.baseUrl}/tasks/${taskId}/claim`,
-      {}
+      {},
     );
   }
 
   updateTaskStatus(
     taskId: string,
-    status: TaskStatus
+    status: TaskStatus,
   ): Observable<TaskResponse> {
     return this.http.put<TaskResponse>(
       `${this.baseUrl}/tasks/${taskId}/status`,
-      { status }
+      { status },
     );
   }
 
   completeTask(
     taskId: string,
-    data: TaskCompletionData
+    data: TaskCompletionData,
   ): Observable<TaskResponse> {
     const formData = new FormData();
     formData.append("notes", data.notes);
     data.photos.forEach((photo) => formData.append("photos", photo));
     return this.http.post<TaskResponse>(
       `${this.baseUrl}/tasks/${taskId}/complete`,
-      formData
+      formData,
     );
   }
 
@@ -457,14 +457,14 @@ export class ApiService {
   connectQuickBooks(): Observable<QuickBooksAuthResponse> {
     return this.http.post<QuickBooksAuthResponse>(
       `${this.baseUrl}/quickbooks/connect`,
-      {}
+      {},
     );
   }
 
   submitW9Form(formData: W9FormData): Observable<W9Response> {
     return this.http.post<W9Response>(
       `${this.baseUrl}/quickbooks/w9/submit`,
-      formData
+      formData,
     );
   }
 }
@@ -628,7 +628,7 @@ export class LocationService {
           } else if (position) {
             observer.next(position);
           }
-        }
+        },
       );
 
       return () => Geolocation.clearWatch({ id: watchId });
@@ -639,7 +639,7 @@ export class LocationService {
     lat1: number,
     lng1: number,
     lat2: number,
-    lng2: number
+    lng2: number,
   ): number {
     const R = 3959; // Earth's radius in miles
     const dLat = this.toRadians(lat2 - lat1);
@@ -670,7 +670,7 @@ export class LocationService {
 export class NotificationService {
   constructor(
     private platform: Platform,
-    private localNotifications: LocalNotifications
+    private localNotifications: LocalNotifications,
   ) {}
 
   async initializePushNotifications(): Promise<void> {
@@ -703,21 +703,21 @@ export class NotificationService {
       "pushNotificationReceived",
       (notification) => {
         this.handlePushNotification(notification);
-      }
+      },
     );
 
     PushNotifications.addListener(
       "pushNotificationActionPerformed",
       (notification) => {
         this.handleNotificationAction(notification);
-      }
+      },
     );
   }
 
   async showLocalNotification(
     title: string,
     body: string,
-    data?: any
+    data?: any,
   ): Promise<void> {
     await this.localNotifications.schedule({
       notifications: [

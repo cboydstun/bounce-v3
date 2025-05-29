@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { TaskFormData, TaskStatus } from "@/types/task";
+import { geocodeAddress } from "@/utils/geocoding";
 
 export async function PUT(
   request: NextRequest,
@@ -95,6 +96,53 @@ export async function PUT(
       updateData.scheduledDateTime = scheduledDate;
     }
 
+    // Handle address/location updates
+    let addressToUse = updateData.address;
+
+    // If no address provided in update, derive from order if needed
+    if (!addressToUse && !task.address) {
+      const Order = (await import("@/models/Order")).default;
+      const order = await Order.findById(task.orderId);
+      if (order) {
+        const addressParts = [
+          order.customerAddress,
+          order.customerCity,
+          order.customerState,
+          order.customerZipCode,
+        ].filter(Boolean);
+
+        if (addressParts.length > 0) {
+          addressToUse = addressParts.join(", ");
+          updateData.address = addressToUse;
+        }
+      }
+    }
+
+    // If address is being updated or derived, try to geocode it
+    if (addressToUse && addressToUse !== task.address) {
+      if (!updateData.location) {
+        try {
+          const geocodedLocation = await geocodeAddress(addressToUse);
+          if (geocodedLocation) {
+            updateData.location = geocodedLocation;
+            console.log(
+              `Successfully geocoded updated address: ${addressToUse}`,
+            );
+          } else {
+            console.warn(
+              `Could not geocode updated address: ${addressToUse}. Task will be updated without new coordinates.`,
+            );
+          }
+        } catch (error) {
+          console.warn(
+            `Geocoding failed for updated address: ${addressToUse}. Error:`,
+            error,
+          );
+          // Continue without geocoding - don't block task update
+        }
+      }
+    }
+
     // Prevent updating orderId (should never change)
     if ("orderId" in updateData) {
       delete (updateData as any).orderId;
@@ -103,14 +151,23 @@ export async function PUT(
     // Update task fields
     Object.keys(updateData).forEach((key) => {
       if (updateData[key as keyof TaskFormData] !== undefined) {
-        if (key === "description" || key === "assignedTo") {
+        if (
+          key === "description" ||
+          key === "assignedTo" ||
+          key === "title" ||
+          key === "address" ||
+          key === "completionNotes"
+        ) {
           // Trim string fields
           (task as any)[key] =
             typeof updateData[key as keyof TaskFormData] === "string"
               ? (updateData[key as keyof TaskFormData] as string).trim()
               : updateData[key as keyof TaskFormData];
-        } else if (key === "assignedContractors") {
-          // Handle contractor assignments
+        } else if (
+          key === "assignedContractors" ||
+          key === "completionPhotos"
+        ) {
+          // Handle array fields
           (task as any)[key] = updateData[key as keyof TaskFormData] || [];
         } else {
           (task as any)[key] = updateData[key as keyof TaskFormData];
@@ -118,14 +175,25 @@ export async function PUT(
       }
     });
 
-    // Handle assignedTo field specially (can be set to empty string to clear)
+    // Handle special field updates
     if ("assignedTo" in updateData) {
       task.assignedTo = updateData.assignedTo?.trim() || undefined;
     }
 
-    // Handle assignedContractors field specially
     if ("assignedContractors" in updateData) {
       task.assignedContractors = updateData.assignedContractors || [];
+    }
+
+    if ("title" in updateData) {
+      task.title = updateData.title?.trim() || undefined;
+    }
+
+    if ("completionPhotos" in updateData) {
+      task.completionPhotos = updateData.completionPhotos || [];
+    }
+
+    if ("completionNotes" in updateData) {
+      task.completionNotes = updateData.completionNotes?.trim() || undefined;
     }
 
     const updatedTask = await task.save();

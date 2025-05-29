@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { ITaskDocument, ITaskModel, TaskStatus } from "../types/task";
 
-// Main Task schema
+// Main Task schema - aligned with API server
 const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
   {
     orderId: {
@@ -20,6 +20,11 @@ const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
       enum: ["Delivery", "Setup", "Pickup", "Maintenance"],
       required: true,
       index: true,
+    },
+    title: {
+      type: String,
+      trim: true,
+      maxlength: 200,
     },
     description: {
       type: String,
@@ -62,11 +67,63 @@ const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
       trim: true,
       maxlength: 200,
     },
+    location: {
+      type: Schema.Types.Mixed,
+      required: false,
+      validate: {
+        validator: function (v: any) {
+          // Allow null/undefined for optional field
+          if (!v) return true;
+
+          // Validate GeoJSON Point structure
+          return (
+            v.type === "Point" &&
+            Array.isArray(v.coordinates) &&
+            v.coordinates.length === 2 &&
+            typeof v.coordinates[0] === "number" &&
+            typeof v.coordinates[1] === "number" &&
+            v.coordinates[0] >= -180 &&
+            v.coordinates[0] <= 180 && // longitude
+            v.coordinates[1] >= -90 &&
+            v.coordinates[1] <= 90 // latitude
+          );
+        },
+        message:
+          "Location must be a valid GeoJSON Point with coordinates [longitude, latitude] in valid ranges",
+      },
+    },
+    address: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: 500,
+    },
+    completionPhotos: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: function (v: string[]) {
+          return v.length <= 5; // Maximum 5 photos per task
+        },
+        message: "Maximum 5 completion photos allowed",
+      },
+    },
+    completionNotes: {
+      type: String,
+      trim: true,
+      maxlength: 2000,
+    },
+    completedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
   },
 );
+
+// Geospatial index for location-based queries
+TaskSchema.index({ location: "2dsphere" });
 
 // Validation to ensure scheduledDateTime is not in the past (except for updates)
 TaskSchema.pre("validate", function (next) {
@@ -110,6 +167,16 @@ TaskSchema.pre("save", function (next) {
       }
     }
   }
+
+  // Set completedAt when status changes to Completed
+  if (
+    this.isModified("status") &&
+    this.status === "Completed" &&
+    !this.completedAt
+  ) {
+    this.completedAt = new Date();
+  }
+
   next();
 });
 
@@ -138,12 +205,83 @@ TaskSchema.statics.findByAssignee = function (assignedTo: string) {
   return this.find({ assignedTo }).sort({ scheduledDateTime: 1 });
 };
 
+TaskSchema.statics.findAvailableNearLocation = function (
+  lat: number,
+  lng: number,
+  radiusInMeters: number,
+  contractorSkills: string[],
+  excludeContractorId?: string,
+) {
+  const query: any = {
+    status: "Pending",
+    location: {
+      $near: {
+        $geometry: { type: "Point", coordinates: [lng, lat] },
+        $maxDistance: radiusInMeters,
+      },
+    },
+  };
+
+  // Skills matching - partial match against task type
+  if (
+    contractorSkills &&
+    Array.isArray(contractorSkills) &&
+    contractorSkills.length > 0
+  ) {
+    // For partial matching, check if any contractor skill matches the task type
+    const taskTypes = ["Delivery", "Setup", "Pickup", "Maintenance"] as const;
+    const matchingTypes: string[] = [];
+
+    for (const taskType of taskTypes) {
+      for (const skill of contractorSkills) {
+        if (skill && typeof skill === "string") {
+          const skillLower = skill.toLowerCase();
+          const taskTypeLower = taskType.toLowerCase();
+          if (
+            taskTypeLower.includes(skillLower) ||
+            skillLower.includes(taskTypeLower)
+          ) {
+            matchingTypes.push(taskType);
+            break;
+          }
+        }
+      }
+    }
+
+    if (matchingTypes.length > 0) {
+      query.type = { $in: matchingTypes };
+    }
+  }
+
+  // Exclude tasks already assigned to this contractor
+  if (excludeContractorId) {
+    query.assignedContractors = { $ne: excludeContractorId };
+  }
+
+  return this.find(query).sort({
+    priority: -1, // High priority first
+    scheduledDateTime: 1, // Earlier tasks first
+  });
+};
+
+TaskSchema.statics.findByContractor = function (
+  contractorId: string,
+  status?: TaskStatus,
+) {
+  const query: any = { assignedContractors: contractorId };
+  if (status) {
+    query.status = status;
+  }
+  return this.find(query).sort({ scheduledDateTime: 1 });
+};
+
 // Compound indexes for common queries
 TaskSchema.index({ orderId: 1, status: 1 });
 TaskSchema.index({ scheduledDateTime: 1, status: 1 });
 TaskSchema.index({ assignedTo: 1, status: 1 });
 TaskSchema.index({ assignedContractors: 1, status: 1 });
 TaskSchema.index({ type: 1, scheduledDateTime: 1 });
+TaskSchema.index({ status: 1, priority: 1, scheduledDateTime: 1 });
 
 // Store original document for status transition validation
 TaskSchema.pre("save", function (next) {

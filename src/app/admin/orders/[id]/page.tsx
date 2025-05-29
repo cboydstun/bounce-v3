@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { TaskSection } from "@/components/tasks/TaskSection";
 import { getOrderById } from "@/utils/api";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
+import { CENTRAL_TIMEZONE } from "@/utils/dateUtils";
 
 interface PageProps {
   params: {
@@ -59,18 +60,27 @@ export default function OrderDetailPage({ params }: PageProps) {
     }
   }, [authStatus, id]);
 
-  // Format date for display
+  // Format date for display in Central Time
   const formatDate = (dateString: string | Date) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toLocaleDateString();
+    return date.toLocaleDateString("en-US", {
+      timeZone: CENTRAL_TIMEZONE,
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
-  // Format time for display
+  // Format time for display in Central Time
   const formatTime = (dateString: string | Date) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleTimeString("en-US", {
+      timeZone: CENTRAL_TIMEZONE,
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   // Get status color
@@ -478,7 +488,12 @@ export default function OrderDetailPage({ params }: PageProps) {
         )}
 
       {/* Task Management Section */}
-      <TaskSection orderId={order._id} />
+      <TaskSection
+        orderId={order._id}
+        orderAddress={`${order.customerAddress || ""}, ${order.customerCity || ""}, ${order.customerState || ""} ${order.customerZipCode || ""}`
+          .trim()
+          .replace(/^,\s*|,\s*$/g, "")}
+      />
 
       {/* Notes */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-6">
