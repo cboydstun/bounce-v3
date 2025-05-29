@@ -11,13 +11,14 @@ router.get("/", (req, res) => {
   res.json({
     message: "Task API endpoints",
     endpoints: {
-      "GET /available": "Get available tasks with location and skills filtering",
+      "GET /available":
+        "Get available tasks with location and skills filtering",
       "GET /my-tasks": "Get contractor's assigned tasks",
       "GET /:id": "Get task details by ID",
       "POST /:id/claim": "Claim an available task",
       "PUT /:id/status": "Update task status",
-      "POST /:id/complete": "Complete task with photos and notes"
-    }
+      "POST /:id/complete": "Complete task with photos and notes",
+    },
   });
 });
 

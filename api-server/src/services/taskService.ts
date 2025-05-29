@@ -61,14 +61,14 @@ export class TaskService {
       // Location-based filtering if coordinates provided
       if (lat && lng) {
         const radiusInMeters = radius * 1000; // Convert km to meters
-        
+
         // Use the Task model's geospatial method with skills filtering
         const tasks = await Task.findAvailableNearLocation(
           lat,
           lng,
           radiusInMeters,
           skills.length > 0 ? skills : contractorSkills,
-          contractorId
+          contractorId,
         );
 
         // Apply pagination
@@ -84,9 +84,9 @@ export class TaskService {
       }
 
       // Non-location based filtering
-      let query: any = { 
+      let query: any = {
         status: "Pending",
-        assignedContractors: { $ne: contractorId }
+        assignedContractors: { $ne: contractorId },
       };
 
       // Skills matching for non-location queries
@@ -162,10 +162,10 @@ export class TaskService {
       const query: any = {
         $or: [
           { assignedContractors: contractorId },
-          { assignedTo: contractorId }
-        ]
+          { assignedTo: contractorId },
+        ],
       };
-      
+
       if (status) {
         query.status = status;
       }
@@ -233,8 +233,10 @@ export class TaskService {
       // For now, we'll use a simple type-based matching since the test uses task.type
       if (contractor.skills && contractor.skills.length > 0) {
         const taskType = existingTask.type.toLowerCase();
-        const hasMatchingSkill = contractor.skills.some((skill: string) => 
-          skill.toLowerCase().includes(taskType) || taskType.includes(skill.toLowerCase())
+        const hasMatchingSkill = contractor.skills.some(
+          (skill: string) =>
+            skill.toLowerCase().includes(taskType) ||
+            taskType.includes(skill.toLowerCase()),
         );
 
         if (!hasMatchingSkill) {
@@ -254,9 +256,9 @@ export class TaskService {
         },
         {
           $push: { assignedContractors: contractorId },
-          $set: { 
+          $set: {
             status: "Assigned",
-            assignedTo: contractorId // For backward compatibility with tests
+            assignedTo: contractorId, // For backward compatibility with tests
           },
         },
         {
@@ -312,8 +314,9 @@ export class TaskService {
       }
 
       // Check if contractor is assigned to this task (support both assignedTo and assignedContractors)
-      const isAssigned = task.assignedContractors.includes(contractorId) || 
-                        task.assignedTo === contractorId;
+      const isAssigned =
+        task.assignedContractors.includes(contractorId) ||
+        task.assignedTo === contractorId;
 
       if (!isAssigned) {
         return {
@@ -401,8 +404,9 @@ export class TaskService {
       }
 
       // Check if contractor is assigned to this task (support both assignedTo and assignedContractors)
-      const isAssigned = task.assignedContractors.includes(contractorId) || 
-                        task.assignedTo === contractorId;
+      const isAssigned =
+        task.assignedContractors.includes(contractorId) ||
+        task.assignedTo === contractorId;
 
       if (!isAssigned) {
         return {
@@ -475,7 +479,7 @@ export class TaskService {
     try {
       // First, check if the task exists at all
       const task = await Task.findById(taskId);
-      
+
       if (!task) {
         return {
           task: null,
@@ -494,7 +498,7 @@ export class TaskService {
       }
 
       // Check if contractor has access to this task
-      const hasAccess = 
+      const hasAccess =
         task.status === "Pending" || // Available tasks
         task.assignedContractors.includes(contractorId) || // Assigned tasks (array)
         task.assignedTo === contractorId; // Assigned tasks (single field)

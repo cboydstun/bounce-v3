@@ -31,8 +31,8 @@ router.get("/", (req, res) => {
       "PUT /w9/update": "Update W-9 form",
       "GET /w9/download": "Download W-9 PDF",
       "POST /sync/contractor": "Sync contractor to QuickBooks",
-      "GET /sync/status": "Get sync status"
-    }
+      "GET /sync/status": "Get sync status",
+    },
   });
 });
 

@@ -140,7 +140,7 @@ export class SocketRateLimiter {
 // Cleanup rate limiter every 5 minutes (only in production)
 let cleanupInterval: NodeJS.Timeout | null = null;
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== "test") {
   cleanupInterval = setInterval(
     () => {
       SocketRateLimiter.cleanup();

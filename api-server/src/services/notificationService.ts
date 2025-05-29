@@ -210,9 +210,7 @@ export class NotificationService {
   /**
    * Get notifications for a contractor
    */
-  static async getNotifications(
-    filters: NotificationFilters,
-  ): Promise<{
+  static async getNotifications(filters: NotificationFilters): Promise<{
     notifications: INotification[];
     total: number;
     page: number;
