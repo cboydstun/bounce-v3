@@ -108,7 +108,7 @@ export class TestHelpers {
       }
     }
 
-    const task = new Task(taskData);
+    const task = new (Task as any)(taskData) as { _id: { toString: () => string } } & typeof taskData;
     await task.save();
 
     return {
