@@ -21,18 +21,32 @@ export type TaskStatus =
   | "Cancelled"; // Task has been cancelled
 
 /**
- * Main Task interface
+ * GeoJSON Point interface for location data
+ */
+export interface TaskLocation {
+  type: "Point";
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+/**
+ * Main Task interface - aligned with CRM system
  */
 export interface Task {
   _id: string; // MongoDB document ID
   orderId: string; // Reference to the Order
   type: TaskType; // Type of task
+  title?: string; // Optional task title
   description: string; // Task description/notes
   scheduledDateTime: Date; // When the task is scheduled
   priority: TaskPriority; // Task priority level
   status: TaskStatus; // Current task status
   assignedContractors: string[]; // Array of contractor IDs
   assignedTo?: string; // Optional: computed field for backward compatibility
+  location?: TaskLocation; // GeoJSON Point for geospatial queries (optional)
+  address?: string; // Human-readable address (derived from order)
+  completionPhotos?: string[]; // Array of photo URLs/paths
+  completionNotes?: string; // Notes added upon task completion
+  completedAt?: Date; // Timestamp when task was completed
   createdAt: Date; // Task creation date
   updatedAt: Date; // Task last update date
 }
@@ -42,12 +56,17 @@ export interface Task {
  */
 export interface TaskFormData {
   type: TaskType; // Type of task
+  title?: string; // Optional task title
   description: string; // Task description/notes
   scheduledDateTime: Date | string; // When the task is scheduled
   priority: TaskPriority; // Task priority level
   status?: TaskStatus; // Optional: defaults to "Pending"
   assignedContractors?: string[]; // Optional: array of contractor IDs
   assignedTo?: string; // Optional: contractor name/company (backward compatibility)
+  address?: string; // Optional: will be derived from order if not provided
+  location?: TaskLocation; // Optional: will be geocoded from order address if not provided
+  completionPhotos?: string[]; // Optional: array of photo URLs/paths
+  completionNotes?: string; // Optional: completion notes
 }
 
 /**
@@ -87,4 +106,32 @@ export interface ITaskModel extends Model<ITaskDocument> {
    * @returns Promise resolving to an array of tasks
    */
   findByAssignee(assignedTo: string): Promise<ITaskDocument[]>;
+
+  /**
+   * Find available tasks near a specific location
+   * @param lat Latitude
+   * @param lng Longitude
+   * @param radiusInMeters Search radius in meters
+   * @param contractorSkills Array of contractor skills
+   * @param excludeContractorId Optional contractor ID to exclude
+   * @returns Promise resolving to an array of available tasks
+   */
+  findAvailableNearLocation(
+    lat: number,
+    lng: number,
+    radiusInMeters: number,
+    contractorSkills: string[],
+    excludeContractorId?: string,
+  ): Promise<ITaskDocument[]>;
+
+  /**
+   * Find all tasks assigned to a specific contractor
+   * @param contractorId The contractor ID
+   * @param status Optional status filter
+   * @returns Promise resolving to an array of tasks
+   */
+  findByContractor(
+    contractorId: string,
+    status?: TaskStatus,
+  ): Promise<ITaskDocument[]>;
 }

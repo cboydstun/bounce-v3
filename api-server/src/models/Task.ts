@@ -1,49 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-
-export interface ITask {
-  _id: string;
-  orderId: string;
-  type: "Delivery" | "Setup" | "Pickup" | "Maintenance";
-  title?: string;
-  description: string;
-  scheduledDateTime: Date;
-  priority: "High" | "Medium" | "Low";
-  status: "Pending" | "Assigned" | "In Progress" | "Completed" | "Cancelled";
-  assignedContractors: string[];
-  assignedTo?: string;
-  location: {
-    type: "Point";
-    coordinates: [number, number]; // [longitude, latitude]
-  };
-  address: string;
-  completionPhotos?: string[];
-  completionNotes?: string;
-  completedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface ITaskDocument extends Omit<ITask, "_id">, mongoose.Document {
-  _id: mongoose.Types.ObjectId;
-}
-
-export interface ITaskModel extends mongoose.Model<ITaskDocument> {
-  findByOrderId(orderId: string): Promise<ITaskDocument[]>;
-  findByStatus(status: ITask["status"]): Promise<ITaskDocument[]>;
-  findByDateRange(startDate: string, endDate: string): Promise<ITaskDocument[]>;
-  findByAssignee(assignedTo: string): Promise<ITaskDocument[]>;
-  findAvailableNearLocation(
-    lat: number,
-    lng: number,
-    radiusInMeters: number,
-    contractorSkills: string[],
-    excludeContractorId?: string,
-  ): Promise<ITaskDocument[]>;
-  findByContractor(
-    contractorId: string,
-    status?: ITask["status"],
-  ): Promise<ITaskDocument[]>;
-}
+import { ITaskDocument, ITaskModel, TaskStatus } from "../types/task.js";
 
 const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
   {
@@ -111,35 +67,33 @@ const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
       maxlength: 200,
     },
     location: {
-      type: {
-        type: String,
-        enum: ["Point"],
-        required: true,
-      },
-      coordinates: {
-        type: [Number],
-        required: true,
-        validate: {
-          validator: function (v: number[] | undefined) {
-            return (
-              Array.isArray(v) &&
-              v.length === 2 &&
-              typeof v[0] === "number" &&
-              typeof v[1] === "number" &&
-              v[0] >= -180 &&
-              v[0] <= 180 && // longitude
-              v[1] >= -90 &&
-              v[1] <= 90 // latitude
-            );
-          },
-          message:
-            "Coordinates must be [longitude, latitude] with valid ranges",
+      type: Schema.Types.Mixed,
+      required: false,
+      validate: {
+        validator: function (v: any) {
+          // Allow null/undefined for optional field
+          if (!v) return true;
+          
+          // Validate GeoJSON Point structure
+          return (
+            v.type === "Point" &&
+            Array.isArray(v.coordinates) &&
+            v.coordinates.length === 2 &&
+            typeof v.coordinates[0] === "number" &&
+            typeof v.coordinates[1] === "number" &&
+            v.coordinates[0] >= -180 &&
+            v.coordinates[0] <= 180 && // longitude
+            v.coordinates[1] >= -90 &&
+            v.coordinates[1] <= 90 // latitude
+          );
         },
+        message:
+          "Location must be a valid GeoJSON Point with coordinates [longitude, latitude] in valid ranges",
       },
     },
     address: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
       maxlength: 500,
     },
@@ -187,11 +141,11 @@ TaskSchema.pre("validate", function (next) {
 // Validation for status transitions
 TaskSchema.pre("save", function (next) {
   if (!this.isNew && this.isModified("status")) {
-    const currentStatus = this.status;
-    const originalDoc = (this as any)._original;
-    const previousStatus = originalDoc ? originalDoc.status : undefined;
+    const currentStatus = this.status as TaskStatus;
+    const previousStatus = (this as any)._original?.status as TaskStatus;
 
-    const validTransitions: Record<string, string[]> = {
+    // Define valid status transitions
+    const validTransitions: Record<TaskStatus, TaskStatus[]> = {
       Pending: ["Assigned", "Cancelled"],
       Assigned: ["In Progress", "Pending", "Cancelled"],
       "In Progress": ["Completed", "Assigned", "Cancelled"],
@@ -200,8 +154,7 @@ TaskSchema.pre("save", function (next) {
     };
 
     if (previousStatus && validTransitions[previousStatus]) {
-      const allowedTransitions = validTransitions[previousStatus];
-      if (allowedTransitions && !allowedTransitions.includes(currentStatus)) {
+      if (!validTransitions[previousStatus].includes(currentStatus)) {
         return next(
           new Error(
             `Invalid status transition from ${previousStatus} to ${currentStatus}`,
@@ -228,7 +181,7 @@ TaskSchema.statics.findByOrderId = function (orderId: string) {
   return this.find({ orderId }).sort({ scheduledDateTime: 1, priority: -1 });
 };
 
-TaskSchema.statics.findByStatus = function (status: string) {
+TaskSchema.statics.findByStatus = function (status: TaskStatus) {
   return this.find({ status }).sort({ scheduledDateTime: 1 });
 };
 
@@ -309,7 +262,7 @@ TaskSchema.statics.findAvailableNearLocation = function (
 
 TaskSchema.statics.findByContractor = function (
   contractorId: string,
-  status?: string,
+  status?: TaskStatus,
 ) {
   const query: any = { assignedContractors: contractorId };
   if (status) {
@@ -333,5 +286,8 @@ TaskSchema.pre("save", function (next) {
   }
   next();
 });
+
+// Export interfaces for use in other files
+export type { ITaskDocument, ITaskModel };
 
 export default mongoose.model<ITaskDocument, ITaskModel>("Task", TaskSchema);
