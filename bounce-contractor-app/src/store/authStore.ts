@@ -237,8 +237,8 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await apiClient.patch(
-            "/contractors/profile",
+          const response = await apiClient.put(
+            "/contractors/me",
             profileData,
           );
 
@@ -262,7 +262,7 @@ export const useAuthStore = create<AuthStore>()(
 
       loadProfile: async () => {
         try {
-          const response = await apiClient.get("/contractors/profile");
+          const response = await apiClient.get("/contractors/me");
 
           if (response.success && response.data) {
             set({ profile: response.data });

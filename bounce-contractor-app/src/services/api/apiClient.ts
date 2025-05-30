@@ -176,6 +176,8 @@ class ApiClient {
         return APP_CONFIG.ERROR_CODES.AUTH_ERROR;
       case 404:
         return "NOT_FOUND";
+      case 409:
+        return "RESOURCE_CONFLICT";
       case 429:
         return "RATE_LIMIT_EXCEEDED";
       case 500:

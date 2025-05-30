@@ -6,7 +6,7 @@ import {
   TaskStatusUpdate,
   TaskCompletionData,
 } from "../../types/task.types";
-import { ApiResponse } from "../../types/api.types";
+import { ApiResponse, ApiError } from "../../types/api.types";
 import { useAuthStore } from "../../store/authStore";
 
 // Hook for claiming a task
@@ -43,8 +43,14 @@ export const useClaimTask = () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", "nearby"] });
       queryClient.invalidateQueries({ queryKey: ["tasks", "stats"] });
     },
-    onError: (error) => {
+    onError: (error: ApiError) => {
       console.error("Failed to claim task:", error);
+
+      // Provide more specific error messages for different error types
+      if (error.code === "RESOURCE_CONFLICT") {
+        // Task is likely already claimed by another contractor
+        console.warn("This task has already been claimed by another contractor");
+      }
     },
   });
 };
@@ -83,7 +89,7 @@ export const useUpdateTaskStatus = () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", "my-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["tasks", "stats"] });
     },
-    onError: (error) => {
+    onError: (error: ApiError) => {
       console.error("Failed to update task status:", error);
     },
   });
@@ -163,7 +169,7 @@ export const useCompleteTask = () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", "available"] });
       queryClient.invalidateQueries({ queryKey: ["tasks", "stats"] });
     },
-    onError: (error) => {
+    onError: (error: ApiError) => {
       console.error("Failed to complete task:", error);
     },
   });
@@ -204,7 +210,7 @@ export const useCancelTask = () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", "available"] });
       queryClient.invalidateQueries({ queryKey: ["tasks", "stats"] });
     },
-    onError: (error) => {
+    onError: (error: ApiError) => {
       console.error("Failed to cancel task:", error);
     },
   });
@@ -253,7 +259,7 @@ export const useUploadTaskPhoto = () => {
         queryKey: ["tasks", "detail", variables.taskId],
       });
     },
-    onError: (error) => {
+    onError: (error: ApiError) => {
       console.error("Failed to upload task photo:", error);
     },
   });
@@ -310,7 +316,7 @@ export const useReportTaskIssue = () => {
         queryKey: ["tasks", "detail", variables.taskId],
       });
     },
-    onError: (error) => {
+    onError: (error: ApiError) => {
       console.error("Failed to report task issue:", error);
     },
   });
@@ -339,7 +345,7 @@ export const useGetTaskDirections = () => {
 
       return response.data;
     },
-    onError: (error) => {
+    onError: (error: ApiError) => {
       console.error("Failed to get task directions:", error);
     },
   });
