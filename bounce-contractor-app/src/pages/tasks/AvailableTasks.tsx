@@ -15,8 +15,10 @@ import {
 import { filterOutline, mapOutline, listOutline } from "ionicons/icons";
 import { useInfiniteTasks } from "../../hooks/tasks/useTasks";
 import { useGeolocation } from "../../hooks/location/useGeolocation";
+import { useTaskEvents } from "../../hooks/realtime/useTaskEvents";
 import TaskList from "../../components/tasks/TaskList";
-import { TaskFilters } from "../../types/task.types";
+import ConnectionStatus from "../../components/common/ConnectionStatus";
+import { TaskFilters, Task } from "../../types/task.types";
 import { useHistory } from "react-router-dom";
 
 type ViewMode = "list" | "map";
@@ -27,6 +29,8 @@ const AvailableTasks: React.FC = () => {
   const [filters, setFilters] = useState<TaskFilters>({});
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [realtimeToast, setRealtimeToast] = useState(false);
+  const [realtimeMessage, setRealtimeMessage] = useState("");
 
   const {
     location,
@@ -46,6 +50,33 @@ const AvailableTasks: React.FC = () => {
   } = useInfiniteTasks({
     filters,
     enabled: true,
+  });
+
+  // Real-time task events
+  const { isConnected } = useTaskEvents({
+    onNewTask: (task: Task) => {
+      setRealtimeMessage(`New task available: ${task.title}`);
+      setRealtimeToast(true);
+      // Auto-refresh to show the new task
+      refetch();
+    },
+    onTaskClaimed: (task: Task) => {
+      setRealtimeMessage(`Task "${task.title}" was claimed by another contractor`);
+      setRealtimeToast(true);
+      // Auto-refresh to remove the claimed task
+      refetch();
+    },
+    onTaskUpdated: (task: Task) => {
+      setRealtimeMessage(`Task "${task.title}" was updated`);
+      setRealtimeToast(true);
+    },
+    onTaskCancelled: (task: Task) => {
+      setRealtimeMessage(`Task "${task.title}" was cancelled`);
+      setRealtimeToast(true);
+      // Auto-refresh to remove the cancelled task
+      refetch();
+    },
+    autoRefreshQueries: true,
   });
 
   // Flatten the paginated data
@@ -87,13 +118,29 @@ const AvailableTasks: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonTitle>Available Tasks</IonTitle>
-          <IonButton slot="end" fill="clear" onClick={handleFilters}>
-            <IonIcon icon={filterOutline} />
-          </IonButton>
+          <div slot="end" className="flex items-center space-x-2">
+            <ConnectionStatus showText={false} size="small" />
+            <IonButton fill="clear" onClick={handleFilters}>
+              <IonIcon icon={filterOutline} />
+            </IonButton>
+          </div>
         </IonToolbar>
       </IonHeader>
 
       <IonContent>
+        {/* Real-time Connection Status */}
+        <div className="p-4 bg-gray-50 border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-gray-700">Real-time Updates</h3>
+              <p className="text-xs text-gray-500">
+                {isConnected ? 'Live task updates enabled' : 'Connecting to live updates...'}
+              </p>
+            </div>
+            <ConnectionStatus showText={true} size="small" />
+          </div>
+        </div>
+
         {/* View Mode Selector */}
         <div className="p-4 bg-gray-50">
           <IonSegment
@@ -179,6 +226,15 @@ const AvailableTasks: React.FC = () => {
           message={toastMessage}
           duration={2000}
           position="bottom"
+        />
+        
+        <IonToast
+          isOpen={realtimeToast}
+          onDidDismiss={() => setRealtimeToast(false)}
+          message={realtimeMessage}
+          duration={3000}
+          position="top"
+          color="primary"
         />
       </IonContent>
     </IonPage>
