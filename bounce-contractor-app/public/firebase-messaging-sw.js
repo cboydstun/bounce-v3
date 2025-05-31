@@ -8,13 +8,13 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 // Firebase configuration
 // Note: These should match the configuration in firebase.config.ts
 const firebaseConfig = {
-  apiKey: "demo-api-key",
-  authDomain: "bounce-contractor-demo.firebaseapp.com",
-  projectId: "bounce-contractor-demo",
-  storageBucket: "bounce-contractor-demo.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef123456",
-  measurementId: "G-XXXXXXXXXX"
+  apiKey: "AIzaSyAz7olOEMdDURfHksMtD2TKaQgq6GKUoYw",
+  authDomain: "bouncer-contractor.firebaseapp.com",
+  projectId: "bouncer-contractor",
+  storageBucket: "bouncer-contractor.firebasestorage.app",
+  messagingSenderId: "105191716611",
+  appId: "1:105191716611:web:f9b0035b6d150a7fce1b36",
+  measurementId: "G-HFLBTFQK4H"
 };
 
 // Initialize Firebase

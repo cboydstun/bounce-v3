@@ -48,6 +48,7 @@ import AvailableTasks from "./pages/tasks/AvailableTasks";
 import MyTasks from "./pages/tasks/MyTasks";
 import Profile from "./pages/profile/Profile";
 import NotificationCenter from "./pages/notifications/NotificationCenter";
+import NotificationSettings from "./pages/notifications/NotificationSettings";
 
 /* Auth Pages */
 import Login from "./pages/auth/Login";
@@ -150,6 +151,9 @@ const App: React.FC = () => {
             </ProtectedRoute>
             <ProtectedRoute exact path="/notifications">
               <NotificationCenter />
+            </ProtectedRoute>
+            <ProtectedRoute exact path="/notifications/settings">
+              <NotificationSettings />
             </ProtectedRoute>
             <ProtectedRoute exact path="/">
               <Redirect to="/tasks/available" />

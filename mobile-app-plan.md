@@ -468,6 +468,75 @@ const theme = {
 
 **Impact**: This fix enables the core user story: "As a contractor, I want to see and claim tasks created in the CRM system through the mobile app."
 
+#### **🔧 Critical Bug Resolution: Push Notification Permission Flow**
+
+**Problem**: Firebase push notifications were failing on initialization with "permission denied" errors, preventing users from enabling notifications.
+
+**Root Cause Analysis**:
+
+1. **Auto-initialization Issue**: The app was trying to get FCM tokens immediately on startup without checking permission status
+2. **Permission Flow**: Firebase was attempting to request permissions automatically instead of letting users opt-in
+3. **Error Handling**: Permission denial was causing initialization failures and poor user experience
+4. **Navigation Bug**: Settings button in Profile page was unresponsive, preventing access to notification settings
+
+**Solution Implemented**:
+
+1. **Permission-Aware Initialization**: Updated Firebase config to check permission status before requesting tokens:
+
+   ```typescript
+   // Check if permission is already granted before getting token
+   const permission = this.getPermissionStatus();
+   if (permission !== "granted") {
+     console.warn("Notification permission not granted, cannot get FCM token");
+     return null;
+   }
+   ```
+
+2. **Manual Permission Flow**: Separated permission request from token generation:
+
+   ```typescript
+   // New method for requesting permission and getting token
+   async requestPermissionAndGetToken(): Promise<string | null> {
+     const permission = await Notification.requestPermission();
+     if (permission === 'granted') {
+       return await getToken(messaging, { vapidKey: VAPID_KEY });
+     }
+   }
+   ```
+
+3. **Navigation Fix**: Added proper routing and click handlers:
+
+   ```typescript
+   // Fixed Profile.tsx navigation
+   const handleSettings = () => {
+     history.push("/notifications/settings");
+   };
+   ```
+
+4. **Graceful Initialization**: Updated push notification service to handle missing permissions gracefully:
+   ```typescript
+   // Initialize without throwing errors for missing permissions
+   if (permission === "granted") {
+     const token = await firebaseMessaging.getToken();
+     if (token) {
+       this.fcmToken = token;
+       await this.registerTokenWithServer(token);
+     }
+   } else {
+     console.log("Push notification permission not granted yet.");
+   }
+   ```
+
+**Result**:
+
+- ✅ **No startup errors**: App initializes cleanly without permission-related failures
+- ✅ **User-controlled permissions**: Users can manually grant permissions through settings
+- ✅ **Working navigation**: Settings button properly navigates to notification settings
+- ✅ **Live Firebase integration**: Real Firebase credentials working with proper permission flow
+- ✅ **Production ready**: Push notifications ready for testing and deployment
+
+**Impact**: This fix enables the core user story: "As a contractor, I want to manage my notification preferences and receive push notifications when the app is closed."
+
 ### **✅ Phase 3: Advanced Features (COMPLETED)**
 
 #### **Real-time & Notifications**
@@ -493,16 +562,21 @@ const theme = {
 - ✅ **React Hook**: `usePushNotifications()` for easy notification management in components
 - ✅ **Service Worker**: Background notification handling with deep linking and actions
 - ✅ **Settings Page**: Complete UI for managing notification preferences and permissions
-- ✅ **Permission Management**: Automatic permission requests and status tracking
+- ✅ **Permission Management**: Manual permission flow with proper user consent
 - ✅ **Cross-platform Support**: Works on web, Android, and iOS with Capacitor integration
+- ✅ **Production Ready**: Live Firebase credentials integrated and tested
+- ✅ **Permission Flow Fix**: Resolved auto-initialization errors and implemented proper permission handling
 
 #### **UI Components & Integration**
 
 - ✅ **ConnectionStatus Component**: Real-time connection indicator with status display
 - ✅ **RealtimeNotification Component**: Notification display with actions and timestamps
 - ✅ **Enhanced AvailableTasks Page**: Live updates with real-time notifications and toasts
-- ✅ **Notification Settings Page**: Complete notification management interface
+- ✅ **Notification Settings Page**: Complete notification management interface with Firebase integration
 - ✅ **Real-time Event Handling**: Live task updates with automatic UI refresh
+- ✅ **Navigation Fix**: Fixed unresponsive settings button in Profile page
+- ✅ **Route Integration**: Added notification settings route to app navigation
+- ✅ **Permission UI**: User-friendly permission request flow with status indicators
 
 #### **QuickBooks Integration (PLANNED)**
 

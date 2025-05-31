@@ -116,17 +116,22 @@ class PushNotificationService {
       throw new Error('Push notifications not supported in this browser');
     }
 
-    // Request permission and get token
-    const token = await firebaseMessaging.getToken();
+    // Check if permission is already granted
+    const permission = firebaseMessaging.getPermissionStatus();
     
-    if (!token) {
-      throw new Error('Failed to get FCM token');
+    if (permission === 'granted') {
+      // Get token if permission is already granted
+      const token = await firebaseMessaging.getToken();
+      
+      if (token) {
+        this.fcmToken = token;
+        await this.registerTokenWithServer(token);
+      }
+    } else {
+      console.log('Push notification permission not granted yet. User must grant permission manually.');
     }
 
-    this.fcmToken = token;
-    await this.registerTokenWithServer(token);
-
-    // Listen for foreground messages
+    // Listen for foreground messages (this works regardless of permission status)
     const unsubscribe = firebaseMessaging.onMessage((payload) => {
       console.log('Message received in foreground: ', payload);
       this.handleWebNotification(payload);

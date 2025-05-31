@@ -10,9 +10,11 @@ import {
   IonIcon,
 } from "@ionic/react";
 import { logOutOutline, settingsOutline } from "ionicons/icons";
+import { useHistory } from "react-router-dom";
 import { useAuthStore, authSelectors } from "../../store/authStore";
 
 const Profile: React.FC = () => {
+  const history = useHistory();
   const user = useAuthStore(authSelectors.user);
   const profile = useAuthStore(authSelectors.profile);
   const logout = useAuthStore((state) => state.logout);
@@ -23,6 +25,10 @@ const Profile: React.FC = () => {
     } catch (error) {
       console.error("Logout failed:", error);
     }
+  };
+
+  const handleSettings = () => {
+    history.push("/notifications/settings");
   };
 
   return (
@@ -86,8 +92,10 @@ const Profile: React.FC = () => {
               expand="block"
               fill="outline"
               className="border-gray-300 text-gray-600"
+              onClick={handleSettings}
             >
-              Settings
+              <IonIcon icon={settingsOutline} slot="start" />
+              Notification Settings
             </IonButton>
 
             <IonButton

@@ -45,7 +45,7 @@ export const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || "demo-vapid-
 // Firebase Cloud Messaging helper functions
 export const firebaseMessaging = {
   /**
-   * Request notification permission and get FCM token
+   * Get FCM token (only if permission is already granted)
    */
   async getToken(): Promise<string | null> {
     if (!messaging) {
@@ -54,11 +54,11 @@ export const firebaseMessaging = {
     }
 
     try {
-      // Request notification permission
-      const permission = await Notification.requestPermission();
+      // Check if permission is already granted
+      const permission = this.getPermissionStatus();
       
       if (permission !== 'granted') {
-        console.warn('Notification permission denied');
+        console.warn('Notification permission not granted, cannot get FCM token');
         return null;
       }
 
@@ -76,6 +76,42 @@ export const firebaseMessaging = {
       }
     } catch (error) {
       console.error('Error getting FCM token:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Request notification permission and get FCM token
+   */
+  async requestPermissionAndGetToken(): Promise<string | null> {
+    if (!messaging) {
+      console.warn('Firebase messaging not initialized');
+      return null;
+    }
+
+    try {
+      // Request notification permission
+      const permission = await Notification.requestPermission();
+      
+      if (permission !== 'granted') {
+        console.warn('Notification permission denied');
+        return null;
+      }
+
+      // Get FCM token after permission granted
+      const token = await getToken(messaging, {
+        vapidKey: VAPID_KEY,
+      });
+
+      if (token) {
+        console.log('FCM token obtained after permission granted:', token);
+        return token;
+      } else {
+        console.warn('No FCM token available');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error requesting permission and getting FCM token:', error);
       return null;
     }
   },

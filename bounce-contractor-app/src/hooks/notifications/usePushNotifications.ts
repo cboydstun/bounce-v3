@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { pushNotificationService, PushNotificationConfig } from '../../services/notifications/pushNotifications';
+import { firebaseMessaging } from '../../config/firebase.config';
 import { useRealtimeStore } from '../../store/realtimeStore';
 
 export interface UsePushNotificationsOptions {
@@ -77,7 +79,7 @@ export const usePushNotifications = (options: UsePushNotificationsOptions = {}):
   }, [isSupported]);
 
   /**
-   * Request notification permission
+   * Request notification permission and get FCM token
    */
   const requestPermission = useCallback(async (): Promise<boolean> => {
     setIsLoading(true);
@@ -91,9 +93,21 @@ export const usePushNotifications = (options: UsePushNotificationsOptions = {}):
         const permission = pushNotificationService.getPermissionStatus();
         setPermissionStatus(permission);
         
-        // Initialize if not already done
-        if (!isInitialized) {
-          await initialize();
+        // Get FCM token now that permission is granted
+        if (Capacitor.isNativePlatform()) {
+          // For native platforms, token will be obtained automatically
+          const token = pushNotificationService.getToken();
+          setFcmToken(token);
+        } else {
+          // For web, request token with permission
+          const token = await firebaseMessaging.requestPermissionAndGetToken();
+          if (token) {
+            setFcmToken(token);
+            // Update the service's token
+            (pushNotificationService as any).fcmToken = token;
+            // Register with server
+            await (pushNotificationService as any).registerTokenWithServer(token);
+          }
         }
       }
       
@@ -106,7 +120,7 @@ export const usePushNotifications = (options: UsePushNotificationsOptions = {}):
     } finally {
       setIsLoading(false);
     }
-  }, [isInitialized, initialize]);
+  }, []);
 
   /**
    * Enable/disable notifications
