@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import { websocketService, ConnectionStatus } from "./websocketService";
 import { AuthTokens } from "../../types/auth.types";
+=======
+import { websocketService, ConnectionStatus } from './websocketService';
+import { AuthTokens } from '../../types/auth.types';
+>>>>>>> 5772b46b8 (notifications)
 
 export interface ConnectionManagerConfig {
   autoConnect: boolean;
@@ -21,7 +26,11 @@ class ConnectionManager {
     autoReconnect: true,
     connectionTimeout: 10000,
   };
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 5772b46b8 (notifications)
   private status: ConnectionManagerStatus = {
     isInitialized: false,
     isConnecting: false,
@@ -30,8 +39,12 @@ class ConnectionManager {
   };
 
   private authTokens: AuthTokens | null = null;
+<<<<<<< HEAD
   private statusListeners: Set<(status: ConnectionManagerStatus) => void> =
     new Set();
+=======
+  private statusListeners: Set<(status: ConnectionManagerStatus) => void> = new Set();
+>>>>>>> 5772b46b8 (notifications)
   private connectionStatusUnsubscribe?: () => void;
 
   constructor(config?: Partial<ConnectionManagerConfig>) {
@@ -45,10 +58,17 @@ class ConnectionManager {
   private initialize(): void {
     // Listen to WebSocket connection status changes
     this.connectionStatusUnsubscribe = websocketService.on(
+<<<<<<< HEAD
       "connection:status-changed",
       (event) => {
         this.handleConnectionStatusChange(event.payload);
       },
+=======
+      'connection:status-changed',
+      (event) => {
+        this.handleConnectionStatusChange(event.payload);
+      }
+>>>>>>> 5772b46b8 (notifications)
     );
 
     this.updateStatus({ isInitialized: true });
@@ -57,10 +77,14 @@ class ConnectionManager {
   /**
    * Set authentication tokens and optionally connect
    */
+<<<<<<< HEAD
   public async setAuthTokens(
     tokens: AuthTokens,
     autoConnect = true,
   ): Promise<void> {
+=======
+  public async setAuthTokens(tokens: AuthTokens, autoConnect = true): Promise<void> {
+>>>>>>> 5772b46b8 (notifications)
     this.authTokens = tokens;
     websocketService.updateAuthTokens(tokens);
 
@@ -74,15 +98,24 @@ class ConnectionManager {
    */
   public async connect(): Promise<void> {
     if (!this.authTokens) {
+<<<<<<< HEAD
       throw new Error("Authentication tokens not set");
+=======
+      throw new Error('Authentication tokens not set');
+>>>>>>> 5772b46b8 (notifications)
     }
 
     if (this.status.isConnecting || this.status.isConnected) {
       return;
     }
 
+<<<<<<< HEAD
     this.updateStatus({
       isConnecting: true,
+=======
+    this.updateStatus({ 
+      isConnecting: true, 
+>>>>>>> 5772b46b8 (notifications)
       lastError: undefined,
       connectionAttempts: this.status.connectionAttempts + 1,
     });
@@ -90,10 +123,16 @@ class ConnectionManager {
     try {
       await websocketService.connect(this.authTokens);
     } catch (error) {
+<<<<<<< HEAD
       const errorMessage =
         error instanceof Error ? error.message : "Connection failed";
       this.updateStatus({
         isConnecting: false,
+=======
+      const errorMessage = error instanceof Error ? error.message : 'Connection failed';
+      this.updateStatus({ 
+        isConnecting: false, 
+>>>>>>> 5772b46b8 (notifications)
         lastError: errorMessage,
       });
       throw error;
@@ -105,8 +144,13 @@ class ConnectionManager {
    */
   public disconnect(): void {
     websocketService.disconnect();
+<<<<<<< HEAD
     this.updateStatus({
       isConnecting: false,
+=======
+    this.updateStatus({ 
+      isConnecting: false, 
+>>>>>>> 5772b46b8 (notifications)
       isConnected: false,
     });
   }
@@ -128,11 +172,17 @@ class ConnectionManager {
   /**
    * Subscribe to status changes
    */
+<<<<<<< HEAD
   public onStatusChange(
     listener: (status: ConnectionManagerStatus) => void,
   ): () => void {
     this.statusListeners.add(listener);
 
+=======
+  public onStatusChange(listener: (status: ConnectionManagerStatus) => void): () => void {
+    this.statusListeners.add(listener);
+    
+>>>>>>> 5772b46b8 (notifications)
     // Return unsubscribe function
     return () => {
       this.statusListeners.delete(listener);
@@ -169,9 +219,13 @@ class ConnectionManager {
   /**
    * Handle WebSocket connection status changes
    */
+<<<<<<< HEAD
   private handleConnectionStatusChange(
     connectionStatus: ConnectionStatus,
   ): void {
+=======
+  private handleConnectionStatusChange(connectionStatus: ConnectionStatus): void {
+>>>>>>> 5772b46b8 (notifications)
     this.updateStatus({
       isConnecting: connectionStatus.isConnecting,
       isConnected: connectionStatus.isConnected,
@@ -184,6 +238,7 @@ class ConnectionManager {
    */
   private updateStatus(updates: Partial<ConnectionManagerStatus>): void {
     this.status = { ...this.status, ...updates };
+<<<<<<< HEAD
 
     // Notify all listeners
     this.statusListeners.forEach((listener) => {
@@ -191,6 +246,15 @@ class ConnectionManager {
         listener(this.status);
       } catch (error) {
         console.error("Error in connection status listener:", error);
+=======
+    
+    // Notify all listeners
+    this.statusListeners.forEach(listener => {
+      try {
+        listener(this.status);
+      } catch (error) {
+        console.error('Error in connection status listener:', error);
+>>>>>>> 5772b46b8 (notifications)
       }
     });
   }
@@ -201,7 +265,11 @@ class ConnectionManager {
   public destroy(): void {
     this.disconnect();
     this.statusListeners.clear();
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 5772b46b8 (notifications)
     if (this.connectionStatusUnsubscribe) {
       this.connectionStatusUnsubscribe();
     }

@@ -17,9 +17,14 @@ import { useInfiniteTasks } from "../../hooks/tasks/useTasks";
 import { useGeolocation } from "../../hooks/location/useGeolocation";
 import { useTaskEvents } from "../../hooks/realtime/useTaskEvents";
 import TaskList from "../../components/tasks/TaskList";
+<<<<<<< HEAD
 import TaskFilters from "../../components/tasks/TaskFilters";
 import ConnectionStatus from "../../components/common/ConnectionStatus";
 import { TaskFilters as TaskFiltersType, Task } from "../../types/task.types";
+=======
+import ConnectionStatus from "../../components/common/ConnectionStatus";
+import { TaskFilters, Task } from "../../types/task.types";
+>>>>>>> 5772b46b8 (notifications)
 import { useHistory } from "react-router-dom";
 import {
   useTaskTranslation,
@@ -69,9 +74,13 @@ const AvailableTasks: React.FC = () => {
       refetch();
     },
     onTaskClaimed: (task: Task) => {
+<<<<<<< HEAD
       setRealtimeMessage(
         `Task "${task.title}" was claimed by another contractor`,
       );
+=======
+      setRealtimeMessage(`Task "${task.title}" was claimed by another contractor`);
+>>>>>>> 5772b46b8 (notifications)
       setRealtimeToast(true);
       // Auto-refresh to remove the claimed task
       refetch();
@@ -142,7 +151,11 @@ const AvailableTasks: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+<<<<<<< HEAD
           <IonTitle>{taskT("availableTasks.title")}</IonTitle>
+=======
+          <IonTitle>Available Tasks</IonTitle>
+>>>>>>> 5772b46b8 (notifications)
           <div slot="end" className="flex items-center space-x-2">
             <ConnectionStatus showText={false} size="small" />
             <IonButton fill="clear" onClick={handleFilters}>
@@ -157,6 +170,7 @@ const AvailableTasks: React.FC = () => {
         <div className="p-4 bg-gray-50 border-b">
           <div className="flex items-center justify-between">
             <div>
+<<<<<<< HEAD
               <h3 className="text-sm font-medium text-gray-700">
                 {taskT("availableTasks.realtimeUpdates")}
               </h3>
@@ -164,6 +178,11 @@ const AvailableTasks: React.FC = () => {
                 {isConnected
                   ? taskT("availableTasks.liveUpdatesEnabled")
                   : taskT("availableTasks.connectingToUpdates")}
+=======
+              <h3 className="text-sm font-medium text-gray-700">Real-time Updates</h3>
+              <p className="text-xs text-gray-500">
+                {isConnected ? 'Live task updates enabled' : 'Connecting to live updates...'}
+>>>>>>> 5772b46b8 (notifications)
               </p>
             </div>
             <ConnectionStatus showText={true} size="small" />
@@ -256,7 +275,11 @@ const AvailableTasks: React.FC = () => {
           duration={2000}
           position="bottom"
         />
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 5772b46b8 (notifications)
         <IonToast
           isOpen={realtimeToast}
           onDidDismiss={() => setRealtimeToast(false)}
@@ -265,6 +288,7 @@ const AvailableTasks: React.FC = () => {
           position="top"
           color="primary"
         />
+<<<<<<< HEAD
 
         {/* Task Filters Modal */}
         <TaskFilters
@@ -275,6 +299,8 @@ const AvailableTasks: React.FC = () => {
           onApplyFilters={handleApplyFilters}
           onClearFilters={handleClearFilters}
         />
+=======
+>>>>>>> 5772b46b8 (notifications)
       </IonContent>
     </IonPage>
   );
