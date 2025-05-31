@@ -47,6 +47,7 @@ import "./theme/tailwind.css";
 import AvailableTasks from "./pages/tasks/AvailableTasks";
 import MyTasks from "./pages/tasks/MyTasks";
 import Profile from "./pages/profile/Profile";
+import EditProfile from "./pages/profile/EditProfile";
 import NotificationCenter from "./pages/notifications/NotificationCenter";
 import NotificationSettings from "./pages/notifications/NotificationSettings";
 
@@ -148,6 +149,9 @@ const App: React.FC = () => {
             </ProtectedRoute>
             <ProtectedRoute exact path="/profile">
               <Profile />
+            </ProtectedRoute>
+            <ProtectedRoute exact path="/profile/edit">
+              <EditProfile />
             </ProtectedRoute>
             <ProtectedRoute exact path="/notifications">
               <NotificationCenter />

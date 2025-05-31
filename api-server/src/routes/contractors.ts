@@ -4,18 +4,20 @@ import {
   requireVerified,
   AuthenticatedRequest,
 } from "../middleware/auth.js";
+import { contractorController } from "../controllers/contractorController.js";
 
 const router = express.Router();
 
 // GET /api/contractors/me - Get contractor profile
 router.get("/me", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
-    res.json({
-      message: "Contractor profile endpoint",
-      contractor: req.contractor,
-    });
+    await contractorController.getProfile(req, res);
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ 
+      success: false,
+      error: "Internal server error",
+      code: "INTERNAL_ERROR"
+    });
   }
 });
 
@@ -26,13 +28,33 @@ router.put(
   requireVerified,
   async (req: AuthenticatedRequest, res) => {
     try {
-      res.json({
-        message: "Update contractor profile endpoint",
-      });
+      await contractorController.updateProfile(req, res);
     } catch (error) {
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ 
+        success: false,
+        error: "Internal server error",
+        code: "INTERNAL_ERROR"
+      });
     }
-  },
+  }
+);
+
+// POST /api/contractors/me/photo - Update contractor profile photo
+router.post(
+  "/me/photo",
+  authenticateToken,
+  requireVerified,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      await contractorController.updateProfilePhoto(req, res);
+    } catch (error) {
+      res.status(500).json({ 
+        success: false,
+        error: "Internal server error",
+        code: "INTERNAL_ERROR"
+      });
+    }
+  }
 );
 
 export default router;

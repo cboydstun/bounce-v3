@@ -7,6 +7,14 @@ export interface IContractorAuth {
   phone?: string;
   password: string;
   skills?: string[];
+  businessName?: string;
+  profileImage?: string;
+  emergencyContact?: {
+    name: string;
+    phone: string;
+    relationship: string;
+    email?: string;
+  };
   isActive: boolean;
   isVerified: boolean;
   notes?: string;
@@ -129,6 +137,43 @@ const ContractorAuthSchema = new Schema<
       accessToken: String,
       refreshToken: String,
       expiresAt: Date,
+    },
+    businessName: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+    },
+    profileImage: {
+      type: String,
+      trim: true,
+    },
+    emergencyContact: {
+      name: {
+        type: String,
+        trim: true,
+        maxlength: 200,
+      },
+      phone: {
+        type: String,
+        trim: true,
+        maxlength: 20,
+      },
+      relationship: {
+        type: String,
+        trim: true,
+        maxlength: 50,
+      },
+      email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        validate: {
+          validator: function (v: string) {
+            return !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+          },
+          message: "Invalid emergency contact email format",
+        },
+      },
     },
   },
   {

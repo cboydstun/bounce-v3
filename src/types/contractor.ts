@@ -1,7 +1,7 @@
 import { Document, Model } from "mongoose";
 
 /**
- * Main Contractor interface (now aligned with ContractorAuth)
+ * Main Contractor interface (fully aligned with ContractorAuth from mobile API)
  */
 export interface Contractor {
   _id: string; // MongoDB document ID
@@ -9,6 +9,14 @@ export interface Contractor {
   email: string; // Contact email (required for alignment with API)
   phone?: string; // Contact phone
   skills?: string[]; // Array of skills/specialties
+  businessName?: string; // Business name (from mobile app)
+  profileImage?: string; // Profile photo URL (from mobile app)
+  emergencyContact?: { // Emergency contact info (from mobile app)
+    name: string;
+    phone: string;
+    relationship: string;
+    email?: string;
+  };
   isActive: boolean; // Whether contractor is active
   isVerified: boolean; // Whether contractor is verified (defaults to true for CRM)
   notes?: string; // Admin notes about contractor
@@ -37,6 +45,14 @@ export interface ContractorFormData {
   email: string; // Contact email (required)
   phone?: string; // Contact phone
   skills?: string[]; // Array of skills/specialties
+  businessName?: string; // Business name (optional)
+  profileImage?: string; // Profile photo URL (optional)
+  emergencyContact?: { // Emergency contact info (optional)
+    name: string;
+    phone: string;
+    relationship: string;
+    email?: string;
+  };
   isActive?: boolean; // Whether contractor is active (defaults to true)
   isVerified?: boolean; // Whether contractor is verified (defaults to true)
   notes?: string; // Admin notes about contractor

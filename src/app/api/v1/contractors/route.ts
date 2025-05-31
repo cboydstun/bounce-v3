@@ -45,6 +45,9 @@ export async function GET(request: NextRequest) {
       email: contractor.email,
       phone: contractor.phone,
       skills: contractor.skills,
+      businessName: contractor.businessName,
+      profileImage: contractor.profileImage,
+      emergencyContact: contractor.emergencyContact,
       isActive: contractor.isActive,
       isVerified: contractor.isVerified,
       notes: contractor.notes,
@@ -104,6 +107,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate emergency contact email if provided
+    if (contractorData.emergencyContact?.email) {
+      if (!emailRegex.test(contractorData.emergencyContact.email)) {
+        return NextResponse.json(
+          { error: "Invalid emergency contact email format" },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Validate emergency contact phone format if provided
+    if (contractorData.emergencyContact?.phone) {
+      const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
+      if (!phoneRegex.test(contractorData.emergencyContact.phone)) {
+        return NextResponse.json(
+          { error: "Invalid emergency contact phone format" },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Validate profile image URL format if provided
+    if (contractorData.profileImage) {
+      try {
+        new URL(contractorData.profileImage);
+      } catch {
+        return NextResponse.json(
+          { error: "Invalid profile image URL format" },
+          { status: 400 },
+        );
+      }
+    }
+
     // Check for duplicate name
     const existingContractor = await Contractor.findOne({
       name: { $regex: new RegExp(`^${contractorData.name.trim()}$`, "i") },
@@ -122,6 +158,14 @@ export async function POST(request: NextRequest) {
       email: contractorData.email.trim(),
       phone: contractorData.phone?.trim() || undefined,
       skills: contractorData.skills || [],
+      businessName: contractorData.businessName?.trim() || undefined,
+      profileImage: contractorData.profileImage?.trim() || undefined,
+      emergencyContact: contractorData.emergencyContact ? {
+        name: contractorData.emergencyContact.name?.trim() || "",
+        phone: contractorData.emergencyContact.phone?.trim() || "",
+        relationship: contractorData.emergencyContact.relationship?.trim() || "",
+        email: contractorData.emergencyContact.email?.trim() || undefined,
+      } : undefined,
       isActive: contractorData.isActive !== false, // Default to true
       isVerified: contractorData.isVerified !== false, // Default to true for CRM
       notes: contractorData.notes?.trim() || undefined,

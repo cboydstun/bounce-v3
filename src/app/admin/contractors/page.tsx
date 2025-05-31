@@ -15,6 +15,14 @@ export default function ContractorsPage() {
     email: "",
     phone: "",
     skills: [],
+    businessName: "",
+    profileImage: "",
+    emergencyContact: {
+      name: "",
+      phone: "",
+      relationship: "",
+      email: "",
+    },
     isActive: true,
     isVerified: true,
     notes: "",
@@ -52,6 +60,14 @@ export default function ContractorsPage() {
         email: contractor.email,
         phone: contractor.phone || "",
         skills: contractor.skills || [],
+        businessName: contractor.businessName || "",
+        profileImage: contractor.profileImage || "",
+        emergencyContact: contractor.emergencyContact || {
+          name: "",
+          phone: "",
+          relationship: "",
+          email: "",
+        },
         isActive: contractor.isActive,
         isVerified: contractor.isVerified,
         notes: contractor.notes || "",
@@ -63,6 +79,14 @@ export default function ContractorsPage() {
         email: "",
         phone: "",
         skills: [],
+        businessName: "",
+        profileImage: "",
+        emergencyContact: {
+          name: "",
+          phone: "",
+          relationship: "",
+          email: "",
+        },
         isActive: true,
         isVerified: true,
         notes: "",
@@ -80,7 +104,7 @@ export default function ContractorsPage() {
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -94,6 +118,21 @@ export default function ContractorsPage() {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+  };
+
+  const handleEmergencyContactChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    const fieldName = name.replace('emergencyContact.', '');
+
+    setFormData((prev) => ({
+      ...prev,
+      emergencyContact: {
+        ...prev.emergencyContact!,
+        [fieldName]: value,
+      },
+    }));
   };
 
   const addSkill = () => {
@@ -221,7 +260,30 @@ export default function ContractorsPage() {
             }`}
           >
             <div className="flex justify-between items-start mb-2">
-              <h3 className="font-medium text-gray-900">{contractor.name}</h3>
+              <div className="flex items-center space-x-3">
+                {contractor.profileImage ? (
+                  <img
+                    src={contractor.profileImage}
+                    alt={`${contractor.name} profile`}
+                    className="w-10 h-10 rounded-full object-cover border"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-gray-600">
+                      {contractor.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-medium text-gray-900">{contractor.name}</h3>
+                  {contractor.businessName && (
+                    <p className="text-xs text-gray-500">{contractor.businessName}</p>
+                  )}
+                </div>
+              </div>
               <span
                 className={`px-2 py-1 text-xs rounded-full ${
                   contractor.isActive
@@ -240,8 +302,17 @@ export default function ContractorsPage() {
             )}
 
             {contractor.phone && (
-              <p className="text-sm text-gray-600 mb-2">
+              <p className="text-sm text-gray-600 mb-1">
                 📞 {contractor.phone}
+              </p>
+            )}
+
+            {contractor.emergencyContact?.name && (
+              <p className="text-sm text-gray-600 mb-2">
+                🚨 Emergency: {contractor.emergencyContact.name}
+                {contractor.emergencyContact.relationship && (
+                  <span className="text-gray-500"> ({contractor.emergencyContact.relationship})</span>
+                )}
               </p>
             )}
 
@@ -474,8 +545,157 @@ export default function ContractorsPage() {
                 </label>
               </div>
 
+              {/* Business Information Section */}
+              <div className="border-t pt-4">
+                <h3 className="text-md font-medium text-gray-900 mb-3">Business Information</h3>
+                
+                {/* Business Name */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="businessName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Business Name
+                  </label>
+                  <input
+                    type="text"
+                    id="businessName"
+                    name="businessName"
+                    value={formData.businessName}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Business or company name"
+                    disabled={submitting}
+                  />
+                </div>
+
+                {/* Profile Image URL */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="profileImage"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Profile Image URL
+                  </label>
+                  <input
+                    type="url"
+                    id="profileImage"
+                    name="profileImage"
+                    value={formData.profileImage}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://example.com/profile.jpg"
+                    disabled={submitting}
+                  />
+                  {formData.profileImage && (
+                    <div className="mt-2">
+                      <img
+                        src={formData.profileImage}
+                        alt="Profile preview"
+                        className="w-16 h-16 rounded-full object-cover border"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Emergency Contact Section */}
+              <div className="border-t pt-4">
+                <h3 className="text-md font-medium text-gray-900 mb-3">Emergency Contact</h3>
+                
+                {/* Emergency Contact Name */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="emergencyContact.name"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Contact Name
+                  </label>
+                  <input
+                    type="text"
+                    id="emergencyContact.name"
+                    name="emergencyContact.name"
+                    value={formData.emergencyContact?.name || ""}
+                    onChange={handleEmergencyContactChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Emergency contact name"
+                    disabled={submitting}
+                  />
+                </div>
+
+                {/* Emergency Contact Phone */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="emergencyContact.phone"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Contact Phone
+                  </label>
+                  <input
+                    type="tel"
+                    id="emergencyContact.phone"
+                    name="emergencyContact.phone"
+                    value={formData.emergencyContact?.phone || ""}
+                    onChange={handleEmergencyContactChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="(555) 123-4567"
+                    disabled={submitting}
+                  />
+                </div>
+
+                {/* Emergency Contact Relationship */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="emergencyContact.relationship"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Relationship
+                  </label>
+                  <select
+                    id="emergencyContact.relationship"
+                    name="emergencyContact.relationship"
+                    value={formData.emergencyContact?.relationship || ""}
+                    onChange={handleEmergencyContactChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={submitting}
+                  >
+                    <option value="">Select relationship</option>
+                    <option value="Spouse">Spouse</option>
+                    <option value="Parent">Parent</option>
+                    <option value="Sibling">Sibling</option>
+                    <option value="Child">Child</option>
+                    <option value="Friend">Friend</option>
+                    <option value="Colleague">Colleague</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                {/* Emergency Contact Email */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="emergencyContact.email"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Contact Email
+                  </label>
+                  <input
+                    type="email"
+                    id="emergencyContact.email"
+                    name="emergencyContact.email"
+                    value={formData.emergencyContact?.email || ""}
+                    onChange={handleEmergencyContactChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="emergency@example.com"
+                    disabled={submitting}
+                  />
+                </div>
+              </div>
+
               {/* Notes */}
-              <div>
+              <div className="border-t pt-4">
                 <label
                   htmlFor="notes"
                   className="block text-sm font-medium text-gray-700 mb-1"

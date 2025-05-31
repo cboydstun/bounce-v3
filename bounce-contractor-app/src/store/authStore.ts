@@ -21,6 +21,7 @@ interface AuthActions {
 
   // Profile actions
   updateProfile: (profile: Partial<ContractorProfile>) => Promise<void>;
+  updateProfilePhoto: (photoUrl: string) => Promise<void>;
   loadProfile: () => Promise<void>;
 
   // Token management
@@ -233,7 +234,7 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       // Profile actions
-      updateProfile: async (profileData: Partial<ContractorProfile>) => {
+      updateProfile: async (profileData: any) => {
         set({ isLoading: true, error: null });
 
         try {
@@ -243,8 +244,27 @@ export const useAuthStore = create<AuthStore>()(
           );
 
           if (response.success && response.data) {
+            const updatedProfile = response.data;
+            
+            // If the API response includes a name field, split it back into firstName/lastName for the user object
+            let updatedUser = get().user;
+            if (updatedProfile.name && updatedUser) {
+              const nameParts = updatedProfile.name.split(' ');
+              const firstName = nameParts[0] || '';
+              const lastName = nameParts.slice(1).join(' ') || '';
+              
+              updatedUser = {
+                ...updatedUser,
+                firstName,
+                lastName,
+                email: updatedProfile.email || updatedUser.email,
+                phone: updatedProfile.phone || updatedUser.phone,
+              };
+            }
+            
             set({
-              profile: response.data,
+              profile: updatedProfile,
+              user: updatedUser,
               isLoading: false,
             });
           } else {
@@ -269,6 +289,33 @@ export const useAuthStore = create<AuthStore>()(
           }
         } catch (error) {
           console.warn("Failed to load profile:", error);
+        }
+      },
+
+      updateProfilePhoto: async (photoUrl: string) => {
+        const { user, profile } = get();
+        
+        // Optimistically update the UI
+        if (user) {
+          set({
+            user: { ...user, profileImage: photoUrl },
+            profile: profile ? { ...profile } : null
+          });
+        }
+
+        try {
+          // The photo upload is handled by the photoService
+          // This method just updates the local state
+          // The actual API call is made in the photoService.uploadProfilePhoto
+        } catch (error) {
+          console.error("Failed to update profile photo:", error);
+          // Revert optimistic update on error
+          if (user) {
+            set({
+              user: { ...user, profileImage: user.profileImage },
+            });
+          }
+          throw error;
         }
       },
 

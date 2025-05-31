@@ -88,6 +88,43 @@ const ContractorSchema = new Schema<IContractorDocument, IContractorModel>(
       refreshToken: String,
       expiresAt: Date,
     },
+    businessName: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+    },
+    profileImage: {
+      type: String,
+      trim: true,
+    },
+    emergencyContact: {
+      name: {
+        type: String,
+        trim: true,
+        maxlength: 200,
+      },
+      phone: {
+        type: String,
+        trim: true,
+        maxlength: 20,
+      },
+      relationship: {
+        type: String,
+        trim: true,
+        maxlength: 50,
+      },
+      email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        validate: {
+          validator: function (v: string) {
+            return !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+          },
+          message: "Invalid emergency contact email format",
+        },
+      },
+    },
   },
   {
     timestamps: true,

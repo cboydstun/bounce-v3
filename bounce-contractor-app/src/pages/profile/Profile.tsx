@@ -31,6 +31,10 @@ const Profile: React.FC = () => {
     history.push("/notifications/settings");
   };
 
+  const handleEditProfile = () => {
+    history.push("/profile/edit");
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -43,11 +47,19 @@ const Profile: React.FC = () => {
         <div className="p-4">
           {/* Profile Header */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto bg-primary rounded-full flex items-center justify-center mb-4">
-              <span className="text-2xl font-bold text-white">
-                {user?.firstName?.[0]}
-                {user?.lastName?.[0]}
-              </span>
+            <div className="w-20 h-20 mx-auto bg-primary rounded-full flex items-center justify-center mb-4 overflow-hidden">
+              {user?.profileImage ? (
+                <img 
+                  src={user.profileImage} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-2xl font-bold text-white">
+                  {user?.firstName?.[0]}
+                  {user?.lastName?.[0]}
+                </span>
+              )}
             </div>
             <h2 className="text-heading mb-1">
               {user?.firstName} {user?.lastName}
@@ -83,6 +95,7 @@ const Profile: React.FC = () => {
               expand="block"
               fill="outline"
               className="border-primary text-primary"
+              onClick={handleEditProfile}
             >
               <IonIcon icon={settingsOutline} slot="start" />
               Edit Profile
@@ -117,12 +130,7 @@ const Profile: React.FC = () => {
             </IonButton>
           </div>
 
-          {/* Coming Soon Notice */}
-          <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-            <IonText className="text-caption">
-              🚧 Full profile management features are coming soon!
-            </IonText>
-          </div>
+
         </div>
       </IonContent>
     </IonPage>

@@ -51,6 +51,9 @@ export async function GET(
       email: contractor.email,
       phone: contractor.phone,
       skills: contractor.skills,
+      businessName: contractor.businessName,
+      profileImage: contractor.profileImage,
+      emergencyContact: contractor.emergencyContact,
       isActive: contractor.isActive,
       isVerified: contractor.isVerified,
       notes: contractor.notes,
@@ -143,6 +146,40 @@ export async function PUT(
       }
     }
 
+    // Validate emergency contact email if provided
+    if (updateData.emergencyContact?.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(updateData.emergencyContact.email)) {
+        return NextResponse.json(
+          { error: "Invalid emergency contact email format" },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Validate emergency contact phone format if provided
+    if (updateData.emergencyContact?.phone) {
+      const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
+      if (!phoneRegex.test(updateData.emergencyContact.phone)) {
+        return NextResponse.json(
+          { error: "Invalid emergency contact phone format" },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Validate profile image URL format if provided
+    if (updateData.profileImage) {
+      try {
+        new URL(updateData.profileImage);
+      } catch {
+        return NextResponse.json(
+          { error: "Invalid profile image URL format" },
+          { status: 400 },
+        );
+      }
+    }
+
     // Update contractor fields
     if (updateData.name !== undefined) {
       contractor.name = updateData.name.trim();
@@ -164,6 +201,24 @@ export async function PUT(
     }
     if (updateData.notes !== undefined) {
       contractor.notes = updateData.notes?.trim() || undefined;
+    }
+    if (updateData.businessName !== undefined) {
+      contractor.businessName = updateData.businessName?.trim() || undefined;
+    }
+    if (updateData.profileImage !== undefined) {
+      contractor.profileImage = updateData.profileImage?.trim() || undefined;
+    }
+    if (updateData.emergencyContact !== undefined) {
+      if (updateData.emergencyContact) {
+        contractor.emergencyContact = {
+          name: updateData.emergencyContact.name?.trim() || "",
+          phone: updateData.emergencyContact.phone?.trim() || "",
+          relationship: updateData.emergencyContact.relationship?.trim() || "",
+          email: updateData.emergencyContact.email?.trim() || undefined,
+        };
+      } else {
+        contractor.emergencyContact = undefined;
+      }
     }
 
     const updatedContractor = await contractor.save();
