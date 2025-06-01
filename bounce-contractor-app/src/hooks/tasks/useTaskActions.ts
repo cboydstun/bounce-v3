@@ -8,14 +8,40 @@ import {
 } from "../../types/task.types";
 import { ApiResponse, ApiError } from "../../types/api.types";
 import { useAuthStore } from "../../store/authStore";
+import { useNetwork } from "../common/useNetwork";
+import { useOfflineQueue } from "../common/useOfflineQueue";
+import { offlineService } from "../../services/offline/offlineService";
 
-// Hook for claiming a task
+// Hook for claiming a task with offline support
 export const useClaimTask = () => {
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
+  const { isOnline } = useNetwork();
+  const { queueAction } = useOfflineQueue();
 
   return useMutation({
-    mutationFn: async (claimRequest: TaskClaimRequest): Promise<Task> => {
+    mutationFn: async (claimRequest: TaskClaimRequest): Promise<Task | { queued: true; actionId: string }> => {
+      // If offline, queue the action
+      if (!isOnline) {
+        const actionId = await queueAction({
+          type: "task_claim",
+          payload: {
+            taskId: claimRequest.taskId,
+            contractorId: user?.id,
+            estimatedArrival: claimRequest.estimatedArrival,
+            notes: claimRequest.notes,
+          },
+          priority: "high",
+          endpoint: `/tasks/${claimRequest.taskId}/claim`,
+          method: "POST",
+          requiresAuth: true,
+        });
+
+        // Return a queued response
+        return { queued: true, actionId };
+      }
+
+      // If online, execute immediately
       const response: ApiResponse<Task> = await apiClient.post(
         `/tasks/${claimRequest.taskId}/claim`,
         {
@@ -30,18 +56,39 @@ export const useClaimTask = () => {
 
       return response.data!;
     },
-    onSuccess: (claimedTask) => {
-      // Update the task in cache
-      queryClient.setQueryData(
-        ["tasks", "detail", claimedTask.id],
-        claimedTask,
-      );
+    onSuccess: (result, claimRequest) => {
+      if ('queued' in result) {
+        // Handle queued action
+        console.log(`Task claim queued for offline sync: ${result.actionId}`);
+        
+        // Optimistically update the UI
+        const optimisticTask = {
+          id: claimRequest.taskId,
+          status: "assigned",
+          assignedContractor: user?.id,
+          estimatedArrival: claimRequest.estimatedArrival,
+          notes: claimRequest.notes,
+          _offline: true, // Mark as offline change
+        };
+        
+        queryClient.setQueryData(
+          ["tasks", "detail", claimRequest.taskId],
+          optimisticTask,
+        );
+      } else {
+        // Handle successful online claim
+        const claimedTask = result as Task;
+        queryClient.setQueryData(
+          ["tasks", "detail", claimedTask.id],
+          claimedTask,
+        );
 
-      // Invalidate and refetch related queries
-      queryClient.invalidateQueries({ queryKey: ["tasks", "available"] });
-      queryClient.invalidateQueries({ queryKey: ["tasks", "my-tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["tasks", "nearby"] });
-      queryClient.invalidateQueries({ queryKey: ["tasks", "stats"] });
+        // Invalidate and refetch related queries
+        queryClient.invalidateQueries({ queryKey: ["tasks", "available"] });
+        queryClient.invalidateQueries({ queryKey: ["tasks", "my-tasks"] });
+        queryClient.invalidateQueries({ queryKey: ["tasks", "nearby"] });
+        queryClient.invalidateQueries({ queryKey: ["tasks", "stats"] });
+      }
     },
     onError: (error: ApiError) => {
       console.error("Failed to claim task:", error);
@@ -55,12 +102,36 @@ export const useClaimTask = () => {
   });
 };
 
-// Hook for updating task status
+// Hook for updating task status with offline support
 export const useUpdateTaskStatus = () => {
   const queryClient = useQueryClient();
+  const { isOnline } = useNetwork();
+  const { queueAction } = useOfflineQueue();
 
   return useMutation({
-    mutationFn: async (statusUpdate: TaskStatusUpdate): Promise<Task> => {
+    mutationFn: async (statusUpdate: TaskStatusUpdate): Promise<Task | { queued: true; actionId: string }> => {
+      // If offline, queue the action
+      if (!isOnline) {
+        const actionId = await queueAction({
+          type: "task_status_update",
+          payload: {
+            taskId: statusUpdate.taskId,
+            status: statusUpdate.status,
+            location: statusUpdate.location,
+            notes: statusUpdate.notes,
+            photos: statusUpdate.photos,
+            timestamp: statusUpdate.timestamp,
+          },
+          priority: "medium",
+          endpoint: `/tasks/${statusUpdate.taskId}/status`,
+          method: "PUT",
+          requiresAuth: true,
+        });
+
+        return { queued: true, actionId };
+      }
+
+      // If online, execute immediately
       const response: ApiResponse<Task> = await apiClient.put(
         `/tasks/${statusUpdate.taskId}/status`,
         {
@@ -78,16 +149,37 @@ export const useUpdateTaskStatus = () => {
 
       return response.data!;
     },
-    onSuccess: (updatedTask) => {
-      // Update the task in cache
-      queryClient.setQueryData(
-        ["tasks", "detail", updatedTask.id],
-        updatedTask,
-      );
+    onSuccess: (result, statusUpdate) => {
+      if ('queued' in result) {
+        // Handle queued action
+        console.log(`Task status update queued for offline sync: ${result.actionId}`);
+        
+        // Optimistically update the UI
+        const optimisticTask = {
+          id: statusUpdate.taskId,
+          status: statusUpdate.status,
+          location: statusUpdate.location,
+          notes: statusUpdate.notes,
+          timestamp: statusUpdate.timestamp,
+          _offline: true, // Mark as offline change
+        };
+        
+        queryClient.setQueryData(
+          ["tasks", "detail", statusUpdate.taskId],
+          (oldData: any) => ({ ...oldData, ...optimisticTask }),
+        );
+      } else {
+        // Handle successful online update
+        const updatedTask = result as Task;
+        queryClient.setQueryData(
+          ["tasks", "detail", updatedTask.id],
+          updatedTask,
+        );
 
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ["tasks", "my-tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["tasks", "stats"] });
+        // Invalidate related queries
+        queryClient.invalidateQueries({ queryKey: ["tasks", "my-tasks"] });
+        queryClient.invalidateQueries({ queryKey: ["tasks", "stats"] });
+      }
     },
     onError: (error: ApiError) => {
       console.error("Failed to update task status:", error);

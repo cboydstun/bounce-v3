@@ -58,6 +58,7 @@ import Splash from "./pages/auth/Splash";
 
 /* Components */
 import ProtectedRoute from "./components/layout/ProtectedRoute";
+import OfflineBanner from "./components/common/OfflineBanner";
 
 /* Store */
 import { useAuthStore, authSelectors } from "./store/authStore";
@@ -114,7 +115,7 @@ const App: React.FC = () => {
     return (
       <IonApp>
         <IonReactRouter>
-          <IonRouterOutlet>
+          <IonRouterOutlet className="pt-0">
             <Route exact path="/splash">
               <Splash />
             </Route>
@@ -139,8 +140,9 @@ const App: React.FC = () => {
   return (
     <IonApp>
       <IonReactRouter>
+        <OfflineBanner className="fixed top-0 left-0 right-0 z-50" />
         <IonTabs>
-          <IonRouterOutlet>
+          <IonRouterOutlet className="pt-0">
             <ProtectedRoute exact path="/tasks/available">
               <AvailableTasks />
             </ProtectedRoute>
