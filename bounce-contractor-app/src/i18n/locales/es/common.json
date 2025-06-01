@@ -1,0 +1,53 @@
+{
+  "app": {
+    "name": "Bounce Contratista",
+    "loading": "Cargando...",
+    "error": "Algo salió mal",
+    "retry": "Intentar de Nuevo",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "confirm": "Confirmar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "done": "Hecho",
+    "close": "Cerrar"
+  },
+  "navigation": {
+    "availableTasks": "Tareas Disponibles",
+    "myTasks": "Mis Tareas",
+    "notifications": "Notificaciones",
+    "profile": "Perfil",
+    "settings": "Configuración"
+  },
+  "time": {
+    "timezone": "Hora Central",
+    "timezoneAbbr": "CT",
+    "scheduledFor": "Programado para {{time}} CT",
+    "estimatedArrival": "Hora estimada: {{time}} CT",
+    "taskStartTime": "Hora de inicio: {{time}} CT",
+    "now": "Ahora",
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "yesterday": "Ayer"
+  },
+  "location": {
+    "distance": "{{distance}} de distancia",
+    "miles": "millas",
+    "feet": "pies",
+    "nearYou": "Cerca de ti",
+    "currentLocation": "Ubicación Actual"
+  },
+  "currency": {
+    "total": "{{amount}} total",
+    "hourly": "{{amount}}/hora",
+    "perTask": "{{amount}} por tarea"
+  },
+  "network": {
+    "online": "Conectado",
+    "offline": "Sin Conexión",
+    "reconnecting": "Reconectando...",
+    "syncPending": "Sincronización pendiente"
+  }
+}

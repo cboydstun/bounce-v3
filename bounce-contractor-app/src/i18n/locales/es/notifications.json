@@ -1,0 +1,75 @@
+{
+  "push": {
+    "newTask": "¡Nueva tarea disponible cerca de ti!",
+    "taskAssigned": "Tarea asignada: {{title}}",
+    "taskStarted": "Tarea iniciada a las {{time}} CT",
+    "taskCompleted": "Tarea completada exitosamente",
+    "arrivalDetected": "Llegada detectada en la ubicación de la tarea",
+    "departureDetected": "Salida detectada de la ubicación de la tarea",
+    "reminderUpcoming": "Recordatorio: La tarea comienza en {{minutes}} minutos",
+    "paymentReceived": "Pago recibido: {{amount}}"
+  },
+  "realtime": {
+    "newTaskAvailable": "Nueva tarea disponible en tu área",
+    "taskClaimed": "La tarea ha sido reclamada por otro contratista",
+    "taskUpdated": "Los detalles de la tarea han sido actualizados",
+    "taskCancelled": "La tarea ha sido cancelada",
+    "connectionLost": "Conexión perdida. Intentando reconectar...",
+    "connectionRestored": "Conexión restaurada",
+    "syncComplete": "Datos sincronizados exitosamente"
+  },
+  "settings": {
+    "title": "Configuración de Notificaciones",
+    "subtitle": "Administra tus preferencias de notificación",
+    "pushNotifications": "Notificaciones Push",
+    "pushEnabled": "Notificaciones push habilitadas",
+    "pushDisabled": "Notificaciones push deshabilitadas",
+    "enablePush": "Habilitar Notificaciones Push",
+    "disablePush": "Deshabilitar Notificaciones Push",
+    "permissionDenied": "Permiso de notificación denegado",
+    "permissionGranted": "Permiso de notificación concedido",
+    "requestPermission": "Solicitar Permiso",
+    "testNotification": "Enviar Notificación de Prueba",
+    "testSent": "¡Notificación de prueba enviada!",
+    "categories": {
+      "title": "Categorías de Notificación",
+      "newTasks": "Nuevas Tareas",
+      "taskUpdates": "Actualizaciones de Tareas",
+      "payments": "Pagos",
+      "reminders": "Recordatorios",
+      "system": "Alertas del Sistema"
+    },
+    "schedule": {
+      "title": "Horario de Notificaciones",
+      "quietHours": "Horas Silenciosas",
+      "quietHoursEnabled": "Habilitar horas silenciosas",
+      "startTime": "Hora de Inicio",
+      "endTime": "Hora de Fin",
+      "timezone": "Todas las horas en Hora Central (CT)"
+    }
+  },
+  "center": {
+    "title": "Notificaciones",
+    "subtitle": "Tus notificaciones recientes",
+    "noNotifications": "No hay notificaciones aún",
+    "noNotificationsSubtitle": "Verás las notificaciones aquí cuando lleguen",
+    "markAllRead": "Marcar Todas como Leídas",
+    "clearAll": "Limpiar Todas",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "older": "Anteriores"
+  },
+  "types": {
+    "task": "Tarea",
+    "payment": "Pago",
+    "system": "Sistema",
+    "reminder": "Recordatorio",
+    "location": "Ubicación"
+  },
+  "actions": {
+    "view": "Ver",
+    "dismiss": "Descartar",
+    "markRead": "Marcar como Leída",
+    "markUnread": "Marcar como No Leída"
+  }
+}

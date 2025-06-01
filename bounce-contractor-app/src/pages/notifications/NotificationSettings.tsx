@@ -34,8 +34,10 @@ import {
 import { usePushNotifications } from '../../hooks/notifications/usePushNotifications';
 import { useRealtimeStore } from '../../store/realtimeStore';
 import ConnectionStatus from '../../components/common/ConnectionStatus';
+import { useNotificationTranslation } from '../../hooks/common/useI18n';
 
 const NotificationSettings: React.FC = () => {
+  const { t } = useNotificationTranslation();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastColor, setToastColor] = useState<'success' | 'warning' | 'danger'>('success');
@@ -164,7 +166,7 @@ const NotificationSettings: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/profile" />
           </IonButtons>
-          <IonTitle>Notification Settings</IonTitle>
+          <IonTitle>{t('settings.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
 

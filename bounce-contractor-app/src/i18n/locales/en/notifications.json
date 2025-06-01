@@ -1,0 +1,75 @@
+{
+  "push": {
+    "newTask": "New task available near you!",
+    "taskAssigned": "Task assigned: {{title}}",
+    "taskStarted": "Task started at {{time}} CT",
+    "taskCompleted": "Task completed successfully",
+    "arrivalDetected": "Arrival detected at task location",
+    "departureDetected": "Departure detected from task location",
+    "reminderUpcoming": "Reminder: Task starts in {{minutes}} minutes",
+    "paymentReceived": "Payment received: {{amount}}"
+  },
+  "realtime": {
+    "newTaskAvailable": "New task available in your area",
+    "taskClaimed": "Task has been claimed by another contractor",
+    "taskUpdated": "Task details have been updated",
+    "taskCancelled": "Task has been cancelled",
+    "connectionLost": "Connection lost. Trying to reconnect...",
+    "connectionRestored": "Connection restored",
+    "syncComplete": "Data synchronized successfully"
+  },
+  "settings": {
+    "title": "Notification Settings",
+    "subtitle": "Manage your notification preferences",
+    "pushNotifications": "Push Notifications",
+    "pushEnabled": "Push notifications enabled",
+    "pushDisabled": "Push notifications disabled",
+    "enablePush": "Enable Push Notifications",
+    "disablePush": "Disable Push Notifications",
+    "permissionDenied": "Notification permission denied",
+    "permissionGranted": "Notification permission granted",
+    "requestPermission": "Request Permission",
+    "testNotification": "Send Test Notification",
+    "testSent": "Test notification sent!",
+    "categories": {
+      "title": "Notification Categories",
+      "newTasks": "New Tasks",
+      "taskUpdates": "Task Updates",
+      "payments": "Payments",
+      "reminders": "Reminders",
+      "system": "System Alerts"
+    },
+    "schedule": {
+      "title": "Notification Schedule",
+      "quietHours": "Quiet Hours",
+      "quietHoursEnabled": "Enable quiet hours",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "timezone": "All times in Central Time (CT)"
+    }
+  },
+  "center": {
+    "title": "Notifications",
+    "subtitle": "Your recent notifications",
+    "noNotifications": "No notifications yet",
+    "noNotificationsSubtitle": "You'll see notifications here when they arrive",
+    "markAllRead": "Mark All Read",
+    "clearAll": "Clear All",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "older": "Older"
+  },
+  "types": {
+    "task": "Task",
+    "payment": "Payment",
+    "system": "System",
+    "reminder": "Reminder",
+    "location": "Location"
+  },
+  "actions": {
+    "view": "View",
+    "dismiss": "Dismiss",
+    "markRead": "Mark as Read",
+    "markUnread": "Mark as Unread"
+  }
+}

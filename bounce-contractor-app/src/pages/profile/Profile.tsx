@@ -12,9 +12,11 @@ import {
 import { logOutOutline, settingsOutline } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 import { useAuthStore, authSelectors } from "../../store/authStore";
+import { useI18n } from "../../hooks/common/useI18n";
 
 const Profile: React.FC = () => {
   const history = useHistory();
+  const { t } = useI18n();
   const user = useAuthStore(authSelectors.user);
   const profile = useAuthStore(authSelectors.profile);
   const logout = useAuthStore((state) => state.logout);
@@ -39,7 +41,7 @@ const Profile: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Profile</IonTitle>
+          <IonTitle>{t('common.navigation.profile')}</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -73,19 +75,19 @@ const Profile: React.FC = () => {
               <div className="text-2xl font-bold text-primary">
                 {profile?.totalJobs || 0}
               </div>
-              <IonText className="text-caption">Total Jobs</IonText>
+              <IonText className="text-caption">{t('common.profile.totalJobs')}</IonText>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold text-success">
                 {profile?.rating || 0}
               </div>
-              <IonText className="text-caption">Rating</IonText>
+              <IonText className="text-caption">{t('common.profile.rating')}</IonText>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold text-secondary">
                 {profile?.completionRate || 0}%
               </div>
-              <IonText className="text-caption">Completion</IonText>
+              <IonText className="text-caption">{t('common.profile.completion')}</IonText>
             </div>
           </div>
 
@@ -98,7 +100,7 @@ const Profile: React.FC = () => {
               onClick={handleEditProfile}
             >
               <IonIcon icon={settingsOutline} slot="start" />
-              Edit Profile
+              {t('common.profile.editProfile')}
             </IonButton>
 
             <IonButton
@@ -108,7 +110,7 @@ const Profile: React.FC = () => {
               onClick={handleSettings}
             >
               <IonIcon icon={settingsOutline} slot="start" />
-              Notification Settings
+              {t('common.profile.notificationSettings')}
             </IonButton>
 
             <IonButton
@@ -116,7 +118,7 @@ const Profile: React.FC = () => {
               fill="outline"
               className="border-gray-300 text-gray-600"
             >
-              Help & Support
+              {t('common.profile.helpSupport')}
             </IonButton>
 
             <IonButton
@@ -126,7 +128,7 @@ const Profile: React.FC = () => {
               onClick={handleLogout}
             >
               <IonIcon icon={logOutOutline} slot="start" />
-              Sign Out
+              {t('common.profile.signOut')}
             </IonButton>
           </div>
 

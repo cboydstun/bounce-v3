@@ -1,0 +1,33 @@
+{
+  "required": "Este campo es obligatorio",
+  "email": {
+    "invalid": "Por favor ingresa un correo electrónico válido",
+    "required": "El correo electrónico es obligatorio"
+  },
+  "password": {
+    "required": "La contraseña es obligatoria",
+    "minLength": "La contraseña debe tener al menos {{min}} caracteres",
+    "maxLength": "La contraseña no debe tener más de {{max}} caracteres",
+    "mismatch": "Las contraseñas no coinciden",
+    "weak": "La contraseña es muy débil. Incluye mayúsculas, minúsculas, números y símbolos"
+  },
+  "name": {
+    "required": "El nombre es obligatorio",
+    "minLength": "El nombre debe tener al menos {{min}} caracteres",
+    "maxLength": "El nombre no debe tener más de {{max}} caracteres",
+    "invalid": "El nombre contiene caracteres inválidos"
+  },
+  "phone": {
+    "required": "El número de teléfono es obligatorio",
+    "invalid": "Por favor ingresa un número de teléfono válido",
+    "format": "El número de teléfono debe estar en formato (XXX) XXX-XXXX"
+  },
+  "general": {
+    "invalidFormat": "Formato inválido",
+    "tooShort": "Muy corto",
+    "tooLong": "Muy largo",
+    "invalidCharacters": "Contiene caracteres inválidos",
+    "mustBeNumber": "Debe ser un número",
+    "mustBePositive": "Debe ser un número positivo"
+  }
+}

@@ -15,10 +15,13 @@ import {
 import { useAuthStore, authSelectors } from "../../store/authStore";
 import { LoginCredentials } from "../../types/auth.types";
 import { APP_CONFIG } from "../../config/app.config";
+import { useAuthTranslation } from "../../hooks/common/useI18n";
+import { LanguageToggle } from "../../components/common/LanguageSwitcher";
 
 const Login: React.FC = () => {
   const history = useHistory();
   const location = useLocation<{ from?: Location }>();
+  const { t } = useAuthTranslation();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: "",
     password: "",
@@ -58,19 +61,24 @@ const Login: React.FC = () => {
     <IonPage>
       <IonContent className="ion-padding">
         <div className="flex flex-col justify-center min-h-full px-4 py-8">
+          {/* Language Toggle */}
+          <div className="absolute top-4 right-4">
+            <LanguageToggle />
+          </div>
+
           {/* Header */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 mx-auto bg-primary rounded-full flex items-center justify-center mb-4">
               <span className="text-2xl font-bold text-white">BC</span>
             </div>
-            <h1 className="text-heading mb-2">Welcome Back</h1>
-            <p className="text-body">Sign in to your contractor account</p>
+            <h1 className="text-heading mb-2">{t('login.title')}</h1>
+            <p className="text-body">{t('login.subtitle')}</p>
           </div>
 
           {/* Login Form */}
           <div className="space-y-4 mb-6">
             <IonItem className="rounded-lg">
-              <IonLabel position="stacked">Email</IonLabel>
+              <IonLabel position="stacked">{t('login.emailLabel')}</IonLabel>
               <IonInput
                 type="email"
                 value={credentials.email}
@@ -80,13 +88,13 @@ const Login: React.FC = () => {
                     email: e.detail.value!,
                   }))
                 }
-                placeholder="Enter your email"
+                placeholder={t('login.emailPlaceholder')}
                 className="input-field"
               />
             </IonItem>
 
             <IonItem className="rounded-lg">
-              <IonLabel position="stacked">Password</IonLabel>
+              <IonLabel position="stacked">{t('login.passwordLabel')}</IonLabel>
               <IonInput
                 type="password"
                 value={credentials.password}
@@ -96,7 +104,7 @@ const Login: React.FC = () => {
                     password: e.detail.value!,
                   }))
                 }
-                placeholder="Enter your password"
+                placeholder={t('login.passwordPlaceholder')}
                 className="input-field"
               />
             </IonItem>
@@ -112,11 +120,11 @@ const Login: React.FC = () => {
                     }))
                   }
                 />
-                <IonLabel className="ml-2 text-sm">Remember me</IonLabel>
+                <IonLabel className="ml-2 text-sm">{t('login.rememberMe')}</IonLabel>
               </IonItem>
 
               <IonButton fill="clear" size="small" className="text-primary">
-                Forgot Password?
+                {t('login.forgotPassword')}
               </IonButton>
             </div>
           </div>
@@ -138,20 +146,20 @@ const Login: React.FC = () => {
             className="btn-primary mb-4"
           >
             {isLoading ? <IonSpinner name="crescent" className="mr-2" /> : null}
-            {isLoading ? "Signing In..." : "Sign In"}
+            {isLoading ? t('login.loggingIn') : t('login.loginButton')}
           </IonButton>
 
           {/* Register Link */}
           <div className="text-center">
             <IonText className="text-body">
-              Don't have an account?{" "}
+              {t('login.noAccount')}{" "}
               <IonButton
                 fill="clear"
                 size="small"
                 onClick={handleRegister}
                 className="text-primary font-medium"
               >
-                Sign Up
+                {t('login.signUpLink')}
               </IonButton>
             </IonText>
           </div>

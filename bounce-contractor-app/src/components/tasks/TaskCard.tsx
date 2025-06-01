@@ -21,7 +21,7 @@ import {
 } from "ionicons/icons";
 import { Task } from "../../types/task.types";
 import { useGeolocation } from "../../hooks/location/useGeolocation";
-import { formatDistance, formatDuration, format } from "date-fns";
+import { useTaskTranslation, useI18n } from "../../hooks/common/useI18n";
 
 interface TaskCardProps {
   task: Task;
@@ -43,6 +43,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
   isLoading = false,
 }) => {
   const { getDistanceFromCurrent } = useGeolocation();
+  const { t } = useTaskTranslation();
+  const { formatTaskTime, formatCurrency, formatDistance, isToday, isTomorrow } = useI18n();
 
   const distance = getDistanceFromCurrent(
     task.location.coordinates.latitude,
@@ -83,17 +85,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
   const formatScheduledDate = (dateString: string) => {
     const date = new Date(dateString);
-    const now = new Date();
-
-    if (date.toDateString() === now.toDateString()) {
-      return `Today at ${format(date, "h:mm a")}`;
-    } else if (
-      date.toDateString() ===
-      new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString()
-    ) {
-      return `Tomorrow at ${format(date, "h:mm a")}`;
+    
+    if (isToday(date)) {
+      return t('common.time.today') + ' ' + formatTaskTime(date);
+    } else if (isTomorrow(date)) {
+      return t('common.time.tomorrow') + ' ' + formatTaskTime(date);
     } else {
-      return format(date, "MMM d 'at' h:mm a");
+      return formatTaskTime(date);
     }
   };
 
@@ -107,7 +105,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </IonCardTitle>
             <div className="flex items-center gap-2 mt-1">
               <IonBadge color={getStatusColor(task.status)} className="text-xs">
-                {task.status.replace("_", " ").toUpperCase()}
+                {t(`status.${task.status}`)}
               </IonBadge>
               <IonBadge
                 color={getPriorityColor(task.priority)}
@@ -124,7 +122,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
             {distance && (
               <IonText className="text-sm text-gray-500">
-                {distance.toFixed(1)} mi away
+                {formatDistance(distance * 1609.34)}
               </IonText>
             )}
           </div>
@@ -186,7 +184,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           {task.equipment.length > 0 && (
             <div className="mt-2">
               <IonText className="text-xs text-gray-500 font-medium">
-                Equipment: {task.equipment.map((eq) => eq.name).join(", ")}
+                {t('card.equipment')}: {task.equipment.map((eq) => eq.name).join(", ")}
               </IonText>
             </div>
           )}
@@ -202,7 +200,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 disabled={isLoading}
                 className="flex-1"
               >
-                {isLoading ? "Claiming..." : "Claim Task"}
+                {isLoading ? t('actions.claiming') : t('card.claimButton')}
               </IonButton>
             )}
 
@@ -223,7 +221,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               onClick={() => onViewDetails?.(task.id)}
               className="min-w-0"
             >
-              Details
+              {t('card.viewDetails')}
             </IonButton>
           </div>
         </div>

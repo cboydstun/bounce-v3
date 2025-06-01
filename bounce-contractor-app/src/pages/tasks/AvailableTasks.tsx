@@ -20,11 +20,14 @@ import TaskList from "../../components/tasks/TaskList";
 import ConnectionStatus from "../../components/common/ConnectionStatus";
 import { TaskFilters, Task } from "../../types/task.types";
 import { useHistory } from "react-router-dom";
+import { useTaskTranslation, useNotificationTranslation } from "../../hooks/common/useI18n";
 
 type ViewMode = "list" | "map";
 
 const AvailableTasks: React.FC = () => {
   const history = useHistory();
+  const { t: taskT } = useTaskTranslation();
+  const { t: notificationT } = useNotificationTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [filters, setFilters] = useState<TaskFilters>({});
   const [showToast, setShowToast] = useState(false);
@@ -117,7 +120,7 @@ const AvailableTasks: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Available Tasks</IonTitle>
+          <IonTitle>{taskT('availableTasks.title')}</IonTitle>
           <div slot="end" className="flex items-center space-x-2">
             <ConnectionStatus showText={false} size="small" />
             <IonButton fill="clear" onClick={handleFilters}>
@@ -132,9 +135,9 @@ const AvailableTasks: React.FC = () => {
         <div className="p-4 bg-gray-50 border-b">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-medium text-gray-700">Real-time Updates</h3>
+              <h3 className="text-sm font-medium text-gray-700">{taskT('availableTasks.realtimeUpdates')}</h3>
               <p className="text-xs text-gray-500">
-                {isConnected ? 'Live task updates enabled' : 'Connecting to live updates...'}
+                {isConnected ? taskT('availableTasks.liveUpdatesEnabled') : taskT('availableTasks.connectingToUpdates')}
               </p>
             </div>
             <ConnectionStatus showText={true} size="small" />
@@ -149,11 +152,11 @@ const AvailableTasks: React.FC = () => {
           >
             <IonSegmentButton value="list">
               <IonIcon icon={listOutline} />
-              <IonLabel>List</IonLabel>
+              <IonLabel>{taskT('availableTasks.listView')}</IonLabel>
             </IonSegmentButton>
             <IonSegmentButton value="map">
               <IonIcon icon={mapOutline} />
-              <IonLabel>Map</IonLabel>
+              <IonLabel>{taskT('availableTasks.mapView')}</IonLabel>
             </IonSegmentButton>
           </IonSegment>
         </div>
@@ -162,7 +165,7 @@ const AvailableTasks: React.FC = () => {
         {locationLoading && (
           <div className="p-4 bg-blue-50 border-l-4 border-blue-400">
             <p className="text-sm text-blue-700">
-              📍 Getting your location to show nearby tasks...
+              📍 {taskT('availableTasks.gettingLocation')}
             </p>
           </div>
         )}
@@ -170,7 +173,7 @@ const AvailableTasks: React.FC = () => {
         {locationError && (
           <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400">
             <p className="text-sm text-yellow-700">
-              ⚠️ Location access denied. You'll see all available tasks.
+              ⚠️ {taskT('availableTasks.locationDenied')}
             </p>
           </div>
         )}
@@ -178,7 +181,7 @@ const AvailableTasks: React.FC = () => {
         {location && (
           <div className="p-4 bg-green-50 border-l-4 border-green-400">
             <p className="text-sm text-green-700">
-              ✅ Showing tasks near your location
+              ✅ {taskT('availableTasks.showingNearbyTasks')}
             </p>
           </div>
         )}
@@ -199,7 +202,7 @@ const AvailableTasks: React.FC = () => {
             onTaskNavigate={handleTaskNavigate}
             showClaimButton={true}
             showNavigateButton={false}
-            emptyMessage="No available tasks"
+            emptyMessage={taskT('availableTasks.noTasks')}
             emptyIcon="📋"
           />
         )}

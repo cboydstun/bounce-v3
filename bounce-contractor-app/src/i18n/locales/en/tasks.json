@@ -1,0 +1,109 @@
+{
+  "discovery": {
+    "title": "Available Tasks",
+    "subtitle": "Find tasks near you",
+    "noTasks": "No tasks available in your area",
+    "noTasksSubtitle": "Check back later for new opportunities",
+    "refreshing": "Refreshing tasks...",
+    "filterBySkills": "Filter by Skills",
+    "sortBy": "Sort By",
+    "distance": "Distance",
+    "compensation": "Pay",
+    "newest": "Newest First",
+    "closest": "Closest First",
+    "highestPay": "Highest Pay First"
+  },
+  "myTasks": {
+    "title": "My Tasks",
+    "subtitle": "Your assigned tasks",
+    "noTasks": "You have no assigned tasks",
+    "noTasksSubtitle": "Claim tasks from the Available Tasks tab",
+    "filterByStatus": "Filter by Status",
+    "allTasks": "All Tasks",
+    "upcomingTasks": "Upcoming",
+    "inProgressTasks": "In Progress",
+    "completedTasks": "Completed"
+  },
+  "card": {
+    "scheduledFor": "Scheduled for {{time}} CT",
+    "location": "{{distance}} away",
+    "compensation": "{{amount}} total",
+    "claimButton": "Claim Task",
+    "viewDetails": "View Details",
+    "skills": "Skills: {{skills}}",
+    "customer": "Customer: {{name}}",
+    "address": "{{address}}",
+    "duration": "Duration: {{duration}}",
+    "equipment": "Equipment: {{equipment}}"
+  },
+  "status": {
+    "published": "Available",
+    "assigned": "Assigned",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "actions": {
+    "claiming": "Claiming...",
+    "claimed": "Task Claimed!",
+    "startTask": "Start Task",
+    "starting": "Starting...",
+    "completeTask": "Complete Task",
+    "completing": "Completing...",
+    "cancelTask": "Cancel Task",
+    "cancelling": "Cancelling...",
+    "uploadPhotos": "Upload Photos",
+    "uploading": "Uploading...",
+    "reportIssue": "Report Issue"
+  },
+  "details": {
+    "title": "Task Details",
+    "description": "Description",
+    "requirements": "Requirements",
+    "instructions": "Instructions",
+    "customerInfo": "Customer Information",
+    "locationInfo": "Location Information",
+    "paymentInfo": "Payment Information",
+    "timeline": "Timeline",
+    "notes": "Notes"
+  },
+  "completion": {
+    "title": "Complete Task",
+    "subtitle": "Upload photos and confirm completion",
+    "photosRequired": "Photos are required to complete this task",
+    "addPhotos": "Add Photos",
+    "photosTaken": "{{count}} photos taken",
+    "notes": "Completion Notes",
+    "notesPlaceholder": "Add any notes about the task completion...",
+    "confirmCompletion": "Confirm Completion",
+    "taskCompleted": "Task completed successfully!"
+  },
+  "geofencing": {
+    "arrival": {
+      "detected": "Arrival detected at {{time}} CT",
+      "notification": "You've arrived at the task location",
+      "autoUpdate": "Task status automatically updated to 'In Progress'"
+    },
+    "departure": {
+      "detected": "Departure detected at {{time}} CT",
+      "notification": "You've left the task location"
+    }
+  },
+  "errors": {
+    "claimFailed": "Failed to claim task. Please try again",
+    "updateFailed": "Failed to update task status",
+    "completionFailed": "Failed to complete task",
+    "photoUploadFailed": "Failed to upload photos",
+    "networkError": "Network error. Please check your connection",
+    "taskNotFound": "Task not found",
+    "alreadyClaimed": "This task has already been claimed",
+    "unauthorized": "You are not authorized to perform this action"
+  },
+  "success": {
+    "taskClaimed": "Task claimed successfully!",
+    "taskStarted": "Task started",
+    "taskCompleted": "Task completed successfully!",
+    "photosUploaded": "Photos uploaded successfully",
+    "statusUpdated": "Task status updated"
+  }
+}

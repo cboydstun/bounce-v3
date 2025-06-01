@@ -1,0 +1,53 @@
+{
+  "app": {
+    "name": "Bounce Contractor",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try Again",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "close": "Close"
+  },
+  "navigation": {
+    "availableTasks": "Available Tasks",
+    "myTasks": "My Tasks",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "time": {
+    "timezone": "Central Time",
+    "timezoneAbbr": "CT",
+    "scheduledFor": "Scheduled for {{time}} CT",
+    "estimatedArrival": "ETA: {{time}} CT",
+    "taskStartTime": "Start time: {{time}} CT",
+    "now": "Now",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday"
+  },
+  "location": {
+    "distance": "{{distance}} away",
+    "miles": "miles",
+    "feet": "feet",
+    "nearYou": "Near you",
+    "currentLocation": "Current Location"
+  },
+  "currency": {
+    "total": "{{amount}} total",
+    "hourly": "{{amount}}/hour",
+    "perTask": "{{amount}} per task"
+  },
+  "network": {
+    "online": "Connected",
+    "offline": "Offline",
+    "reconnecting": "Reconnecting...",
+    "syncPending": "Sync pending"
+  }
+}
