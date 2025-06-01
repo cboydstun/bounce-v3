@@ -66,6 +66,7 @@ export const APP_CONFIG = {
     REFRESH_TOKEN: "refresh_token",
     USER_PROFILE: "user_profile",
     BIOMETRIC_ENABLED: "biometric_enabled",
+    BIOMETRIC_CREDENTIALS: "biometric_credentials",
     LOCATION_PERMISSION: "location_permission",
     NOTIFICATION_SETTINGS: "notification_settings",
     OFFLINE_QUEUE: "offline_queue",

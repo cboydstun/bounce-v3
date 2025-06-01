@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import {
   IonContent,
@@ -11,12 +11,17 @@ import {
   IonText,
   IonSpinner,
   IonToast,
+  IonIcon,
 } from "@ionic/react";
+import { fingerPrint, eye, lockClosed } from "ionicons/icons";
 import { useAuthStore, authSelectors } from "../../store/authStore";
 import { LoginCredentials } from "../../types/auth.types";
 import { APP_CONFIG } from "../../config/app.config";
 import { useAuthTranslation } from "../../hooks/common/useI18n";
 import { LanguageToggle } from "../../components/common/LanguageSwitcher";
+import { useBiometric } from "../../hooks/auth/useBiometric";
+import { BiometryType } from "../../types/biometric.types";
+import BiometricPrompt from "../../components/auth/BiometricPrompt";
 
 const Login: React.FC = () => {
   const history = useHistory();
@@ -29,10 +34,101 @@ const Login: React.FC = () => {
   });
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
 
   const login = useAuthStore((state) => state.login);
+  const loginWithBiometric = useAuthStore((state) => state.loginWithBiometric);
   const isLoading = useAuthStore(authSelectors.isLoading);
   const error = useAuthStore(authSelectors.error);
+  
+  const { 
+    isAvailable, 
+    isEnabled, 
+    availability, 
+    shouldOfferSetup 
+  } = useBiometric();
+  
+  const [shouldShowBiometricSetup, setShouldShowBiometricSetup] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+
+  // Check if biometric setup should be offered on mount
+  useEffect(() => {
+    const checkBiometricSetup = async () => {
+      if (isAvailable && !isEnabled) {
+        const shouldOffer = await shouldOfferSetup();
+        setShouldShowBiometricSetup(shouldOffer);
+      }
+    };
+    
+    checkBiometricSetup();
+  }, [isAvailable, isEnabled, shouldOfferSetup]);
+
+  const getBiometricIcon = () => {
+    if (!availability) return fingerPrint;
+    
+    switch (availability.biometryType) {
+      case BiometryType.FACE_ID:
+      case BiometryType.FACE_AUTHENTICATION:
+        return eye;
+      case BiometryType.TOUCH_ID:
+      case BiometryType.FINGERPRINT:
+        return fingerPrint;
+      default:
+        return lockClosed;
+    }
+  };
+
+  const getBiometricTypeText = () => {
+    if (!availability) return t('biometric.touchId');
+    
+    switch (availability.biometryType) {
+      case BiometryType.FACE_ID:
+        return t('biometric.faceId');
+      case BiometryType.FACE_AUTHENTICATION:
+        return t('biometric.faceAuthentication');
+      case BiometryType.TOUCH_ID:
+        return t('biometric.touchId');
+      case BiometryType.FINGERPRINT:
+        return t('biometric.fingerprint');
+      default:
+        return t('biometric.biometric');
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    setBiometricLoading(true);
+    
+    try {
+      await loginWithBiometric();
+      
+      // Redirect to intended page or default
+      const from = location.state?.from?.pathname || "/tasks/available";
+      history.replace(from);
+    } catch (error: any) {
+      setToastMessage(error.message || t('biometric.failed'));
+      setShowToast(true);
+    } finally {
+      setBiometricLoading(false);
+    }
+  };
+
+  const handleBiometricPromptSuccess = () => {
+    setShowBiometricPrompt(false);
+    // Redirect after successful biometric authentication
+    const from = location.state?.from?.pathname || "/tasks/available";
+    history.replace(from);
+  };
+
+  const handleBiometricPromptError = (error: string) => {
+    setShowBiometricPrompt(false);
+    setToastMessage(error);
+    setShowToast(true);
+  };
+
+  const handleBiometricPromptFallback = () => {
+    setShowBiometricPrompt(false);
+    // User chose to use password instead
+  };
 
   const handleLogin = async () => {
     if (!credentials.email || !credentials.password) {
@@ -164,16 +260,62 @@ const Login: React.FC = () => {
             </IonText>
           </div>
 
-          {/* Biometric Login (if enabled) */}
-          {APP_CONFIG.FEATURES.BIOMETRIC_AUTH && (
-            <div className="mt-8 text-center">
+          {/* Biometric Login Section */}
+          {APP_CONFIG.FEATURES.BIOMETRIC_AUTH && isAvailable && isEnabled && (
+            <div className="mt-8">
+              <div className="flex items-center mb-4">
+                <div className="flex-1 h-px bg-gray-300"></div>
+                <span className="px-4 text-sm text-gray-500">{t('common.or')}</span>
+                <div className="flex-1 h-px bg-gray-300"></div>
+              </div>
+              
               <IonButton
+                expand="block"
                 fill="outline"
-                size="small"
+                onClick={handleBiometricLogin}
+                disabled={biometricLoading || isLoading}
                 className="border-primary text-primary"
               >
-                Use Biometric Login
+                <IonIcon 
+                  icon={getBiometricIcon()} 
+                  className="mr-2" 
+                />
+                {biometricLoading ? (
+                  <IonSpinner name="crescent" className="mr-2" />
+                ) : null}
+                {biometricLoading 
+                  ? t('biometric.authenticating')
+                  : t('biometric.useYourBiometric', { type: getBiometricTypeText() })
+                }
               </IonButton>
+            </div>
+          )}
+          
+          {/* Biometric Setup Offer */}
+          {APP_CONFIG.FEATURES.BIOMETRIC_AUTH && shouldShowBiometricSetup && (
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <IonIcon 
+                  icon={getBiometricIcon()} 
+                  className="w-6 h-6 text-blue-600 mt-0.5" 
+                />
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-blue-900 mb-1">
+                    {t('biometric.setup.title')}
+                  </h4>
+                  <p className="text-sm text-blue-700 mb-3">
+                    {t('biometric.setup.subtitle', { type: getBiometricTypeText() })}
+                  </p>
+                  <IonButton
+                    size="small"
+                    fill="clear"
+                    onClick={() => history.push('/biometric-setup')}
+                    className="text-blue-600 p-0 h-auto"
+                  >
+                    {t('biometric.setup.enable_button', { type: getBiometricTypeText() })}
+                  </IonButton>
+                </div>
+              </div>
             </div>
           )}
         </div>

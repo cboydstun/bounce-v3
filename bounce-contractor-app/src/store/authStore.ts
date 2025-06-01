@@ -29,9 +29,10 @@ interface AuthActions {
   clearAuth: () => void;
 
   // Biometric authentication
-  enableBiometric: () => Promise<void>;
-  disableBiometric: () => void;
+  enableBiometric: (credentials?: { email: string; password: string }) => Promise<void>;
+  disableBiometric: () => Promise<void>;
   authenticateWithBiometric: () => Promise<void>;
+  loginWithBiometric: () => Promise<void>;
 
   // Session management
   checkAuthStatus: () => Promise<boolean>;
@@ -346,29 +347,110 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       // Biometric authentication
-      enableBiometric: async () => {
+      enableBiometric: async (credentials?: { email: string; password: string }) => {
         try {
-          // This will be implemented with Capacitor biometric plugin
-          set({ biometricEnabled: true });
+          const { biometricService } = await import('../services/auth/biometricService');
+          const { user } = get();
+          
+          if (!user) {
+            throw new Error('User must be logged in to enable biometric authentication');
+          }
+
+          // Use provided credentials or current user data
+          const biometricCredentials = {
+            username: credentials?.email || user.email,
+            password: credentials?.password || '', // Password should be provided for security
+            accessToken: get().tokens?.accessToken,
+            refreshToken: get().tokens?.refreshToken,
+            expiresAt: get().tokens?.expiresAt
+          };
+
+          const result = await biometricService.setupBiometric(biometricCredentials);
+          
+          if (result.success) {
+            set({ biometricEnabled: true });
+          } else {
+            throw new Error(result.error || 'Failed to enable biometric authentication');
+          }
         } catch (error) {
-          throw new Error("Failed to enable biometric authentication");
+          console.error('Enable biometric error:', error);
+          throw error;
         }
       },
 
-      disableBiometric: () => {
-        set({ biometricEnabled: false });
+      disableBiometric: async () => {
+        try {
+          const { biometricService } = await import('../services/auth/biometricService');
+          await biometricService.disableBiometric();
+          set({ biometricEnabled: false });
+        } catch (error) {
+          console.error('Disable biometric error:', error);
+          throw new Error('Failed to disable biometric authentication');
+        }
       },
 
       authenticateWithBiometric: async () => {
         try {
-          // This will be implemented with Capacitor biometric plugin
-          const { tokens } = get();
-          if (tokens) {
-            // Verify biometric and refresh session
+          const { biometricService } = await import('../services/auth/biometricService');
+          
+          const result = await biometricService.authenticateAndGetCredentials({
+            reason: 'Authenticate to access your account',
+            title: 'Biometric Login',
+            subtitle: 'Use your biometric to sign in'
+          });
+
+          if (result.success && result.credentials) {
+            // Update tokens if available
+            if (result.credentials.accessToken) {
+              const tokens = {
+                accessToken: result.credentials.accessToken,
+                refreshToken: result.credentials.refreshToken || '',
+                expiresAt: result.credentials.expiresAt || new Date(Date.now() + APP_CONFIG.JWT_ACCESS_TOKEN_EXPIRY).toISOString(),
+                tokenType: 'Bearer' as const
+              };
+              
+              apiClient.setAuthTokens(tokens);
+              set({ tokens });
+            }
+            
+            // Refresh session
             await get().refreshToken();
+          } else {
+            throw new Error(result.error || 'Biometric authentication failed');
           }
         } catch (error) {
-          throw new Error("Biometric authentication failed");
+          console.error('Biometric authentication error:', error);
+          throw error;
+        }
+      },
+
+      loginWithBiometric: async () => {
+        set({ isLoading: true, error: null });
+        
+        try {
+          const { biometricService } = await import('../services/auth/biometricService');
+          
+          const result = await biometricService.authenticateAndGetCredentials({
+            reason: 'Sign in to your account',
+            title: 'Biometric Login',
+            subtitle: 'Use your biometric to sign in quickly'
+          });
+
+          if (result.success && result.credentials) {
+            // Perform login with stored credentials
+            await get().login({
+              email: result.credentials.username,
+              password: result.credentials.password,
+              rememberMe: true
+            });
+          } else {
+            throw new Error(result.error || 'Biometric login failed');
+          }
+        } catch (error) {
+          console.error('Biometric login error:', error);
+          const errorMessage = (error as any)?.message || 'Biometric login failed';
+          set({ error: errorMessage, isLoading: false });
+          throw error;
         }
       },
 
