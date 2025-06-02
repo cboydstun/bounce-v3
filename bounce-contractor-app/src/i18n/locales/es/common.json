@@ -49,5 +49,14 @@
     "offline": "Sin Conexión",
     "reconnecting": "Reconectando...",
     "syncPending": "Sincronización pendiente"
+  },
+  "profile": {
+    "totalJobs": "Trabajos Totales",
+    "rating": "Calificación",
+    "completion": "Finalización",
+    "editProfile": "Editar Perfil",
+    "notificationSettings": "Configuración de Notificaciones",
+    "helpSupport": "Ayuda y Soporte",
+    "signOut": "Cerrar Sesión"
   }
 }

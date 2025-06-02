@@ -21,7 +21,8 @@ import {
 } from "ionicons/icons";
 import { Task } from "../../types/task.types";
 import { useGeolocation } from "../../hooks/location/useGeolocation";
-import { useTaskTranslation, useI18n } from "../../hooks/common/useI18n";
+import { useI18n, useTaskTranslation } from "../../hooks/common/useI18n";
+import CompensationDisplay from "./CompensationDisplay";
 
 interface TaskCardProps {
   task: Task;
@@ -43,8 +44,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
   isLoading = false,
 }) => {
   const { getDistanceFromCurrent } = useGeolocation();
-  const { t } = useTaskTranslation();
-  const { formatTaskTime, formatCurrency, formatDistance, isToday, isTomorrow } = useI18n();
+  const { t: tTask } = useTaskTranslation();
+  const { t, formatTaskTime, formatCurrency, formatDistance, isToday, isTomorrow } = useI18n();
 
   const distance = getDistanceFromCurrent(
     task.location.coordinates.latitude,
@@ -87,9 +88,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const date = new Date(dateString);
     
     if (isToday(date)) {
-      return t('common.time.today') + ' ' + formatTaskTime(date);
+      return t('time.today') + ' ' + formatTaskTime(date);
     } else if (isTomorrow(date)) {
-      return t('common.time.tomorrow') + ' ' + formatTaskTime(date);
+      return t('time.tomorrow') + ' ' + formatTaskTime(date);
     } else {
       return formatTaskTime(date);
     }
@@ -105,7 +106,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </IonCardTitle>
             <div className="flex items-center gap-2 mt-1">
               <IonBadge color={getStatusColor(task.status)} className="text-xs">
-                {t(`status.${task.status}`)}
+                {tTask(`status.${task.status}`)}
               </IonBadge>
               <IonBadge
                 color={getPriorityColor(task.priority)}
@@ -116,10 +117,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           </div>
           <div className="text-right">
-            <div className="flex items-center text-green-600 font-semibold">
-              <IonIcon icon={cashOutline} className="mr-1" />
-              <span>${task.compensation.totalAmount}</span>
-            </div>
+            <CompensationDisplay 
+              compensation={task.compensation}
+              size="compact"
+              className="justify-end"
+            />
             {distance && (
               <IonText className="text-sm text-gray-500">
                 {formatDistance(distance * 1609.34)}
@@ -184,7 +186,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           {task.equipment.length > 0 && (
             <div className="mt-2">
               <IonText className="text-xs text-gray-500 font-medium">
-                {t('card.equipment')}: {task.equipment.map((eq) => eq.name).join(", ")}
+                {tTask('card.equipment')}: {task.equipment.map((eq) => eq.name).join(", ")}
               </IonText>
             </div>
           )}
@@ -200,7 +202,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 disabled={isLoading}
                 className="flex-1"
               >
-                {isLoading ? t('actions.claiming') : t('card.claimButton')}
+                {isLoading ? tTask('actions.claiming') : tTask('card.claimButton')}
               </IonButton>
             )}
 
@@ -221,7 +223,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               onClick={() => onViewDetails?.(task.id)}
               className="min-w-0"
             >
-              {t('card.viewDetails')}
+              {tTask('card.viewDetails')}
             </IonButton>
           </div>
         </div>

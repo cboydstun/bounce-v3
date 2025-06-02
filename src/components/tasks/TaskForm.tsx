@@ -36,6 +36,7 @@ export function TaskForm({
     status: "Pending",
     assignedContractors: [],
     assignedTo: "",
+    paymentAmount: undefined,
     completionPhotos: [],
     completionNotes: "",
   });
@@ -67,6 +68,7 @@ export function TaskForm({
           status: task.status,
           assignedContractors: task.assignedContractors || [],
           assignedTo: task.assignedTo || "",
+          paymentAmount: task.paymentAmount,
           completionPhotos: task.completionPhotos || [],
           completionNotes: task.completionNotes || "",
         });
@@ -83,6 +85,7 @@ export function TaskForm({
           status: "Pending",
           assignedContractors: [],
           assignedTo: "",
+          paymentAmount: undefined,
           completionPhotos: [],
           completionNotes: "",
         });
@@ -211,6 +214,18 @@ export function TaskForm({
       newErrors.assignedTo = "Assigned to must be less than 200 characters";
     }
 
+    // Validate payment amount
+    if (formData.paymentAmount !== undefined && formData.paymentAmount !== null) {
+      const paymentAmount = Number(formData.paymentAmount);
+      if (isNaN(paymentAmount)) {
+        newErrors.paymentAmount = "Payment amount must be a valid number";
+      } else if (paymentAmount < 0) {
+        newErrors.paymentAmount = "Payment amount cannot be negative";
+      } else if (paymentAmount > 10000) {
+        newErrors.paymentAmount = "Payment amount cannot exceed $10,000";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -223,12 +238,25 @@ export function TaskForm({
     }
 
     try {
+      // Convert paymentAmount from string to number if it exists
+      let paymentAmount: number | undefined = undefined;
+      if (formData.paymentAmount !== undefined && formData.paymentAmount !== null) {
+        const paymentAmountStr = String(formData.paymentAmount).trim();
+        if (paymentAmountStr !== "") {
+          const convertedAmount = Number(paymentAmountStr);
+          if (!isNaN(convertedAmount)) {
+            paymentAmount = convertedAmount;
+          }
+        }
+      }
+
       await onSubmit({
         ...formData,
         title: formData.title?.trim() || undefined,
         description: formData.description.trim(),
         assignedTo: formData.assignedTo?.trim() || undefined,
         completionNotes: formData.completionNotes?.trim() || undefined,
+        paymentAmount: paymentAmount,
       });
       onClose();
     } catch (error) {
@@ -415,6 +443,41 @@ export function TaskForm({
             </select>
             {errors.priority && (
               <p className="text-red-500 text-xs mt-1">{errors.priority}</p>
+            )}
+          </div>
+
+          {/* Payment Amount */}
+          <div>
+            <label
+              htmlFor="paymentAmount"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Payment Amount (USD)
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-gray-500 sm:text-sm">$</span>
+              </div>
+              <input
+                type="number"
+                id="paymentAmount"
+                name="paymentAmount"
+                value={formData.paymentAmount || ""}
+                onChange={handleInputChange}
+                step="0.01"
+                min="0"
+                className={`w-full pl-7 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.paymentAmount ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="0.00"
+                disabled={isLoading}
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Leave empty if no payment amount is set for this task
+            </p>
+            {errors.paymentAmount && (
+              <p className="text-red-500 text-xs mt-1">{errors.paymentAmount}</p>
             )}
           </div>
 

@@ -13,6 +13,7 @@ import { logOutOutline, settingsOutline } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 import { useAuthStore, authSelectors } from "../../store/authStore";
 import { useI18n } from "../../hooks/common/useI18n";
+import EarningsSummary from "../../components/tasks/EarningsSummary";
 
 const Profile: React.FC = () => {
   const history = useHistory();
@@ -37,11 +38,33 @@ const Profile: React.FC = () => {
     history.push("/profile/edit");
   };
 
+  const handleViewEarningsDetails = () => {
+    // TODO: Navigate to earnings details page
+    console.log("View earnings details");
+  };
+
+  const handleViewPaymentHistory = () => {
+    // TODO: Navigate to payment history page
+    console.log("View payment history");
+  };
+
+  // Mock earnings data - in real app, this would come from API
+  const mockEarnings = {
+    totalEarnings: 2450.75,
+    thisWeekEarnings: 325.50,
+    thisMonthEarnings: 1250.25,
+    completedTasks: 18,
+    averagePerTask: 136.15,
+    pendingPayments: 175.00,
+    lastPaymentDate: "2025-05-25",
+    nextPaymentDate: "2025-06-01",
+  };
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{t('common.navigation.profile')}</IonTitle>
+          <IonTitle>{t('navigation.profile')}</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -69,25 +92,34 @@ const Profile: React.FC = () => {
             <IonText className="text-body">{user?.email}</IonText>
           </div>
 
+          {/* Earnings Summary */}
+          <div className="mb-8">
+            <EarningsSummary
+              earnings={mockEarnings}
+              onViewDetails={handleViewEarningsDetails}
+              onViewPaymentHistory={handleViewPaymentHistory}
+            />
+          </div>
+
           {/* Profile Stats */}
           <div className="grid grid-cols-3 gap-4 mb-8">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold text-primary">
                 {profile?.totalJobs || 0}
               </div>
-              <IonText className="text-caption">{t('common.profile.totalJobs')}</IonText>
+              <IonText className="text-caption">{t('profile.totalJobs')}</IonText>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold text-success">
                 {profile?.rating || 0}
               </div>
-              <IonText className="text-caption">{t('common.profile.rating')}</IonText>
+              <IonText className="text-caption">{t('profile.rating')}</IonText>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold text-secondary">
                 {profile?.completionRate || 0}%
               </div>
-              <IonText className="text-caption">{t('common.profile.completion')}</IonText>
+              <IonText className="text-caption">{t('profile.completion')}</IonText>
             </div>
           </div>
 
@@ -100,7 +132,7 @@ const Profile: React.FC = () => {
               onClick={handleEditProfile}
             >
               <IonIcon icon={settingsOutline} slot="start" />
-              {t('common.profile.editProfile')}
+              {t('profile.editProfile')}
             </IonButton>
 
             <IonButton
@@ -110,7 +142,7 @@ const Profile: React.FC = () => {
               onClick={handleSettings}
             >
               <IonIcon icon={settingsOutline} slot="start" />
-              {t('common.profile.notificationSettings')}
+              {t('profile.notificationSettings')}
             </IonButton>
 
             <IonButton
@@ -118,7 +150,7 @@ const Profile: React.FC = () => {
               fill="outline"
               className="border-gray-300 text-gray-600"
             >
-              {t('common.profile.helpSupport')}
+              {t('profile.helpSupport')}
             </IonButton>
 
             <IonButton
@@ -128,7 +160,7 @@ const Profile: React.FC = () => {
               onClick={handleLogout}
             >
               <IonIcon icon={logOutOutline} slot="start" />
-              {t('common.profile.signOut')}
+              {t('profile.signOut')}
             </IonButton>
           </div>
 

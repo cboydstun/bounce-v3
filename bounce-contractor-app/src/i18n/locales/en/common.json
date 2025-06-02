@@ -49,5 +49,14 @@
     "offline": "Offline",
     "reconnecting": "Reconnecting...",
     "syncPending": "Sync pending"
+  },
+  "profile": {
+    "totalJobs": "Total Jobs",
+    "rating": "Rating",
+    "completion": "Completion",
+    "editProfile": "Edit Profile",
+    "notificationSettings": "Notification Settings",
+    "helpSupport": "Help & Support",
+    "signOut": "Sign Out"
   }
 }

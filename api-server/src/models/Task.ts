@@ -115,6 +115,20 @@ const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
     completedAt: {
       type: Date,
     },
+    paymentAmount: {
+      type: Number,
+      min: [0, "Payment amount must be positive"],
+      max: [999999.99, "Payment amount cannot exceed $999,999.99"],
+      validate: {
+        validator: function (v: number) {
+          // Allow null/undefined for optional field
+          if (v === null || v === undefined) return true;
+          // Check for valid monetary value (up to 2 decimal places)
+          return Number.isFinite(v) && v >= 0 && Math.round(v * 100) === v * 100;
+        },
+        message: "Payment amount must be a valid monetary value with up to 2 decimal places",
+      },
+    },
   },
   {
     timestamps: true,
@@ -278,6 +292,8 @@ TaskSchema.index({ assignedTo: 1, status: 1 });
 TaskSchema.index({ assignedContractors: 1, status: 1 });
 TaskSchema.index({ type: 1, scheduledDateTime: 1 });
 TaskSchema.index({ status: 1, priority: 1, scheduledDateTime: 1 });
+TaskSchema.index({ paymentAmount: 1 });
+TaskSchema.index({ paymentAmount: 1, status: 1 });
 
 // Store original document for status transition validation
 TaskSchema.pre("save", function (next) {

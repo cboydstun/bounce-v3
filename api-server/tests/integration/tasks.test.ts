@@ -40,6 +40,7 @@ describe("Task Management Integration Tests", () => {
         description: "Delivery Task",
         type: "Delivery",
         status: "Pending",
+        paymentAmount: 75.50,
         location: {
           type: "Point",
           coordinates: [-98.4936, 29.4241], // San Antonio
@@ -70,14 +71,15 @@ describe("Task Management Integration Tests", () => {
         .set(authHeaders)
         .expect(200);
 
-      expect(response.body).toHaveProperty("tasks");
-      expect(response.body).toHaveProperty("pagination");
-      expect(Array.isArray(response.body.tasks)).toBe(true);
-      expect(response.body.tasks.length).toBe(2); // Only pending tasks
+      expect(response.body).toHaveProperty("data");
+      expect(response.body.data).toHaveProperty("tasks");
+      expect(response.body.data).toHaveProperty("pagination");
+      expect(Array.isArray(response.body.data.tasks)).toBe(true);
+      expect(response.body.data.tasks.length).toBe(2); // Only pending tasks
 
       // Verify all tasks are pending
-      response.body.tasks.forEach((task: any) => {
-        expect(task.status).toBe("Pending");
+      response.body.data.tasks.forEach((task: any) => {
+        expect(task.status).toBe("published");
       });
     });
 
@@ -87,9 +89,9 @@ describe("Task Management Integration Tests", () => {
         .set(authHeaders)
         .expect(200);
 
-      expect(response.body.tasks.length).toBe(1);
-      expect(response.body.tasks[0].description).toBe("Delivery Task");
-      expect(response.body.tasks[0].type).toBe("Delivery");
+      expect(response.body.data.tasks.length).toBe(1);
+      expect(response.body.data.tasks[0].description).toBe("Delivery Task");
+      expect(response.body.data.tasks[0].type).toBe("delivery");
     });
 
     it("should filter tasks by location and radius", async () => {
@@ -98,8 +100,8 @@ describe("Task Management Integration Tests", () => {
         .set(authHeaders)
         .expect(200);
 
-      expect(response.body.tasks.length).toBe(1);
-      expect(response.body.tasks[0].description).toBe("Delivery Task");
+      expect(response.body.data.tasks.length).toBe(1);
+      expect(response.body.data.tasks[0].description).toBe("Delivery Task");
     });
 
     it("should support pagination", async () => {
@@ -117,10 +119,38 @@ describe("Task Management Integration Tests", () => {
         .set(authHeaders)
         .expect(200);
 
-      expect(response.body.tasks.length).toBe(10);
-      expect(response.body.pagination.page).toBe(1);
-      expect(response.body.pagination.limit).toBe(10);
-      expect(response.body.pagination.total).toBeGreaterThan(10);
+      expect(response.body.data.tasks.length).toBe(10);
+      expect(response.body.data.pagination.page).toBe(1);
+      expect(response.body.data.pagination.limit).toBe(10);
+      expect(response.body.data.pagination.total).toBeGreaterThan(10);
+    });
+
+    it("should include payment amounts in task responses", async () => {
+      const response = await request(app)
+        .get("/api/tasks/available")
+        .set(authHeaders)
+        .expect(200);
+
+      expect(response.body.data.tasks.length).toBeGreaterThan(0);
+      
+      // Find the task with payment amount
+      const taskWithPayment = response.body.data.tasks.find(
+        (task: any) => task.description === "Delivery Task"
+      );
+      
+      expect(taskWithPayment).toBeDefined();
+      expect(taskWithPayment.compensation).toBeDefined();
+      expect(taskWithPayment.compensation.baseAmount).toBe(75.50);
+      expect(taskWithPayment.compensation.totalAmount).toBe(75.50);
+      
+      // Task without payment amount should default to 50
+      const taskWithoutPayment = response.body.data.tasks.find(
+        (task: any) => task.description === "Setup Task"
+      );
+      
+      expect(taskWithoutPayment).toBeDefined();
+      expect(taskWithoutPayment.compensation.baseAmount).toBe(50);
+      expect(taskWithoutPayment.compensation.totalAmount).toBe(50);
     });
 
     it("should reject unauthenticated requests", async () => {
@@ -173,11 +203,12 @@ describe("Task Management Integration Tests", () => {
         .set(authHeaders)
         .expect(200);
 
-      expect(response.body).toHaveProperty("tasks");
-      expect(response.body.tasks.length).toBe(2);
+      expect(response.body).toHaveProperty("data");
+      expect(response.body.data).toHaveProperty("tasks");
+      expect(response.body.data.tasks.length).toBe(2);
 
-      response.body.tasks.forEach((task: any) => {
-        expect(task.assignedTo).toBe(testContractor._id);
+      response.body.data.tasks.forEach((task: any) => {
+        expect(task.contractor.contractorId).toBe(testContractor._id);
       });
     });
 
@@ -187,9 +218,9 @@ describe("Task Management Integration Tests", () => {
         .set(authHeaders)
         .expect(200);
 
-      expect(response.body.tasks.length).toBe(1);
-      expect(response.body.tasks[0].status).toBe("Assigned");
-      expect(response.body.tasks[0].description).toBe("My Assigned Task");
+      expect(response.body.data.tasks.length).toBe(1);
+      expect(response.body.data.tasks[0].status).toBe("assigned");
+      expect(response.body.data.tasks[0].description).toBe("My Assigned Task");
     });
 
     it("should reject unauthenticated requests", async () => {

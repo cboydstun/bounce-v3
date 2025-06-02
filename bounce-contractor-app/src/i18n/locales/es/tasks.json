@@ -1,4 +1,16 @@
 {
+  "availableTasks": {
+    "title": "Tareas Disponibles",
+    "realtimeUpdates": "Actualizaciones en Tiempo Real",
+    "liveUpdatesEnabled": "Actualizaciones en vivo habilitadas",
+    "connectingToUpdates": "Conectando a actualizaciones en vivo...",
+    "listView": "Lista",
+    "mapView": "Mapa",
+    "gettingLocation": "Obteniendo tu ubicación...",
+    "locationDenied": "Acceso a ubicación denegado. Habilita la ubicación para mejor coincidencia de tareas.",
+    "showingNearbyTasks": "Mostrando tareas cerca de tu ubicación",
+    "noTasks": "No hay tareas disponibles en tu área"
+  },
   "discovery": {
     "title": "Tareas Disponibles",
     "subtitle": "Encuentra tareas cerca de ti",

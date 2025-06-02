@@ -156,9 +156,9 @@ export class TaskController {
           equipment: [], // Default empty array
           instructions: [], // Default empty array
           compensation: {
-            baseAmount: 50,
+            baseAmount: taskObj.paymentAmount || 50,
             bonuses: [],
-            totalAmount: 50,
+            totalAmount: taskObj.paymentAmount || 50,
             currency: "USD",
             paymentMethod: "direct_deposit" as const,
             paymentSchedule: "weekly" as const,
@@ -313,9 +313,9 @@ export class TaskController {
           equipment: [],
           instructions: [],
           compensation: {
-            baseAmount: 50,
+            baseAmount: taskObj.paymentAmount || 50,
             bonuses: [],
-            totalAmount: 50,
+            totalAmount: taskObj.paymentAmount || 50,
             currency: "USD",
             paymentMethod: "direct_deposit" as const,
             paymentSchedule: "weekly" as const,

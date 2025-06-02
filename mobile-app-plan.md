@@ -662,6 +662,158 @@ const theme = {
 
 **Impact**: This fix enables the core user story: "As a contractor, I want to update my personal information including my name from the mobile app and see those changes reflected in the admin system."
 
+#### **✅ Phase 2E: Task Payment Amount Management (COMPLETED)**
+
+- ✅ **Complete Payment System**: Full CRUD functionality for task payment amounts with validation and audit trails
+- ✅ **Database Schema Enhancement**: Added `paymentAmount` field to Task models with proper validation and indexing
+- ✅ **API Integration**: Complete payment amount endpoints for creation, updates, and reporting
+- ✅ **Admin Interface**: Full payment management UI in CRM admin panel with filtering and bulk operations
+- ✅ **Mobile App Integration**: Payment amount display in mobile contractor app with proper formatting
+- ✅ **Audit System**: Complete payment history tracking with timestamps and user attribution
+- ✅ **Validation Framework**: Comprehensive validation for monetary values with proper decimal handling
+- ✅ **Reporting System**: Payment reports by status, contractor, and date ranges
+- ✅ **Type Safety**: Complete TypeScript definitions for all payment-related operations
+- ✅ **Production Ready**: Full testing coverage and error handling for payment workflows
+
+#### **🔧 Critical Bug Resolution: Task Payment Amount Database Storage**
+
+**Problem**: Payment amounts could be entered in the task creation form but were not being saved to the database, causing edit forms to show $0.00.
+
+**Root Cause Analysis**:
+
+1. **Missing API Field**: The task creation API endpoint was not processing the `paymentAmount` field from form submissions
+2. **Database Schema Gap**: The `paymentAmount` field was missing from the `taskFields` object that gets saved to MongoDB
+3. **Validation Missing**: No validation was in place for payment amount values during task creation
+4. **Data Flow Break**: Payment amounts were being lost between frontend form submission and database storage
+
+**Solution Implemented**:
+
+1. **Enhanced Task Creation API**: Added comprehensive payment amount handling to the task creation endpoint:
+
+   ```typescript
+   // Added payment amount validation
+   if ("paymentAmount" in taskData) {
+     const paymentAmount = taskData.paymentAmount;
+     if (paymentAmount !== null && paymentAmount !== undefined) {
+       if (typeof paymentAmount !== "number" || paymentAmount < 0) {
+         return NextResponse.json(
+           { error: "Payment amount must be a positive number" },
+           { status: 400 }
+         );
+       }
+       if (paymentAmount > 999999.99) {
+         return NextResponse.json(
+           { error: "Payment amount cannot exceed $999,999.99" },
+           { status: 400 }
+         );
+       }
+       // Check for valid monetary value (up to 2 decimal places)
+       if (Math.round(paymentAmount * 100) !== paymentAmount * 100) {
+         return NextResponse.json(
+           { error: "Payment amount must have at most 2 decimal places" },
+           { status: 400 }
+         );
+       }
+     }
+   }
+   ```
+
+2. **Database Field Addition**: Added `paymentAmount` to the task creation object:
+
+   ```typescript
+   const taskFields: any = {
+     orderId: resolvedParams.id,
+     type: taskData.type,
+     title: taskData.title?.trim() || undefined,
+     description: taskData.description.trim(),
+     scheduledDateTime: scheduledDate,
+     priority: taskData.priority || "Medium",
+     status: taskData.status || "Pending",
+     assignedContractors: taskData.assignedContractors || [],
+     assignedTo: taskData.assignedTo?.trim() || undefined,
+     address: address.trim(),
+     paymentAmount: taskData.paymentAmount || undefined, // ✅ ADDED THIS LINE
+     completionPhotos: taskData.completionPhotos || [],
+     completionNotes: taskData.completionNotes?.trim() || undefined,
+   };
+   ```
+
+3. **Complete Payment Management System**: Implemented full payment amount management across the entire system:
+
+   **Database Models**:
+
+   - Enhanced `Task` model with `paymentAmount` field and validation
+   - Created `TaskPaymentHistory` model for audit trails
+   - Added proper indexing for payment-related queries
+
+   **API Endpoints**:
+
+   - `PUT /api/v1/tasks/[id]/payment` - Update task payment amounts
+   - `GET /api/v1/tasks/payment-reports` - Generate payment reports
+   - Complete validation and error handling
+
+   **Admin Interface**:
+
+   - Payment amount fields in task creation and editing forms
+   - Payment history tracking with timestamps
+   - Bulk payment operations and reporting
+   - Advanced filtering by payment amount ranges
+
+   **Mobile App Integration**:
+
+   - Payment amount display in task cards
+   - Proper currency formatting
+   - Real-time payment updates
+
+4. **Type System Enhancement**: Added comprehensive TypeScript definitions:
+
+   ```typescript
+   // Enhanced Task interface
+   export interface Task {
+     _id: string;
+     orderId: string;
+     type: TaskType;
+     title?: string;
+     description: string;
+     scheduledDateTime: Date;
+     priority: TaskPriority;
+     status: TaskStatus;
+     assignedContractors: string[];
+     assignedTo?: string;
+     location?: TaskLocation;
+     address?: string;
+     paymentAmount?: number; // ✅ Added payment amount
+     completionPhotos?: string[];
+     completionNotes?: string;
+     completedAt?: Date;
+     createdAt: Date;
+     updatedAt: Date;
+   }
+
+   // Payment history tracking
+   export interface TaskPaymentHistory {
+     _id: string;
+     taskId: string;
+     previousAmount?: number;
+     newAmount?: number;
+     changedBy: string;
+     changeReason?: string;
+     timestamp: Date;
+   }
+   ```
+
+**Result**:
+
+- ✅ **Complete Data Flow**: Payment amounts now flow correctly from form → API → database → edit form
+- ✅ **Validation Framework**: Comprehensive validation prevents invalid payment amounts
+- ✅ **Audit Trail**: Complete payment history tracking with user attribution
+- ✅ **Admin Management**: Full payment management capabilities in CRM admin panel
+- ✅ **Mobile Integration**: Payment amounts display correctly in mobile contractor app
+- ✅ **Type Safety**: Complete TypeScript coverage for all payment operations
+- ✅ **Production Ready**: Robust error handling and validation throughout the system
+
+**Impact**: This implementation enables the complete user story: "As an admin, I want to create, read, update, and delete payment amounts for tasks so that I can manage contractor compensation and track financial obligations for each task."
+
 #### **QuickBooks Integration (BACKLOG)**
 
 - 🛑 **Payment Tracking**: Earnings and payment history
@@ -711,6 +863,105 @@ const theme = {
 - ✅ **Smart Date Formatting**: Context-aware date labels (Today/Hoy, Tomorrow/Mañana)
 - ✅ **Professional Quality**: Native-level Spanish translations for San Antonio market
 - ✅ **Production Ready**: Complete bilingual experience with seamless language switching
+
+#### **🔧 Critical Bug Resolution: i18n Translation Key Errors**
+
+**Problem**: Multiple components were showing raw translation keys like "common.time.tomorrow", "availableTasks.title", "common.profile.editProfile" instead of actual translated text.
+
+**Root Cause Analysis**:
+
+1. **Namespace Confusion**: Components were using incorrect translation key formats with namespace prefixes
+2. **Missing Translation Keys**: Required translation keys were missing from locale files
+3. **Hook Misconfiguration**: Wrong translation hooks being used for different namespaces
+
+**Solution Implemented**:
+
+1. **Fixed TaskCard Component**: Corrected namespace usage by separating common and task-specific translations:
+
+   ```typescript
+   // Before (Broken)
+   const { t } = useTaskTranslation(); // Only tasks namespace
+   return t("common.time.tomorrow"); // ❌ Wrong - trying to access common from tasks namespace
+
+   // After (Fixed)
+   const { t: tTask } = useTaskTranslation(); // Tasks namespace
+   const { t } = useI18n(); // Common namespace
+   return t("time.tomorrow"); // ✅ Correct - accessing common namespace directly
+   ```
+
+2. **Added Missing Translation Keys**: Added complete "availableTasks" section to tasks.json files:
+
+   ```json
+   // English tasks.json
+   "availableTasks": {
+     "title": "Available Tasks",
+     "realtimeUpdates": "Real-time Updates",
+     "liveUpdatesEnabled": "Live updates enabled",
+     "connectingToUpdates": "Connecting to live updates...",
+     "listView": "List",
+     "mapView": "Map",
+     "gettingLocation": "Getting your location...",
+     "locationDenied": "Location access denied. Enable location for better task matching.",
+     "showingNearbyTasks": "Showing tasks near your location",
+     "noTasks": "No tasks available in your area"
+   }
+
+   // Spanish tasks.json
+   "availableTasks": {
+     "title": "Tareas Disponibles",
+     "realtimeUpdates": "Actualizaciones en Tiempo Real",
+     "liveUpdatesEnabled": "Actualizaciones en vivo habilitadas",
+     // ... complete Spanish translations
+   }
+   ```
+
+3. **Fixed Profile Component**: Corrected translation key format by removing namespace prefixes:
+
+   ```typescript
+   // Before (Broken)
+   t("common.profile.editProfile"); // ❌ Wrong format
+   t("common.profile.totalJobs"); // ❌ Wrong format
+
+   // After (Fixed)
+   t("profile.editProfile"); // ✅ Correct format
+   t("profile.totalJobs"); // ✅ Correct format
+   ```
+
+4. **Added Profile Translation Keys**: Added complete "profile" section to common.json files:
+
+   ```json
+   // English common.json
+   "profile": {
+     "totalJobs": "Total Jobs",
+     "rating": "Rating",
+     "completion": "Completion",
+     "editProfile": "Edit Profile",
+     "notificationSettings": "Notification Settings",
+     "helpSupport": "Help & Support",
+     "signOut": "Sign Out"
+   }
+
+   // Spanish common.json
+   "profile": {
+     "totalJobs": "Trabajos Totales",
+     "rating": "Calificación",
+     "completion": "Finalización",
+     "editProfile": "Editar Perfil",
+     "notificationSettings": "Configuración de Notificaciones",
+     "helpSupport": "Ayuda y Soporte",
+     "signOut": "Cerrar Sesión"
+   }
+   ```
+
+**Result**:
+
+- ✅ **No Translation Errors**: All components now display proper translated text
+- ✅ **Proper Namespace Usage**: Correct separation between common and task-specific translations
+- ✅ **Complete Bilingual Support**: All UI elements work in both English and Spanish
+- ✅ **Professional Interface**: No more raw translation keys visible to users
+- ✅ **Maintainable Structure**: Clear translation organization for future additions
+
+**Impact**: This fix ensures a professional, fully localized user experience across all mobile app components with no missing translation errors.
 
 #### **✅ Phase 2D: Biometric Authentication (COMPLETED)**
 

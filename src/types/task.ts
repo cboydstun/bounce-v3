@@ -29,6 +29,60 @@ export interface TaskLocation {
 }
 
 /**
+ * Task Payment History interface for tracking payment changes
+ */
+export interface TaskPaymentHistory {
+  _id: string; // MongoDB document ID
+  taskId: string; // Reference to the Task
+  orderId: string; // Reference to the Order
+  previousAmount?: number; // Previous payment amount (null for initial set)
+  newAmount?: number; // New payment amount (null for clearing)
+  changedBy: string; // Admin user ID who made the change
+  changedByName: string; // Admin user name for display
+  reason?: string; // Optional reason for the change
+  createdAt: Date; // When the change was made
+}
+
+/**
+ * Mongoose document interface for TaskPaymentHistory
+ */
+export interface ITaskPaymentHistoryDocument extends Omit<TaskPaymentHistory, "_id">, Document {}
+
+/**
+ * Mongoose model interface for TaskPaymentHistory
+ */
+export interface ITaskPaymentHistoryModel extends Model<ITaskPaymentHistoryDocument> {
+  /**
+   * Create a new payment history entry
+   * @param data Payment history data
+   * @returns Promise resolving to the created history entry
+   */
+  createPaymentChange(data: {
+    taskId: string;
+    orderId: string;
+    previousAmount?: number;
+    newAmount?: number;
+    changedBy: string;
+    changedByName: string;
+    reason?: string;
+  }): Promise<ITaskPaymentHistoryDocument>;
+
+  /**
+   * Find payment history for a specific task
+   * @param taskId The task ID
+   * @returns Promise resolving to an array of payment history entries
+   */
+  findByTaskId(taskId: string): Promise<ITaskPaymentHistoryDocument[]>;
+
+  /**
+   * Find payment history for a specific order
+   * @param orderId The order ID
+   * @returns Promise resolving to an array of payment history entries
+   */
+  findByOrderId(orderId: string): Promise<ITaskPaymentHistoryDocument[]>;
+}
+
+/**
  * Main Task interface - aligned with API server
  */
 export interface Task {
@@ -44,6 +98,7 @@ export interface Task {
   assignedTo?: string; // Optional: computed field for backward compatibility
   location?: TaskLocation; // GeoJSON Point for geospatial queries (optional)
   address?: string; // Human-readable address (derived from order)
+  paymentAmount?: number; // Payment amount for the task in USD
   completionPhotos?: string[]; // Array of photo URLs/paths
   completionNotes?: string; // Notes added upon task completion
   completedAt?: Date; // Timestamp when task was completed
@@ -65,6 +120,7 @@ export interface TaskFormData {
   assignedTo?: string; // Optional: contractor name/company (backward compatibility)
   address?: string; // Optional: will be derived from order if not provided
   location?: TaskLocation; // Optional: will be geocoded from order address if not provided
+  paymentAmount?: number; // Optional: payment amount for the task in USD
   completionPhotos?: string[]; // Optional: array of photo URLs/paths
   completionNotes?: string; // Optional: completion notes
 }
@@ -134,4 +190,33 @@ export interface ITaskModel extends Model<ITaskDocument> {
     contractorId: string,
     status?: TaskStatus,
   ): Promise<ITaskDocument[]>;
+
+  /**
+   * Find all tasks within a payment amount range
+   * @param minAmount Minimum payment amount
+   * @param maxAmount Maximum payment amount
+   * @returns Promise resolving to an array of tasks
+   */
+  findByPaymentRange(
+    minAmount: number,
+    maxAmount: number,
+  ): Promise<ITaskDocument[]>;
+
+  /**
+   * Get payment statistics for tasks
+   * @param filters Optional filters for status, contractor, date range
+   * @returns Promise resolving to payment statistics
+   */
+  getPaymentStats(filters?: {
+    status?: TaskStatus;
+    contractorId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    totalAmount: number;
+    averageAmount: number;
+    taskCount: number;
+    paidTasks: number;
+    unpaidTasks: number;
+  }>;
 }

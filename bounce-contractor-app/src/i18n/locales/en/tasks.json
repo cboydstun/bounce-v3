@@ -1,4 +1,16 @@
 {
+  "availableTasks": {
+    "title": "Available Tasks",
+    "realtimeUpdates": "Real-time Updates",
+    "liveUpdatesEnabled": "Live updates enabled",
+    "connectingToUpdates": "Connecting to live updates...",
+    "listView": "List",
+    "mapView": "Map",
+    "gettingLocation": "Getting your location...",
+    "locationDenied": "Location access denied. Enable location for better task matching.",
+    "showingNearbyTasks": "Showing tasks near your location",
+    "noTasks": "No tasks available in your area"
+  },
   "discovery": {
     "title": "Available Tasks",
     "subtitle": "Find tasks near you",

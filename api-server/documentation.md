@@ -298,9 +298,13 @@ Authorization: Bearer jwt_access_token
         "status": "Pending",
         "scheduledDate": "2025-05-29T10:00:00.000Z",
         "estimatedDuration": 120,
-        "payment": {
-          "amount": 75.0,
-          "currency": "USD"
+        "compensation": {
+          "baseAmount": 75.0,
+          "bonuses": [],
+          "totalAmount": 75.0,
+          "currency": "USD",
+          "paymentMethod": "direct_deposit",
+          "paymentSchedule": "weekly"
         }
       }
     ],

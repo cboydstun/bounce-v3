@@ -116,6 +116,20 @@ const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
     completedAt: {
       type: Date,
     },
+    paymentAmount: {
+      type: Number,
+      min: [0, "Payment amount must be positive"],
+      max: [999999.99, "Payment amount cannot exceed $999,999.99"],
+      validate: {
+        validator: function (v: number) {
+          // Allow null/undefined for optional field
+          if (v === null || v === undefined) return true;
+          // Check for valid monetary value (up to 2 decimal places)
+          return Number.isFinite(v) && v >= 0 && Math.round(v * 100) === v * 100;
+        },
+        message: "Payment amount must be a valid monetary value with up to 2 decimal places",
+      },
+    },
   },
   {
     timestamps: true,
@@ -275,6 +289,119 @@ TaskSchema.statics.findByContractor = function (
   return this.find(query).sort({ scheduledDateTime: 1 });
 };
 
+TaskSchema.statics.findByPaymentRange = function (
+  minAmount: number,
+  maxAmount: number,
+) {
+  return this.find({
+    paymentAmount: {
+      $gte: minAmount,
+      $lte: maxAmount,
+    },
+  }).sort({ paymentAmount: -1, scheduledDateTime: 1 });
+};
+
+TaskSchema.statics.getPaymentStats = async function (filters = {}) {
+  const { status, contractorId, startDate, endDate } = filters;
+  
+  // Build match query
+  const matchQuery: any = {};
+  
+  if (status) {
+    matchQuery.status = status;
+  }
+  
+  if (contractorId) {
+    matchQuery.assignedContractors = contractorId;
+  }
+  
+  if (startDate || endDate) {
+    matchQuery.scheduledDateTime = {};
+    if (startDate) {
+      matchQuery.scheduledDateTime.$gte = new Date(startDate);
+    }
+    if (endDate) {
+      matchQuery.scheduledDateTime.$lte = new Date(endDate);
+    }
+  }
+  
+  const pipeline = [
+    { $match: matchQuery },
+    {
+      $group: {
+        _id: null,
+        totalAmount: {
+          $sum: {
+            $cond: [
+              { $ne: ["$paymentAmount", null] },
+              "$paymentAmount",
+              0
+            ]
+          }
+        },
+        taskCount: { $sum: 1 },
+        paidTasks: {
+          $sum: {
+            $cond: [
+              { $ne: ["$paymentAmount", null] },
+              1,
+              0
+            ]
+          }
+        },
+        unpaidTasks: {
+          $sum: {
+            $cond: [
+              { $eq: ["$paymentAmount", null] },
+              1,
+              0
+            ]
+          }
+        },
+        paymentAmounts: {
+          $push: {
+            $cond: [
+              { $ne: ["$paymentAmount", null] },
+              "$paymentAmount",
+              "$REMOVE"
+            ]
+          }
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        totalAmount: 1,
+        taskCount: 1,
+        paidTasks: 1,
+        unpaidTasks: 1,
+        averageAmount: {
+          $cond: [
+            { $gt: ["$paidTasks", 0] },
+            { $divide: ["$totalAmount", "$paidTasks"] },
+            0
+          ]
+        }
+      }
+    }
+  ];
+  
+  const result = await this.aggregate(pipeline);
+  
+  if (result.length === 0) {
+    return {
+      totalAmount: 0,
+      averageAmount: 0,
+      taskCount: 0,
+      paidTasks: 0,
+      unpaidTasks: 0,
+    };
+  }
+  
+  return result[0];
+};
+
 // Compound indexes for common queries
 TaskSchema.index({ orderId: 1, status: 1 });
 TaskSchema.index({ scheduledDateTime: 1, status: 1 });
@@ -282,6 +409,8 @@ TaskSchema.index({ assignedTo: 1, status: 1 });
 TaskSchema.index({ assignedContractors: 1, status: 1 });
 TaskSchema.index({ type: 1, scheduledDateTime: 1 });
 TaskSchema.index({ status: 1, priority: 1, scheduledDateTime: 1 });
+TaskSchema.index({ paymentAmount: 1 });
+TaskSchema.index({ paymentAmount: 1, status: 1 });
 
 // Store original document for status transition validation
 TaskSchema.pre("save", function (next) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import Task from "@/models/Task";
 import TaskStatusHistory from "@/models/TaskStatusHistory";
+import TaskPaymentHistory from "@/models/TaskPaymentHistory";
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -45,8 +46,9 @@ export async function PUT(
 
     const updateData: Partial<TaskFormData> = await request.json();
 
-    // Store original status for history tracking
+    // Store original status and payment amount for history tracking
     const originalStatus = task.status as TaskStatus;
+    const originalPaymentAmount = task.paymentAmount;
 
     // Validate task type if provided
     if (updateData.type) {
@@ -94,6 +96,32 @@ export async function PUT(
         );
       }
       updateData.scheduledDateTime = scheduledDate;
+    }
+
+    // Validate payment amount if provided
+    if ("paymentAmount" in updateData) {
+      const paymentAmount = updateData.paymentAmount;
+      if (paymentAmount !== null && paymentAmount !== undefined) {
+        if (typeof paymentAmount !== "number" || paymentAmount < 0) {
+          return NextResponse.json(
+            { error: "Payment amount must be a positive number" },
+            { status: 400 },
+          );
+        }
+        if (paymentAmount > 999999.99) {
+          return NextResponse.json(
+            { error: "Payment amount cannot exceed $999,999.99" },
+            { status: 400 },
+          );
+        }
+        // Check for valid monetary value (up to 2 decimal places)
+        if (Math.round(paymentAmount * 100) !== paymentAmount * 100) {
+          return NextResponse.json(
+            { error: "Payment amount must have at most 2 decimal places" },
+            { status: 400 },
+          );
+        }
+      }
     }
 
     // Handle address/location updates
@@ -213,6 +241,25 @@ export async function PUT(
         });
       } catch (historyError) {
         console.error("Error logging status change:", historyError);
+        // Don't fail the request if history logging fails
+      }
+    }
+
+    // Log payment amount change if payment amount was updated
+    if ("paymentAmount" in updateData && updateData.paymentAmount !== originalPaymentAmount) {
+      try {
+        await TaskPaymentHistory.createPaymentChange({
+          taskId: (updatedTask._id as mongoose.Types.ObjectId).toString(),
+          orderId: updatedTask.orderId,
+          previousAmount: originalPaymentAmount || undefined,
+          newAmount: updateData.paymentAmount || undefined,
+          changedBy: session.user.id,
+          changedByName:
+            session.user.name || session.user.email || "Unknown User",
+          reason: (updateData as any).paymentChangeReason || undefined,
+        });
+      } catch (historyError) {
+        console.error("Error logging payment change:", historyError);
         // Don't fail the request if history logging fails
       }
     }

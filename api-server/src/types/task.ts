@@ -44,6 +44,7 @@ export interface Task {
   assignedTo?: string; // Optional: computed field for backward compatibility
   location?: TaskLocation; // GeoJSON Point for geospatial queries (optional)
   address?: string; // Human-readable address (derived from order)
+  paymentAmount?: number; // Payment amount for the task in USD
   completionPhotos?: string[]; // Array of photo URLs/paths
   completionNotes?: string; // Notes added upon task completion
   completedAt?: Date; // Timestamp when task was completed
@@ -65,6 +66,7 @@ export interface TaskFormData {
   assignedTo?: string; // Optional: contractor name/company (backward compatibility)
   address?: string; // Optional: will be derived from order if not provided
   location?: TaskLocation; // Optional: will be geocoded from order address if not provided
+  paymentAmount?: number; // Optional: payment amount for the task in USD
   completionPhotos?: string[]; // Optional: array of photo URLs/paths
   completionNotes?: string; // Optional: completion notes
 }
