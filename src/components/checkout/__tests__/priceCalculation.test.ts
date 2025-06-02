@@ -30,8 +30,8 @@ describe("calculatePrices", () => {
     const state = createBaseState();
     const prices = calculatePrices(state as CheckoutState);
 
-    // Base price + delivery fee ($20)
-    expect(prices.subtotal).toBe(120);
+    // Base price + delivery fee (FREE)
+    expect(prices.subtotal).toBe(100);
   });
 
   test("should add $50 for overnight rental", () => {
@@ -42,8 +42,8 @@ describe("calculatePrices", () => {
 
     const prices = calculatePrices(state as CheckoutState);
 
-    // Base price + delivery fee ($20) + overnight fee ($50)
-    expect(prices.subtotal).toBe(170);
+    // Base price + delivery fee (FREE) + overnight fee ($50)
+    expect(prices.subtotal).toBe(150);
   });
 
   test("should multiply base price by 2 for two-day rental", () => {
@@ -54,8 +54,8 @@ describe("calculatePrices", () => {
 
     const prices = calculatePrices(state as CheckoutState);
 
-    // (Base price × 2) + delivery fee ($20)
-    expect(prices.subtotal).toBe(220);
+    // (Base price × 2) + delivery fee (FREE)
+    expect(prices.subtotal).toBe(200);
   });
 
   test("should multiply base price by 3 for three-day rental", () => {
@@ -66,8 +66,8 @@ describe("calculatePrices", () => {
 
     const prices = calculatePrices(state as CheckoutState);
 
-    // (Base price × 3) + delivery fee ($20)
-    expect(prices.subtotal).toBe(320);
+    // (Base price × 3) + delivery fee (FREE)
+    expect(prices.subtotal).toBe(300);
   });
 
   test("should apply day multiplier to extras as well", () => {
@@ -84,9 +84,9 @@ describe("calculatePrices", () => {
 
     const prices = calculatePrices(state as CheckoutState);
 
-    // (Base price × 2) + (generator price × 2) + delivery fee ($20)
-    // 100 × 2 + 49.95 × 2 + 20 = 319.9
-    expect(prices.subtotal).toBeCloseTo(319.9, 1);
+    // (Base price × 2) + (generator price × 2) + delivery fee (FREE)
+    // 100 × 2 + 49.95 × 2 + 0 = 299.9
+    expect(prices.subtotal).toBeCloseTo(299.9, 1);
   });
 
   test("should not multiply delivery fee or specific time charge", () => {
@@ -98,9 +98,9 @@ describe("calculatePrices", () => {
 
     const prices = calculatePrices(state as CheckoutState);
 
-    // (Base price × 2) + delivery fee ($20) + specific time charge ($10)
-    // 100 × 2 + 20 + 10 = 230
-    expect(prices.subtotal).toBe(230);
+    // (Base price × 2) + delivery fee (FREE) + specific time charge ($10)
+    // 100 × 2 + 0 + 10 = 210
+    expect(prices.subtotal).toBe(210);
   });
 
   test("should handle overnight rental with extras", () => {
@@ -117,9 +117,9 @@ describe("calculatePrices", () => {
 
     const prices = calculatePrices(state as CheckoutState);
 
-    // Base price + generator price + delivery fee ($20) + overnight fee ($50)
-    // 100 + 49.95 + 20 + 50 = 219.95
-    expect(prices.subtotal).toBeCloseTo(219.95, 1);
+    // Base price + generator price + delivery fee (FREE) + overnight fee ($50)
+    // 100 + 49.95 + 0 + 50 = 199.95
+    expect(prices.subtotal).toBeCloseTo(199.95, 1);
   });
 
   test("should apply quantity for tables & chairs", () => {
@@ -136,8 +136,8 @@ describe("calculatePrices", () => {
 
     const prices = calculatePrices(state as CheckoutState);
 
-    // (Base price × 2) + (tables & chairs price × quantity × 2) + delivery fee ($20)
-    // 100 × 2 + 19.95 × 2 × 2 + 20 = 299.8
-    expect(prices.subtotal).toBeCloseTo(299.8, 1);
+    // (Base price × 2) + (tables & chairs price × quantity × 2) + delivery fee (FREE)
+    // 100 × 2 + 19.95 × 2 × 2 + 0 = 279.8
+    expect(prices.subtotal).toBeCloseTo(279.8, 1);
   });
 });

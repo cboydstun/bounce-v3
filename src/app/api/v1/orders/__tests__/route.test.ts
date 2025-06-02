@@ -364,7 +364,7 @@ describe("Orders API", () => {
       expect(data.contactId.toString()).toBe(newContactId);
       expect(data.items[0].name).toBe("New Bouncer");
       expect(data.subtotal).toBe(180);
-      expect(data.deliveryFee).toBe(20); // Default value
+      expect(data.deliveryFee).toBe(0); // Default value (FREE DELIVERY)
       expect(data.processingFee).toBe(5.4); // 3% of subtotal
       expect(data.status).toBe("Pending");
       expect(data.paymentStatus).toBe("Pending");
@@ -408,7 +408,7 @@ describe("Orders API", () => {
       expect(data.customerEmail).toBe("john@example.com");
       expect(data.items[0].name).toBe("Direct Order Bouncer");
       expect(data.subtotal).toBe(220);
-      expect(data.deliveryFee).toBe(20); // Default value
+      expect(data.deliveryFee).toBe(0); // Default value (FREE DELIVERY)
       expect(data.processingFee).toBe(6.6); // 3% of subtotal
       expect(data.status).toBe("Pending");
       expect(data.paymentStatus).toBe("Pending");

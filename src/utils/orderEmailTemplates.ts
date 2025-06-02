@@ -95,7 +95,7 @@ export function generateNewOrderEmailAdmin(order: IOrderDocument): string {
                         <td style="padding: 4px 0;"><strong>Items Subtotal:</strong> $${order.subtotal.toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 4px 0;"><strong>Delivery Fee:</strong> $${order.deliveryFee.toFixed(2)}</td>
+                        <td style="padding: 4px 0;"><strong>Delivery Fee:</strong> FREE</td>
                       </tr>
                       <tr>
                         <td style="padding: 4px 0;"><strong>Tax (8.25%):</strong> $${order.taxAmount.toFixed(2)}</td>
@@ -263,7 +263,7 @@ export function generateNewOrderEmailCustomer(order: IOrderDocument): string {
                         <td style="padding: 8px 0;"><strong>Items Subtotal:</strong> $${order.subtotal.toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0;"><strong>Delivery Fee:</strong> $${order.deliveryFee.toFixed(2)}</td>
+                        <td style="padding: 8px 0;"><strong>Delivery Fee:</strong> FREE</td>
                       </tr>
                       <tr>
                         <td style="padding: 8px 0;"><strong>Tax (8.25%):</strong> $${order.taxAmount.toFixed(2)}</td>
@@ -497,7 +497,7 @@ export function generateOrderStatusUpdateEmail(order: IOrderDocument): string {
                         <td style="padding: 8px 0;"><strong>Items Subtotal:</strong> $${order.subtotal.toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0;"><strong>Delivery Fee:</strong> $${order.deliveryFee.toFixed(2)}</td>
+                        <td style="padding: 8px 0;"><strong>Delivery Fee:</strong> FREE</td>
                       </tr>
                       <tr>
                         <td style="padding: 8px 0;"><strong>Tax (8.25%):</strong> $${order.taxAmount.toFixed(2)}</td>

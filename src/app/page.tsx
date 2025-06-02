@@ -11,16 +11,16 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Bounce House & Party Rentals in San Antonio | SATX Bounce",
   description:
-    "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with flat rate delivery and no deposit required. Water slides, party equipment, and more!",
+    "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required. Water slides, party equipment, and more!",
   alternates: {
     canonical: "/",
   },
   keywords:
-    "bounce house rental, San Antonio party rentals, water slides, inflatable rentals, party equipment, event rentals, flat rate delivery",
+    "bounce house rental, San Antonio party rentals, water slides, inflatable rentals, party equipment, event rentals, free delivery",
   openGraph: {
     title: "Bounce House & Party Rentals in San Antonio | SATX Bounce",
     description:
-      "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with flat rate delivery and no deposit required.",
+      "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required.",
     type: "website",
     url: "https://www.satxbounce.com",
     images: [
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Bounce House & Party Rentals in San Antonio | SATX Bounce",
     description:
-      "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with flat rate delivery and no deposit required.",
+      "San Antonio's premier bounce house rental service. Professional and timely bounce house rentals with free delivery and no deposit required.",
     images: ["https://www.satxbounce.com/og-image.jpg"],
   },
   other: {
@@ -51,7 +51,7 @@ const localBusinessSchema = {
   name: "SATX Bounce House Rentals",
   image: "https://www.satxbounce.com/og-image.jpg",
   description:
-    "San Antonio's premier bounce house and party rental service offering inflatable bounce houses, water slides, and party equipment with flat rate delivery.",
+    "San Antonio's premier bounce house and party rental service offering inflatable bounce houses, water slides, and party equipment with free delivery.",
   "@id": "https://www.satxbounce.com",
   url: "https://www.satxbounce.com",
   telephone: "(512) 210-0194",
@@ -145,7 +145,7 @@ export default async function HomePage() {
             Ready to Make Your Event Unforgettable?
           </h2>
           <p className="text-xl mb-8 text-primary-blue">
-            Book now and get flat rate delivery within Loop 1604!
+            Book now and get free delivery within Loop 1604!
           </p>
           <PackageDealsCTA
             href="/coupon-form?promo=homepage"

@@ -361,7 +361,7 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
           {/* Overnight fee is now handled as an extra */}
           <div className="flex justify-between">
             <span className="text-gray-600">Delivery Fee:</span>
-            <span className="font-medium">${state.deliveryFee.toFixed(2)}</span>
+            <span className="font-medium text-green-600">FREE</span>
           </div>
           {state.specificTimeCharge > 0 && (
             <>
