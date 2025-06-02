@@ -113,7 +113,7 @@ describe("calculatePrices", () => {
 
     const prices = calculatePrices(state);
 
-    expect(prices.totalAmount).toBeGreaterThan(0);
+    expect(prices.totalAmount).toBeGreaterThanOrEqual(0);
     expect(prices.depositAmount).toBe(50);
     expect(prices.balanceDue).toBe(prices.totalAmount - 50);
   });

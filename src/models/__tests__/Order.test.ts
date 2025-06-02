@@ -418,7 +418,7 @@ describe("Order Model", () => {
       };
 
       const order = await Order.create(orderData);
-      expect(order.deliveryFee).toBe(20); // Default value
+      expect(order.deliveryFee).toBe(0); // Default value (FREE DELIVERY)
       expect(order.processingFee).toBe(4.5); // Calculated as 3% of subtotal
     });
 

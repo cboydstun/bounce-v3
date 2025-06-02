@@ -71,7 +71,7 @@ export const initialState: CheckoutState = {
   // Step 4
   subtotal: 0,
   taxAmount: 0,
-  deliveryFee: 20, // Default delivery fee
+  deliveryFee: 0, // FREE DELIVERY
   processingFee: 0,
   discountAmount: 0,
   totalAmount: 0,

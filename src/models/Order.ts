@@ -193,7 +193,7 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
       type: Number,
       required: true,
       min: 0,
-      default: 20, // Default $20 delivery fee
+      default: 0, // FREE DELIVERY
     },
     processingFee: {
       type: Number,
@@ -289,8 +289,8 @@ OrderSchema.pre("save", function (next) {
   }
 
   // Set default delivery fee if not provided
-  if (!this.deliveryFee) {
-    this.deliveryFee = 20;
+  if (!this.deliveryFee && this.deliveryFee !== 0) {
+    this.deliveryFee = 0; // FREE DELIVERY
   }
 
   // Calculate processing fee if not provided (3% of subtotal)

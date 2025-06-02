@@ -128,10 +128,10 @@ export const calculatePrices = (state: CheckoutState) => {
           }, 0)
       : 0) + mixerTotal;
 
-  // Include specific time charge and delivery fee in the subtotal
-  // Note: These are NOT multiplied by the day count
+  // Include specific time charge in the subtotal
+  // Note: This is NOT multiplied by the day count
   const specificTimeCharge = state.specificTimeCharge || 0;
-  const deliveryFee = 20; // Fixed at $20
+  const deliveryFee = 0; // FREE DELIVERY
 
   // Calculate subtotal (including overnight fee for 1-night rentals)
   const subtotal =

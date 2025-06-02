@@ -62,9 +62,3 @@ next-env.d.ts
 
 # GitHub    
 /.github/
-
-# /api-server
-
-
-# mobile app
-/bounce-contractor-app/.env.development

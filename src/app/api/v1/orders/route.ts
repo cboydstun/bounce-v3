@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
 
     // Set default delivery fee if not provided
     if (!orderData.deliveryFee && orderData.deliveryFee !== 0) {
-      orderData.deliveryFee = 20; // Default $20
+      orderData.deliveryFee = 0; // FREE DELIVERY
     }
 
     // Calculate processing fee if not provided (3% of subtotal)

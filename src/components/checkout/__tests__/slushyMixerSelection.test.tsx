@@ -166,7 +166,7 @@ describe("Slushy Mixer Selection", () => {
       const prices = calculatePrices(stateWithMixers);
 
       // The subtotal should include the slushy machine price (124.95) and the mixer price (19.95)
-      const expectedSubtotal = 124.95 + 19.95 + 20; // Machine + Mixer + Delivery Fee
+      const expectedSubtotal = 124.95 + 19.95 + 0; // Machine + Mixer + Delivery Fee (FREE)
       expect(prices.subtotal).toBeCloseTo(expectedSubtotal, 2);
     });
 
@@ -201,7 +201,7 @@ describe("Slushy Mixer Selection", () => {
       const prices = calculatePrices(stateWithMultipleMixers);
 
       // The subtotal should include the double slushy machine price (149.95) and both mixer prices (19.95 + 24.95)
-      const expectedSubtotal = 149.95 + 19.95 + 24.95 + 20; // Machine + Mixer1 + Mixer2 + Delivery Fee
+      const expectedSubtotal = 149.95 + 19.95 + 24.95 + 0; // Machine + Mixer1 + Mixer2 + Delivery Fee (FREE)
       expect(prices.subtotal).toBeCloseTo(expectedSubtotal, 2);
     });
 
@@ -229,7 +229,7 @@ describe("Slushy Mixer Selection", () => {
       const prices = calculatePrices(stateWithNoneMixer);
 
       // The subtotal should only include the slushy machine price (124.95)
-      const expectedSubtotal = 124.95 + 20; // Machine + Delivery Fee
+      const expectedSubtotal = 124.95 + 0; // Machine + Delivery Fee (FREE)
       expect(prices.subtotal).toBeCloseTo(expectedSubtotal, 2);
     });
   });

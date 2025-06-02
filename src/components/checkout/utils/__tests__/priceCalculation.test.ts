@@ -49,17 +49,17 @@ describe("calculatePrices", () => {
     // Bouncer: 100
     // Extras: 49.95 (popcorn machine only, overnight extra should be excluded)
     // Overnight fee: 50 (added separately)
-    // Delivery fee: 20 (fixed)
-    // Subtotal: 100 + 49.95 + 50 + 20 = 219.95
-    // Tax: 219.95 * 0.0825 = 18.15
-    // Processing fee: (219.95 + 18.15) * 0.03 = 7.14
-    // Total: 219.95 + 18.15 + 7.14 = 245.24
+    // Delivery fee: 0 (FREE DELIVERY)
+    // Subtotal: 100 + 49.95 + 50 + 0 = 199.95
+    // Tax: 199.95 * 0.0825 = 16.50
+    // Processing fee: (199.95 + 16.50) * 0.03 = 6.49
+    // Total: 199.95 + 16.50 + 6.49 = 222.94
 
     expect(result.overnightFee).toBe(50);
-    expect(result.subtotal).toBeCloseTo(219.95);
-    expect(result.taxAmount).toBeCloseTo(18.15);
-    expect(result.processingFee).toBeCloseTo(7.14);
-    expect(result.totalAmount).toBeCloseTo(245.24);
+    expect(result.subtotal).toBeCloseTo(199.95);
+    expect(result.taxAmount).toBeCloseTo(16.50);
+    expect(result.processingFee).toBeCloseTo(6.49);
+    expect(result.totalAmount).toBeCloseTo(222.94);
   });
   // Test case for basic price calculation
   test("basic price calculation with specific time charge", () => {
@@ -76,10 +76,10 @@ describe("calculatePrices", () => {
     const result = calculatePrices(mockState as CheckoutState);
 
     // specificTimeCharge and delivery fee are part of subtotal
-    expect(result.subtotal).toBe(170); // 100 + 50 + 20 (delivery fee)
-    expect(result.taxAmount).toBeCloseTo(14.03); // 8.25% of 170
-    expect(result.processingFee).toBeCloseTo(5.52); // 3% of (170 + 14.03)
-    expect(result.totalAmount).toBeCloseTo(189.55); // 170 + 14.03 + 5.52
+    expect(result.subtotal).toBe(150); // 100 + 50 + 0 (delivery fee)
+    expect(result.taxAmount).toBeCloseTo(12.38); // 8.25% of 150
+    expect(result.processingFee).toBeCloseTo(4.87); // 3% of (150 + 12.38)
+    expect(result.totalAmount).toBeCloseTo(167.25); // 150 + 12.38 + 4.87
   });
 
   // Test case for the fixed behavior
@@ -104,10 +104,10 @@ describe("calculatePrices", () => {
     // and pass after the fix is implemented
     const result = calculatePrices(mockState as CheckoutState);
 
-    expect(result.subtotal).toBe(170); // 100 + 50 + 20 (delivery fee)
-    expect(result.taxAmount).toBeCloseTo(14.03); // 8.25% of 170
-    expect(result.processingFee).toBeCloseTo(5.52); // 3% of (170 + 14.03)
-    expect(result.totalAmount).toBeCloseTo(189.55); // 170 + 14.03 + 5.52
+    expect(result.subtotal).toBe(150); // 100 + 50 + 0 (delivery fee)
+    expect(result.taxAmount).toBeCloseTo(12.38); // 8.25% of 150
+    expect(result.processingFee).toBeCloseTo(4.87); // 3% of (150 + 12.38)
+    expect(result.totalAmount).toBeCloseTo(167.25); // 150 + 12.38 + 4.87
   });
 
   // Test with extras and specific time charge
@@ -151,14 +151,14 @@ describe("calculatePrices", () => {
 
     // Expected calculations after fix:
     // Extras total: 49.95 + 49.95 + (19.95 * 2) = 139.8
-    // Subtotal: 100 (bouncer) + 139.8 (extras) + 100 (specific time) + 20 (delivery fee) = 359.8
-    // Tax: 359.8 * 0.0825 = 29.68
-    // Processing fee: (359.8 + 29.68) * 0.03 = 11.68
-    // Total: 359.8 + 29.68 + 11.68 - 20 (discount) = 381.16
+    // Subtotal: 100 (bouncer) + 139.8 (extras) + 100 (specific time) + 0 (delivery fee) = 339.8
+    // Tax: 339.8 * 0.0825 = 28.03
+    // Processing fee: (339.8 + 28.03) * 0.03 = 11.03
+    // Total: 339.8 + 28.03 + 11.03 - 20 (discount) = 358.86
 
-    expect(result.subtotal).toBeCloseTo(359.8);
-    expect(result.taxAmount).toBeCloseTo(29.68);
-    expect(result.processingFee).toBeCloseTo(11.68);
-    expect(result.totalAmount).toBeCloseTo(381.16);
+    expect(result.subtotal).toBeCloseTo(339.8);
+    expect(result.taxAmount).toBeCloseTo(28.03);
+    expect(result.processingFee).toBeCloseTo(11.03);
+    expect(result.totalAmount).toBeCloseTo(358.86);
   });
 });
