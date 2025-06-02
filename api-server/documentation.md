@@ -355,6 +355,176 @@ notes: "Task completed successfully"
 photos: [file1.jpg, file2.jpg]
 ```
 
+### Task Payment Management Endpoints
+
+#### Update Task Payment Amount
+
+```http
+PUT /api/tasks/{task_id}/payment
+Authorization: Bearer jwt_access_token
+Content-Type: application/json
+
+{
+  "paymentAmount": 125.50,
+  "changeReason": "Adjusted for additional equipment"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "task": {
+      "id": "task_id",
+      "paymentAmount": 125.5,
+      "updatedAt": "2025-06-01T21:00:00.000Z"
+    },
+    "paymentHistory": {
+      "id": "history_id",
+      "taskId": "task_id",
+      "previousAmount": 75.0,
+      "newAmount": 125.5,
+      "changedBy": "admin_user_id",
+      "changeReason": "Adjusted for additional equipment",
+      "timestamp": "2025-06-01T21:00:00.000Z"
+    }
+  },
+  "message": "Payment amount updated successfully"
+}
+```
+
+#### Get Task Payment History
+
+```http
+GET /api/tasks/{task_id}/payment/history
+Authorization: Bearer jwt_access_token
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "history": [
+      {
+        "id": "history_id_1",
+        "taskId": "task_id",
+        "previousAmount": null,
+        "newAmount": 75.0,
+        "changedBy": "admin_user_id",
+        "changeReason": "Initial payment amount set",
+        "timestamp": "2025-05-28T10:00:00.000Z"
+      },
+      {
+        "id": "history_id_2",
+        "taskId": "task_id",
+        "previousAmount": 75.0,
+        "newAmount": 125.5,
+        "changedBy": "admin_user_id",
+        "changeReason": "Adjusted for additional equipment",
+        "timestamp": "2025-06-01T21:00:00.000Z"
+      }
+    ],
+    "totalChanges": 2
+  }
+}
+```
+
+#### Generate Payment Reports
+
+```http
+GET /api/tasks/payment-reports?startDate=2025-05-01&endDate=2025-05-31&status=Completed&contractorId=contractor_id&format=json
+Authorization: Bearer jwt_access_token
+```
+
+**Query Parameters:**
+
+| Parameter      | Type   | Description                       | Required |
+| -------------- | ------ | --------------------------------- | -------- |
+| `startDate`    | string | Start date (YYYY-MM-DD)           | Yes      |
+| `endDate`      | string | End date (YYYY-MM-DD)             | Yes      |
+| `status`       | string | Task status filter                | No       |
+| `contractorId` | string | Filter by specific contractor     | No       |
+| `format`       | string | Response format (json/csv)        | No       |
+| `groupBy`      | string | Group by (status/contractor/date) | No       |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "report": {
+      "summary": {
+        "totalTasks": 45,
+        "totalPaymentAmount": 3375.0,
+        "averagePaymentAmount": 75.0,
+        "tasksWithPayment": 42,
+        "tasksWithoutPayment": 3
+      },
+      "breakdown": {
+        "byStatus": {
+          "Completed": {
+            "count": 30,
+            "totalAmount": 2250.0,
+            "averageAmount": 75.0
+          },
+          "In Progress": {
+            "count": 10,
+            "totalAmount": 750.0,
+            "averageAmount": 75.0
+          },
+          "Pending": {
+            "count": 5,
+            "totalAmount": 375.0,
+            "averageAmount": 75.0
+          }
+        },
+        "byContractor": [
+          {
+            "contractorId": "contractor_1",
+            "contractorName": "John Doe",
+            "taskCount": 15,
+            "totalAmount": 1125.0,
+            "averageAmount": 75.0
+          }
+        ]
+      },
+      "tasks": [
+        {
+          "id": "task_id",
+          "title": "Bounce House Delivery",
+          "status": "Completed",
+          "paymentAmount": 75.0,
+          "contractorName": "John Doe",
+          "completedDate": "2025-05-28T15:30:00.000Z"
+        }
+      ]
+    },
+    "generatedAt": "2025-06-01T21:00:00.000Z",
+    "reportPeriod": {
+      "startDate": "2025-05-01",
+      "endDate": "2025-05-31"
+    }
+  }
+}
+```
+
+#### Clear Task Payment Amount
+
+```http
+DELETE /api/tasks/{task_id}/payment
+Authorization: Bearer jwt_access_token
+Content-Type: application/json
+
+{
+  "changeReason": "Payment amount no longer applicable"
+}
+```
+
 ### QuickBooks Integration Endpoints
 
 #### Connect to QuickBooks
