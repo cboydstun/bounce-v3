@@ -54,10 +54,16 @@ const TaskCard: React.FC<TaskCardProps> = ({
     isTomorrow,
   } = useI18n();
 
-  const distance = getDistanceFromCurrent(
-    task.location.coordinates.latitude,
-    task.location.coordinates.longitude,
-  );
+  // Handle coordinates - database stores as [longitude, latitude] array
+  const coordinates = task.location.coordinates;
+  const latitude = Array.isArray(coordinates)
+    ? coordinates[1]
+    : coordinates.latitude;
+  const longitude = Array.isArray(coordinates)
+    ? coordinates[0]
+    : coordinates.longitude;
+
+  const distance = getDistanceFromCurrent(latitude, longitude);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -129,11 +135,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
               size="compact"
               className="justify-end"
             />
-            {distance && (
+            {/* {distance && (
               <IonText className="text-sm text-gray-500">
                 {formatDistance(distance * 1609.34)}
               </IonText>
-            )}
+            )} */}
           </div>
         </div>
       </IonCardHeader>

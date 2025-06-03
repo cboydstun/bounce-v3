@@ -100,7 +100,7 @@ export function TaskForm({
       const response = await fetch("/api/v1/contractors");
       if (response.ok) {
         const contractorData = await response.json();
-        setContractors(contractorData);
+        setContractors(contractorData.contractors || []);
       } else {
         console.error("Failed to load contractors");
       }

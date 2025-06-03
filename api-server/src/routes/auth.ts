@@ -53,6 +53,9 @@ router.post(
 // GET /api/auth/contractor/verify-email/:token - Verify email address via browser link
 router.get("/contractor/verify-email/:token", authController.verifyEmailGet);
 
+// GET /api/auth/contractor/verify - Verify JWT token
+router.get("/contractor/verify", authenticateToken, authController.verifyToken);
+
 // POST /api/auth/contractor/verify-email - Verify email address
 router.post(
   "/contractor/verify-email",

@@ -121,12 +121,12 @@ export const useInfiniteTasks = (options: UseTasksOptions = {}) => {
         limit: 20,
       };
 
-      // Add location-based filtering if available
-      if (location && !filters?.location) {
-        params.lat = location.latitude;
-        params.lng = location.longitude;
-        params.radius = 50;
-      }
+      // TEMPORARILY DISABLED: Add location-based filtering if available
+      // if (location && !filters?.location) {
+      //   params.lat = location.latitude;
+      //   params.lng = location.longitude;
+      //   params.radius = 50;
+      // }
 
       // Add filters (same logic as useTasks)
       if (filters) {

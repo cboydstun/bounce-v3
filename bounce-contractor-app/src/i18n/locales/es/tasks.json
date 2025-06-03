@@ -117,5 +117,55 @@
     "taskCompleted": "¡Tarea completada exitosamente!",
     "photosUploaded": "Fotos subidas exitosamente",
     "statusUpdated": "Estado de tarea actualizado"
+  },
+  "filters": {
+    "title": "Filtrar Tareas",
+    "clear": "Limpiar",
+    "apply": "Aplicar Filtros",
+    "taskTypes": "Tipos de Tarea",
+    "selectTaskTypes": "Seleccionar tipos de tarea",
+    "categories": "Categorías",
+    "selectCategories": "Seleccionar categorías",
+    "priority": "Prioridad",
+    "selectPriority": "Seleccionar prioridad",
+    "status": "Estado",
+    "selectStatus": "Seleccionar estado",
+    "compensation": "Compensación",
+    "minCompensation": "Pago Mínimo",
+    "maxCompensation": "Pago Máximo",
+    "duration": "Duración",
+    "minDuration": "Duración Mínima",
+    "maxDuration": "Duración Máxima",
+    "distance": "Distancia",
+    "maxDistance": "Distancia Máxima",
+    "distanceNote": "Distancia desde tu ubicación actual",
+    "dateRange": "Rango de Fechas",
+    "startDate": "Fecha de Inicio",
+    "endDate": "Fecha de Fin"
+  },
+  "taskTypes": {
+    "delivery_only": "Solo Entrega",
+    "setup_only": "Solo Instalación",
+    "delivery_and_setup": "Entrega e Instalación",
+    "pickup_only": "Solo Recogida",
+    "pickup_and_teardown": "Recogida y Desmontaje",
+    "full_service": "Servicio Completo"
+  },
+  "categories": {
+    "bounce_house": "Casa Inflable",
+    "water_slide": "Tobogán de Agua",
+    "combo_unit": "Unidad Combo",
+    "obstacle_course": "Curso de Obstáculos",
+    "interactive_game": "Juego Interactivo",
+    "tent": "Carpa",
+    "table_chair": "Mesa y Silla",
+    "generator": "Generador",
+    "other": "Otro"
+  },
+  "priority": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta",
+    "urgent": "Urgente"
   }
 }

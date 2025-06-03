@@ -46,6 +46,7 @@ import "./theme/tailwind.css";
 /* Pages */
 import AvailableTasks from "./pages/tasks/AvailableTasks";
 import MyTasks from "./pages/tasks/MyTasks";
+import TaskDetails from "./pages/tasks/TaskDetails";
 import Profile from "./pages/profile/Profile";
 import EditProfile from "./pages/profile/EditProfile";
 import TaxSettings from "./pages/profile/TaxSettings";
@@ -71,6 +72,7 @@ import { useAuthStore, authSelectors } from "./store/authStore";
 import { App as CapacitorApp } from "@capacitor/app";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
+import { Capacitor } from "@capacitor/core";
 
 setupIonicReact({
   rippleEffect: false,
@@ -84,17 +86,28 @@ const App: React.FC = () => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Set status bar style
-        await StatusBar.setStyle({ style: Style.Light });
+        // Only use native plugins on mobile platforms
+        if (Capacitor.isNativePlatform()) {
+          // Set status bar style
+          await StatusBar.setStyle({ style: Style.Light });
 
-        // Check authentication status
+          // Hide splash screen
+          await SplashScreen.hide();
+        }
+
+        // Check authentication status (works on all platforms)
         await checkAuthStatus();
-
-        // Hide splash screen
-        await SplashScreen.hide();
       } catch (error) {
         console.error("App initialization error:", error);
-        await SplashScreen.hide();
+
+        // Try to hide splash screen even if other operations failed
+        if (Capacitor.isNativePlatform()) {
+          try {
+            await SplashScreen.hide();
+          } catch (splashError) {
+            console.error("Failed to hide splash screen:", splashError);
+          }
+        }
       }
     };
 
@@ -147,12 +160,16 @@ const App: React.FC = () => {
         <OfflineBanner className="fixed top-0 left-0 right-0 z-50" />
         <IonTabs>
           <IonRouterOutlet className="pt-0">
-            <ProtectedRoute exact path="/tasks/available">
+            <ProtectedRoute exact path="/available-tasks">
               <AvailableTasks />
             </ProtectedRoute>
-            <ProtectedRoute exact path="/tasks/my-tasks">
+            <ProtectedRoute exact path="/my-tasks">
               <MyTasks />
             </ProtectedRoute>
+            <ProtectedRoute exact path="/task-details/:id">
+              <TaskDetails />
+            </ProtectedRoute>
+
             <ProtectedRoute exact path="/profile">
               <Profile />
             </ProtectedRoute>
@@ -172,10 +189,10 @@ const App: React.FC = () => {
               <W9FormPage />
             </ProtectedRoute>
             <ProtectedRoute exact path="/">
-              <Redirect to="/tasks/available" />
+              <Redirect to="/available-tasks" />
             </ProtectedRoute>
             <ProtectedRoute>
-              <Redirect to="/tasks/available" />
+              <Redirect to="/available-tasks" />
             </ProtectedRoute>
           </IonRouterOutlet>
 
@@ -183,7 +200,7 @@ const App: React.FC = () => {
             slot="bottom"
             className="bg-white border-t border-gray-200"
           >
-            <IonTabButton tab="available-tasks" href="/tasks/available">
+            <IonTabButton tab="available-tasks" href="/available-tasks">
               <IonIcon
                 aria-hidden="true"
                 icon={listOutline}
@@ -192,7 +209,7 @@ const App: React.FC = () => {
               <IonLabel className="text-sm font-medium">Available</IonLabel>
             </IonTabButton>
 
-            <IonTabButton tab="my-tasks" href="/tasks/my-tasks">
+            <IonTabButton tab="my-tasks" href="/my-tasks">
               <IonIcon
                 aria-hidden="true"
                 icon={checkboxOutline}

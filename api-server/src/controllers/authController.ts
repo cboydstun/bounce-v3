@@ -668,6 +668,77 @@ class AuthController {
   }
 
   /**
+   * Verify JWT token and return contractor info
+   */
+  async verifyToken(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const contractorId = req.contractor?.contractorId;
+
+      if (!contractorId) {
+        res.status(401).json({
+          success: false,
+          error: "Authentication required",
+          code: "AUTH_REQUIRED",
+        });
+        return;
+      }
+
+      // Find contractor to ensure they still exist and are active
+      const contractor = await ContractorAuth.findById(contractorId);
+      if (!contractor) {
+        logger.warn("Token verification failed - contractor not found", {
+          contractorId,
+        });
+        res.status(401).json({
+          success: false,
+          error: "Contractor not found",
+          code: "CONTRACTOR_NOT_FOUND",
+        });
+        return;
+      }
+
+      if (!contractor.isActive) {
+        logger.warn("Token verification failed - account inactive", {
+          contractorId,
+        });
+        res.status(403).json({
+          success: false,
+          error: "Account is deactivated",
+          code: "ACCOUNT_INACTIVE",
+        });
+        return;
+      }
+
+      logger.info("Token verification successful", {
+        contractorId,
+        email: contractor.email,
+      });
+
+      res.json({
+        success: true,
+        message: "Token is valid",
+        contractor: {
+          id: contractor._id,
+          name: contractor.name,
+          email: contractor.email,
+          phone: contractor.phone,
+          skills: contractor.skills,
+          isVerified: contractor.isVerified,
+          isActive: contractor.isActive,
+          quickbooksConnected: contractor.quickbooksConnected,
+        },
+      });
+    } catch (error) {
+      logger.error("Token verification error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Token verification failed",
+        code: "VERIFICATION_FAILED",
+      });
+    }
+  }
+
+  /**
    * Verify email address using verification token
    */
   async verifyEmail(req: Request, res: Response): Promise<void> {

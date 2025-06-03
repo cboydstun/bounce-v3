@@ -595,18 +595,122 @@ export class TaskController {
 
       if (!result.exists) {
         return res.status(404).json({
+          success: false,
           error: "Task not found",
         });
       }
 
       if (!result.hasAccess) {
         return res.status(403).json({
+          success: false,
           error: "You do not have access to this task",
         });
       }
 
+      if (!result.task) {
+        return res.status(500).json({
+          success: false,
+          error: "Task data unavailable",
+        });
+      }
+
+      // Transform the task to match mobile app format
+      const taskObj = result.task.toObject();
+
+      // Map CRM status to mobile app status
+      const statusMap: Record<string, string> = {
+        Pending: "published",
+        Assigned: "assigned",
+        "In Progress": "in_progress",
+        Completed: "completed",
+        Cancelled: "cancelled",
+      };
+
+      // Map CRM priority to mobile app priority
+      const priorityMap: Record<string, string> = {
+        High: "high",
+        Medium: "medium",
+        Low: "low",
+      };
+
+      // Extract coordinates from location if available
+      let coordinates = {
+        latitude: 29.4241, // Default San Antonio coords
+        longitude: -98.4936,
+      };
+
+      if (taskObj.location && taskObj.location.coordinates) {
+        coordinates = {
+          longitude: taskObj.location.coordinates[0],
+          latitude: taskObj.location.coordinates[1],
+        };
+      }
+
+      const transformedTask = {
+        id: taskObj._id.toString(),
+        orderId: taskObj.orderId,
+        title: taskObj.title || `${taskObj.type} Task`,
+        description: taskObj.description,
+        type: taskObj.type.toLowerCase().replace(" ", "_"),
+        category: "bounce_house",
+        priority: priorityMap[taskObj.priority] || "medium",
+        status: statusMap[taskObj.status] || "published",
+        requiredSkills: [],
+        estimatedDuration: 120,
+        scheduledDate: taskObj.scheduledDateTime,
+        scheduledTimeSlot: {
+          startTime: taskObj.scheduledDateTime,
+          endTime: new Date(
+            new Date(taskObj.scheduledDateTime).getTime() + 2 * 60 * 60 * 1000,
+          ).toISOString(),
+          isFlexible: true,
+        },
+        location: {
+          coordinates,
+          address: {
+            street: taskObj.address || "Address not specified",
+            city: "San Antonio",
+            state: "TX",
+            zipCode: "78201",
+            country: "USA",
+            formattedAddress: taskObj.address || "San Antonio, TX",
+          },
+          contactOnArrival: true,
+        },
+        customer: {
+          id: "customer-1",
+          firstName: "Customer",
+          lastName: "Name",
+          email: "customer@example.com",
+          phone: "(555) 123-4567",
+          preferredContactMethod: "phone" as const,
+        },
+        equipment: [],
+        instructions: [],
+        compensation: {
+          baseAmount: taskObj.paymentAmount || 50,
+          bonuses: [],
+          totalAmount: taskObj.paymentAmount || 50,
+          currency: "USD",
+          paymentMethod: "direct_deposit" as const,
+          paymentSchedule: "weekly" as const,
+        },
+        contractor:
+          taskObj.assignedContractors.length > 0
+            ? {
+                contractorId: taskObj.assignedContractors[0],
+                contractor: {} as any,
+                assignedAt: taskObj.createdAt,
+              }
+            : undefined,
+        createdAt: taskObj.createdAt,
+        updatedAt: taskObj.updatedAt,
+        completedAt: taskObj.completedAt,
+      };
+
       return res.json({
-        task: result.task,
+        success: true,
+        data: transformedTask,
       });
     } catch (error) {
       logger.error("Error in getTaskById:", error);

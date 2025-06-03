@@ -17,8 +17,9 @@ import { useInfiniteTasks } from "../../hooks/tasks/useTasks";
 import { useGeolocation } from "../../hooks/location/useGeolocation";
 import { useTaskEvents } from "../../hooks/realtime/useTaskEvents";
 import TaskList from "../../components/tasks/TaskList";
+import TaskFilters from "../../components/tasks/TaskFilters";
 import ConnectionStatus from "../../components/common/ConnectionStatus";
-import { TaskFilters, Task } from "../../types/task.types";
+import { TaskFilters as TaskFiltersType, Task } from "../../types/task.types";
 import { useHistory } from "react-router-dom";
 import {
   useTaskTranslation,
@@ -32,7 +33,8 @@ const AvailableTasks: React.FC = () => {
   const { t: taskT } = useTaskTranslation();
   const { t: notificationT } = useNotificationTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [filters, setFilters] = useState<TaskFilters>({});
+  const [filters, setFilters] = useState<TaskFiltersType>({});
+  const [showFilters, setShowFilters] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [realtimeToast, setRealtimeToast] = useState(false);
@@ -106,7 +108,7 @@ const AvailableTasks: React.FC = () => {
   };
 
   const handleTaskDetails = (taskId: string) => {
-    history.push(`/tasks/${taskId}`);
+    history.push(`/task-details/${taskId}`);
   };
 
   const handleTaskNavigate = (taskId: string) => {
@@ -116,8 +118,23 @@ const AvailableTasks: React.FC = () => {
   };
 
   const handleFilters = () => {
-    // This would open a filter modal
-    setToastMessage("Filters coming soon!");
+    setShowFilters(true);
+  };
+
+  const handleFiltersChange = (newFilters: TaskFiltersType) => {
+    setFilters(newFilters);
+  };
+
+  const handleApplyFilters = () => {
+    // The filters are already applied through the filters state
+    // The useInfiniteTasks hook will automatically refetch with new filters
+    setToastMessage("Filters applied!");
+    setShowToast(true);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+    setToastMessage("Filters cleared!");
     setShowToast(true);
   };
 
@@ -247,6 +264,16 @@ const AvailableTasks: React.FC = () => {
           duration={3000}
           position="top"
           color="primary"
+        />
+
+        {/* Task Filters Modal */}
+        <TaskFilters
+          isOpen={showFilters}
+          onClose={() => setShowFilters(false)}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onApplyFilters={handleApplyFilters}
+          onClearFilters={handleClearFilters}
         />
       </IonContent>
     </IonPage>

@@ -62,7 +62,7 @@ const MyTasks: React.FC = () => {
   };
 
   const handleTaskDetails = (taskId: string) => {
-    history.push(`/tasks/${taskId}`);
+    history.push(`/task-details/${taskId}`);
   };
 
   const handleTaskNavigate = (taskId: string) => {
