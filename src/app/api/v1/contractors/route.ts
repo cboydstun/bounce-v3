@@ -22,24 +22,76 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const skill = searchParams.get("skill");
-    const activeOnly = searchParams.get("active") !== "false"; // Default to true
+    const search = searchParams.get("search");
+    const status = searchParams.get("status"); // "all", "active", "inactive"
+    const verification = searchParams.get("verification"); // "all", "verified", "unverified"
+    const skills = searchParams.get("skills"); // comma-separated skill list
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const sortBy = searchParams.get("sortBy") || "name";
+    const sortOrder = searchParams.get("sortOrder") || "asc";
 
-    let contractors;
+    // Build query object
+    const query: any = {};
 
-    if (skill) {
-      // Filter by skill
-      contractors = await Contractor.findBySkill(skill);
-    } else if (activeOnly) {
-      // Get only active contractors
-      contractors = await Contractor.findActive();
-    } else {
-      // Get all contractors
-      contractors = await Contractor.find({}).sort({ name: 1 });
+    // Status filter
+    if (status === "active") {
+      query.isActive = true;
+    } else if (status === "inactive") {
+      query.isActive = false;
+    }
+    // If status is "all" or not provided, don't filter by status
+
+    // Verification filter
+    if (verification === "verified") {
+      query.isVerified = true;
+    } else if (verification === "unverified") {
+      query.isVerified = false;
+    }
+    // If verification is "all" or not provided, don't filter by verification
+
+    // Search filter (name, email, phone, businessName)
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      query.$or = [
+        { name: searchRegex },
+        { email: searchRegex },
+        { phone: searchRegex },
+        { businessName: searchRegex },
+      ];
     }
 
+    // Skills filter
+    if (skills && skills.trim()) {
+      const skillArray = skills
+        .split(",")
+        .map((skill) => skill.trim())
+        .filter(Boolean);
+      if (skillArray.length > 0) {
+        query.skills = { $in: skillArray };
+      }
+    }
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Build sort object
+    const sort: any = {};
+    sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+    // Execute query with pagination
+    const [contractors, total] = await Promise.all([
+      Contractor.find(query).sort(sort).skip(skip).limit(limit).lean(),
+      Contractor.countDocuments(query),
+    ]);
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(total / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
     // Filter out sensitive auth fields for CRM display
-    const filteredContractors = contractors.map(contractor => ({
+    const filteredContractors = contractors.map((contractor) => ({
       _id: contractor._id,
       name: contractor.name,
       email: contractor.email,
@@ -56,7 +108,29 @@ export async function GET(request: NextRequest) {
       // Hide auth fields: password, refreshTokens, resetPasswordToken, etc.
     }));
 
-    return NextResponse.json(filteredContractors);
+    // Return paginated response
+    return NextResponse.json({
+      contractors: filteredContractors,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage,
+        hasPrevPage,
+      },
+      filters: {
+        search,
+        status,
+        verification,
+        skills: skills
+          ? skills
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : [],
+      },
+    });
   } catch (error: unknown) {
     console.error("Error fetching contractors:", error);
     return NextResponse.json(
@@ -92,10 +166,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!contractorData.email || !contractorData.email.trim()) {
-      return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     // Validate email format
@@ -140,14 +211,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check for duplicate name
+    // Check for duplicate email
     const existingContractor = await Contractor.findOne({
-      name: { $regex: new RegExp(`^${contractorData.name.trim()}$`, "i") },
+      email: contractorData.email.trim().toLowerCase(),
     });
 
     if (existingContractor) {
       return NextResponse.json(
-        { error: "A contractor with this name already exists" },
+        { error: "A contractor with this email already exists" },
         { status: 400 },
       );
     }
@@ -160,12 +231,15 @@ export async function POST(request: NextRequest) {
       skills: contractorData.skills || [],
       businessName: contractorData.businessName?.trim() || undefined,
       profileImage: contractorData.profileImage?.trim() || undefined,
-      emergencyContact: contractorData.emergencyContact ? {
-        name: contractorData.emergencyContact.name?.trim() || "",
-        phone: contractorData.emergencyContact.phone?.trim() || "",
-        relationship: contractorData.emergencyContact.relationship?.trim() || "",
-        email: contractorData.emergencyContact.email?.trim() || undefined,
-      } : undefined,
+      emergencyContact: contractorData.emergencyContact
+        ? {
+            name: contractorData.emergencyContact.name?.trim() || "",
+            phone: contractorData.emergencyContact.phone?.trim() || "",
+            relationship:
+              contractorData.emergencyContact.relationship?.trim() || "",
+            email: contractorData.emergencyContact.email?.trim() || undefined,
+          }
+        : undefined,
       isActive: contractorData.isActive !== false, // Default to true
       isVerified: contractorData.isVerified !== false, // Default to true for CRM
       notes: contractorData.notes?.trim() || undefined,
@@ -173,7 +247,24 @@ export async function POST(request: NextRequest) {
 
     const savedContractor = await newContractor.save();
 
-    return NextResponse.json(savedContractor, { status: 201 });
+    // Filter out sensitive fields from response
+    const responseContractor = {
+      _id: savedContractor._id,
+      name: savedContractor.name,
+      email: savedContractor.email,
+      phone: savedContractor.phone,
+      skills: savedContractor.skills,
+      businessName: savedContractor.businessName,
+      profileImage: savedContractor.profileImage,
+      emergencyContact: savedContractor.emergencyContact,
+      isActive: savedContractor.isActive,
+      isVerified: savedContractor.isVerified,
+      notes: savedContractor.notes,
+      createdAt: savedContractor.createdAt,
+      updatedAt: savedContractor.updatedAt,
+    };
+
+    return NextResponse.json(responseContractor, { status: 201 });
   } catch (error: unknown) {
     console.error("Error creating contractor:", error);
 
@@ -182,6 +273,12 @@ export async function POST(request: NextRequest) {
       if (error.message.includes("validation failed")) {
         return NextResponse.json(
           { error: `Validation error: ${error.message}` },
+          { status: 400 },
+        );
+      }
+      if (error.message.includes("duplicate key")) {
+        return NextResponse.json(
+          { error: "A contractor with this email already exists" },
           { status: 400 },
         );
       }

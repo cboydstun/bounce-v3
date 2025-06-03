@@ -108,11 +108,7 @@ export async function GET(request: NextRequest) {
             _id: "$status",
             totalAmount: {
               $sum: {
-                $cond: [
-                  { $ne: ["$paymentAmount", null] },
-                  "$paymentAmount",
-                  0,
-                ],
+                $cond: [{ $ne: ["$paymentAmount", null] }, "$paymentAmount", 0],
               },
             },
             taskCount: { $sum: 1 },

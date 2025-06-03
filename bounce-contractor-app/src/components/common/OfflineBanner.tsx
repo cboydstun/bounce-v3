@@ -77,27 +77,27 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({ className }) => {
     if (isOffline) {
       return `You're offline. ${queueStatus.pending} actions will sync when connection is restored.`;
     }
-    
+
     if (conflicts.length > 0) {
       return `${conflicts.length} sync conflicts need resolution.`;
     }
-    
+
     if (isProcessing) {
       return "Syncing offline actions...";
     }
-    
+
     if (queueStatus.failed > 0) {
       return `${queueStatus.failed} actions failed to sync.`;
     }
-    
+
     if (queueStatus.pending > 0) {
       return `${queueStatus.pending} actions pending sync.`;
     }
-    
+
     if (lastSyncResult && lastSyncResult.successful > 0) {
       return `Successfully synced ${lastSyncResult.successful} actions.`;
     }
-    
+
     return "All actions synced successfully.";
   };
 
@@ -111,12 +111,13 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({ className }) => {
   };
 
   const bannerColor = getBannerColor();
-  const bannerColorClass = {
-    danger: "bg-red-100 border-red-300 text-red-800",
-    warning: "bg-yellow-100 border-yellow-300 text-yellow-800",
-    primary: "bg-blue-100 border-blue-300 text-blue-800",
-    success: "bg-green-100 border-green-300 text-green-800",
-  }[bannerColor] || "bg-gray-100 border-gray-300 text-gray-800";
+  const bannerColorClass =
+    {
+      danger: "bg-red-100 border-red-300 text-red-800",
+      warning: "bg-yellow-100 border-yellow-300 text-yellow-800",
+      primary: "bg-blue-100 border-blue-300 text-blue-800",
+      success: "bg-green-100 border-green-300 text-green-800",
+    }[bannerColor] || "bg-gray-100 border-gray-300 text-gray-800";
 
   return (
     <div className={className}>
@@ -126,23 +127,26 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({ className }) => {
             <IonIcon icon={getBannerIcon()} className="text-lg" />
             <div className="flex-1">
               <p className="text-sm font-medium">{getBannerMessage()}</p>
-              
+
               {/* Connection type indicator */}
               {isOnline && (
                 <div className="flex items-center space-x-2 mt-1">
                   <IonChip color="light">
-                    <IonLabel className="text-xs capitalize">{connectionType}</IonLabel>
+                    <IonLabel className="text-xs capitalize">
+                      {connectionType}
+                    </IonLabel>
                   </IonChip>
                   {queueStatus.total > 0 && (
                     <IonChip color="light">
                       <IonLabel className="text-xs">
-                        {queueStatus.pending}P {queueStatus.processing}S {queueStatus.failed}F
+                        {queueStatus.pending}P {queueStatus.processing}S{" "}
+                        {queueStatus.failed}F
                       </IonLabel>
                     </IonChip>
                   )}
                 </div>
               )}
-              
+
               {/* Sync progress bar */}
               {isProcessing && (
                 <IonProgressBar type="indeterminate" className="mt-2" />
@@ -152,10 +156,8 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({ className }) => {
 
           {/* Action buttons */}
           <div className="flex items-center space-x-2">
-            {isProcessing && (
-              <IonSpinner name="crescent" className="w-4 h-4" />
-            )}
-            
+            {isProcessing && <IonSpinner name="crescent" className="w-4 h-4" />}
+
             {/* Retry sync button */}
             {isOnline && queueStatus.pending > 0 && !isProcessing && (
               <IonButton
@@ -168,7 +170,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({ className }) => {
                 Sync
               </IonButton>
             )}
-            
+
             {/* Retry failed actions */}
             {isOnline && queueStatus.failed > 0 && (
               <IonButton
@@ -180,7 +182,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({ className }) => {
                 Retry
               </IonButton>
             )}
-            
+
             {/* Clear failed actions */}
             {queueStatus.failed > 0 && (
               <IonButton
@@ -195,7 +197,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({ className }) => {
           </div>
         </div>
       </div>
-      
+
       {/* Detailed sync status */}
       {(queueStatus.total > 0 || conflicts.length > 0) && (
         <div className="px-4 py-2 bg-gray-50 border-t">
@@ -214,7 +216,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({ className }) => {
                 <span>⚠️ {conflicts.length} conflicts</span>
               )}
             </div>
-            
+
             {lastSyncResult && (
               <span className="text-gray-500">
                 Last sync: {lastSyncResult.successful}✓ {lastSyncResult.failed}✗

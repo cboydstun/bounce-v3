@@ -125,9 +125,12 @@ const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
           // Allow null/undefined for optional field
           if (v === null || v === undefined) return true;
           // Check for valid monetary value (up to 2 decimal places)
-          return Number.isFinite(v) && v >= 0 && Math.round(v * 100) === v * 100;
+          return (
+            Number.isFinite(v) && v >= 0 && Math.round(v * 100) === v * 100
+          );
         },
-        message: "Payment amount must be a valid monetary value with up to 2 decimal places",
+        message:
+          "Payment amount must be a valid monetary value with up to 2 decimal places",
       },
     },
   },
@@ -303,18 +306,18 @@ TaskSchema.statics.findByPaymentRange = function (
 
 TaskSchema.statics.getPaymentStats = async function (filters = {}) {
   const { status, contractorId, startDate, endDate } = filters;
-  
+
   // Build match query
   const matchQuery: any = {};
-  
+
   if (status) {
     matchQuery.status = status;
   }
-  
+
   if (contractorId) {
     matchQuery.assignedContractors = contractorId;
   }
-  
+
   if (startDate || endDate) {
     matchQuery.scheduledDateTime = {};
     if (startDate) {
@@ -324,7 +327,7 @@ TaskSchema.statics.getPaymentStats = async function (filters = {}) {
       matchQuery.scheduledDateTime.$lte = new Date(endDate);
     }
   }
-  
+
   const pipeline = [
     { $match: matchQuery },
     {
@@ -332,42 +335,30 @@ TaskSchema.statics.getPaymentStats = async function (filters = {}) {
         _id: null,
         totalAmount: {
           $sum: {
-            $cond: [
-              { $ne: ["$paymentAmount", null] },
-              "$paymentAmount",
-              0
-            ]
-          }
+            $cond: [{ $ne: ["$paymentAmount", null] }, "$paymentAmount", 0],
+          },
         },
         taskCount: { $sum: 1 },
         paidTasks: {
           $sum: {
-            $cond: [
-              { $ne: ["$paymentAmount", null] },
-              1,
-              0
-            ]
-          }
+            $cond: [{ $ne: ["$paymentAmount", null] }, 1, 0],
+          },
         },
         unpaidTasks: {
           $sum: {
-            $cond: [
-              { $eq: ["$paymentAmount", null] },
-              1,
-              0
-            ]
-          }
+            $cond: [{ $eq: ["$paymentAmount", null] }, 1, 0],
+          },
         },
         paymentAmounts: {
           $push: {
             $cond: [
               { $ne: ["$paymentAmount", null] },
               "$paymentAmount",
-              "$REMOVE"
-            ]
-          }
-        }
-      }
+              "$REMOVE",
+            ],
+          },
+        },
+      },
     },
     {
       $project: {
@@ -380,15 +371,15 @@ TaskSchema.statics.getPaymentStats = async function (filters = {}) {
           $cond: [
             { $gt: ["$paidTasks", 0] },
             { $divide: ["$totalAmount", "$paidTasks"] },
-            0
-          ]
-        }
-      }
-    }
+            0,
+          ],
+        },
+      },
+    },
   ];
-  
+
   const result = await this.aggregate(pipeline);
-  
+
   if (result.length === 0) {
     return {
       totalAmount: 0,
@@ -398,7 +389,7 @@ TaskSchema.statics.getPaymentStats = async function (filters = {}) {
       unpaidTasks: 0,
     };
   }
-  
+
   return result[0];
 };
 

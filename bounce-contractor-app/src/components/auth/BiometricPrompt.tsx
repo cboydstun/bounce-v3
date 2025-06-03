@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   IonButton,
   IonIcon,
@@ -11,22 +11,22 @@ import {
   IonContent,
   IonItem,
   IonLabel,
-} from '@ionic/react';
-import { 
-  fingerPrint, 
-  eye, 
-  close, 
-  checkmarkCircle, 
+} from "@ionic/react";
+import {
+  fingerPrint,
+  eye,
+  close,
+  checkmarkCircle,
   alertCircle,
-  lockClosed 
-} from 'ionicons/icons';
-import { useBiometric } from '../../hooks/auth/useBiometric';
-import { 
-  BiometricPromptOptions, 
+  lockClosed,
+} from "ionicons/icons";
+import { useBiometric } from "../../hooks/auth/useBiometric";
+import {
+  BiometricPromptOptions,
   BiometryType,
-  BiometricErrorCode 
-} from '../../types/biometric.types';
-import { useAuthTranslation } from '../../hooks/common/useI18n';
+  BiometricErrorCode,
+} from "../../types/biometric.types";
+import { useAuthTranslation } from "../../hooks/common/useI18n";
 
 interface BiometricPromptProps {
   isOpen: boolean;
@@ -45,24 +45,21 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
   onError,
   options,
   showFallback = true,
-  onFallback
+  onFallback,
 }) => {
   const { t } = useAuthTranslation();
-  const { 
-    authenticate, 
-    isLoading, 
-    error, 
-    availability, 
-    clearError 
-  } = useBiometric();
-  
-  const [authState, setAuthState] = useState<'idle' | 'authenticating' | 'success' | 'error'>('idle');
+  const { authenticate, isLoading, error, availability, clearError } =
+    useBiometric();
+
+  const [authState, setAuthState] = useState<
+    "idle" | "authenticating" | "success" | "error"
+  >("idle");
   const [attempts, setAttempts] = useState(0);
   const maxAttempts = options.maxAttempts || 3;
 
   useEffect(() => {
     if (isOpen) {
-      setAuthState('idle');
+      setAuthState("idle");
       setAttempts(0);
       clearError();
     }
@@ -70,59 +67,62 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
 
   const handleAuthenticate = async () => {
     if (attempts >= maxAttempts) {
-      onError('Maximum authentication attempts exceeded');
+      onError("Maximum authentication attempts exceeded");
       return;
     }
 
-    setAuthState('authenticating');
-    setAttempts(prev => prev + 1);
+    setAuthState("authenticating");
+    setAttempts((prev) => prev + 1);
 
     try {
       const result = await authenticate(options);
-      
+
       if (result.success) {
-        setAuthState('success');
+        setAuthState("success");
         setTimeout(() => {
           onSuccess();
           onDidDismiss();
         }, 1000);
       } else {
-        setAuthState('error');
-        
+        setAuthState("error");
+
         // Handle specific error cases
         if (result.errorCode === BiometricErrorCode.USER_CANCEL) {
           onDidDismiss();
           return;
         }
-        
-        if (result.errorCode === BiometricErrorCode.USER_FALLBACK && onFallback) {
+
+        if (
+          result.errorCode === BiometricErrorCode.USER_FALLBACK &&
+          onFallback
+        ) {
           onFallback();
           onDidDismiss();
           return;
         }
-        
-        const errorMessage = result.error || 'Biometric authentication failed';
-        
+
+        const errorMessage = result.error || "Biometric authentication failed";
+
         if (attempts >= maxAttempts) {
           onError(errorMessage);
           onDidDismiss();
         } else {
           // Allow retry
           setTimeout(() => {
-            setAuthState('idle');
+            setAuthState("idle");
           }, 2000);
         }
       }
     } catch (err: any) {
-      setAuthState('error');
-      const errorMessage = err.message || 'Authentication failed';
-      
+      setAuthState("error");
+      const errorMessage = err.message || "Authentication failed";
+
       if (attempts >= maxAttempts) {
         onError(errorMessage);
         onDidDismiss();
       } else {
         setTimeout(() => {
-          setAuthState('idle');
+          setAuthState("idle");
         }, 2000);
       }
     }
@@ -130,7 +130,7 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
 
   const getBiometricIcon = () => {
     if (!availability) return fingerPrint;
-    
+
     switch (availability.biometryType) {
       case BiometryType.FACE_ID:
       case BiometryType.FACE_AUTHENTICATION:
@@ -144,86 +144,98 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
   };
 
   const getBiometricTypeText = () => {
-    if (!availability) return t('biometric.touchId');
-    
+    if (!availability) return t("biometric.touchId");
+
     switch (availability.biometryType) {
       case BiometryType.FACE_ID:
-        return t('biometric.faceId');
+        return t("biometric.faceId");
       case BiometryType.FACE_AUTHENTICATION:
-        return t('biometric.faceAuthentication');
+        return t("biometric.faceAuthentication");
       case BiometryType.TOUCH_ID:
-        return t('biometric.touchId');
+        return t("biometric.touchId");
       case BiometryType.FINGERPRINT:
-        return t('biometric.fingerprint');
+        return t("biometric.fingerprint");
       default:
-        return t('biometric.biometric');
+        return t("biometric.biometric");
     }
   };
 
   const getStateContent = () => {
     switch (authState) {
-      case 'authenticating':
+      case "authenticating":
         return (
           <div className="text-center">
-            <IonSpinner name="crescent" className="w-16 h-16 mx-auto mb-4 text-primary" />
+            <IonSpinner
+              name="crescent"
+              className="w-16 h-16 mx-auto mb-4 text-primary"
+            />
             <IonText>
-              <h3 className="text-lg font-medium mb-2">{t('biometric.authenticating')}</h3>
-              <p className="text-gray-600">{t('biometric.authenticatingMessage')}</p>
+              <h3 className="text-lg font-medium mb-2">
+                {t("biometric.authenticating")}
+              </h3>
+              <p className="text-gray-600">
+                {t("biometric.authenticatingMessage")}
+              </p>
             </IonText>
           </div>
         );
-        
-      case 'success':
+
+      case "success":
         return (
           <div className="text-center">
-            <IonIcon 
-              icon={checkmarkCircle} 
-              className="w-16 h-16 mx-auto mb-4 text-green-500" 
+            <IonIcon
+              icon={checkmarkCircle}
+              className="w-16 h-16 mx-auto mb-4 text-green-500"
             />
             <IonText>
-              <h3 className="text-lg font-medium text-green-600">{t('biometric.success')}</h3>
+              <h3 className="text-lg font-medium text-green-600">
+                {t("biometric.success")}
+              </h3>
             </IonText>
           </div>
         );
-        
-      case 'error':
+
+      case "error":
         return (
           <div className="text-center">
-            <IonIcon 
-              icon={alertCircle} 
-              className="w-16 h-16 mx-auto mb-4 text-red-500" 
+            <IonIcon
+              icon={alertCircle}
+              className="w-16 h-16 mx-auto mb-4 text-red-500"
             />
             <IonText>
-              <h3 className="text-lg font-medium text-red-600 mb-2">{t('biometric.failed')}</h3>
+              <h3 className="text-lg font-medium text-red-600 mb-2">
+                {t("biometric.failed")}
+              </h3>
               <p className="text-gray-600 mb-4">
-                {error || t('biometric.tryAgain')}
+                {error || t("biometric.tryAgain")}
               </p>
               {attempts < maxAttempts && (
                 <p className="text-sm text-gray-500">
-                  {t('biometric.attemptsRemaining', { 
-                    remaining: maxAttempts - attempts 
+                  {t("biometric.attemptsRemaining", {
+                    remaining: maxAttempts - attempts,
                   })}
                 </p>
               )}
             </IonText>
           </div>
         );
-        
+
       default:
         return (
           <div className="text-center">
-            <IonIcon 
-              icon={getBiometricIcon()} 
-              className="w-20 h-20 mx-auto mb-6 text-primary" 
+            <IonIcon
+              icon={getBiometricIcon()}
+              className="w-20 h-20 mx-auto mb-6 text-primary"
             />
             <IonText>
               <h3 className="text-xl font-medium mb-2">
-                {options.title || t('biometric.authenticate')}
+                {options.title || t("biometric.authenticate")}
               </h3>
               <p className="text-gray-600 mb-2">
-                {options.subtitle || t('biometric.useYourBiometric', { 
-                  type: getBiometricTypeText() 
-                })}
+                {options.subtitle ||
+                  t("biometric.useYourBiometric", {
+                    type: getBiometricTypeText(),
+                  })}
               </p>
               {options.description && (
                 <p className="text-sm text-gray-500 mb-4">
@@ -243,46 +255,46 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
     <IonModal isOpen={isOpen} onDidDismiss={onDidDismiss}>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{options.title || t('biometric.authenticate')}</IonTitle>
-          <IonButton 
-            fill="clear" 
-            slot="end" 
+          <IonTitle>{options.title || t("biometric.authenticate")}</IonTitle>
+          <IonButton
+            fill="clear"
+            slot="end"
             onClick={onDidDismiss}
-            disabled={authState === 'authenticating'}
+            disabled={authState === "authenticating"}
           >
             <IonIcon icon={close} />
           </IonButton>
         </IonToolbar>
       </IonHeader>
-      
+
       <IonContent className="ion-padding">
         <div className="flex flex-col justify-center min-h-full py-8">
           {getStateContent()}
-          
+
           <div className="mt-8 space-y-4">
-            {authState === 'idle' && (
+            {authState === "idle" && (
               <IonButton
                 expand="block"
                 onClick={handleAuthenticate}
                 className="btn-primary"
                 disabled={isLoading}
               >
-                {t('biometric.authenticate')}
+                {t("biometric.authenticate")}
               </IonButton>
             )}
-            
-            {authState === 'error' && attempts < maxAttempts && (
+
+            {authState === "error" && attempts < maxAttempts && (
               <IonButton
                 expand="block"
                 onClick={handleAuthenticate}
                 className="btn-primary"
                 disabled={isLoading}
               >
-                {t('biometric.tryAgain')}
+                {t("biometric.tryAgain")}
               </IonButton>
             )}
-            
-            {showFallback && onFallback && authState !== 'success' && (
+
+            {showFallback && onFallback && authState !== "success" && (
               <IonButton
                 expand="block"
                 fill="outline"
@@ -290,29 +302,29 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
                   onFallback();
                   onDidDismiss();
                 }}
-                disabled={authState === 'authenticating'}
+                disabled={authState === "authenticating"}
               >
-                {options.fallbackTitle || t('biometric.usePassword')}
+                {options.fallbackTitle || t("biometric.usePassword")}
               </IonButton>
             )}
-            
+
             <IonButton
               expand="block"
               fill="clear"
               onClick={onDidDismiss}
-              disabled={authState === 'authenticating'}
+              disabled={authState === "authenticating"}
             >
-              {options.negativeButtonText || t('common.cancel')}
+              {options.negativeButtonText || t("common.cancel")}
             </IonButton>
           </div>
-          
+
           {/* Biometric Info */}
-          {availability && authState === 'idle' && (
+          {availability && authState === "idle" && (
             <div className="mt-8 pt-4 border-t border-gray-200">
               <IonItem lines="none" className="px-0">
                 <IonLabel>
                   <h3 className="text-sm font-medium text-gray-700">
-                    {t('biometric.availableMethod')}
+                    {t("biometric.availableMethod")}
                   </h3>
                   <p className="text-sm text-gray-500">
                     {getBiometricTypeText()}

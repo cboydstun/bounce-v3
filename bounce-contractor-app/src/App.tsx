@@ -48,6 +48,7 @@ import AvailableTasks from "./pages/tasks/AvailableTasks";
 import MyTasks from "./pages/tasks/MyTasks";
 import Profile from "./pages/profile/Profile";
 import EditProfile from "./pages/profile/EditProfile";
+import TaxSettings from "./pages/profile/TaxSettings";
 import NotificationCenter from "./pages/notifications/NotificationCenter";
 import NotificationSettings from "./pages/notifications/NotificationSettings";
 
@@ -55,6 +56,9 @@ import NotificationSettings from "./pages/notifications/NotificationSettings";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Splash from "./pages/auth/Splash";
+
+/* QuickBooks Pages */
+import W9FormPage from "./pages/quickbooks/W9FormPage";
 
 /* Components */
 import ProtectedRoute from "./components/layout/ProtectedRoute";
@@ -155,11 +159,17 @@ const App: React.FC = () => {
             <ProtectedRoute exact path="/profile/edit">
               <EditProfile />
             </ProtectedRoute>
+            <ProtectedRoute exact path="/profile/tax-settings">
+              <TaxSettings />
+            </ProtectedRoute>
             <ProtectedRoute exact path="/notifications">
               <NotificationCenter />
             </ProtectedRoute>
             <ProtectedRoute exact path="/notifications/settings">
               <NotificationSettings />
+            </ProtectedRoute>
+            <ProtectedRoute exact path="/quickbooks/w9-form">
+              <W9FormPage />
             </ProtectedRoute>
             <ProtectedRoute exact path="/">
               <Redirect to="/tasks/available" />

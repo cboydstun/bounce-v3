@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { SyncResult } from "../../types/api.types";
-import { offlineService, OfflineAction } from "../../services/offline/offlineService";
+import {
+  offlineService,
+  OfflineAction,
+} from "../../services/offline/offlineService";
 import { syncQueue, SyncConflict } from "../../services/offline/syncQueue";
 
 export interface OfflineQueueStatus {
@@ -15,21 +18,26 @@ export interface OfflineQueueHookResult {
   conflicts: SyncConflict[];
   isProcessing: boolean;
   lastSyncResult: SyncResult | null;
-  queueAction: (action: Omit<OfflineAction, "id" | "timestamp" | "retryCount" | "status">) => Promise<string>;
+  queueAction: (
+    action: Omit<OfflineAction, "id" | "timestamp" | "retryCount" | "status">,
+  ) => Promise<string>;
   processQueue: () => Promise<SyncResult>;
   clearQueue: () => Promise<void>;
   clearFailedActions: () => Promise<void>;
   retryFailedActions: () => Promise<void>;
-  resolveConflict: (conflictId: string, strategy: "client_wins" | "server_wins" | "merge") => Promise<void>;
+  resolveConflict: (
+    conflictId: string,
+    strategy: "client_wins" | "server_wins" | "merge",
+  ) => Promise<void>;
   clearConflicts: () => void;
 }
 
 export function useOfflineQueue(): OfflineQueueHookResult {
   const [queueStatus, setQueueStatus] = useState<OfflineQueueStatus>(
-    offlineService.getQueueStatus()
+    offlineService.getQueueStatus(),
   );
   const [conflicts, setConflicts] = useState<SyncConflict[]>(
-    syncQueue.getConflicts()
+    syncQueue.getConflicts(),
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null);
@@ -65,12 +73,14 @@ export function useOfflineQueue(): OfflineQueueHookResult {
   }, []);
 
   const queueAction = useCallback(
-    async (action: Omit<OfflineAction, "id" | "timestamp" | "retryCount" | "status">) => {
+    async (
+      action: Omit<OfflineAction, "id" | "timestamp" | "retryCount" | "status">,
+    ) => {
       const actionId = await offlineService.queueAction(action);
       setQueueStatus(offlineService.getQueueStatus());
       return actionId;
     },
-    []
+    [],
   );
 
   const processQueue = useCallback(async () => {
@@ -101,11 +111,14 @@ export function useOfflineQueue(): OfflineQueueHookResult {
   }, []);
 
   const resolveConflict = useCallback(
-    async (conflictId: string, strategy: "client_wins" | "server_wins" | "merge") => {
+    async (
+      conflictId: string,
+      strategy: "client_wins" | "server_wins" | "merge",
+    ) => {
       await syncQueue.resolveConflict(conflictId, { strategy });
       setConflicts(syncQueue.getConflicts());
     },
-    []
+    [],
   );
 
   const clearConflicts = useCallback(() => {

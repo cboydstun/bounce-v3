@@ -1,8 +1,11 @@
-import { useEffect, useRef } from 'react';
-import { useRealtimeStore } from '../../store/realtimeStore';
-import { useAuthStore } from '../../store/authStore';
-import { WebSocketEventData, WebSocketEventHandler } from '../../services/realtime/websocketService';
-import { connectionManager } from '../../services/realtime/connectionManager';
+import { useEffect, useRef } from "react";
+import { useRealtimeStore } from "../../store/realtimeStore";
+import { useAuthStore } from "../../store/authStore";
+import {
+  WebSocketEventData,
+  WebSocketEventHandler,
+} from "../../services/realtime/websocketService";
+import { connectionManager } from "../../services/realtime/connectionManager";
 
 export interface UseWebSocketOptions {
   autoConnect?: boolean;
@@ -23,9 +26,11 @@ export interface UseWebSocketReturn {
 /**
  * Hook for managing WebSocket connection and events
  */
-export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketReturn => {
+export const useWebSocket = (
+  options: UseWebSocketOptions = {},
+): UseWebSocketReturn => {
   const { autoConnect = true, reconnectOnAuth = true } = options;
-  
+
   const {
     isConnected,
     connectionStatus,
@@ -34,23 +39,25 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
     updateLocation: realtimeUpdateLocation,
     joinContractorRoom,
   } = useRealtimeStore();
-  
+
   const { tokens, user } = useAuthStore();
   const hasConnectedRef = useRef(false);
 
   // Auto-connect when authenticated
   useEffect(() => {
     if (tokens && autoConnect && !hasConnectedRef.current) {
-      realtimeConnect(tokens).then(() => {
-        hasConnectedRef.current = true;
-        
-        // Join contractor-specific room for targeted notifications
-        if (user?.id) {
-          joinContractorRoom(user.id);
-        }
-      }).catch((error) => {
-        console.error('Auto-connect failed:', error);
-      });
+      realtimeConnect(tokens)
+        .then(() => {
+          hasConnectedRef.current = true;
+
+          // Join contractor-specific room for targeted notifications
+          if (user?.id) {
+            joinContractorRoom(user.id);
+          }
+        })
+        .catch((error) => {
+          console.error("Auto-connect failed:", error);
+        });
     }
   }, [tokens, autoConnect, realtimeConnect, user?.id, joinContractorRoom]);
 
@@ -58,7 +65,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
   useEffect(() => {
     if (tokens && reconnectOnAuth && hasConnectedRef.current) {
       realtimeConnect(tokens).catch((error) => {
-        console.error('Reconnect on auth failed:', error);
+        console.error("Reconnect on auth failed:", error);
       });
     }
   }, [tokens, reconnectOnAuth, realtimeConnect]);
@@ -73,12 +80,12 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
 
   const connect = async (): Promise<void> => {
     if (!tokens) {
-      throw new Error('No authentication tokens available');
+      throw new Error("No authentication tokens available");
     }
-    
+
     await realtimeConnect(tokens);
     hasConnectedRef.current = true;
-    
+
     if (user?.id) {
       joinContractorRoom(user.id);
     }
@@ -89,7 +96,10 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
     hasConnectedRef.current = false;
   };
 
-  const subscribe = (eventType: string, handler: WebSocketEventHandler): (() => void) => {
+  const subscribe = (
+    eventType: string,
+    handler: WebSocketEventHandler,
+  ): (() => void) => {
     const websocket = connectionManager.getWebSocketService();
     return websocket.on(eventType, handler);
   };

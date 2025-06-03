@@ -1,7 +1,7 @@
-import { useEffect, useCallback } from 'react';
-import { useWebSocket } from './useWebSocket';
-import { useQueryClient } from '@tanstack/react-query';
-import { Task } from '../../types/task.types';
+import { useEffect, useCallback } from "react";
+import { useWebSocket } from "./useWebSocket";
+import { useQueryClient } from "@tanstack/react-query";
+import { Task } from "../../types/task.types";
 
 export interface UseTaskEventsOptions {
   onNewTask?: (task: Task) => void;
@@ -21,7 +21,9 @@ export interface UseTaskEventsReturn {
 /**
  * Hook for handling real-time task events
  */
-export const useTaskEvents = (options: UseTaskEventsOptions = {}): UseTaskEventsReturn => {
+export const useTaskEvents = (
+  options: UseTaskEventsOptions = {},
+): UseTaskEventsReturn => {
   const {
     onNewTask,
     onTaskAssigned,
@@ -38,23 +40,23 @@ export const useTaskEvents = (options: UseTaskEventsOptions = {}): UseTaskEvents
   // Invalidate relevant queries when tasks change
   const invalidateTaskQueries = useCallback(() => {
     if (autoRefreshQueries) {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['nearbyTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['taskStats'] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["myTasks"] });
+      queryClient.invalidateQueries({ queryKey: ["nearbyTasks"] });
+      queryClient.invalidateQueries({ queryKey: ["taskStats"] });
     }
   }, [queryClient, autoRefreshQueries]);
 
   // Handle new task events
   useEffect(() => {
-    const unsubscribe = subscribe('task:new', (event) => {
+    const unsubscribe = subscribe("task:new", (event) => {
       const task = event.payload;
-      console.log('📋 New task available:', task);
-      
+      console.log("📋 New task available:", task);
+
       if (onNewTask) {
         onNewTask(task);
       }
-      
+
       invalidateTaskQueries();
     });
 
@@ -63,14 +65,14 @@ export const useTaskEvents = (options: UseTaskEventsOptions = {}): UseTaskEvents
 
   // Handle task assigned events
   useEffect(() => {
-    const unsubscribe = subscribe('task:assigned', (event) => {
+    const unsubscribe = subscribe("task:assigned", (event) => {
       const task = event.payload;
-      console.log('✅ Task assigned:', task);
-      
+      console.log("✅ Task assigned:", task);
+
       if (onTaskAssigned) {
         onTaskAssigned(task);
       }
-      
+
       invalidateTaskQueries();
     });
 
@@ -79,35 +81,41 @@ export const useTaskEvents = (options: UseTaskEventsOptions = {}): UseTaskEvents
 
   // Handle task updated events
   useEffect(() => {
-    const unsubscribe = subscribe('task:updated', (event) => {
+    const unsubscribe = subscribe("task:updated", (event) => {
       const task = event.payload;
-      console.log('🔄 Task updated:', task);
-      
+      console.log("🔄 Task updated:", task);
+
       if (onTaskUpdated) {
         onTaskUpdated(task);
       }
-      
+
       // Update specific task in cache
       if (autoRefreshQueries && task.id) {
-        queryClient.setQueryData(['task', task.id], task);
+        queryClient.setQueryData(["task", task.id], task);
       }
-      
+
       invalidateTaskQueries();
     });
 
     return unsubscribe;
-  }, [subscribe, onTaskUpdated, invalidateTaskQueries, queryClient, autoRefreshQueries]);
+  }, [
+    subscribe,
+    onTaskUpdated,
+    invalidateTaskQueries,
+    queryClient,
+    autoRefreshQueries,
+  ]);
 
   // Handle task claimed events
   useEffect(() => {
-    const unsubscribe = subscribe('task:claimed', (event) => {
+    const unsubscribe = subscribe("task:claimed", (event) => {
       const task = event.payload;
-      console.log('🤝 Task claimed:', task);
-      
+      console.log("🤝 Task claimed:", task);
+
       if (onTaskClaimed) {
         onTaskClaimed(task);
       }
-      
+
       invalidateTaskQueries();
     });
 
@@ -116,14 +124,14 @@ export const useTaskEvents = (options: UseTaskEventsOptions = {}): UseTaskEvents
 
   // Handle task completed events
   useEffect(() => {
-    const unsubscribe = subscribe('task:completed', (event) => {
+    const unsubscribe = subscribe("task:completed", (event) => {
       const task = event.payload;
-      console.log('🎉 Task completed:', task);
-      
+      console.log("🎉 Task completed:", task);
+
       if (onTaskCompleted) {
         onTaskCompleted(task);
       }
-      
+
       invalidateTaskQueries();
     });
 
@@ -132,14 +140,14 @@ export const useTaskEvents = (options: UseTaskEventsOptions = {}): UseTaskEvents
 
   // Handle task cancelled events
   useEffect(() => {
-    const unsubscribe = subscribe('task:cancelled', (event) => {
+    const unsubscribe = subscribe("task:cancelled", (event) => {
       const task = event.payload;
-      console.log('❌ Task cancelled:', task);
-      
+      console.log("❌ Task cancelled:", task);
+
       if (onTaskCancelled) {
         onTaskCancelled(task);
       }
-      
+
       invalidateTaskQueries();
     });
 

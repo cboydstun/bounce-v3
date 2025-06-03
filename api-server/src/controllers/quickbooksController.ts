@@ -1,340 +1,59 @@
 import { Request, Response } from "express";
-import { AuthenticatedRequest } from "../middleware/auth.js";
-import { quickbooksService } from "../services/quickbooksService.js";
-import { logger } from "../utils/logger.js";
-import W9Form from "../models/W9Form.js";
-import {
-  encryptTaxId,
-  validateTaxId,
-  formatTaxIdDisplay,
-} from "../utils/encryption.js";
-import { generateW9PDF, saveW9PDF } from "../utils/pdfGenerator.js";
-import { RealtimeService } from "../services/realtimeService.js";
 import mongoose from "mongoose";
+import { logger } from "../utils/logger.js";
+import { quickbooksService } from "../services/quickbooksService.js";
+import { encryptionService } from "../utils/encryption.js";
+import W9Form, { IW9FormDocument } from "../models/W9Form.js";
+import ContractorAuth from "../models/ContractorAuth.js";
+
+export interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    isVerified: boolean;
+  };
+  contractor?: {
+    id: string;
+    email: string;
+    isVerified: boolean;
+  };
+}
 
 /**
- * Initiates QuickBooks OAuth connection
+ * QuickBooks Controller
+ *
+ * Handles all QuickBooks-related HTTP requests including W-9 form management,
+ * QuickBooks integration, and document operations.
  */
-export const connectQuickBooks = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
-  try {
-    const contractorId = req.contractor!.contractorId;
+export class QuickBooksController {
+  // ============================================================================
+  // W-9 Form Operations
+  // ============================================================================
 
-    // Generate OAuth URL
-    const { authUrl, state } =
-      quickbooksService.instance.generateAuthUrl(contractorId);
-
-    logger.info(
-      `Generated QuickBooks auth URL for contractor: ${contractorId}`,
-    );
-
-    res.json({
-      success: true,
-      authUrl,
-      message: "Please complete the authorization in QuickBooks",
-    });
-  } catch (error) {
-    logger.error("Failed to initiate QuickBooks connection:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to initiate QuickBooks connection",
-      code: "QUICKBOOKS_CONNECTION_FAILED",
-    });
-  }
-};
-
-/**
- * Handles QuickBooks OAuth callback
- */
-export const handleQuickBooksCallback = async (req: Request, res: Response) => {
-  try {
-    const { code, state, realmId, error } = req.query;
-
-    // Check for OAuth errors
-    if (error) {
-      logger.error("QuickBooks OAuth error:", error);
-      return res.status(400).json({
-        success: false,
-        error: "QuickBooks authorization was denied or failed",
-        code: "OAUTH_ERROR",
-      });
-    }
-
-    // Validate required parameters
-    if (!code || !state || !realmId) {
-      return res.status(400).json({
-        success: false,
-        error: "Missing required OAuth parameters",
-        code: "INVALID_OAUTH_PARAMS",
-      });
-    }
-
-    // Exchange code for tokens
-    const tokens = await quickbooksService.instance.exchangeCodeForTokens(
-      code as string,
-      state as string,
-      realmId as string,
-    );
-
-    // Get company information
-    const contractorId = (
-      quickbooksService.instance as any
-    ).verifyAndExtractContractorId(state as string);
-    const companyInfo = await quickbooksService.instance.getCompanyInfo(
-      contractorId as any,
-    );
-
-    // Send real-time notification
-    await RealtimeService.sendPersonalNotification(
-      contractorId,
-      "QuickBooks Connected",
-      `Successfully connected to ${companyInfo.companyName}`,
-      {
-        companyName: companyInfo.companyName,
-        connectedAt: new Date().toISOString(),
-      },
-      "normal",
-    );
-
-    logger.info(
-      `QuickBooks connected successfully for contractor: ${contractorId}`,
-    );
-
-    return res.json({
-      success: true,
-      message: "QuickBooks connected successfully",
-      companyInfo: {
-        name: companyInfo.companyName,
-        connectedAt: new Date().toISOString(),
-      },
-    });
-  } catch (error) {
-    logger.error("Failed to handle QuickBooks callback:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to complete QuickBooks connection",
-      code: "CALLBACK_PROCESSING_FAILED",
-    });
-  }
-};
-
-/**
- * Disconnects QuickBooks integration
- */
-export const disconnectQuickBooks = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
-  try {
-    const contractorId = req.contractor!.contractorId;
-
-    await quickbooksService.instance.disconnectQuickBooks(
-      new mongoose.Types.ObjectId(contractorId),
-    );
-
-    // Send real-time notification
-    await RealtimeService.sendPersonalNotification(
-      contractorId.toString(),
-      "QuickBooks Disconnected",
-      "QuickBooks integration has been disconnected",
-      undefined,
-      "normal",
-    );
-
-    logger.info(`QuickBooks disconnected for contractor: ${contractorId}`);
-
-    res.json({
-      success: true,
-      message: "QuickBooks disconnected successfully",
-    });
-  } catch (error) {
-    logger.error("Failed to disconnect QuickBooks:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to disconnect QuickBooks",
-      code: "DISCONNECT_FAILED",
-    });
-  }
-};
-
-/**
- * Gets QuickBooks connection status
- */
-export const getQuickBooksStatus = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
-  try {
-    const contractorId = req.contractor!.contractorId;
-
-    const status = await quickbooksService.instance.getConnectionStatus(
-      new mongoose.Types.ObjectId(contractorId),
-    );
-
-    res.json({
-      success: true,
-      status,
-    });
-  } catch (error) {
-    logger.error("Failed to get QuickBooks status:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to get QuickBooks status",
-      code: "STATUS_CHECK_FAILED",
-    });
-  }
-};
-
-/**
- * Submits W-9 form information
- */
-export const submitW9Form = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
-  try {
-    const contractorId = req.contractor!.contractorId;
-    const {
-      businessName,
-      taxClassification,
-      taxClassificationOther,
-      taxId,
-      address,
-      requestorInfo,
-      certifications,
-      exemptPayeeCodes,
-      fatcaReportingCode,
-      signature,
-    } = req.body;
-
-    // Validate tax ID format
-    if (!validateTaxId(taxId)) {
-      res.status(400).json({
-        success: false,
-        error: "Invalid tax ID format. Must be 9 digits (SSN or EIN)",
-        code: "INVALID_TAX_ID",
-      });
-      return;
-    }
-
-    // Check if W-9 already exists
-    const existingW9 = await W9Form.findByContractor(
-      new mongoose.Types.ObjectId(contractorId),
-    );
-    if (existingW9 && existingW9.status === "approved") {
-      res.status(400).json({
-        success: false,
-        error: "W-9 form has already been approved",
-        code: "W9_ALREADY_APPROVED",
-      });
-      return;
-    }
-
-    // Encrypt sensitive data
-    const encryptedTaxId = encryptTaxId(taxId);
-
-    // Create or update W-9 form
-    const w9Data = {
-      contractorId: new mongoose.Types.ObjectId(contractorId),
-      businessName,
-      taxClassification,
-      taxClassificationOther,
-      taxId: encryptedTaxId,
-      address,
-      requestorInfo,
-      certifications,
-      exemptPayeeCodes,
-      fatcaReportingCode,
-      signature,
-      dateSigned: new Date(),
-      status: "submitted" as const,
-    };
-
-    let w9Form;
-    if (existingW9) {
-      // Update existing form
-      Object.assign(existingW9, w9Data);
-      w9Form = await existingW9.save();
-    } else {
-      // Create new form
-      w9Form = new W9Form(w9Data);
-      await w9Form.save();
-    }
-
-    // Generate PDF
+  /**
+   * Get W-9 form status for the authenticated contractor
+   */
+  async getW9Status(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const pdfBuffer = await generateW9PDF(w9Form);
-      const pdfPath = await saveW9PDF(pdfBuffer, contractorId.toString());
+      const contractorId = new mongoose.Types.ObjectId(
+        (req.user || req.contractor)!.id,
+      );
 
-      // Update form with PDF URL (in production, this would be a cloud storage URL)
-      w9Form.pdfUrl = pdfPath;
-      await w9Form.save();
-    } catch (pdfError) {
-      logger.error("Failed to generate W-9 PDF:", pdfError);
-      // Continue without PDF - it can be generated later
-    }
+      const w9Form = await W9Form.findByContractor(contractorId);
 
-    // Send real-time notification
-    await RealtimeService.sendPersonalNotification(
-      contractorId.toString(),
-      "W-9 Form Submitted",
-      "Your W-9 tax form has been submitted for review",
-      {
-        formId: w9Form._id.toString(),
-        submittedAt: w9Form.submittedAt?.toISOString(),
-      },
-      "normal",
-    );
+      if (!w9Form) {
+        res.json({
+          success: true,
+          data: {
+            w9Form: null,
+          },
+        });
+        return;
+      }
 
-    res.json({
-      success: true,
-      message: "W-9 form submitted successfully",
-      w9Form: {
-        id: w9Form._id,
-        status: w9Form.status,
-        submittedAt: w9Form.submittedAt,
-        businessName: w9Form.businessName,
-        taxClassification: w9Form.taxClassification,
-        maskedTaxId: formatTaxIdDisplay(taxId),
-      },
-    });
-    return;
-  } catch (error) {
-    logger.error("Failed to submit W-9 form:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to submit W-9 form",
-      code: "W9_SUBMISSION_FAILED",
-    });
-    return;
-  }
-};
-
-/**
- * Gets W-9 form status
- */
-export const getW9Status = async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const contractorId = req.contractor!.contractorId;
-
-    const w9Form = await W9Form.findByContractor(
-      new mongoose.Types.ObjectId(contractorId),
-    );
-
-    if (!w9Form) {
-      return res.json({
-        success: true,
-        w9Form: null,
-        message: "No W-9 form found",
-      });
-    }
-
-    return res.json({
-      success: true,
-      w9Form: {
-        id: w9Form._id,
+      // Transform to mobile app format
+      const w9Status = {
+        id: (w9Form._id as mongoose.Types.ObjectId).toString(),
         status: w9Form.status,
         businessName: w9Form.businessName,
         taxClassification: w9Form.taxClassification,
@@ -342,277 +61,569 @@ export const getW9Status = async (req: AuthenticatedRequest, res: Response) => {
         approvedAt: w9Form.approvedAt,
         rejectedAt: w9Form.rejectedAt,
         rejectionReason: w9Form.rejectionReason,
-        hasPdf: Boolean(w9Form.pdfUrl),
-      },
-    });
-  } catch (error) {
-    logger.error("Failed to get W-9 status:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to get W-9 status",
-      code: "W9_STATUS_CHECK_FAILED",
-    });
+        hasPdf: w9Form.hasPdf,
+      };
+
+      res.json({
+        success: true,
+        data: {
+          w9Form: w9Status,
+        },
+      });
+    } catch (error) {
+      logger.error("Get W-9 status error:", error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: "W9_STATUS_ERROR",
+          message: "Failed to get W-9 status",
+          statusCode: 500,
+        },
+      });
+    }
   }
-};
 
-/**
- * Updates W-9 form (for draft status only)
- */
-export const updateW9Form = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
-  try {
-    const contractorId = req.contractor!.contractorId;
+  /**
+   * Submit W-9 form
+   */
+  async submitW9Form(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const contractorId = new mongoose.Types.ObjectId(req.user!.id);
+      const formData = req.body;
 
-    const w9Form = await W9Form.findByContractor(
-      new mongoose.Types.ObjectId(contractorId),
-    );
+      // Validate required fields
+      const requiredFields = [
+        "businessName",
+        "taxClassification",
+        "taxId",
+        "address",
+        "requestorInfo",
+        "certifications",
+        "signature",
+        "signatureDate",
+      ];
 
-    if (!w9Form) {
-      return res.status(404).json({
-        success: false,
-        error: "W-9 form not found",
-        code: "W9_NOT_FOUND",
-      });
-    }
-
-    if (w9Form.status !== "draft") {
-      return res.status(400).json({
-        success: false,
-        error: "Can only update draft W-9 forms",
-        code: "W9_NOT_EDITABLE",
-      });
-    }
-
-    // Update allowed fields
-    const allowedFields = [
-      "businessName",
-      "taxClassification",
-      "taxClassificationOther",
-      "address",
-      "requestorInfo",
-      "certifications",
-      "exemptPayeeCodes",
-      "fatcaReportingCode",
-      "signature",
-    ];
-
-    allowedFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        (w9Form as any)[field] = req.body[field];
+      for (const field of requiredFields) {
+        if (!formData[field]) {
+          res.status(400).json({
+            success: false,
+            error: {
+              code: "VALIDATION_ERROR",
+              message: `Missing required field: ${field}`,
+              statusCode: 400,
+            },
+          });
+          return;
+        }
       }
-    });
 
-    // Handle tax ID separately (needs encryption)
-    if (req.body.taxId) {
-      if (!validateTaxId(req.body.taxId)) {
-        return res.status(400).json({
+      // Encrypt sensitive data
+      const encryptedTaxId = encryptionService.instance.encrypt(formData.taxId);
+
+      // Check if contractor already has a W-9 form
+      let w9Form = await W9Form.findByContractor(contractorId);
+
+      if (w9Form && !w9Form.canBeModified()) {
+        res.status(400).json({
           success: false,
-          error: "Invalid tax ID format",
-          code: "INVALID_TAX_ID",
+          error: {
+            code: "FORM_NOT_MODIFIABLE",
+            message: "W-9 form cannot be modified in current status",
+            statusCode: 400,
+          },
         });
+        return;
       }
-      w9Form.taxId = encryptTaxId(req.body.taxId);
-    }
 
-    await w9Form.save();
+      // Create or update W-9 form
+      const w9Data = {
+        contractorId,
+        businessName: formData.businessName.trim(),
+        taxClassification: formData.taxClassification,
+        taxClassificationOther: formData.taxClassificationOther?.trim(),
+        taxId: encryptedTaxId,
+        address: {
+          street: formData.address.street.trim(),
+          city: formData.address.city.trim(),
+          state: formData.address.state.toUpperCase(),
+          zipCode: formData.address.zipCode.trim(),
+        },
+        requestorInfo: {
+          name: formData.requestorInfo.name.trim(),
+          address: {
+            street: formData.requestorInfo.address.street.trim(),
+            city: formData.requestorInfo.address.city.trim(),
+            state: formData.requestorInfo.address.state.toUpperCase(),
+            zipCode: formData.requestorInfo.address.zipCode.trim(),
+          },
+        },
+        certifications: formData.certifications,
+        exemptPayeeCodes: formData.exemptPayeeCodes || [],
+        fatcaReportingCode: formData.fatcaReportingCode?.trim(),
+        signature: formData.signature.trim(),
+        signatureDate: formData.signatureDate,
+        status: "submitted" as const,
+      };
 
-    logger.info(`W-9 form updated for contractor: ${contractorId}`);
+      if (w9Form) {
+        // Update existing form
+        Object.assign(w9Form, w9Data);
+        await w9Form.save();
+      } else {
+        // Create new form
+        w9Form = new W9Form(w9Data);
+        await w9Form.save();
+      }
 
-    return res.json({
-      success: true,
-      message: "W-9 form updated successfully",
-      w9Form: {
-        id: w9Form._id,
+      // Generate PDF (mock implementation for now)
+      // In production, this would integrate with a PDF generation service
+      w9Form.hasPdf = true;
+      w9Form.pdfPath = `/pdfs/w9-${w9Form._id}.pdf`;
+      await w9Form.save();
+
+      // Transform response
+      const w9Status = {
+        id: (w9Form._id as mongoose.Types.ObjectId).toString(),
         status: w9Form.status,
         businessName: w9Form.businessName,
         taxClassification: w9Form.taxClassification,
-      },
-    });
-  } catch (error) {
-    logger.error("Failed to update W-9 form:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to update W-9 form",
-      code: "W9_UPDATE_FAILED",
-    });
-  }
-};
+        submittedAt: w9Form.submittedAt,
+        approvedAt: w9Form.approvedAt,
+        rejectedAt: w9Form.rejectedAt,
+        rejectionReason: w9Form.rejectionReason,
+        hasPdf: w9Form.hasPdf,
+      };
 
-/**
- * Downloads W-9 PDF
- */
-export const downloadW9PDF = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
-  try {
-    const contractorId = req.contractor!.contractorId;
+      logger.info(`W-9 form submitted for contractor: ${contractorId}`);
 
-    const w9Form = await W9Form.findByContractor(
-      new mongoose.Types.ObjectId(contractorId),
-    );
-
-    if (!w9Form) {
-      return res.status(404).json({
+      res.json({
+        success: true,
+        data: {
+          w9Form: w9Status,
+        },
+      });
+    } catch (error) {
+      logger.error("Submit W-9 form error:", error);
+      res.status(500).json({
         success: false,
-        error: "W-9 form not found",
-        code: "W9_NOT_FOUND",
+        error: {
+          code: "W9_SUBMISSION_ERROR",
+          message: "Failed to submit W-9 form",
+          statusCode: 500,
+        },
       });
     }
+  }
 
-    if (!w9Form.pdfUrl) {
-      // Generate PDF if it doesn't exist
-      try {
-        const pdfBuffer = await generateW9PDF(w9Form);
-        const pdfPath = await saveW9PDF(pdfBuffer, contractorId.toString());
+  /**
+   * Update W-9 form (draft only)
+   */
+  async updateW9Form(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const contractorId = new mongoose.Types.ObjectId(req.user!.id);
+      const updateData = req.body;
 
-        w9Form.pdfUrl = pdfPath;
-        await w9Form.save();
+      const w9Form = await W9Form.findByContractor(contractorId);
 
-        // Return the generated PDF
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader(
-          "Content-Disposition",
-          `attachment; filename="w9-form-${contractorId}.pdf"`,
-        );
-        res.send(pdfBuffer);
-        return;
-      } catch (pdfError) {
-        logger.error("Failed to generate W-9 PDF:", pdfError);
-        return res.status(500).json({
+      if (!w9Form) {
+        res.status(404).json({
           success: false,
-          error: "Failed to generate PDF",
-          code: "PDF_GENERATION_FAILED",
+          error: {
+            code: "W9_NOT_FOUND",
+            message: "W-9 form not found",
+            statusCode: 404,
+          },
         });
+        return;
       }
-    }
 
-    // In production, this would redirect to cloud storage URL
-    return res.json({
-      success: true,
-      message: "PDF available for download",
-      downloadUrl: w9Form.pdfUrl,
-    });
-  } catch (error) {
-    logger.error("Failed to download W-9 PDF:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to download W-9 PDF",
-      code: "PDF_DOWNLOAD_FAILED",
-    });
-  }
-};
+      if (!w9Form.canBeModified()) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: "FORM_NOT_MODIFIABLE",
+            message: "W-9 form cannot be modified in current status",
+            statusCode: 400,
+          },
+        });
+        return;
+      }
 
-/**
- * Syncs contractor information with QuickBooks
- */
-export const syncContractor = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
-  try {
-    const contractorId = req.contractor!.contractorId;
-    const contractor = req.contractor!;
+      // Update fields
+      if (updateData.businessName) {
+        w9Form.businessName = updateData.businessName.trim();
+      }
+      if (updateData.taxClassification) {
+        w9Form.taxClassification = updateData.taxClassification;
+      }
+      if (updateData.taxClassificationOther) {
+        w9Form.taxClassificationOther =
+          updateData.taxClassificationOther.trim();
+      }
+      if (updateData.taxId) {
+        w9Form.taxId = encryptionService.instance.encrypt(updateData.taxId);
+      }
+      if (updateData.address) {
+        w9Form.address = {
+          ...w9Form.address,
+          ...updateData.address,
+        };
+      }
+      if (updateData.requestorInfo) {
+        w9Form.requestorInfo = {
+          ...w9Form.requestorInfo,
+          ...updateData.requestorInfo,
+        };
+      }
+      if (updateData.certifications) {
+        w9Form.certifications = {
+          ...w9Form.certifications,
+          ...updateData.certifications,
+        };
+      }
+      if (updateData.signature) {
+        w9Form.signature = updateData.signature.trim();
+      }
+      if (updateData.signatureDate) {
+        w9Form.signatureDate = updateData.signatureDate;
+      }
 
-    // Check if QuickBooks is connected
-    const status = await quickbooksService.instance.getConnectionStatus(
-      new mongoose.Types.ObjectId(contractorId),
-    );
-    if (!status.connected) {
-      return res.status(400).json({
+      await w9Form.save();
+
+      // Transform response
+      const w9Status = {
+        id: (w9Form._id as mongoose.Types.ObjectId).toString(),
+        status: w9Form.status,
+        businessName: w9Form.businessName,
+        taxClassification: w9Form.taxClassification,
+        submittedAt: w9Form.submittedAt,
+        approvedAt: w9Form.approvedAt,
+        rejectedAt: w9Form.rejectedAt,
+        rejectionReason: w9Form.rejectionReason,
+        hasPdf: w9Form.hasPdf,
+      };
+
+      res.json({
+        success: true,
+        data: {
+          w9Form: w9Status,
+        },
+      });
+    } catch (error) {
+      logger.error("Update W-9 form error:", error);
+      res.status(500).json({
         success: false,
-        error: "QuickBooks not connected",
-        code: "QUICKBOOKS_NOT_CONNECTED",
+        error: {
+          code: "W9_UPDATE_ERROR",
+          message: "Failed to update W-9 form",
+          statusCode: 500,
+        },
       });
     }
+  }
 
-    // Get W-9 form for address information
-    const w9Form = await W9Form.findByContractor(
-      new mongoose.Types.ObjectId(contractorId),
-    );
+  /**
+   * Download W-9 PDF
+   */
+  async downloadW9PDF(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const contractorId = new mongoose.Types.ObjectId(req.user!.id);
 
-    // Create vendor in QuickBooks
-    const vendorId = await quickbooksService.instance.createVendor(
-      new mongoose.Types.ObjectId(contractorId),
-      {
+      const w9Form = await W9Form.findByContractor(contractorId);
+
+      if (!w9Form || !w9Form.hasPdf) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: "PDF_NOT_FOUND",
+            message: "W-9 PDF not found",
+            statusCode: 404,
+          },
+        });
+        return;
+      }
+
+      // Mock PDF content for now
+      // In production, this would serve the actual PDF file
+      const mockPdfContent = Buffer.from(`
+        %PDF-1.4
+        1 0 obj
+        <<
+        /Type /Catalog
+        /Pages 2 0 R
+        >>
+        endobj
+        
+        2 0 obj
+        <<
+        /Type /Pages
+        /Kids [3 0 R]
+        /Count 1
+        >>
+        endobj
+        
+        3 0 obj
+        <<
+        /Type /Page
+        /Parent 2 0 R
+        /MediaBox [0 0 612 792]
+        /Contents 4 0 R
+        >>
+        endobj
+        
+        4 0 obj
+        <<
+        /Length 44
+        >>
+        stream
+        BT
+        /F1 12 Tf
+        100 700 Td
+        (W-9 Form - ${w9Form.businessName}) Tj
+        ET
+        endstream
+        endobj
+        
+        xref
+        0 5
+        0000000000 65535 f 
+        0000000009 00000 n 
+        0000000058 00000 n 
+        0000000115 00000 n 
+        0000000206 00000 n 
+        trailer
+        <<
+        /Size 5
+        /Root 1 0 R
+        >>
+        startxref
+        299
+        %%EOF
+      `);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="w9-form-${w9Form.businessName.replace(/[^a-zA-Z0-9]/g, "-")}.pdf"`,
+      );
+      res.setHeader("Content-Length", mockPdfContent.length);
+
+      res.send(mockPdfContent);
+    } catch (error) {
+      logger.error("Download W-9 PDF error:", error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: "PDF_DOWNLOAD_ERROR",
+          message: "Failed to download W-9 PDF",
+          statusCode: 500,
+        },
+      });
+    }
+  }
+
+  // ============================================================================
+  // QuickBooks Integration Operations
+  // ============================================================================
+
+  /**
+   * Get QuickBooks integration status
+   */
+  async getQuickBooksStatus(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      const contractorId = new mongoose.Types.ObjectId(req.user!.id);
+
+      // Get connection status from QuickBooks service
+      const connectionStatus =
+        await quickbooksService.instance.getConnectionStatus(contractorId);
+
+      // Get W-9 status
+      const w9Form = await W9Form.findByContractor(contractorId);
+
+      const syncStatus = {
+        connected: connectionStatus.connected,
+        companyName: connectionStatus.companyName,
+        w9Status: w9Form?.status || "not_submitted",
+        w9Approved: w9Form?.status === "approved",
+        readyForSync:
+          connectionStatus.connected && w9Form?.status === "approved",
+        lastSyncAt: connectionStatus.lastRefreshed,
+      };
+
+      res.json({
+        success: true,
+        data: {
+          syncStatus,
+        },
+      });
+    } catch (error) {
+      logger.error("Get QuickBooks status error:", error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: "QUICKBOOKS_STATUS_ERROR",
+          message: "Failed to get QuickBooks status",
+          statusCode: 500,
+        },
+      });
+    }
+  }
+
+  /**
+   * Initiate QuickBooks connection
+   */
+  async connectQuickBooks(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      const contractorId = req.user!.id;
+
+      // Generate QuickBooks OAuth URL
+      const authData = quickbooksService.instance.generateAuthUrl(contractorId);
+
+      res.json({
+        success: true,
+        data: {
+          authUrl: authData.authUrl,
+          state: authData.state,
+        },
+      });
+    } catch (error) {
+      logger.error("Connect QuickBooks error:", error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: "QUICKBOOKS_CONNECT_ERROR",
+          message: "Failed to initiate QuickBooks connection",
+          statusCode: 500,
+        },
+      });
+    }
+  }
+
+  /**
+   * Sync contractor data with QuickBooks
+   */
+  async syncContractor(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      const contractorId = new mongoose.Types.ObjectId(req.user!.id);
+
+      // Get contractor data
+      const contractor = await ContractorAuth.findById(contractorId);
+      if (!contractor) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: "CONTRACTOR_NOT_FOUND",
+            message: "Contractor not found",
+            statusCode: 404,
+          },
+        });
+        return;
+      }
+
+      // Check if QuickBooks is connected
+      const connectionStatus =
+        await quickbooksService.instance.getConnectionStatus(contractorId);
+      if (!connectionStatus.connected) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: "QUICKBOOKS_NOT_CONNECTED",
+            message: "QuickBooks is not connected",
+            statusCode: 400,
+          },
+        });
+        return;
+      }
+
+      // Get W-9 form for address information
+      const w9Form = await W9Form.findByContractor(contractorId);
+
+      // Create vendor in QuickBooks
+      const vendorData = {
         name: contractor.name,
         email: contractor.email,
-        ...(w9Form?.address && { address: w9Form.address }),
-      },
-    );
+        ...(contractor.phone && { phone: contractor.phone }),
+        ...(w9Form && {
+          address: {
+            street: w9Form.address.street,
+            city: w9Form.address.city,
+            state: w9Form.address.state,
+            zipCode: w9Form.address.zipCode,
+          },
+        }),
+      };
 
-    // Send real-time notification
-    await RealtimeService.sendPersonalNotification(
-      contractorId.toString(),
-      "Vendor Profile Created",
-      "Your contractor profile has been created in QuickBooks",
-      {
-        vendorId,
-        createdAt: new Date().toISOString(),
-      },
-      "normal",
-    );
+      const vendorId = await quickbooksService.instance.createVendor(
+        contractorId,
+        vendorData,
+      );
 
-    logger.info(
-      `Contractor synced to QuickBooks: ${contractorId}, Vendor ID: ${vendorId}`,
-    );
-
-    return res.json({
-      success: true,
-      message: "Contractor synced to QuickBooks successfully",
-      vendorId,
-    });
-  } catch (error) {
-    logger.error("Failed to sync contractor:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to sync contractor to QuickBooks",
-      code: "CONTRACTOR_SYNC_FAILED",
-    });
+      res.json({
+        success: true,
+        data: {
+          vendorId,
+        },
+      });
+    } catch (error) {
+      logger.error("Sync contractor error:", error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: "CONTRACTOR_SYNC_ERROR",
+          message: "Failed to sync contractor data",
+          statusCode: 500,
+        },
+      });
+    }
   }
-};
 
-/**
- * Gets sync status
- */
-export const getSyncStatus = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
-  try {
-    const contractorId = req.contractor!.contractorId;
+  /**
+   * Handle QuickBooks OAuth callback
+   */
+  async handleOAuthCallback(req: Request, res: Response): Promise<void> {
+    try {
+      const { code, state, realmId } = req.query;
 
-    // Check QuickBooks connection
-    const qbStatus = await quickbooksService.instance.getConnectionStatus(
-      new mongoose.Types.ObjectId(contractorId),
-    );
+      if (!code || !state || !realmId) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: "INVALID_CALLBACK",
+            message: "Missing required OAuth parameters",
+            statusCode: 400,
+          },
+        });
+        return;
+      }
 
-    // Check W-9 status
-    const w9Form = await W9Form.findByContractor(
-      new mongoose.Types.ObjectId(contractorId),
-    );
+      // Exchange code for tokens
+      const tokens = await quickbooksService.instance.exchangeCodeForTokens(
+        code as string,
+        state as string,
+        realmId as string,
+      );
 
-    const syncStatus = {
-      quickbooksConnected: qbStatus.connected,
-      companyName: qbStatus.companyName,
-      w9Status: w9Form?.status || "not_submitted",
-      w9Approved: w9Form?.status === "approved",
-      readyForSync: qbStatus.connected && w9Form?.status === "approved",
-      lastSyncAt: null, // This would be stored separately in production
-    };
-
-    res.json({
-      success: true,
-      syncStatus,
-    });
-  } catch (error) {
-    logger.error("Failed to get sync status:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to get sync status",
-      code: "SYNC_STATUS_CHECK_FAILED",
-    });
+      // Redirect to mobile app with success
+      res.redirect(
+        `${process.env.MOBILE_APP_URL}/quickbooks/callback?success=true`,
+      );
+    } catch (error) {
+      logger.error("QuickBooks OAuth callback error:", error);
+      res.redirect(
+        `${process.env.MOBILE_APP_URL}/quickbooks/callback?success=false&error=${encodeURIComponent("OAuth callback failed")}`,
+      );
+    }
   }
-};
+}
+
+// Export singleton instance
+export const quickbooksController = new QuickBooksController();

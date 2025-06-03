@@ -5,7 +5,19 @@ import { Contractor, ContractorFormData } from "@/types/contractor";
 
 export default function ContractorsPage() {
   const [contractors, setContractors] = useState<Contractor[]>([]);
+  const [filteredContractors, setFilteredContractors] = useState<Contractor[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "inactive"
+  >("all");
+  const [verificationFilter, setVerificationFilter] = useState<
+    "all" | "verified" | "unverified"
+  >("all");
+  const [skillFilter, setSkillFilter] = useState<string[]>([]);
+  const [availableSkills, setAvailableSkills] = useState<string[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingContractor, setEditingContractor] = useState<Contractor | null>(
     null,
@@ -35,13 +47,80 @@ export default function ContractorsPage() {
     loadContractors();
   }, []);
 
+  // Filter contractors based on search and filter criteria
+  useEffect(() => {
+    let filtered = contractors;
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (contractor) =>
+          contractor.name.toLowerCase().includes(term) ||
+          contractor.email.toLowerCase().includes(term) ||
+          (contractor.phone && contractor.phone.toLowerCase().includes(term)) ||
+          (contractor.businessName &&
+            contractor.businessName.toLowerCase().includes(term)),
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((contractor) =>
+        statusFilter === "active" ? contractor.isActive : !contractor.isActive,
+      );
+    }
+
+    // Verification filter
+    if (verificationFilter !== "all") {
+      filtered = filtered.filter((contractor) =>
+        verificationFilter === "verified"
+          ? contractor.isVerified
+          : !contractor.isVerified,
+      );
+    }
+
+    // Skill filter
+    if (skillFilter.length > 0) {
+      filtered = filtered.filter(
+        (contractor) =>
+          contractor.skills &&
+          skillFilter.some((skill) => contractor.skills!.includes(skill)),
+      );
+    }
+
+    setFilteredContractors(filtered);
+  }, [contractors, searchTerm, statusFilter, verificationFilter, skillFilter]);
+
+  // Extract unique skills from all contractors
+  useEffect(() => {
+    const skills = new Set<string>();
+    contractors.forEach((contractor) => {
+      contractor.skills?.forEach((skill) => skills.add(skill));
+    });
+    setAvailableSkills(Array.from(skills).sort());
+  }, [contractors]);
+
   const loadContractors = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/v1/contractors?active=false"); // Get all contractors
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append("status", "all"); // Get all contractors (active and inactive)
+      params.append("limit", "100"); // Get more contractors for client-side filtering
+
+      const response = await fetch(`/api/v1/contractors?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
-        setContractors(data);
+        // Handle new API response format
+        if (data.contractors) {
+          setContractors(data.contractors);
+          setFilteredContractors(data.contractors);
+        } else {
+          // Fallback for old API format
+          setContractors(data);
+          setFilteredContractors(data);
+        }
       } else {
         console.error("Failed to load contractors");
       }
@@ -104,7 +183,9 @@ export default function ContractorsPage() {
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -124,7 +205,7 @@ export default function ContractorsPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    const fieldName = name.replace('emergencyContact.', '');
+    const fieldName = name.replace("emergencyContact.", "");
 
     setFormData((prev) => ({
       ...prev,
@@ -228,6 +309,61 @@ export default function ContractorsPage() {
     }
   };
 
+  const handleSkillFilterChange = (skill: string) => {
+    setSkillFilter((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill],
+    );
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setVerificationFilter("all");
+    setSkillFilter([]);
+  };
+
+  const exportToCSV = () => {
+    const headers = [
+      "Name",
+      "Email",
+      "Phone",
+      "Business Name",
+      "Skills",
+      "Status",
+      "Verified",
+      "Emergency Contact",
+      "Created Date",
+      "Notes",
+    ];
+
+    const csvData = filteredContractors.map((contractor) => [
+      contractor.name,
+      contractor.email,
+      contractor.phone || "",
+      contractor.businessName || "",
+      contractor.skills?.join("; ") || "",
+      contractor.isActive ? "Active" : "Inactive",
+      contractor.isVerified ? "Verified" : "Unverified",
+      contractor.emergencyContact?.name || "",
+      new Date(contractor.createdAt).toLocaleDateString(),
+      contractor.notes || "",
+    ]);
+
+    const csvContent = [headers, ...csvData]
+      .map((row) => row.map((field) => `"${field}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `contractors-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -239,20 +375,125 @@ export default function ContractorsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Contractor Management
-        </h1>
-        <button
-          onClick={() => openForm()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Add Contractor
-        </button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Contractor Management
+          </h1>
+          <p className="text-gray-600 mt-1">
+            {filteredContractors.length} of {contractors.length} contractors
+          </p>
+        </div>
+        <div className="flex space-x-3">
+          <button
+            onClick={exportToCSV}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            disabled={filteredContractors.length === 0}
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() => openForm()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Add Contractor
+          </button>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          {/* Search */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Search
+            </label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by name, email, phone..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as "all" | "active" | "inactive")
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          {/* Verification Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Verification
+            </label>
+            <select
+              value={verificationFilter}
+              onChange={(e) =>
+                setVerificationFilter(
+                  e.target.value as "all" | "verified" | "unverified",
+                )
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Verification</option>
+              <option value="verified">Verified</option>
+              <option value="unverified">Unverified</option>
+            </select>
+          </div>
+
+          {/* Clear Filters */}
+          <div className="flex items-end">
+            <button
+              onClick={clearFilters}
+              className="w-full px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+
+        {/* Skills Filter */}
+        {availableSkills.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filter by Skills
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {availableSkills.map((skill) => (
+                <button
+                  key={skill}
+                  onClick={() => handleSkillFilterChange(skill)}
+                  className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                    skillFilter.includes(skill)
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  {skill}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Contractors List */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {contractors.map((contractor) => (
+        {filteredContractors.map((contractor) => (
           <div
             key={contractor._id}
             className={`bg-white border rounded-lg p-4 shadow-sm ${
@@ -267,7 +508,7 @@ export default function ContractorsPage() {
                     alt={`${contractor.name} profile`}
                     className="w-10 h-10 rounded-full object-cover border"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).style.display = "none";
                     }}
                   />
                 ) : (
@@ -278,21 +519,36 @@ export default function ContractorsPage() {
                   </div>
                 )}
                 <div>
-                  <h3 className="font-medium text-gray-900">{contractor.name}</h3>
+                  <h3 className="font-medium text-gray-900">
+                    {contractor.name}
+                  </h3>
                   {contractor.businessName && (
-                    <p className="text-xs text-gray-500">{contractor.businessName}</p>
+                    <p className="text-xs text-gray-500">
+                      {contractor.businessName}
+                    </p>
                   )}
                 </div>
               </div>
-              <span
-                className={`px-2 py-1 text-xs rounded-full ${
-                  contractor.isActive
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {contractor.isActive ? "Active" : "Inactive"}
-              </span>
+              <div className="flex flex-col items-end space-y-1">
+                <span
+                  className={`px-2 py-1 text-xs rounded-full ${
+                    contractor.isActive
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {contractor.isActive ? "Active" : "Inactive"}
+                </span>
+                <span
+                  className={`px-2 py-1 text-xs rounded-full ${
+                    contractor.isVerified
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}
+                >
+                  {contractor.isVerified ? "Verified" : "Unverified"}
+                </span>
+              </div>
             </div>
 
             {contractor.email && (
@@ -311,7 +567,10 @@ export default function ContractorsPage() {
               <p className="text-sm text-gray-600 mb-2">
                 🚨 Emergency: {contractor.emergencyContact.name}
                 {contractor.emergencyContact.relationship && (
-                  <span className="text-gray-500"> ({contractor.emergencyContact.relationship})</span>
+                  <span className="text-gray-500">
+                    {" "}
+                    ({contractor.emergencyContact.relationship})
+                  </span>
                 )}
               </p>
             )}
@@ -359,6 +618,15 @@ export default function ContractorsPage() {
         <div className="text-center py-8">
           <p className="text-gray-500">
             No contractors found. Add your first contractor to get started.
+          </p>
+        </div>
+      )}
+
+      {contractors.length > 0 && filteredContractors.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-gray-500">
+            No contractors match your current filters. Try adjusting your search
+            criteria.
           </p>
         </div>
       )}
@@ -547,8 +815,10 @@ export default function ContractorsPage() {
 
               {/* Business Information Section */}
               <div className="border-t pt-4">
-                <h3 className="text-md font-medium text-gray-900 mb-3">Business Information</h3>
-                
+                <h3 className="text-md font-medium text-gray-900 mb-3">
+                  Business Information
+                </h3>
+
                 {/* Business Name */}
                 <div className="mb-4">
                   <label
@@ -594,7 +864,7 @@ export default function ContractorsPage() {
                         alt="Profile preview"
                         className="w-16 h-16 rounded-full object-cover border"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).style.display = "none";
                         }}
                       />
                     </div>
@@ -604,8 +874,10 @@ export default function ContractorsPage() {
 
               {/* Emergency Contact Section */}
               <div className="border-t pt-4">
-                <h3 className="text-md font-medium text-gray-900 mb-3">Emergency Contact</h3>
-                
+                <h3 className="text-md font-medium text-gray-900 mb-3">
+                  Emergency Contact
+                </h3>
+
                 {/* Emergency Contact Name */}
                 <div className="mb-4">
                   <label
@@ -641,7 +913,7 @@ export default function ContractorsPage() {
                     value={formData.emergencyContact?.phone || ""}
                     onChange={handleEmergencyContactChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="(555) 123-4567"
+                    placeholder="(555) 987-6543"
                     disabled={submitting}
                   />
                 </div>
@@ -654,23 +926,16 @@ export default function ContractorsPage() {
                   >
                     Relationship
                   </label>
-                  <select
+                  <input
+                    type="text"
                     id="emergencyContact.relationship"
                     name="emergencyContact.relationship"
                     value={formData.emergencyContact?.relationship || ""}
                     onChange={handleEmergencyContactChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Relationship to contractor"
                     disabled={submitting}
-                  >
-                    <option value="">Select relationship</option>
-                    <option value="Spouse">Spouse</option>
-                    <option value="Parent">Parent</option>
-                    <option value="Sibling">Sibling</option>
-                    <option value="Child">Child</option>
-                    <option value="Friend">Friend</option>
-                    <option value="Colleague">Colleague</option>
-                    <option value="Other">Other</option>
-                  </select>
+                  />
                 </div>
 
                 {/* Emergency Contact Email */}
@@ -688,14 +953,13 @@ export default function ContractorsPage() {
                     value={formData.emergencyContact?.email || ""}
                     onChange={handleEmergencyContactChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="emergency@example.com"
+                    placeholder="Contact Email"
                     disabled={submitting}
                   />
                 </div>
               </div>
-
               {/* Notes */}
-              <div className="border-t pt-4">
+              <div>
                 <label
                   htmlFor="notes"
                   className="block text-sm font-medium text-gray-700 mb-1"
@@ -714,30 +978,33 @@ export default function ContractorsPage() {
                 />
               </div>
 
+              {/* Submit Error */}
               {errors.submit && (
-                <p className="text-red-500 text-sm">{errors.submit}</p>
+                <div className="text-red-500 text-sm">{errors.submit}</div>
               )}
 
               {/* Form Actions */}
-              <div className="flex justify-end space-x-3 pt-4">
+              <div className="flex space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={closeForm}
-                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                   disabled={submitting}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
                   disabled={submitting}
                 >
                   {submitting
-                    ? "Saving..."
+                    ? editingContractor
+                      ? "Updating..."
+                      : "Adding..."
                     : editingContractor
-                      ? "Update"
-                      : "Create"}
+                      ? "Update Contractor"
+                      : "Add Contractor"}
                 </button>
               </div>
             </form>

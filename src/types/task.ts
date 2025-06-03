@@ -46,12 +46,15 @@ export interface TaskPaymentHistory {
 /**
  * Mongoose document interface for TaskPaymentHistory
  */
-export interface ITaskPaymentHistoryDocument extends Omit<TaskPaymentHistory, "_id">, Document {}
+export interface ITaskPaymentHistoryDocument
+  extends Omit<TaskPaymentHistory, "_id">,
+    Document {}
 
 /**
  * Mongoose model interface for TaskPaymentHistory
  */
-export interface ITaskPaymentHistoryModel extends Model<ITaskPaymentHistoryDocument> {
+export interface ITaskPaymentHistoryModel
+  extends Model<ITaskPaymentHistoryDocument> {
   /**
    * Create a new payment history entry
    * @param data Payment history data

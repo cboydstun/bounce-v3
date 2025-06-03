@@ -93,9 +93,7 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
             <IonText className="text-3xl font-bold text-green-600 block">
               {formatCurrency(earnings.totalEarnings)}
             </IonText>
-            <IonText className="text-sm text-green-700">
-              Total Earnings
-            </IonText>
+            <IonText className="text-sm text-green-700">Total Earnings</IonText>
           </div>
 
           {/* Period Earnings */}
@@ -106,9 +104,7 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
                   <IonText className="text-lg font-semibold text-blue-600 block">
                     {formatCurrency(earnings.thisWeekEarnings)}
                   </IonText>
-                  <IonText className="text-xs text-blue-700">
-                    This Week
-                  </IonText>
+                  <IonText className="text-xs text-blue-700">This Week</IonText>
                 </div>
               </IonCol>
               <IonCol size="6">
@@ -128,7 +124,10 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <IonIcon icon={checkmarkCircleOutline} className="mr-2 text-green-500" />
+                <IonIcon
+                  icon={checkmarkCircleOutline}
+                  className="mr-2 text-green-500"
+                />
                 <span className="text-sm text-gray-700">Completed Tasks</span>
               </div>
               <IonBadge color="success">{earnings.completedTasks}</IonBadge>
@@ -136,7 +135,10 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <IonIcon icon={trendingUpOutline} className="mr-2 text-blue-500" />
+                <IonIcon
+                  icon={trendingUpOutline}
+                  className="mr-2 text-blue-500"
+                />
                 <span className="text-sm text-gray-700">Average per Task</span>
               </div>
               <span className="font-medium text-blue-600">
@@ -147,8 +149,13 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
             {earnings.pendingPayments > 0 && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <IonIcon icon={timeOutline} className="mr-2 text-orange-500" />
-                  <span className="text-sm text-gray-700">Pending Payments</span>
+                  <IonIcon
+                    icon={timeOutline}
+                    className="mr-2 text-orange-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Pending Payments
+                  </span>
                 </div>
                 <IonBadge color="warning">
                   {formatCurrency(earnings.pendingPayments)}
@@ -161,10 +168,15 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
           {(earnings.lastPaymentDate || earnings.nextPaymentDate) && (
             <div className="bg-gray-50 rounded-lg p-3 space-y-2">
               <div className="flex items-center">
-                <IonIcon icon={calendarOutline} className="mr-2 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Payment Schedule</span>
+                <IonIcon
+                  icon={calendarOutline}
+                  className="mr-2 text-gray-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Payment Schedule
+                </span>
               </div>
-              
+
               {earnings.lastPaymentDate && (
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Last Payment:</span>
@@ -173,7 +185,7 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
                   </span>
                 </div>
               )}
-              
+
               {earnings.nextPaymentDate && (
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Next Payment:</span>

@@ -1,9 +1,9 @@
 {
   "app": {
-    "name": "Bounce Contratista",
+    "name": "Bounce Contractor",
     "loading": "Cargando...",
     "error": "Algo salió mal",
-    "retry": "Intentar de Nuevo",
+    "retry": "Intentar de nuevo",
     "cancel": "Cancelar",
     "save": "Guardar",
     "edit": "Editar",
@@ -12,7 +12,8 @@
     "back": "Atrás",
     "next": "Siguiente",
     "done": "Hecho",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "ok": "OK"
   },
   "navigation": {
     "availableTasks": "Tareas Disponibles",
@@ -25,7 +26,7 @@
     "timezone": "Hora Central",
     "timezoneAbbr": "CT",
     "scheduledFor": "Programado para {{time}} CT",
-    "estimatedArrival": "Hora estimada: {{time}} CT",
+    "estimatedArrival": "ETA: {{time}} CT",
     "taskStartTime": "Hora de inicio: {{time}} CT",
     "now": "Ahora",
     "today": "Hoy",
@@ -46,7 +47,7 @@
   },
   "network": {
     "online": "Conectado",
-    "offline": "Sin Conexión",
+    "offline": "Sin conexión",
     "reconnecting": "Reconectando...",
     "syncPending": "Sincronización pendiente"
   },
@@ -55,8 +56,18 @@
     "rating": "Calificación",
     "completion": "Finalización",
     "editProfile": "Editar Perfil",
+    "taxSettings": "Configuración de Impuestos",
     "notificationSettings": "Configuración de Notificaciones",
     "helpSupport": "Ayuda y Soporte",
     "signOut": "Cerrar Sesión"
+  },
+  "tax": {
+    "status": {
+      "notStarted": "No Iniciado",
+      "draft": "Borrador",
+      "submitted": "Enviado",
+      "approved": "Aprobado",
+      "rejected": "Rechazado"
+    }
   }
 }

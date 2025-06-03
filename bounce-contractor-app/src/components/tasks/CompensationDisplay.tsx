@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  IonIcon,
-  IonText,
-  IonBadge,
-  IonChip,
-  IonLabel,
-} from "@ionic/react";
+import { IonIcon, IonText, IonBadge, IonChip, IonLabel } from "@ionic/react";
 import {
   cashOutline,
   cardOutline,
@@ -102,7 +96,7 @@ const CompensationDisplay: React.FC<CompensationDisplayProps> = ({
 
   const totalBonusAmount = compensation.bonuses.reduce(
     (sum, bonus) => sum + bonus.amount,
-    0
+    0,
   );
 
   if (size === "compact") {
@@ -114,7 +108,8 @@ const CompensationDisplay: React.FC<CompensationDisplayProps> = ({
         </span>
         {compensation.bonuses.length > 0 && (
           <IonBadge color="warning" className="ml-1 text-xs">
-            +{compensation.bonuses.length} bonus{compensation.bonuses.length > 1 ? "es" : ""}
+            +{compensation.bonuses.length} bonus
+            {compensation.bonuses.length > 1 ? "es" : ""}
           </IonBadge>
         )}
       </div>
@@ -141,7 +136,7 @@ const CompensationDisplay: React.FC<CompensationDisplayProps> = ({
               )}
             </div>
           </div>
-          
+
           {compensation.bonuses.length > 0 && (
             <div className="flex items-center gap-1">
               {compensation.bonuses.slice(0, 3).map((bonus, index) => (
@@ -162,14 +157,20 @@ const CompensationDisplay: React.FC<CompensationDisplayProps> = ({
           <div className="flex items-center gap-2 mt-1">
             {showPaymentMethod && (
               <IonChip className="text-xs">
-                <IonIcon icon={getPaymentMethodIcon(compensation.paymentMethod)} />
-                <IonLabel>{getPaymentMethodLabel(compensation.paymentMethod)}</IonLabel>
+                <IonIcon
+                  icon={getPaymentMethodIcon(compensation.paymentMethod)}
+                />
+                <IonLabel>
+                  {getPaymentMethodLabel(compensation.paymentMethod)}
+                </IonLabel>
               </IonChip>
             )}
             {showPaymentSchedule && (
               <IonChip className="text-xs">
                 <IonIcon icon={timeOutline} />
-                <IonLabel>{getPaymentScheduleLabel(compensation.paymentSchedule)}</IonLabel>
+                <IonLabel>
+                  {getPaymentScheduleLabel(compensation.paymentSchedule)}
+                </IonLabel>
               </IonChip>
             )}
           </div>
@@ -227,9 +228,9 @@ const CompensationDisplay: React.FC<CompensationDisplayProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-700">Payment Method</span>
           <div className="flex items-center">
-            <IonIcon 
-              icon={getPaymentMethodIcon(compensation.paymentMethod)} 
-              className="mr-1 text-blue-500" 
+            <IonIcon
+              icon={getPaymentMethodIcon(compensation.paymentMethod)}
+              className="mr-1 text-blue-500"
             />
             <span className="text-sm font-medium">
               {getPaymentMethodLabel(compensation.paymentMethod)}

@@ -60,7 +60,9 @@ class GeofencingService {
   /**
    * Add event listener for geofence events
    */
-  public addEventListener(listener: (event: GeofenceEvent) => void): () => void {
+  public addEventListener(
+    listener: (event: GeofenceEvent) => void,
+  ): () => void {
     this.eventListeners.push(listener);
     return () => {
       const index = this.eventListeners.indexOf(listener);
@@ -73,7 +75,9 @@ class GeofencingService {
   /**
    * Create a new geofence for a task
    */
-  public async createGeofence(config: Omit<GeofenceConfig, "id" | "createdAt">): Promise<string> {
+  public async createGeofence(
+    config: Omit<GeofenceConfig, "id" | "createdAt">,
+  ): Promise<string> {
     const geofenceId = this.generateId();
     const geofence: GeofenceConfig = {
       ...config,
@@ -97,7 +101,10 @@ class GeofencingService {
   /**
    * Update an existing geofence
    */
-  public async updateGeofence(id: string, updates: Partial<GeofenceConfig>): Promise<void> {
+  public async updateGeofence(
+    id: string,
+    updates: Partial<GeofenceConfig>,
+  ): Promise<void> {
     const geofence = this.geofences.get(id);
     if (!geofence) {
       throw new Error(`Geofence ${id} not found`);
@@ -135,7 +142,7 @@ class GeofencingService {
    */
   public getGeofencesForTask(taskId: string): GeofenceConfig[] {
     return Array.from(this.geofences.values()).filter(
-      (geofence) => geofence.taskId === taskId
+      (geofence) => geofence.taskId === taskId,
     );
   }
 
@@ -144,7 +151,7 @@ class GeofencingService {
    */
   public getActiveGeofences(): GeofenceConfig[] {
     return Array.from(this.geofences.values()).filter(
-      (geofence) => geofence.isActive
+      (geofence) => geofence.isActive,
     );
   }
 
@@ -195,7 +202,7 @@ class GeofencingService {
           } else if (err) {
             console.error("Location watch error:", err);
           }
-        }
+        },
       );
 
       this.isMonitoring = true;
@@ -236,7 +243,11 @@ class GeofencingService {
     // Check all active geofences
     const activeGeofences = this.getActiveGeofences();
     for (const geofence of activeGeofences) {
-      this.checkGeofence(geofence, currentLocation, position.coords.accuracy || 0);
+      this.checkGeofence(
+        geofence,
+        currentLocation,
+        position.coords.accuracy || 0,
+      );
     }
   }
 
@@ -246,13 +257,13 @@ class GeofencingService {
   private checkGeofence(
     geofence: GeofenceConfig,
     currentLocation: { latitude: number; longitude: number },
-    accuracy: number
+    accuracy: number,
   ): void {
     const distance = this.calculateDistance(
       currentLocation.latitude,
       currentLocation.longitude,
       geofence.center.latitude,
-      geofence.center.longitude
+      geofence.center.longitude,
     );
 
     const wasInside = this.geofenceStatuses.get(geofence.id)?.isInside || false;
@@ -282,7 +293,7 @@ class GeofencingService {
     geofence: GeofenceConfig,
     type: "enter" | "exit",
     location: { latitude: number; longitude: number },
-    accuracy: number
+    accuracy: number,
   ): Promise<void> {
     const event: GeofenceEvent = {
       id: this.generateId(),
@@ -317,7 +328,10 @@ class GeofencingService {
   /**
    * Handle geofence entry (arrival at task location)
    */
-  private async handleGeofenceEntry(geofence: GeofenceConfig, event: GeofenceEvent): Promise<void> {
+  private async handleGeofenceEntry(
+    geofence: GeofenceConfig,
+    event: GeofenceEvent,
+  ): Promise<void> {
     try {
       // Update geofence to mark as triggered
       await this.updateGeofence(geofence.id, {
@@ -340,7 +354,9 @@ class GeofencingService {
         requiresAuth: true,
       });
 
-      console.log(`Auto-updated task ${geofence.taskId} to 'in_progress' on geofence entry`);
+      console.log(
+        `Auto-updated task ${geofence.taskId} to 'in_progress' on geofence entry`,
+      );
     } catch (error) {
       console.error("Failed to handle geofence entry:", error);
     }
@@ -349,7 +365,10 @@ class GeofencingService {
   /**
    * Handle geofence exit (leaving task location)
    */
-  private async handleGeofenceExit(geofence: GeofenceConfig, event: GeofenceEvent): Promise<void> {
+  private async handleGeofenceExit(
+    geofence: GeofenceConfig,
+    event: GeofenceEvent,
+  ): Promise<void> {
     // For now, just log the exit
     // In the future, we might want to prompt the contractor about task completion
     console.log(`Contractor left task location for task ${geofence.taskId}`);
@@ -362,10 +381,10 @@ class GeofencingService {
     try {
       const events = await this.getStoredEvents();
       events.push(event);
-      
+
       // Keep only last 100 events to prevent storage bloat
       const recentEvents = events.slice(-100);
-      
+
       await Preferences.set({
         key: "geofence_events",
         value: JSON.stringify(recentEvents),
@@ -391,7 +410,12 @@ class GeofencingService {
   /**
    * Calculate distance between two points using Haversine formula
    */
-  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  private calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
     const R = 6371000; // Earth's radius in meters
     const dLat = this.toRadians(lat2 - lat1);
     const dLon = this.toRadians(lon2 - lon1);

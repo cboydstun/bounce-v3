@@ -1,0 +1,89 @@
+{
+  "settings": {
+    "title": "Configuración de Impuestos"
+  },
+  "overview": {
+    "title": "Resumen de Cumplimiento Fiscal"
+  },
+  "earnings": {
+    "currentYear": "Ganancias del Año Actual",
+    "nearThreshold": "Te estás acercando al umbral de reporte fiscal de $600",
+    "belowThreshold": "Se requerirá el formulario W-9 cuando alcances $600 en ganancias"
+  },
+  "compliance": {
+    "ready": "Cumplimiento Fiscal",
+    "pending": "Acción Requerida"
+  },
+  "status": {
+    "complete": "Completo",
+    "pending": "Pendiente",
+    "draft": "Borrador",
+    "notStarted": "No Iniciado",
+    "approved": "Aprobado",
+    "submitted": "Enviado",
+    "rejected": "Rechazado",
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "active": "Activo",
+    "synced": "Sincronizado"
+  },
+  "w9": {
+    "title": "Formulario W-9 de Impuestos",
+    "form": "Formulario W-9 de Impuestos",
+    "review": "Revisar Formulario W-9",
+    "viewStatus": "Ver Estado",
+    "continue": "Continuar Formulario W-9",
+    "resubmit": "Reenviar Formulario W-9",
+    "start": "Iniciar Formulario W-9",
+    "downloadPdf": "Descargar PDF W-9",
+    "approvedOn": "Aprobado el",
+    "submittedOn": "Enviado el",
+    "rejectedOn": "Rechazado el",
+    "notStarted": "Aún no iniciado",
+    "rejectionReason": "Razón"
+  },
+  "quickbooks": {
+    "title": "Integración con QuickBooks",
+    "connected": "Conectado",
+    "notConnected": "No Conectado",
+    "company": "Empresa",
+    "connectDescription": "Conectar para reporte automático de impuestos",
+    "connect": "Conectar QuickBooks",
+    "disconnect": "Desconectar QuickBooks",
+    "viewPaymentHistory": "Ver Historial de Pagos",
+    "businessConnection": "QuickBooks del Negocio",
+    "connectedBy": "Conectado por el propietario del negocio",
+    "notConnectedByBusiness": "El propietario del negocio aún no ha conectado QuickBooks",
+    "vendorStatus": "Tu Estado de Proveedor",
+    "syncedAsVendor": "Sincronizado como proveedor - los pagos serán rastreados",
+    "pendingSync": "Sincronización pendiente con QuickBooks",
+    "paymentTracking": "Seguimiento de Pagos Activo",
+    "lastSync": "Última sincronización",
+    "waitingForBusiness": "Esperando que el propietario del negocio conecte QuickBooks",
+    "waitingForSync": "Esperando que se complete la sincronización del proveedor",
+    "alertTitle": "Integración con QuickBooks",
+    "alertMessage": "La integración con QuickBooks estará disponible pronto. Esta función permitirá el reporte automático de impuestos y el procesamiento simplificado de pagos.",
+    "paymentHistoryMessage": "Tu historial de pagos estará disponible una vez que el propietario del negocio complete el proceso de sincronización del proveedor.",
+    "waitingMessage": "El propietario del negocio necesita conectar su cuenta de QuickBooks para habilitar el seguimiento e historial de pagos. Serás notificado cuando esto esté disponible."
+  },
+  "documents": {
+    "title": "Documentos Fiscales",
+    "w9Form": "Formulario W-9 de Impuestos",
+    "w9Description": "Formulario W-9 del año fiscal actual",
+    "noDocuments": "No Hay Documentos Disponibles",
+    "completeW9": "Completa tu formulario W-9 para acceder a documentos fiscales"
+  },
+  "help": {
+    "title": "Información y Ayuda Fiscal",
+    "w9Required": "¿Cuándo se Requiere el W-9?",
+    "w9Description": "Debes completar un formulario W-9 antes de ganar $600 en un año calendario. Esto asegura el reporte fiscal adecuado y el cumplimiento con las regulaciones del IRS.",
+    "benefits": "Beneficios de Completarlo Temprano",
+    "benefit1": "Procesamiento de pagos más rápido",
+    "benefit2": "Acceso a tareas mejor pagadas",
+    "benefit3": "Reporte automático de impuestos",
+    "benefit4": "Finalización del perfil profesional",
+    "learnMore": "Aprende Más Sobre Formularios W-9"
+  },
+  "loading": "Cargando información fiscal...",
+  "downloadError": "Error al descargar el PDF W-9. Por favor, inténtalo de nuevo."
+}

@@ -23,7 +23,7 @@ class PhotoService {
    */
   async uploadProfilePhoto(
     file: File,
-    onProgress?: (progress: PhotoUploadProgress) => void
+    onProgress?: (progress: PhotoUploadProgress) => void,
   ): Promise<PhotoUploadResponse> {
     // Validate file
     this.validateFile(file);
@@ -43,7 +43,7 @@ class PhotoService {
               percentage,
             });
           }
-        }
+        },
       );
 
       if (!response.success) {
@@ -80,14 +80,14 @@ class PhotoService {
     // Check file size
     if (file.size > APP_CONFIG.MAX_FILE_SIZE) {
       throw new Error(
-        `File size too large. Maximum size is ${APP_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB`
+        `File size too large. Maximum size is ${APP_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB`,
       );
     }
 
     // Check file type
     if (!APP_CONFIG.ALLOWED_IMAGE_TYPES.includes(file.type as any)) {
       throw new Error(
-        `Invalid file type. Allowed types: ${APP_CONFIG.ALLOWED_IMAGE_TYPES.join(", ")}`
+        `Invalid file type. Allowed types: ${APP_CONFIG.ALLOWED_IMAGE_TYPES.join(", ")}`,
       );
     }
   }
@@ -137,7 +137,7 @@ class PhotoService {
             }
           },
           file.type,
-          APP_CONFIG.IMAGE_COMPRESSION_QUALITY
+          APP_CONFIG.IMAGE_COMPRESSION_QUALITY,
         );
       };
 
@@ -170,7 +170,7 @@ class PhotoService {
   async validateImageDimensions(
     file: File,
     minWidth = 100,
-    minHeight = 100
+    minHeight = 100,
   ): Promise<{ width: number; height: number }> {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -181,8 +181,8 @@ class PhotoService {
         if (width < minWidth || height < minHeight) {
           reject(
             new Error(
-              `Image too small. Minimum dimensions: ${minWidth}x${minHeight}px`
-            )
+              `Image too small. Minimum dimensions: ${minWidth}x${minHeight}px`,
+            ),
           );
         } else {
           resolve({ width, height });

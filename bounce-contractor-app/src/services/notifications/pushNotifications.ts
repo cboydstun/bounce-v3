@@ -1,7 +1,12 @@
-import { PushNotifications, Token, PushNotificationSchema, ActionPerformed } from '@capacitor/push-notifications';
-import { Capacitor } from '@capacitor/core';
-import { firebaseMessaging } from '../../config/firebase.config';
-import { apiClient } from '../api/apiClient';
+import {
+  PushNotifications,
+  Token,
+  PushNotificationSchema,
+  ActionPerformed,
+} from "@capacitor/push-notifications";
+import { Capacitor } from "@capacitor/core";
+import { firebaseMessaging } from "../../config/firebase.config";
+import { apiClient } from "../api/apiClient";
 
 export interface PushNotificationConfig {
   enabled: boolean;
@@ -50,7 +55,7 @@ class PushNotificationService {
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
-      console.log('Push notifications already initialized');
+      console.log("Push notifications already initialized");
       return;
     }
 
@@ -62,9 +67,9 @@ class PushNotificationService {
       }
 
       this.isInitialized = true;
-      console.log('Push notifications initialized successfully');
+      console.log("Push notifications initialized successfully");
     } catch (error) {
-      console.error('Failed to initialize push notifications:', error);
+      console.error("Failed to initialize push notifications:", error);
       throw error;
     }
   }
@@ -75,37 +80,43 @@ class PushNotificationService {
   private async initializeNative(): Promise<void> {
     // Request permission
     const permission = await PushNotifications.requestPermissions();
-    
-    if (permission.receive !== 'granted') {
-      throw new Error('Push notification permission denied');
+
+    if (permission.receive !== "granted") {
+      throw new Error("Push notification permission denied");
     }
 
     // Register for push notifications
     await PushNotifications.register();
 
     // Listen for registration
-    PushNotifications.addListener('registration', (token: Token) => {
-      console.log('Push registration success, token: ' + token.value);
+    PushNotifications.addListener("registration", (token: Token) => {
+      console.log("Push registration success, token: " + token.value);
       this.fcmToken = token.value;
       this.registerTokenWithServer(token.value);
     });
 
     // Listen for registration errors
-    PushNotifications.addListener('registrationError', (error: any) => {
-      console.error('Error on registration: ' + JSON.stringify(error));
+    PushNotifications.addListener("registrationError", (error: any) => {
+      console.error("Error on registration: " + JSON.stringify(error));
     });
 
     // Listen for push notifications received
-    PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
-      console.log('Push notification received: ', notification);
-      this.handleNotificationReceived(notification);
-    });
+    PushNotifications.addListener(
+      "pushNotificationReceived",
+      (notification: PushNotificationSchema) => {
+        console.log("Push notification received: ", notification);
+        this.handleNotificationReceived(notification);
+      },
+    );
 
     // Listen for push notification actions
-    PushNotifications.addListener('pushNotificationActionPerformed', (notification: ActionPerformed) => {
-      console.log('Push notification action performed: ', notification);
-      this.handleNotificationAction(notification);
-    });
+    PushNotifications.addListener(
+      "pushNotificationActionPerformed",
+      (notification: ActionPerformed) => {
+        console.log("Push notification action performed: ", notification);
+        this.handleNotificationAction(notification);
+      },
+    );
   }
 
   /**
@@ -113,33 +124,35 @@ class PushNotificationService {
    */
   private async initializeWeb(): Promise<void> {
     if (!firebaseMessaging.isSupported()) {
-      throw new Error('Push notifications not supported in this browser');
+      throw new Error("Push notifications not supported in this browser");
     }
 
     // Check if permission is already granted
     const permission = firebaseMessaging.getPermissionStatus();
-    
-    if (permission === 'granted') {
+
+    if (permission === "granted") {
       // Get token if permission is already granted
       const token = await firebaseMessaging.getToken();
-      
+
       if (token) {
         this.fcmToken = token;
         await this.registerTokenWithServer(token);
       }
     } else {
-      console.log('Push notification permission not granted yet. User must grant permission manually.');
+      console.log(
+        "Push notification permission not granted yet. User must grant permission manually.",
+      );
     }
 
     // Listen for foreground messages (this works regardless of permission status)
     const unsubscribe = firebaseMessaging.onMessage((payload) => {
-      console.log('Message received in foreground: ', payload);
+      console.log("Message received in foreground: ", payload);
       this.handleWebNotification(payload);
     });
 
     if (unsubscribe) {
       // Store unsubscribe function for cleanup
-      this.listeners.set('foreground', new Set([unsubscribe]));
+      this.listeners.set("foreground", new Set([unsubscribe]));
     }
   }
 
@@ -148,19 +161,19 @@ class PushNotificationService {
    */
   private async registerTokenWithServer(token: string): Promise<void> {
     try {
-      await apiClient.post('/contractors/fcm-token', {
+      await apiClient.post("/contractors/fcm-token", {
         token,
         platform: Capacitor.getPlatform(),
         deviceInfo: {
-          model: Capacitor.isNativePlatform() ? 'mobile' : 'web',
+          model: Capacitor.isNativePlatform() ? "mobile" : "web",
           platform: Capacitor.getPlatform(),
-          version: '1.0.0',
+          version: "1.0.0",
         },
       });
 
-      console.log('FCM token registered with server');
+      console.log("FCM token registered with server");
     } catch (error) {
-      console.error('Failed to register FCM token with server:', error);
+      console.error("Failed to register FCM token with server:", error);
       // Don't throw error - token registration failure shouldn't break the app
     }
   }
@@ -168,18 +181,20 @@ class PushNotificationService {
   /**
    * Handle notification received (native)
    */
-  private handleNotificationReceived(notification: PushNotificationSchema): void {
+  private handleNotificationReceived(
+    notification: PushNotificationSchema,
+  ): void {
     // Show local notification if app is in foreground
     if (this.config.enabled) {
       this.showLocalNotification({
-        title: notification.title || 'New Notification',
-        body: notification.body || '',
+        title: notification.title || "New Notification",
+        body: notification.body || "",
         data: notification.data,
       });
     }
 
     // Emit event to listeners
-    this.emit('notificationReceived', notification);
+    this.emit("notificationReceived", notification);
   }
 
   /**
@@ -187,19 +202,19 @@ class PushNotificationService {
    */
   private handleNotificationAction(action: ActionPerformed): void {
     const { actionId, notification } = action;
-    
-    console.log('Notification action:', actionId, notification);
-    
+
+    console.log("Notification action:", actionId, notification);
+
     // Handle different actions
     switch (actionId) {
-      case 'view':
-        this.emit('notificationTapped', notification);
+      case "view":
+        this.emit("notificationTapped", notification);
         break;
-      case 'dismiss':
-        this.emit('notificationDismissed', notification);
+      case "dismiss":
+        this.emit("notificationDismissed", notification);
         break;
       default:
-        this.emit('notificationAction', { actionId, notification });
+        this.emit("notificationAction", { actionId, notification });
     }
   }
 
@@ -208,37 +223,37 @@ class PushNotificationService {
    */
   private handleWebNotification(payload: any): void {
     const { notification, data } = payload;
-    
+
     if (this.config.enabled && notification) {
       this.showLocalNotification({
-        title: notification.title || 'New Notification',
-        body: notification.body || '',
+        title: notification.title || "New Notification",
+        body: notification.body || "",
         data: data || {},
         icon: notification.icon,
       });
     }
 
     // Emit event to listeners
-    this.emit('notificationReceived', payload);
+    this.emit("notificationReceived", payload);
   }
 
   /**
    * Show local notification
    */
   private showLocalNotification(payload: NotificationPayload): void {
-    if (!('Notification' in window)) {
-      console.warn('Browser does not support notifications');
+    if (!("Notification" in window)) {
+      console.warn("Browser does not support notifications");
       return;
     }
 
-    if (Notification.permission !== 'granted') {
-      console.warn('Notification permission not granted');
+    if (Notification.permission !== "granted") {
+      console.warn("Notification permission not granted");
       return;
     }
 
     const options: NotificationOptions = {
       body: payload.body,
-      icon: payload.icon || '/favicon.png',
+      icon: payload.icon || "/favicon.png",
       badge: payload.badge,
       data: payload.data,
       tag: payload.tag,
@@ -249,12 +264,12 @@ class PushNotificationService {
     const notification = new Notification(payload.title, options);
 
     notification.onclick = () => {
-      this.emit('notificationTapped', payload);
+      this.emit("notificationTapped", payload);
       notification.close();
     };
 
     notification.onclose = () => {
-      this.emit('notificationDismissed', payload);
+      this.emit("notificationDismissed", payload);
     };
 
     // Auto-close after 5 seconds
@@ -270,9 +285,9 @@ class PushNotificationService {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
-    
+
     this.listeners.get(event)!.add(callback);
-    
+
     // Return unsubscribe function
     return () => {
       this.listeners.get(event)?.delete(callback);
@@ -285,11 +300,14 @@ class PushNotificationService {
   private emit(event: string, data: any): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
-      callbacks.forEach(callback => {
+      callbacks.forEach((callback) => {
         try {
           callback(data);
         } catch (error) {
-          console.error(`Error in notification event handler for ${event}:`, error);
+          console.error(
+            `Error in notification event handler for ${event}:`,
+            error,
+          );
         }
       });
     }
@@ -319,10 +337,10 @@ class PushNotificationService {
   /**
    * Get notification permission status
    */
-  public getPermissionStatus(): NotificationPermission | 'unknown' {
+  public getPermissionStatus(): NotificationPermission | "unknown" {
     if (Capacitor.isNativePlatform()) {
       // For native platforms, we'd need to check via Capacitor
-      return 'unknown';
+      return "unknown";
     } else {
       return firebaseMessaging.getPermissionStatus();
     }
@@ -335,13 +353,13 @@ class PushNotificationService {
     try {
       if (Capacitor.isNativePlatform()) {
         const permission = await PushNotifications.requestPermissions();
-        return permission.receive === 'granted';
+        return permission.receive === "granted";
       } else {
         const permission = await firebaseMessaging.requestPermission();
-        return permission === 'granted';
+        return permission === "granted";
       }
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      console.error("Error requesting notification permission:", error);
       return false;
     }
   }
@@ -389,13 +407,13 @@ class PushNotificationService {
    */
   public async testNotification(): Promise<void> {
     if (!this.isEnabled()) {
-      console.warn('Notifications are disabled');
+      console.warn("Notifications are disabled");
       return;
     }
 
     this.showLocalNotification({
-      title: 'Test Notification',
-      body: 'This is a test notification from the Bounce Contractor app',
+      title: "Test Notification",
+      body: "This is a test notification from the Bounce Contractor app",
       data: { test: true },
     });
   }

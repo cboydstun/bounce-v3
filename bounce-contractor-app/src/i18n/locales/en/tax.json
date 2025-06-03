@@ -1,0 +1,89 @@
+{
+  "settings": {
+    "title": "Tax Settings"
+  },
+  "overview": {
+    "title": "Tax Compliance Overview"
+  },
+  "earnings": {
+    "currentYear": "Current Year Earnings",
+    "nearThreshold": "You're approaching the $600 tax reporting threshold",
+    "belowThreshold": "W-9 form will be required when you reach $600 in earnings"
+  },
+  "compliance": {
+    "ready": "Tax Compliant",
+    "pending": "Action Required"
+  },
+  "status": {
+    "complete": "Complete",
+    "pending": "Pending",
+    "draft": "Draft",
+    "notStarted": "Not Started",
+    "approved": "Approved",
+    "submitted": "Submitted",
+    "rejected": "Rejected",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "active": "Active",
+    "synced": "Synced"
+  },
+  "w9": {
+    "title": "W-9 Tax Form",
+    "form": "W-9 Tax Form",
+    "review": "Review W-9 Form",
+    "viewStatus": "View Status",
+    "continue": "Continue W-9 Form",
+    "resubmit": "Resubmit W-9 Form",
+    "start": "Start W-9 Form",
+    "downloadPdf": "Download W-9 PDF",
+    "approvedOn": "Approved on",
+    "submittedOn": "Submitted on",
+    "rejectedOn": "Rejected on",
+    "notStarted": "Not yet started",
+    "rejectionReason": "Reason"
+  },
+  "quickbooks": {
+    "title": "QuickBooks Integration",
+    "connected": "Connected",
+    "notConnected": "Not Connected",
+    "company": "Company",
+    "connectDescription": "Connect for automated tax reporting",
+    "connect": "Connect QuickBooks",
+    "disconnect": "Disconnect QuickBooks",
+    "viewPaymentHistory": "View Payment History",
+    "businessConnection": "Business QuickBooks",
+    "connectedBy": "Connected by business owner",
+    "notConnectedByBusiness": "Business owner has not connected QuickBooks yet",
+    "vendorStatus": "Your Vendor Status",
+    "syncedAsVendor": "Synced as vendor - payments will be tracked",
+    "pendingSync": "Pending sync with QuickBooks",
+    "paymentTracking": "Payment Tracking Active",
+    "lastSync": "Last synced",
+    "waitingForBusiness": "Waiting for business owner to connect QuickBooks",
+    "waitingForSync": "Waiting for vendor sync to complete",
+    "alertTitle": "QuickBooks Integration",
+    "alertMessage": "QuickBooks integration is coming soon. This feature will allow automatic tax reporting and streamlined payment processing.",
+    "paymentHistoryMessage": "Your payment history will be available once the business owner completes the vendor sync process.",
+    "waitingMessage": "The business owner needs to connect their QuickBooks account to enable payment tracking and history. You will be notified when this becomes available."
+  },
+  "documents": {
+    "title": "Tax Documents",
+    "w9Form": "W-9 Tax Form",
+    "w9Description": "Current tax year W-9 form",
+    "noDocuments": "No Documents Available",
+    "completeW9": "Complete your W-9 form to access tax documents"
+  },
+  "help": {
+    "title": "Tax Information & Help",
+    "w9Required": "When is W-9 Required?",
+    "w9Description": "You must complete a W-9 form before earning $600 in a calendar year. This ensures proper tax reporting and compliance with IRS regulations.",
+    "benefits": "Benefits of Early Completion",
+    "benefit1": "Faster payment processing",
+    "benefit2": "Access to higher-paying tasks",
+    "benefit3": "Automated tax reporting",
+    "benefit4": "Professional profile completion",
+    "learnMore": "Learn More About W-9 Forms"
+  },
+  "loading": "Loading tax information...",
+  "downloadError": "Failed to download W-9 PDF. Please try again."
+}

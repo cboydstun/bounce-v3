@@ -1,80 +1,85 @@
-import { Router } from "express";
+import express from "express";
+import { quickbooksController } from "../controllers/quickbooksController.js";
 import { authenticateToken, requireVerified } from "../middleware/auth.js";
-import { validateW9Form, validateW9Update } from "../middleware/validation.js";
-import {
-  connectQuickBooks,
-  handleQuickBooksCallback,
-  disconnectQuickBooks,
-  getQuickBooksStatus,
-  submitW9Form,
-  getW9Status,
-  updateW9Form,
-  downloadW9PDF,
-  syncContractor,
-  getSyncStatus,
-} from "../controllers/quickbooksController.js";
 
-const router = Router();
+const router = express.Router();
 
-// GET /api/quickbooks - Get available QuickBooks endpoints
-router.get("/", (req, res) => {
-  res.json({
-    message: "QuickBooks API endpoints",
-    endpoints: {
-      "GET /auth-url": "Get QuickBooks authorization URL",
-      "POST /connect": "Connect to QuickBooks (same as auth-url but POST)",
-      "GET /callback": "Handle QuickBooks OAuth callback",
-      "POST /disconnect": "Disconnect from QuickBooks",
-      "GET /status": "Get QuickBooks connection status",
-      "POST /w9/submit": "Submit W-9 tax form",
-      "GET /w9/status": "Get W-9 form status",
-      "PUT /w9/update": "Update W-9 form",
-      "GET /w9/download": "Download W-9 PDF",
-      "POST /sync/contractor": "Sync contractor to QuickBooks",
-      "GET /sync/status": "Get sync status",
-    },
-  });
+// ============================================================================
+// W-9 Form Routes
+// ============================================================================
+
+/**
+ * GET /api/quickbooks/w9/status
+ * Get W-9 form status for the authenticated contractor
+ */
+router.get("/w9/status", authenticateToken, requireVerified, (req, res) => {
+  quickbooksController.getW9Status(req, res);
 });
 
-// GET /api/quickbooks/auth-url - Get QuickBooks authorization URL
-router.get("/auth-url", authenticateToken, requireVerified, connectQuickBooks);
+/**
+ * POST /api/quickbooks/w9/submit
+ * Submit W-9 form
+ */
+router.post("/w9/submit", authenticateToken, requireVerified, (req, res) => {
+  quickbooksController.submitW9Form(req, res);
+});
 
-// QuickBooks Connection Routes
-router.post("/connect", authenticateToken, requireVerified, connectQuickBooks);
-router.get("/callback", handleQuickBooksCallback);
-router.post(
-  "/disconnect",
-  authenticateToken,
-  requireVerified,
-  disconnectQuickBooks,
-);
-router.get("/status", authenticateToken, getQuickBooksStatus);
+/**
+ * PUT /api/quickbooks/w9/update
+ * Update W-9 form (draft only)
+ */
+router.put("/w9/update", authenticateToken, requireVerified, (req, res) => {
+  quickbooksController.updateW9Form(req, res);
+});
 
-// W-9 Form Routes
-router.post(
-  "/w9/submit",
-  authenticateToken,
-  requireVerified,
-  validateW9Form,
-  submitW9Form,
-);
-router.get("/w9/status", authenticateToken, getW9Status);
-router.put(
-  "/w9/update",
-  authenticateToken,
-  requireVerified,
-  validateW9Update,
-  updateW9Form,
-);
-router.get("/w9/download", authenticateToken, downloadW9PDF);
+/**
+ * GET /api/quickbooks/w9/download
+ * Download W-9 PDF
+ */
+router.get("/w9/download", authenticateToken, requireVerified, (req, res) => {
+  quickbooksController.downloadW9PDF(req, res);
+});
 
-// Contractor Sync Routes
+// ============================================================================
+// QuickBooks Integration Routes
+// ============================================================================
+
+/**
+ * GET /api/quickbooks/sync/status
+ * Get QuickBooks integration status
+ */
+router.get("/sync/status", authenticateToken, requireVerified, (req, res) => {
+  quickbooksController.getQuickBooksStatus(req, res);
+});
+
+/**
+ * POST /api/quickbooks/connect
+ * Initiate QuickBooks connection
+ */
+router.post("/connect", authenticateToken, requireVerified, (req, res) => {
+  quickbooksController.connectQuickBooks(req, res);
+});
+
+/**
+ * POST /api/quickbooks/sync/contractor
+ * Sync contractor data with QuickBooks
+ */
 router.post(
   "/sync/contractor",
   authenticateToken,
   requireVerified,
-  syncContractor,
+  (req, res) => {
+    quickbooksController.syncContractor(req, res);
+  },
 );
-router.get("/sync/status", authenticateToken, getSyncStatus);
+
+/**
+ * GET /api/quickbooks/callback
+ * Handle QuickBooks OAuth callback
+ * Note: This endpoint doesn't require authentication as it's called by QuickBooks
+ */
+router.get("/callback", (req, res) => {
+  quickbooksController.handleOAuthCallback(req, res);
+});
 
 export default router;

@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { biometricService } from '../../services/auth/biometricService';
-import { 
+import { useState, useEffect, useCallback } from "react";
+import { biometricService } from "../../services/auth/biometricService";
+import {
   BiometricAuthResult,
   BiometricAvailabilityResult,
   BiometricPromptOptions,
   BiometricCredentials,
-  BiometricSettings
-} from '../../types/biometric.types';
+  BiometricSettings,
+} from "../../types/biometric.types";
 
 interface UseBiometricReturn {
   // State
@@ -19,8 +19,12 @@ interface UseBiometricReturn {
 
   // Actions
   checkAvailability: () => Promise<void>;
-  authenticate: (options: BiometricPromptOptions) => Promise<BiometricAuthResult>;
-  setupBiometric: (credentials: BiometricCredentials) => Promise<BiometricAuthResult>;
+  authenticate: (
+    options: BiometricPromptOptions,
+  ) => Promise<BiometricAuthResult>;
+  setupBiometric: (
+    credentials: BiometricCredentials,
+  ) => Promise<BiometricAuthResult>;
   authenticateAndGetCredentials: (options: BiometricPromptOptions) => Promise<{
     success: boolean;
     credentials?: BiometricCredentials;
@@ -28,9 +32,11 @@ interface UseBiometricReturn {
   }>;
   enableBiometric: (credentials: BiometricCredentials) => Promise<boolean>;
   disableBiometric: () => Promise<boolean>;
-  updateCredentials: (credentials: Partial<BiometricCredentials>) => Promise<boolean>;
+  updateCredentials: (
+    credentials: Partial<BiometricCredentials>,
+  ) => Promise<boolean>;
   shouldOfferSetup: () => Promise<boolean>;
-  
+
   // Utilities
   clearError: () => void;
   refresh: () => Promise<void>;
@@ -42,7 +48,8 @@ export const useBiometric = (): UseBiometricReturn => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<BiometricSettings | null>(null);
-  const [availability, setAvailability] = useState<BiometricAvailabilityResult | null>(null);
+  const [availability, setAvailability] =
+    useState<BiometricAvailabilityResult | null>(null);
 
   /**
    * Check biometric availability
@@ -60,7 +67,7 @@ export const useBiometric = (): UseBiometricReturn => {
         setError(availabilityResult.reason);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to check biometric availability');
+      setError(err.message || "Failed to check biometric availability");
       setIsAvailable(false);
     } finally {
       setIsLoading(false);
@@ -78,7 +85,7 @@ export const useBiometric = (): UseBiometricReturn => {
       const biometricSettings = await biometricService.getSettings();
       setSettings(biometricSettings);
     } catch (err: any) {
-      console.warn('Failed to check biometric enabled status:', err);
+      console.warn("Failed to check biometric enabled status:", err);
       setIsEnabled(false);
     }
   }, []);
@@ -86,94 +93,109 @@ export const useBiometric = (): UseBiometricReturn => {
   /**
    * Authenticate with biometric
    */
-  const authenticate = useCallback(async (options: BiometricPromptOptions): Promise<BiometricAuthResult> => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const authenticate = useCallback(
+    async (options: BiometricPromptOptions): Promise<BiometricAuthResult> => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      const result = await biometricService.authenticate(options);
-      
-      if (!result.success && result.error) {
-        setError(result.error);
+        const result = await biometricService.authenticate(options);
+
+        if (!result.success && result.error) {
+          setError(result.error);
+        }
+
+        return result;
+      } catch (err: any) {
+        const errorMessage = err.message || "Biometric authentication failed";
+        setError(errorMessage);
+        return {
+          success: false,
+          error: errorMessage,
+        };
+      } finally {
+        setIsLoading(false);
       }
-
-      return result;
-    } catch (err: any) {
-      const errorMessage = err.message || 'Biometric authentication failed';
-      setError(errorMessage);
-      return {
-        success: false,
-        error: errorMessage
-      };
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   /**
    * Set up biometric authentication
    */
-  const setupBiometric = useCallback(async (credentials: BiometricCredentials): Promise<BiometricAuthResult> => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const setupBiometric = useCallback(
+    async (credentials: BiometricCredentials): Promise<BiometricAuthResult> => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      const result = await biometricService.setupBiometric(credentials);
-      
-      if (result.success) {
-        setIsEnabled(true);
-        await checkEnabled(); // Refresh settings
-      } else if (result.error) {
-        setError(result.error);
+        const result = await biometricService.setupBiometric(credentials);
+
+        if (result.success) {
+          setIsEnabled(true);
+          await checkEnabled(); // Refresh settings
+        } else if (result.error) {
+          setError(result.error);
+        }
+
+        return result;
+      } catch (err: any) {
+        const errorMessage =
+          err.message || "Failed to set up biometric authentication";
+        setError(errorMessage);
+        return {
+          success: false,
+          error: errorMessage,
+        };
+      } finally {
+        setIsLoading(false);
       }
-
-      return result;
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to set up biometric authentication';
-      setError(errorMessage);
-      return {
-        success: false,
-        error: errorMessage
-      };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [checkEnabled]);
+    },
+    [checkEnabled],
+  );
 
   /**
    * Authenticate and get stored credentials
    */
-  const authenticateAndGetCredentials = useCallback(async (options: BiometricPromptOptions) => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const authenticateAndGetCredentials = useCallback(
+    async (options: BiometricPromptOptions) => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      const result = await biometricService.authenticateAndGetCredentials(options);
-      
-      if (!result.success && result.error) {
-        setError(result.error);
+        const result =
+          await biometricService.authenticateAndGetCredentials(options);
+
+        if (!result.success && result.error) {
+          setError(result.error);
+        }
+
+        return result;
+      } catch (err: any) {
+        const errorMessage =
+          err.message || "Failed to authenticate and retrieve credentials";
+        setError(errorMessage);
+        return {
+          success: false,
+          error: errorMessage,
+        };
+      } finally {
+        setIsLoading(false);
       }
-
-      return result;
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to authenticate and retrieve credentials';
-      setError(errorMessage);
-      return {
-        success: false,
-        error: errorMessage
-      };
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   /**
    * Enable biometric authentication (alias for setupBiometric)
    */
-  const enableBiometric = useCallback(async (credentials: BiometricCredentials): Promise<boolean> => {
-    const result = await setupBiometric(credentials);
-    return result.success;
-  }, [setupBiometric]);
+  const enableBiometric = useCallback(
+    async (credentials: BiometricCredentials): Promise<boolean> => {
+      const result = await setupBiometric(credentials);
+      return result.success;
+    },
+    [setupBiometric],
+  );
 
   /**
    * Disable biometric authentication
@@ -189,7 +211,8 @@ export const useBiometric = (): UseBiometricReturn => {
 
       return true;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to disable biometric authentication';
+      const errorMessage =
+        err.message || "Failed to disable biometric authentication";
       setError(errorMessage);
       return false;
     } finally {
@@ -200,21 +223,25 @@ export const useBiometric = (): UseBiometricReturn => {
   /**
    * Update stored biometric credentials
    */
-  const updateCredentials = useCallback(async (credentials: Partial<BiometricCredentials>): Promise<boolean> => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const updateCredentials = useCallback(
+    async (credentials: Partial<BiometricCredentials>): Promise<boolean> => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      await biometricService.updateCredentials(credentials);
-      return true;
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to update biometric credentials';
-      setError(errorMessage);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+        await biometricService.updateCredentials(credentials);
+        return true;
+      } catch (err: any) {
+        const errorMessage =
+          err.message || "Failed to update biometric credentials";
+        setError(errorMessage);
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
 
   /**
    * Check if biometric setup should be offered to user
@@ -223,7 +250,7 @@ export const useBiometric = (): UseBiometricReturn => {
     try {
       return await biometricService.shouldOfferBiometric();
     } catch (err: any) {
-      console.warn('Failed to check if should offer biometric setup:', err);
+      console.warn("Failed to check if should offer biometric setup:", err);
       return false;
     }
   }, []);
@@ -239,10 +266,7 @@ export const useBiometric = (): UseBiometricReturn => {
    * Refresh all biometric state
    */
   const refresh = useCallback(async () => {
-    await Promise.all([
-      checkAvailability(),
-      checkEnabled()
-    ]);
+    await Promise.all([checkAvailability(), checkEnabled()]);
   }, [checkAvailability, checkEnabled]);
 
   // Initialize on mount
@@ -271,7 +295,7 @@ export const useBiometric = (): UseBiometricReturn => {
 
     // Utilities
     clearError,
-    refresh
+    refresh,
   };
 };
 

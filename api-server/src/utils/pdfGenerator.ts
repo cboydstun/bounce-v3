@@ -451,9 +451,9 @@ export class PDFGeneratorService {
         color: rgb(0, 0, 0),
       });
 
-      const dateString =
-        w9Data.dateSigned?.toLocaleDateString() ||
-        new Date().toLocaleDateString();
+      const dateString = w9Data.signatureDate
+        ? new Date(w9Data.signatureDate).toLocaleDateString()
+        : new Date().toLocaleDateString();
       page.drawText(dateString, {
         x: 410,
         y: yPosition - 25,

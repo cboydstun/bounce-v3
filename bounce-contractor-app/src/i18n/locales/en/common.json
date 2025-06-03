@@ -12,7 +12,8 @@
     "back": "Back",
     "next": "Next",
     "done": "Done",
-    "close": "Close"
+    "close": "Close",
+    "ok": "OK"
   },
   "navigation": {
     "availableTasks": "Available Tasks",
@@ -55,8 +56,18 @@
     "rating": "Rating",
     "completion": "Completion",
     "editProfile": "Edit Profile",
+    "taxSettings": "Tax Settings",
     "notificationSettings": "Notification Settings",
     "helpSupport": "Help & Support",
     "signOut": "Sign Out"
+  },
+  "tax": {
+    "status": {
+      "notStarted": "Not Started",
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    }
   }
 }

@@ -20,7 +20,9 @@ export const useClaimTask = () => {
   const { queueAction } = useOfflineQueue();
 
   return useMutation({
-    mutationFn: async (claimRequest: TaskClaimRequest): Promise<Task | { queued: true; actionId: string }> => {
+    mutationFn: async (
+      claimRequest: TaskClaimRequest,
+    ): Promise<Task | { queued: true; actionId: string }> => {
       // If offline, queue the action
       if (!isOnline) {
         const actionId = await queueAction({
@@ -57,10 +59,10 @@ export const useClaimTask = () => {
       return response.data!;
     },
     onSuccess: (result, claimRequest) => {
-      if ('queued' in result) {
+      if ("queued" in result) {
         // Handle queued action
         console.log(`Task claim queued for offline sync: ${result.actionId}`);
-        
+
         // Optimistically update the UI
         const optimisticTask = {
           id: claimRequest.taskId,
@@ -70,7 +72,7 @@ export const useClaimTask = () => {
           notes: claimRequest.notes,
           _offline: true, // Mark as offline change
         };
-        
+
         queryClient.setQueryData(
           ["tasks", "detail", claimRequest.taskId],
           optimisticTask,
@@ -96,7 +98,9 @@ export const useClaimTask = () => {
       // Provide more specific error messages for different error types
       if (error.code === "RESOURCE_CONFLICT") {
         // Task is likely already claimed by another contractor
-        console.warn("This task has already been claimed by another contractor");
+        console.warn(
+          "This task has already been claimed by another contractor",
+        );
       }
     },
   });
@@ -109,7 +113,9 @@ export const useUpdateTaskStatus = () => {
   const { queueAction } = useOfflineQueue();
 
   return useMutation({
-    mutationFn: async (statusUpdate: TaskStatusUpdate): Promise<Task | { queued: true; actionId: string }> => {
+    mutationFn: async (
+      statusUpdate: TaskStatusUpdate,
+    ): Promise<Task | { queued: true; actionId: string }> => {
       // If offline, queue the action
       if (!isOnline) {
         const actionId = await queueAction({
@@ -150,10 +156,12 @@ export const useUpdateTaskStatus = () => {
       return response.data!;
     },
     onSuccess: (result, statusUpdate) => {
-      if ('queued' in result) {
+      if ("queued" in result) {
         // Handle queued action
-        console.log(`Task status update queued for offline sync: ${result.actionId}`);
-        
+        console.log(
+          `Task status update queued for offline sync: ${result.actionId}`,
+        );
+
         // Optimistically update the UI
         const optimisticTask = {
           id: statusUpdate.taskId,
@@ -163,7 +171,7 @@ export const useUpdateTaskStatus = () => {
           timestamp: statusUpdate.timestamp,
           _offline: true, // Mark as offline change
         };
-        
+
         queryClient.setQueryData(
           ["tasks", "detail", statusUpdate.taskId],
           (oldData: any) => ({ ...oldData, ...optimisticTask }),

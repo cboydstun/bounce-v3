@@ -59,16 +59,18 @@ export default function TasksAdminPage() {
       setLoading(true);
       const queryParams = new URLSearchParams();
       queryParams.append("type", "detailed");
-      
+
       if (filters.status) queryParams.append("status", filters.status);
       if (filters.minAmount) queryParams.append("minAmount", filters.minAmount);
       if (filters.maxAmount) queryParams.append("maxAmount", filters.maxAmount);
       if (filters.startDate) queryParams.append("startDate", filters.startDate);
       if (filters.endDate) queryParams.append("endDate", filters.endDate);
 
-      const response = await fetch(`/api/v1/tasks/payment-reports?${queryParams}`);
+      const response = await fetch(
+        `/api/v1/tasks/payment-reports?${queryParams}`,
+      );
       if (!response.ok) throw new Error("Failed to fetch tasks");
-      
+
       const data = await response.json();
       setTasks(data.tasks || []);
     } catch (err) {
@@ -82,14 +84,16 @@ export default function TasksAdminPage() {
     try {
       const queryParams = new URLSearchParams();
       queryParams.append("type", "summary");
-      
+
       if (filters.status) queryParams.append("status", filters.status);
       if (filters.startDate) queryParams.append("startDate", filters.startDate);
       if (filters.endDate) queryParams.append("endDate", filters.endDate);
 
-      const response = await fetch(`/api/v1/tasks/payment-reports?${queryParams}`);
+      const response = await fetch(
+        `/api/v1/tasks/payment-reports?${queryParams}`,
+      );
       if (!response.ok) throw new Error("Failed to fetch payment stats");
-      
+
       const data = await response.json();
       setPaymentStats(data.summary);
     } catch (err) {
@@ -102,17 +106,20 @@ export default function TasksAdminPage() {
 
     try {
       const amount = paymentAmount ? parseFloat(paymentAmount) : null;
-      
-      const response = await fetch(`/api/v1/tasks/${selectedTask._id}/payment`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+
+      const response = await fetch(
+        `/api/v1/tasks/${selectedTask._id}/payment`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paymentAmount: amount,
+            reason: paymentReason || undefined,
+          }),
         },
-        body: JSON.stringify({
-          paymentAmount: amount,
-          reason: paymentReason || undefined,
-        }),
-      });
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -122,7 +129,7 @@ export default function TasksAdminPage() {
       // Refresh tasks and stats
       await fetchTasks();
       await fetchPaymentStats();
-      
+
       // Close modal and reset form
       setShowPaymentModal(false);
       setSelectedTask(null);
@@ -134,7 +141,11 @@ export default function TasksAdminPage() {
   };
 
   const handleClearPayment = async (task: Task) => {
-    if (!confirm("Are you sure you want to clear the payment amount for this task?")) {
+    if (
+      !confirm(
+        "Are you sure you want to clear the payment amount for this task?",
+      )
+    ) {
       return;
     }
 
@@ -190,8 +201,12 @@ export default function TasksAdminPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Task Payment Management</h1>
-        <p className="text-gray-600">Manage payment amounts for tasks and view payment reports</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Task Payment Management
+        </h1>
+        <p className="text-gray-600">
+          Manage payment amounts for tasks and view payment reports
+        </p>
       </div>
 
       {/* Payment Statistics */}
@@ -199,23 +214,35 @@ export default function TasksAdminPage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-sm font-medium text-gray-500">Total Tasks</h3>
-            <p className="text-2xl font-bold text-gray-900">{paymentStats.taskCount}</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {paymentStats.taskCount}
+            </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-sm font-medium text-gray-500">Paid Tasks</h3>
-            <p className="text-2xl font-bold text-green-600">{paymentStats.paidTasks}</p>
+            <p className="text-2xl font-bold text-green-600">
+              {paymentStats.paidTasks}
+            </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-sm font-medium text-gray-500">Unpaid Tasks</h3>
-            <p className="text-2xl font-bold text-red-600">{paymentStats.unpaidTasks}</p>
+            <p className="text-2xl font-bold text-red-600">
+              {paymentStats.unpaidTasks}
+            </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-sm font-medium text-gray-500">Total Amount</h3>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(paymentStats.totalAmount)}</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {formatCurrency(paymentStats.totalAmount)}
+            </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Average Amount</h3>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(paymentStats.averageAmount)}</p>
+            <h3 className="text-sm font-medium text-gray-500">
+              Average Amount
+            </h3>
+            <p className="text-2xl font-bold text-gray-900">
+              {formatCurrency(paymentStats.averageAmount)}
+            </p>
           </div>
         </div>
       )}
@@ -225,10 +252,14 @@ export default function TasksAdminPage() {
         <h2 className="text-lg font-semibold mb-4">Filters</h2>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
             <select
               value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              onChange={(e) =>
+                setFilters({ ...filters, status: e.target.value })
+              }
               className="w-full border border-gray-300 rounded-md px-3 py-2"
             >
               <option value="">All Statuses</option>
@@ -240,51 +271,75 @@ export default function TasksAdminPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Min Amount</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Min Amount
+            </label>
             <input
               type="number"
               min="0"
               step="0.01"
               value={filters.minAmount}
-              onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+              onChange={(e) =>
+                setFilters({ ...filters, minAmount: e.target.value })
+              }
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="0.00"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Max Amount</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Max Amount
+            </label>
             <input
               type="number"
               min="0"
               step="0.01"
               value={filters.maxAmount}
-              onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+              onChange={(e) =>
+                setFilters({ ...filters, maxAmount: e.target.value })
+              }
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="999999.99"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Start Date
+            </label>
             <input
               type="date"
               value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+              onChange={(e) =>
+                setFilters({ ...filters, startDate: e.target.value })
+              }
               className="w-full border border-gray-300 rounded-md px-3 py-2"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              End Date
+            </label>
             <input
               type="date"
               value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+              onChange={(e) =>
+                setFilters({ ...filters, endDate: e.target.value })
+              }
               className="w-full border border-gray-300 rounded-md px-3 py-2"
             />
           </div>
         </div>
         <div className="mt-4">
           <button
-            onClick={() => setFilters({ status: "", minAmount: "", maxAmount: "", startDate: "", endDate: "" })}
+            onClick={() =>
+              setFilters({
+                status: "",
+                minAmount: "",
+                maxAmount: "",
+                startDate: "",
+                endDate: "",
+              })
+            }
             className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
           >
             Clear Filters
@@ -304,7 +359,7 @@ export default function TasksAdminPage() {
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold">Tasks ({tasks.length})</h2>
         </div>
-        
+
         {loading ? (
           <div className="p-8 text-center">Loading tasks...</div>
         ) : tasks.length === 0 ? (
@@ -353,13 +408,19 @@ export default function TasksAdminPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        task.status === "Completed" ? "bg-green-100 text-green-800" :
-                        task.status === "In Progress" ? "bg-yellow-100 text-yellow-800" :
-                        task.status === "Assigned" ? "bg-blue-100 text-blue-800" :
-                        task.status === "Cancelled" ? "bg-red-100 text-red-800" :
-                        "bg-gray-100 text-gray-800"
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          task.status === "Completed"
+                            ? "bg-green-100 text-green-800"
+                            : task.status === "In Progress"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : task.status === "Assigned"
+                                ? "bg-blue-100 text-blue-800"
+                                : task.status === "Cancelled"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
                         {task.status}
                       </span>
                     </td>
@@ -367,9 +428,13 @@ export default function TasksAdminPage() {
                       {formatDate(task.scheduledDateTime)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-sm font-medium ${
-                        task.paymentAmount ? "text-green-600" : "text-gray-400"
-                      }`}>
+                      <span
+                        className={`text-sm font-medium ${
+                          task.paymentAmount
+                            ? "text-green-600"
+                            : "text-gray-400"
+                        }`}
+                      >
                         {formatCurrency(task.paymentAmount)}
                       </span>
                     </td>
@@ -407,7 +472,8 @@ export default function TasksAdminPage() {
               </h3>
               <div className="mb-4">
                 <p className="text-sm text-gray-600 mb-2">
-                  Task: {selectedTask.title || `Task ${selectedTask._id.slice(-6)}`}
+                  Task:{" "}
+                  {selectedTask.title || `Task ${selectedTask._id.slice(-6)}`}
                 </p>
                 <p className="text-sm text-gray-600">
                   Current Amount: {formatCurrency(selectedTask.paymentAmount)}

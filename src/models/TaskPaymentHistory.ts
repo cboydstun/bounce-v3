@@ -1,8 +1,14 @@
 import mongoose, { Schema } from "mongoose";
-import { ITaskPaymentHistoryDocument, ITaskPaymentHistoryModel } from "../types/task";
+import {
+  ITaskPaymentHistoryDocument,
+  ITaskPaymentHistoryModel,
+} from "../types/task";
 
 // TaskPaymentHistory schema for tracking payment amount changes
-const TaskPaymentHistorySchema = new Schema<ITaskPaymentHistoryDocument, ITaskPaymentHistoryModel>(
+const TaskPaymentHistorySchema = new Schema<
+  ITaskPaymentHistoryDocument,
+  ITaskPaymentHistoryModel
+>(
   {
     taskId: {
       type: String,
@@ -35,9 +41,12 @@ const TaskPaymentHistorySchema = new Schema<ITaskPaymentHistoryDocument, ITaskPa
           // Allow null/undefined for initial set
           if (v === null || v === undefined) return true;
           // Check for valid monetary value (up to 2 decimal places)
-          return Number.isFinite(v) && v >= 0 && Math.round(v * 100) === v * 100;
+          return (
+            Number.isFinite(v) && v >= 0 && Math.round(v * 100) === v * 100
+          );
         },
-        message: "Previous amount must be a valid monetary value with up to 2 decimal places",
+        message:
+          "Previous amount must be a valid monetary value with up to 2 decimal places",
       },
     },
     newAmount: {
@@ -49,9 +58,12 @@ const TaskPaymentHistorySchema = new Schema<ITaskPaymentHistoryDocument, ITaskPa
           // Allow null/undefined for clearing
           if (v === null || v === undefined) return true;
           // Check for valid monetary value (up to 2 decimal places)
-          return Number.isFinite(v) && v >= 0 && Math.round(v * 100) === v * 100;
+          return (
+            Number.isFinite(v) && v >= 0 && Math.round(v * 100) === v * 100
+          );
         },
-        message: "New amount must be a valid monetary value with up to 2 decimal places",
+        message:
+          "New amount must be a valid monetary value with up to 2 decimal places",
       },
     },
     changedBy: {
@@ -129,7 +141,8 @@ TaskPaymentHistorySchema.index({ changedBy: 1, createdAt: -1 });
 TaskPaymentHistorySchema.index({ createdAt: -1 }); // For general audit queries
 
 // Use existing model if available (for Next.js hot reloading)
-export default (mongoose.models.TaskPaymentHistory as ITaskPaymentHistoryModel) ||
+export default (mongoose.models
+  .TaskPaymentHistory as ITaskPaymentHistoryModel) ||
   mongoose.model<ITaskPaymentHistoryDocument, ITaskPaymentHistoryModel>(
     "TaskPaymentHistory",
     TaskPaymentHistorySchema,

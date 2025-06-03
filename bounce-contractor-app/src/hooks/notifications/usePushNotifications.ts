@@ -1,8 +1,11 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { pushNotificationService, PushNotificationConfig } from '../../services/notifications/pushNotifications';
-import { firebaseMessaging } from '../../config/firebase.config';
-import { useRealtimeStore } from '../../store/realtimeStore';
+import { useEffect, useState, useCallback } from "react";
+import { Capacitor } from "@capacitor/core";
+import {
+  pushNotificationService,
+  PushNotificationConfig,
+} from "../../services/notifications/pushNotifications";
+import { firebaseMessaging } from "../../config/firebase.config";
+import { useRealtimeStore } from "../../store/realtimeStore";
 
 export interface UsePushNotificationsOptions {
   autoInitialize?: boolean;
@@ -13,11 +16,11 @@ export interface UsePushNotificationsReturn {
   isSupported: boolean;
   isInitialized: boolean;
   isEnabled: boolean;
-  permissionStatus: NotificationPermission | 'unknown';
+  permissionStatus: NotificationPermission | "unknown";
   fcmToken: string | null;
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   initialize: () => Promise<void>;
   requestPermission: () => Promise<boolean>;
@@ -29,17 +32,21 @@ export interface UsePushNotificationsReturn {
 /**
  * Hook for managing push notifications
  */
-export const usePushNotifications = (options: UsePushNotificationsOptions = {}): UsePushNotificationsReturn => {
+export const usePushNotifications = (
+  options: UsePushNotificationsOptions = {},
+): UsePushNotificationsReturn => {
   const { autoInitialize = true, autoRequestPermission = false } = options;
-  
+
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [permissionStatus, setPermissionStatus] = useState<NotificationPermission | 'unknown'>('unknown');
+  const [permissionStatus, setPermissionStatus] = useState<
+    NotificationPermission | "unknown"
+  >("unknown");
   const [fcmToken, setFcmToken] = useState<string | null>(null);
-  
+
   const { addNotification } = useRealtimeStore();
-  
+
   // Check if push notifications are supported
   const isSupported = pushNotificationService.isSupported();
   const isEnabled = pushNotificationService.isEnabled();
@@ -49,7 +56,7 @@ export const usePushNotifications = (options: UsePushNotificationsOptions = {}):
    */
   const initialize = useCallback(async (): Promise<void> => {
     if (!isSupported) {
-      setError('Push notifications are not supported on this device');
+      setError("Push notifications are not supported on this device");
       return;
     }
 
@@ -59,20 +66,23 @@ export const usePushNotifications = (options: UsePushNotificationsOptions = {}):
     try {
       await pushNotificationService.initialize();
       setIsInitialized(true);
-      
+
       // Get FCM token
       const token = pushNotificationService.getToken();
       setFcmToken(token);
-      
+
       // Update permission status
       const permission = pushNotificationService.getPermissionStatus();
       setPermissionStatus(permission);
-      
-      console.log('Push notifications initialized successfully');
+
+      console.log("Push notifications initialized successfully");
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to initialize push notifications';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to initialize push notifications";
       setError(errorMessage);
-      console.error('Push notification initialization failed:', err);
+      console.error("Push notification initialization failed:", err);
     } finally {
       setIsLoading(false);
     }
@@ -87,12 +97,12 @@ export const usePushNotifications = (options: UsePushNotificationsOptions = {}):
 
     try {
       const granted = await pushNotificationService.requestPermission();
-      
+
       if (granted) {
         // Update permission status
         const permission = pushNotificationService.getPermissionStatus();
         setPermissionStatus(permission);
-        
+
         // Get FCM token now that permission is granted
         if (Capacitor.isNativePlatform()) {
           // For native platforms, token will be obtained automatically
@@ -106,16 +116,21 @@ export const usePushNotifications = (options: UsePushNotificationsOptions = {}):
             // Update the service's token
             (pushNotificationService as any).fcmToken = token;
             // Register with server
-            await (pushNotificationService as any).registerTokenWithServer(token);
+            await (pushNotificationService as any).registerTokenWithServer(
+              token,
+            );
           }
         }
       }
-      
+
       return granted;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to request notification permission';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to request notification permission";
       setError(errorMessage);
-      console.error('Permission request failed:', err);
+      console.error("Permission request failed:", err);
       return false;
     } finally {
       setIsLoading(false);
@@ -136,18 +151,22 @@ export const usePushNotifications = (options: UsePushNotificationsOptions = {}):
     try {
       await pushNotificationService.testNotification();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send test notification';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to send test notification";
       setError(errorMessage);
-      console.error('Test notification failed:', err);
+      console.error("Test notification failed:", err);
     }
   }, []);
 
   /**
    * Update configuration
    */
-  const updateConfig = useCallback((config: Partial<PushNotificationConfig>): void => {
-    pushNotificationService.updateConfig(config);
-  }, []);
+  const updateConfig = useCallback(
+    (config: Partial<PushNotificationConfig>): void => {
+      pushNotificationService.updateConfig(config);
+    },
+    [],
+  );
 
   // Auto-initialize on mount
   useEffect(() => {
@@ -158,7 +177,11 @@ export const usePushNotifications = (options: UsePushNotificationsOptions = {}):
 
   // Auto-request permission
   useEffect(() => {
-    if (autoRequestPermission && isSupported && permissionStatus === 'default') {
+    if (
+      autoRequestPermission &&
+      isSupported &&
+      permissionStatus === "default"
+    ) {
       requestPermission().catch(console.error);
     }
   }, [autoRequestPermission, isSupported, permissionStatus, requestPermission]);
@@ -168,34 +191,43 @@ export const usePushNotifications = (options: UsePushNotificationsOptions = {}):
     if (!isInitialized) return;
 
     // Listen for notification received
-    const unsubscribeReceived = pushNotificationService.on('notificationReceived', (notification) => {
-      console.log('Push notification received:', notification);
-      
-      // Add to realtime store
-      addNotification({
-        type: 'notification:personal',
-        title: notification.title || 'New Notification',
-        message: notification.body || '',
-        data: notification.data,
-        priority: 'medium',
-      });
-    });
+    const unsubscribeReceived = pushNotificationService.on(
+      "notificationReceived",
+      (notification) => {
+        console.log("Push notification received:", notification);
+
+        // Add to realtime store
+        addNotification({
+          type: "notification:personal",
+          title: notification.title || "New Notification",
+          message: notification.body || "",
+          data: notification.data,
+          priority: "medium",
+        });
+      },
+    );
 
     // Listen for notification tapped
-    const unsubscribeTapped = pushNotificationService.on('notificationTapped', (notification) => {
-      console.log('Push notification tapped:', notification);
-      
-      // Handle notification tap - could navigate to specific screen
-      if (notification.data?.taskId) {
-        // Navigate to task details
-        console.log('Navigate to task:', notification.data.taskId);
-      }
-    });
+    const unsubscribeTapped = pushNotificationService.on(
+      "notificationTapped",
+      (notification) => {
+        console.log("Push notification tapped:", notification);
+
+        // Handle notification tap - could navigate to specific screen
+        if (notification.data?.taskId) {
+          // Navigate to task details
+          console.log("Navigate to task:", notification.data.taskId);
+        }
+      },
+    );
 
     // Listen for notification dismissed
-    const unsubscribeDismissed = pushNotificationService.on('notificationDismissed', (notification) => {
-      console.log('Push notification dismissed:', notification);
-    });
+    const unsubscribeDismissed = pushNotificationService.on(
+      "notificationDismissed",
+      (notification) => {
+        console.log("Push notification dismissed:", notification);
+      },
+    );
 
     // Cleanup listeners
     return () => {
@@ -249,7 +281,7 @@ export const usePushNotifications = (options: UsePushNotificationsOptions = {}):
     fcmToken,
     isLoading,
     error,
-    
+
     // Actions
     initialize,
     requestPermission,

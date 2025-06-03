@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
 export interface IW9Form {
   contractorId: mongoose.Types.ObjectId;
@@ -12,7 +12,7 @@ export interface IW9Form {
     | "llc"
     | "other";
   taxClassificationOther?: string;
-  taxId: string; // Encrypted SSN or EIN
+  taxId: string; // Encrypted
   address: {
     street: string;
     city: string;
@@ -37,27 +37,31 @@ export interface IW9Form {
   exemptPayeeCodes?: string[];
   fatcaReportingCode?: string;
   signature: string;
-  dateSigned: Date;
-  pdfUrl?: string;
+  signatureDate: string;
   status: "draft" | "submitted" | "approved" | "rejected";
   submittedAt?: Date;
   approvedAt?: Date;
   rejectedAt?: Date;
   rejectionReason?: string;
+  pdfPath?: string;
+  hasPdf: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface IW9FormDocument extends IW9Form, mongoose.Document {
-  _id: mongoose.Types.ObjectId;
+export interface IW9FormDocument extends IW9Form, Document {
+  canBeModified(): boolean;
+  canBeSubmitted(): boolean;
+  isComplete(): boolean;
 }
 
 export interface IW9FormModel extends mongoose.Model<IW9FormDocument> {
   findByContractor(
     contractorId: mongoose.Types.ObjectId,
   ): Promise<IW9FormDocument | null>;
-  findPendingForms(): Promise<IW9FormDocument[]>;
-  findByStatus(status: string): Promise<IW9FormDocument[]>;
+  findActiveByContractor(
+    contractorId: mongoose.Types.ObjectId,
+  ): Promise<IW9FormDocument | null>;
 }
 
 const W9FormSchema = new Schema<IW9FormDocument, IW9FormModel>(
@@ -72,7 +76,7 @@ const W9FormSchema = new Schema<IW9FormDocument, IW9FormModel>(
       type: String,
       required: true,
       trim: true,
-      maxlength: 200,
+      maxlength: 100,
     },
     taxClassification: {
       type: String,
@@ -90,59 +94,38 @@ const W9FormSchema = new Schema<IW9FormDocument, IW9FormModel>(
     taxClassificationOther: {
       type: String,
       trim: true,
-      maxlength: 100,
-      validate: {
-        validator: function (this: IW9FormDocument, v: string) {
-          return (
-            this.taxClassification !== "other" ||
-            Boolean(v && v.trim().length > 0)
-          );
-        },
-        message:
-          'Tax classification other description is required when classification is "other"',
-      },
+      maxlength: 50,
     },
     taxId: {
       type: String,
       required: true,
-      validate: {
-        validator: function (v: string) {
-          // This will be encrypted, so we validate the decrypted format in the service layer
-          return Boolean(v && v.length > 0);
-        },
-        message: "Tax ID is required",
-      },
+      // This will be encrypted before storage
     },
     address: {
       street: {
         type: String,
         required: true,
         trim: true,
-        maxlength: 200,
+        maxlength: 100,
       },
       city: {
         type: String,
         required: true,
         trim: true,
-        maxlength: 100,
+        maxlength: 50,
       },
       state: {
         type: String,
         required: true,
         trim: true,
-        maxlength: 2,
+        length: 2,
         uppercase: true,
       },
       zipCode: {
         type: String,
         required: true,
         trim: true,
-        validate: {
-          validator: function (v: string) {
-            return /^\d{5}(-\d{4})?$/.test(v);
-          },
-          message: "Invalid ZIP code format",
-        },
+        match: /^\d{5}(-\d{4})?$/,
       },
     },
     requestorInfo: {
@@ -150,38 +133,33 @@ const W9FormSchema = new Schema<IW9FormDocument, IW9FormModel>(
         type: String,
         required: true,
         trim: true,
-        maxlength: 200,
+        maxlength: 100,
       },
       address: {
         street: {
           type: String,
           required: true,
           trim: true,
-          maxlength: 200,
+          maxlength: 100,
         },
         city: {
           type: String,
           required: true,
           trim: true,
-          maxlength: 100,
+          maxlength: 50,
         },
         state: {
           type: String,
           required: true,
           trim: true,
-          maxlength: 2,
+          length: 2,
           uppercase: true,
         },
         zipCode: {
           type: String,
           required: true,
           trim: true,
-          validate: {
-            validator: function (v: string) {
-              return /^\d{5}(-\d{4})?$/.test(v);
-            },
-            message: "Invalid ZIP code format",
-          },
+          match: /^\d{5}(-\d{4})?$/,
         },
       },
     },
@@ -200,19 +178,16 @@ const W9FormSchema = new Schema<IW9FormDocument, IW9FormModel>(
       },
       fatcaExempt: {
         type: Boolean,
-        default: false,
+        required: true,
       },
     },
-    exemptPayeeCodes: {
-      type: [String],
-      default: [],
-      validate: {
-        validator: function (v: string[]) {
-          return v.every((code) => /^[1-9]|1[0-4]$/.test(code));
-        },
-        message: "Invalid exempt payee code",
+    exemptPayeeCodes: [
+      {
+        type: String,
+        trim: true,
+        maxlength: 10,
       },
-    },
+    ],
     fatcaReportingCode: {
       type: String,
       trim: true,
@@ -222,21 +197,12 @@ const W9FormSchema = new Schema<IW9FormDocument, IW9FormModel>(
       type: String,
       required: true,
       trim: true,
-      maxlength: 200,
+      maxlength: 100,
     },
-    dateSigned: {
-      type: Date,
-      required: true,
-      validate: {
-        validator: function (v: Date) {
-          return v <= new Date();
-        },
-        message: "Date signed cannot be in the future",
-      },
-    },
-    pdfUrl: {
+    signatureDate: {
       type: String,
-      trim: true,
+      required: true,
+      match: /^\d{4}-\d{2}-\d{2}$/,
     },
     status: {
       type: String,
@@ -259,43 +225,88 @@ const W9FormSchema = new Schema<IW9FormDocument, IW9FormModel>(
       trim: true,
       maxlength: 500,
     },
+    pdfPath: {
+      type: String,
+      trim: true,
+    },
+    hasPdf: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   },
 );
 
-// Validation for status transitions
+// Indexes for efficient queries
+W9FormSchema.index({ contractorId: 1, status: 1 });
+W9FormSchema.index({ contractorId: 1, createdAt: -1 });
+
+// Validation middleware
 W9FormSchema.pre("save", function (next) {
+  // Ensure taxClassificationOther is provided when taxClassification is 'other'
+  if (this.taxClassification === "other" && !this.taxClassificationOther) {
+    return next(
+      new Error(
+        'Tax classification other description is required when classification is "other"',
+      ),
+    );
+  }
+
+  // Set status-specific timestamps
   if (this.isModified("status")) {
     const now = new Date();
-    const doc = this as IW9FormDocument;
-
-    switch (doc.status) {
+    switch (this.status) {
       case "submitted":
-        if (!doc.submittedAt) {
-          doc.submittedAt = now;
+        if (!this.submittedAt) {
+          this.submittedAt = now;
         }
         break;
       case "approved":
-        if (!doc.approvedAt) {
-          doc.approvedAt = now;
+        if (!this.approvedAt) {
+          this.approvedAt = now;
         }
         break;
       case "rejected":
-        if (!doc.rejectedAt) {
-          doc.rejectedAt = now;
-        }
-        if (!doc.rejectionReason) {
-          return next(
-            new Error("Rejection reason is required when status is rejected"),
-          );
+        if (!this.rejectedAt) {
+          this.rejectedAt = now;
         }
         break;
     }
   }
+
   next();
 });
+
+// Instance methods
+W9FormSchema.methods.canBeModified = function (): boolean {
+  return this.status === "draft" || this.status === "rejected";
+};
+
+W9FormSchema.methods.canBeSubmitted = function (): boolean {
+  return this.status === "draft" || this.status === "rejected";
+};
+
+W9FormSchema.methods.isComplete = function (): boolean {
+  return !!(
+    this.businessName &&
+    this.taxClassification &&
+    this.taxId &&
+    this.address?.street &&
+    this.address?.city &&
+    this.address?.state &&
+    this.address?.zipCode &&
+    this.requestorInfo?.name &&
+    this.requestorInfo?.address?.street &&
+    this.requestorInfo?.address?.city &&
+    this.requestorInfo?.address?.state &&
+    this.requestorInfo?.address?.zipCode &&
+    this.certifications &&
+    this.signature &&
+    this.signatureDate
+  );
+};
 
 // Static methods
 W9FormSchema.statics.findByContractor = function (
@@ -304,24 +315,18 @@ W9FormSchema.statics.findByContractor = function (
   return this.findOne({ contractorId }).sort({ createdAt: -1 });
 };
 
-W9FormSchema.statics.findPendingForms = function () {
-  return this.find({ status: "submitted" })
-    .populate("contractorId", "name email")
-    .sort({ submittedAt: 1 });
+W9FormSchema.statics.findActiveByContractor = function (
+  contractorId: mongoose.Types.ObjectId,
+) {
+  return this.findOne({
+    contractorId,
+    status: { $in: ["draft", "submitted", "approved"] },
+  }).sort({ createdAt: -1 });
 };
 
-W9FormSchema.statics.findByStatus = function (status: string) {
-  return this.find({ status })
-    .populate("contractorId", "name email")
-    .sort({ createdAt: -1 });
-};
-
-// Indexes
-W9FormSchema.index({ contractorId: 1, status: 1 });
-W9FormSchema.index({ status: 1, submittedAt: 1 });
-W9FormSchema.index({ createdAt: -1 });
-
-export default mongoose.model<IW9FormDocument, IW9FormModel>(
+const W9Form = mongoose.model<IW9FormDocument, IW9FormModel>(
   "W9Form",
   W9FormSchema,
 );
+
+export default W9Form;

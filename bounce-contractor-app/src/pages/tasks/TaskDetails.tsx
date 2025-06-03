@@ -39,7 +39,10 @@ import { useParams, useHistory } from "react-router-dom";
 import { Task } from "../../types/task.types";
 import { useI18n } from "../../hooks/common/useI18n";
 import CompensationDisplay from "../../components/tasks/CompensationDisplay";
-import { useClaimTask, useUpdateTaskStatus } from "../../hooks/tasks/useTaskActions";
+import {
+  useClaimTask,
+  useUpdateTaskStatus,
+} from "../../hooks/tasks/useTaskActions";
 
 interface TaskDetailsParams {
   id: string;
@@ -60,7 +63,8 @@ const TaskDetails: React.FC = () => {
     id: id,
     orderId: "ORD-2025-001",
     title: "Bounce House Delivery & Setup",
-    description: "Deliver and set up large bounce house for birthday party. Customer has requested early setup at 9 AM. Please ensure all safety equipment is properly installed.",
+    description:
+      "Deliver and set up large bounce house for birthday party. Customer has requested early setup at 9 AM. Please ensure all safety equipment is properly installed.",
     type: "delivery_and_setup",
     category: "bounce_house",
     priority: "high",
@@ -94,7 +98,8 @@ const TaskDetails: React.FC = () => {
       email: "sarah.johnson@email.com",
       phone: "(555) 123-4567",
       preferredContactMethod: "phone",
-      specialInstructions: "Please call 15 minutes before arrival. Dog in backyard - please keep gate closed.",
+      specialInstructions:
+        "Please call 15 minutes before arrival. Dog in backyard - please keep gate closed.",
     },
     equipment: [
       {
@@ -112,8 +117,10 @@ const TaskDetails: React.FC = () => {
         },
         condition: "excellent",
         images: [],
-        setupInstructions: "Requires 20x20 flat area, 6ft clearance on all sides",
-        safetyNotes: "Check all anchor points, ensure proper inflation before use",
+        setupInstructions:
+          "Requires 20x20 flat area, 6ft clearance on all sides",
+        safetyNotes:
+          "Check all anchor points, ensure proper inflation before use",
       },
     ],
     instructions: [
@@ -130,27 +137,28 @@ const TaskDetails: React.FC = () => {
         id: "INST-002",
         type: "setup",
         title: "Setup Instructions",
-        content: "Follow manufacturer setup guide, ensure all stakes are secure",
+        content:
+          "Follow manufacturer setup guide, ensure all stakes are secure",
         order: 2,
         isRequired: true,
         estimatedTime: 45,
       },
     ],
     compensation: {
-      baseAmount: 125.00,
+      baseAmount: 125.0,
       bonuses: [
         {
           type: "rush",
-          amount: 25.00,
+          amount: 25.0,
           description: "Early morning setup bonus",
         },
         {
           type: "difficulty",
-          amount: 15.00,
+          amount: 15.0,
           description: "Large equipment bonus",
         },
       ],
-      totalAmount: 165.00,
+      totalAmount: 165.0,
       currency: "USD",
       paymentMethod: "direct_deposit",
       paymentSchedule: "weekly",
@@ -198,11 +206,11 @@ const TaskDetails: React.FC = () => {
     // Open navigation app
     const { latitude, longitude } = mockTask.location.coordinates;
     const url = `https://maps.google.com/?q=${latitude},${longitude}`;
-    window.open(url, '_blank');
+    window.open(url, "_blank");
   };
 
   const handleCallCustomer = () => {
-    window.open(`tel:${mockTask.customer.phone}`, '_self');
+    window.open(`tel:${mockTask.customer.phone}`, "_self");
   };
 
   const getStatusColor = (status: string) => {
@@ -237,11 +245,11 @@ const TaskDetails: React.FC = () => {
 
   const formatScheduledDate = (dateString: string) => {
     const date = new Date(dateString);
-    
+
     if (isToday(date)) {
-      return 'Today ' + formatTaskTime(date);
+      return "Today " + formatTaskTime(date);
     } else if (isTomorrow(date)) {
-      return 'Tomorrow ' + formatTaskTime(date);
+      return "Tomorrow " + formatTaskTime(date);
     } else {
       return formatTaskTime(date);
     }
@@ -316,7 +324,7 @@ const TaskDetails: React.FC = () => {
                   </IonCardTitle>
                   <div className="flex items-center gap-2 mt-2">
                     <IonBadge color={getStatusColor(mockTask.status)}>
-                      {mockTask.status.replace('_', ' ').toUpperCase()}
+                      {mockTask.status.replace("_", " ").toUpperCase()}
                     </IonBadge>
                     <IonBadge color={getPriorityColor(mockTask.priority)}>
                       {mockTask.priority.toUpperCase()} PRIORITY
@@ -356,7 +364,10 @@ const TaskDetails: React.FC = () => {
             <IonCardContent>
               <div className="space-y-3">
                 <div className="flex items-center">
-                  <IonIcon icon={calendarOutline} className="mr-3 text-purple-500" />
+                  <IonIcon
+                    icon={calendarOutline}
+                    className="mr-3 text-purple-500"
+                  />
                   <div>
                     <div className="font-medium">Scheduled Time</div>
                     <div className="text-sm text-gray-600">
@@ -366,17 +377,24 @@ const TaskDetails: React.FC = () => {
                 </div>
 
                 <div className="flex items-center">
-                  <IonIcon icon={timeOutline} className="mr-3 text-orange-500" />
+                  <IonIcon
+                    icon={timeOutline}
+                    className="mr-3 text-orange-500"
+                  />
                   <div>
                     <div className="font-medium">Estimated Duration</div>
                     <div className="text-sm text-gray-600">
-                      {Math.round(mockTask.estimatedDuration / 60)}h {mockTask.estimatedDuration % 60}m
+                      {Math.round(mockTask.estimatedDuration / 60)}h{" "}
+                      {mockTask.estimatedDuration % 60}m
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center">
-                  <IonIcon icon={locationOutline} className="mr-3 text-blue-500" />
+                  <IonIcon
+                    icon={locationOutline}
+                    className="mr-3 text-blue-500"
+                  />
                   <div className="flex-1">
                     <div className="font-medium">Location</div>
                     <div className="text-sm text-gray-600">
@@ -388,11 +406,7 @@ const TaskDetails: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <IonButton
-                    fill="clear"
-                    size="small"
-                    onClick={handleNavigate}
-                  >
+                  <IonButton fill="clear" size="small" onClick={handleNavigate}>
                     <IonIcon icon={navigateOutline} />
                   </IonButton>
                 </div>
@@ -409,10 +423,14 @@ const TaskDetails: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <IonIcon icon={personOutline} className="mr-3 text-indigo-500" />
+                    <IonIcon
+                      icon={personOutline}
+                      className="mr-3 text-indigo-500"
+                    />
                     <div>
                       <div className="font-medium">
-                        {mockTask.customer.firstName} {mockTask.customer.lastName}
+                        {mockTask.customer.firstName}{" "}
+                        {mockTask.customer.lastName}
                       </div>
                       <div className="text-sm text-gray-600">
                         {mockTask.customer.email}
@@ -431,7 +449,10 @@ const TaskDetails: React.FC = () => {
                 {mockTask.customer.specialInstructions && (
                   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
                     <div className="flex items-start">
-                      <IonIcon icon={informationCircleOutline} className="mr-2 text-yellow-600 mt-0.5" />
+                      <IonIcon
+                        icon={informationCircleOutline}
+                        className="mr-2 text-yellow-600 mt-0.5"
+                      />
                       <div>
                         <div className="text-sm font-medium text-yellow-800">
                           Special Instructions
@@ -455,10 +476,15 @@ const TaskDetails: React.FC = () => {
               </IonCardHeader>
               <IonCardContent>
                 {mockTask.equipment.map((equipment) => (
-                  <div key={equipment.id} className="border-b border-gray-200 last:border-b-0 pb-3 last:pb-0 mb-3 last:mb-0">
+                  <div
+                    key={equipment.id}
+                    className="border-b border-gray-200 last:border-b-0 pb-3 last:pb-0 mb-3 last:mb-0"
+                  >
                     <div className="font-medium">{equipment.name}</div>
                     <div className="text-sm text-gray-600 mt-1">
-                      {equipment.dimensions.length}' × {equipment.dimensions.width}' × {equipment.dimensions.height}'
+                      {equipment.dimensions.length}' ×{" "}
+                      {equipment.dimensions.width}' ×{" "}
+                      {equipment.dimensions.height}'
                       {equipment.weight && ` • ${equipment.weight} lbs`}
                     </div>
                     {equipment.setupInstructions && (
@@ -531,11 +557,7 @@ const TaskDetails: React.FC = () => {
               </IonButton>
             )}
 
-            <IonButton
-              expand="block"
-              fill="outline"
-              onClick={handleNavigate}
-            >
+            <IonButton expand="block" fill="outline" onClick={handleNavigate}>
               <IonIcon icon={navigateOutline} slot="start" />
               Get Directions
             </IonButton>

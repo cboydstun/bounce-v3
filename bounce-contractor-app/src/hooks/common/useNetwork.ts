@@ -12,7 +12,7 @@ export interface NetworkHookResult {
 
 export function useNetwork(): NetworkHookResult {
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>(
-    offlineService.getNetworkStatus()
+    offlineService.getNetworkStatus(),
   );
 
   useEffect(() => {

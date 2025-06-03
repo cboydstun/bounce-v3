@@ -143,7 +143,9 @@ class BackgroundLocationService {
       // Save final session state
       await this.saveSession();
 
-      console.log(`Stopped location tracking for task ${this.currentSession.taskId}`);
+      console.log(
+        `Stopped location tracking for task ${this.currentSession.taskId}`,
+      );
       this.notifySessionListeners();
 
       this.isTracking = false;
@@ -157,7 +159,9 @@ class BackgroundLocationService {
   /**
    * Start location watching
    */
-  private async startLocationWatch(config: LocationTrackingConfig): Promise<void> {
+  private async startLocationWatch(
+    config: LocationTrackingConfig,
+  ): Promise<void> {
     this.watchId = await Geolocation.watchPosition(
       {
         enableHighAccuracy: config.enableHighAccuracy,
@@ -170,7 +174,7 @@ class BackgroundLocationService {
         } else if (err) {
           console.error("Location watch error:", err);
         }
-      }
+      },
     );
 
     this.isTracking = true;
@@ -183,12 +187,15 @@ class BackgroundLocationService {
     if (!this.currentSession) return;
 
     // Check distance filter
-    if (this.lastKnownPosition && this.currentSession.config.distanceFilter > 0) {
+    if (
+      this.lastKnownPosition &&
+      this.currentSession.config.distanceFilter > 0
+    ) {
       const distance = this.calculateDistance(
         this.lastKnownPosition.coords.latitude,
         this.lastKnownPosition.coords.longitude,
         position.coords.latitude,
-        position.coords.longitude
+        position.coords.longitude,
       );
 
       if (distance < this.currentSession.config.distanceFilter) {
@@ -272,7 +279,9 @@ class BackgroundLocationService {
         });
       }
 
-      console.log(`Queued ${this.updateQueue.length} location updates for sync`);
+      console.log(
+        `Queued ${this.updateQueue.length} location updates for sync`,
+      );
       this.updateQueue = [];
     } catch (error) {
       console.error("Failed to sync location updates:", error);
@@ -285,8 +294,10 @@ class BackgroundLocationService {
   private setupAppStateHandlers(): void {
     App.addListener("appStateChange", (state) => {
       if (this.isTracking) {
-        console.log(`App state changed: ${state.isActive ? "foreground" : "background"}`);
-        
+        console.log(
+          `App state changed: ${state.isActive ? "foreground" : "background"}`,
+        );
+
         if (!state.isActive) {
           // App went to background
           this.handleAppBackground();
@@ -346,7 +357,12 @@ class BackgroundLocationService {
   /**
    * Calculate distance between two points
    */
-  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  private calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
     const R = 6371000; // Earth's radius in meters
     const dLat = this.toRadians(lat2 - lat1);
     const dLon = this.toRadians(lon2 - lon1);
@@ -377,7 +393,9 @@ class BackgroundLocationService {
   /**
    * Add update listener
    */
-  public addUpdateListener(listener: (update: LocationUpdate) => void): () => void {
+  public addUpdateListener(
+    listener: (update: LocationUpdate) => void,
+  ): () => void {
     this.updateListeners.push(listener);
     return () => {
       const index = this.updateListeners.indexOf(listener);
@@ -390,7 +408,9 @@ class BackgroundLocationService {
   /**
    * Add session listener
    */
-  public addSessionListener(listener: (session: LocationTrackingSession) => void): () => void {
+  public addSessionListener(
+    listener: (session: LocationTrackingSession) => void,
+  ): () => void {
     this.sessionListeners.push(listener);
     return () => {
       const index = this.sessionListeners.indexOf(listener);
@@ -412,7 +432,9 @@ class BackgroundLocationService {
    */
   private notifySessionListeners(): void {
     if (this.currentSession) {
-      this.sessionListeners.forEach((listener) => listener(this.currentSession!));
+      this.sessionListeners.forEach((listener) =>
+        listener(this.currentSession!),
+      );
     }
   }
 
@@ -440,7 +462,9 @@ class BackgroundLocationService {
       const { value } = await Preferences.get({ key: "location_history" });
       if (value) {
         this.locationHistory = JSON.parse(value);
-        console.log(`Loaded ${this.locationHistory.length} location updates from storage`);
+        console.log(
+          `Loaded ${this.locationHistory.length} location updates from storage`,
+        );
       }
     } catch (error) {
       console.error("Failed to load location history:", error);
@@ -473,7 +497,9 @@ class BackgroundLocationService {
         const session: LocationTrackingSession = JSON.parse(value);
         if (session.isActive) {
           this.currentSession = session;
-          console.log(`Restored active location session for task ${session.taskId}`);
+          console.log(
+            `Restored active location session for task ${session.taskId}`,
+          );
           return session;
         }
       }
@@ -531,4 +557,5 @@ class BackgroundLocationService {
 }
 
 // Export singleton instance
-export const backgroundLocationService = BackgroundLocationService.getInstance();
+export const backgroundLocationService =
+  BackgroundLocationService.getInstance();

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { 
-  backgroundLocationService, 
-  LocationUpdate, 
-  LocationTrackingConfig, 
-  LocationTrackingSession 
+import {
+  backgroundLocationService,
+  LocationUpdate,
+  LocationTrackingConfig,
+  LocationTrackingSession,
 } from "../../services/location/backgroundLocation";
 import { Position } from "@capacitor/geolocation";
 
@@ -14,20 +14,21 @@ export interface BackgroundLocationHookResult {
   lastPosition: Position | null;
   queuedUpdates: number;
   locationHistory: LocationUpdate[];
-  
+
   // Actions
   startTracking: (config: LocationTrackingConfig) => Promise<string>;
   stopTracking: () => Promise<void>;
   getCurrentLocation: () => Promise<Position>;
   clearLocationHistory: () => Promise<void>;
-  
+
   // Utilities
   getLocationHistory: (taskId?: string) => LocationUpdate[];
 }
 
 export function useBackgroundLocation(): BackgroundLocationHookResult {
   const [isTracking, setIsTracking] = useState(false);
-  const [currentSession, setCurrentSession] = useState<LocationTrackingSession | null>(null);
+  const [currentSession, setCurrentSession] =
+    useState<LocationTrackingSession | null>(null);
   const [lastPosition, setLastPosition] = useState<Position | null>(null);
   const [queuedUpdates, setQueuedUpdates] = useState(0);
   const [locationHistory, setLocationHistory] = useState<LocationUpdate[]>([]);
@@ -45,16 +46,20 @@ export function useBackgroundLocation(): BackgroundLocationHookResult {
   // Set up listeners
   useEffect(() => {
     // Listen for location updates
-    const unsubscribeUpdates = backgroundLocationService.addUpdateListener((update) => {
-      setLocationHistory(prev => [...prev, update]);
-      updateState();
-    });
+    const unsubscribeUpdates = backgroundLocationService.addUpdateListener(
+      (update) => {
+        setLocationHistory((prev) => [...prev, update]);
+        updateState();
+      },
+    );
 
     // Listen for session changes
-    const unsubscribeSession = backgroundLocationService.addSessionListener((session) => {
-      setCurrentSession(session);
-      updateState();
-    });
+    const unsubscribeSession = backgroundLocationService.addSessionListener(
+      (session) => {
+        setCurrentSession(session);
+        updateState();
+      },
+    );
 
     // Initial state update
     updateState();
@@ -66,16 +71,19 @@ export function useBackgroundLocation(): BackgroundLocationHookResult {
   }, [updateState]);
 
   // Start tracking
-  const startTracking = useCallback(async (config: LocationTrackingConfig) => {
-    try {
-      const sessionId = await backgroundLocationService.startTracking(config);
-      updateState();
-      return sessionId;
-    } catch (error) {
-      console.error("Failed to start location tracking:", error);
-      throw error;
-    }
-  }, [updateState]);
+  const startTracking = useCallback(
+    async (config: LocationTrackingConfig) => {
+      try {
+        const sessionId = await backgroundLocationService.startTracking(config);
+        updateState();
+        return sessionId;
+      } catch (error) {
+        console.error("Failed to start location tracking:", error);
+        throw error;
+      }
+    },
+    [updateState],
+  );
 
   // Stop tracking
   const stopTracking = useCallback(async () => {
@@ -111,13 +119,13 @@ export function useBackgroundLocation(): BackgroundLocationHookResult {
     lastPosition,
     queuedUpdates,
     locationHistory,
-    
+
     // Actions
     startTracking,
     stopTracking,
     getCurrentLocation,
     clearLocationHistory,
-    
+
     // Utilities
     getLocationHistory,
   };
@@ -126,13 +134,14 @@ export function useBackgroundLocation(): BackgroundLocationHookResult {
 // Hook for task-specific location tracking
 export function useTaskLocationTracking(taskId: string) {
   const backgroundLocation = useBackgroundLocation();
-  
+
   // Check if currently tracking this task
-  const isTrackingThisTask = backgroundLocation.currentSession?.taskId === taskId;
-  
+  const isTrackingThisTask =
+    backgroundLocation.currentSession?.taskId === taskId;
+
   // Get location history for this task
   const taskLocationHistory = backgroundLocation.getLocationHistory(taskId);
-  
+
   // Start tracking for this task with default config
   const startTaskTracking = useCallback(
     async (customConfig?: Partial<LocationTrackingConfig>) => {
@@ -145,10 +154,10 @@ export function useTaskLocationTracking(taskId: string) {
         distanceFilter: 10, // 10 meters
         ...customConfig,
       };
-      
+
       return await backgroundLocation.startTracking(defaultConfig);
     },
-    [backgroundLocation, taskId]
+    [backgroundLocation, taskId],
   );
 
   // Stop tracking (only if tracking this task)
@@ -171,10 +180,10 @@ export function useTaskLocationTracking(taskId: string) {
         prev.location.latitude,
         prev.location.longitude,
         curr.location.latitude,
-        curr.location.longitude
+        curr.location.longitude,
       );
     }
-    
+
     return totalDistance;
   }, [taskLocationHistory]);
 
@@ -183,12 +192,12 @@ export function useTaskLocationTracking(taskId: string) {
     if (!backgroundLocation.currentSession || !isTrackingThisTask) {
       return 0;
     }
-    
+
     const startTime = new Date(backgroundLocation.currentSession.startTime);
-    const endTime = backgroundLocation.currentSession.endTime 
+    const endTime = backgroundLocation.currentSession.endTime
       ? new Date(backgroundLocation.currentSession.endTime)
       : new Date();
-    
+
     return endTime.getTime() - startTime.getTime();
   }, [backgroundLocation.currentSession, isTrackingThisTask]);
 
@@ -196,12 +205,12 @@ export function useTaskLocationTracking(taskId: string) {
   const getAverageSpeed = useCallback(() => {
     const distance = getDistanceTraveled(); // in meters
     const duration = getTrackingDuration(); // in milliseconds
-    
+
     if (duration === 0) return 0;
-    
+
     const durationInHours = duration / (1000 * 60 * 60);
     const distanceInKm = distance / 1000;
-    
+
     return distanceInKm / durationInHours; // km/h
   }, [getDistanceTraveled, getTrackingDuration]);
 
@@ -210,11 +219,11 @@ export function useTaskLocationTracking(taskId: string) {
     // Task-specific state
     isTrackingThisTask,
     taskLocationHistory,
-    
+
     // Task-specific actions
     startTaskTracking,
     stopTaskTracking,
-    
+
     // Task-specific utilities
     getDistanceTraveled,
     getTrackingDuration,
@@ -223,7 +232,12 @@ export function useTaskLocationTracking(taskId: string) {
 }
 
 // Helper function to calculate distance between two points
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
   const R = 6371000; // Earth's radius in meters
   const dLat = toRadians(lat2 - lat1);
   const dLon = toRadians(lon2 - lon1);

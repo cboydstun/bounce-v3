@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   IonSegment,
   IonSegmentButton,
@@ -6,13 +6,13 @@ import {
   IonIcon,
   IonItem,
   IonSelect,
-  IonSelectOption
-} from '@ionic/react';
-import { languageOutline } from 'ionicons/icons';
-import { useI18n } from '../../hooks/common/useI18n';
+  IonSelectOption,
+} from "@ionic/react";
+import { languageOutline } from "ionicons/icons";
+import { useI18n } from "../../hooks/common/useI18n";
 
 interface LanguageSwitcherProps {
-  variant?: 'segment' | 'select' | 'minimal';
+  variant?: "segment" | "select" | "minimal";
   className?: string;
 }
 
@@ -20,8 +20,8 @@ interface LanguageSwitcherProps {
  * Language switcher component with multiple display variants
  */
 export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
-  variant = 'segment',
-  className = ''
+  variant = "segment",
+  className = "",
 }) => {
   const { locale, changeLanguage, t } = useI18n();
 
@@ -29,7 +29,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
     await changeLanguage(newLanguage);
   };
 
-  if (variant === 'segment') {
+  if (variant === "segment") {
     return (
       <IonSegment
         value={locale}
@@ -46,11 +46,11 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
     );
   }
 
-  if (variant === 'select') {
+  if (variant === "select") {
     return (
       <IonItem className={className}>
         <IonIcon icon={languageOutline} slot="start" />
-        <IonLabel>{t('common.app.language', 'Language')}</IonLabel>
+        <IonLabel>{t("common.app.language", "Language")}</IonLabel>
         <IonSelect
           value={locale}
           placeholder="Select Language"
@@ -67,11 +67,11 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   return (
     <div
       className={`flex items-center cursor-pointer ${className}`}
-      onClick={() => handleLanguageChange(locale === 'en' ? 'es' : 'en')}
+      onClick={() => handleLanguageChange(locale === "en" ? "es" : "en")}
     >
       <IonIcon icon={languageOutline} className="mr-2" />
       <span className="text-sm font-medium">
-        {locale === 'en' ? 'EN' : 'ES'}
+        {locale === "en" ? "EN" : "ES"}
       </span>
     </div>
   );
@@ -80,11 +80,13 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 /**
  * Compact language toggle button
  */
-export const LanguageToggle: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const LanguageToggle: React.FC<{ className?: string }> = ({
+  className = "",
+}) => {
   const { locale, changeLanguage } = useI18n();
 
   const toggleLanguage = async () => {
-    const newLanguage = locale === 'en' ? 'es' : 'en';
+    const newLanguage = locale === "en" ? "es" : "en";
     await changeLanguage(newLanguage);
   };
 
@@ -98,10 +100,10 @@ export const LanguageToggle: React.FC<{ className?: string }> = ({ className = '
         transition-colors duration-200
         ${className}
       `}
-      aria-label={`Switch to ${locale === 'en' ? 'Spanish' : 'English'}`}
+      aria-label={`Switch to ${locale === "en" ? "Spanish" : "English"}`}
     >
       <span className="text-sm font-bold text-gray-700">
-        {locale === 'en' ? 'ES' : 'EN'}
+        {locale === "en" ? "ES" : "EN"}
       </span>
     </button>
   );

@@ -37,7 +37,9 @@ class SyncQueue {
     return SyncQueue.instance;
   }
 
-  public async syncWithConflictResolution(options: SyncOptions = {}): Promise<SyncResult> {
+  public async syncWithConflictResolution(
+    options: SyncOptions = {},
+  ): Promise<SyncResult> {
     const {
       batchSize = 10,
       maxRetries = 3,
@@ -50,7 +52,9 @@ class SyncQueue {
       return { successful: 0, failed: 0, total: 0, errors: [] };
     }
 
-    console.log(`Starting sync with conflict resolution for ${queueStatus.pending} actions`);
+    console.log(
+      `Starting sync with conflict resolution for ${queueStatus.pending} actions`,
+    );
 
     const result: SyncResult = {
       successful: 0,
@@ -72,13 +76,19 @@ class SyncQueue {
     return result;
   }
 
-  private createBatches(batchSize: number, priorityFilter?: ("low" | "medium" | "high")[]): OfflineAction[][] {
+  private createBatches(
+    batchSize: number,
+    priorityFilter?: ("low" | "medium" | "high")[],
+  ): OfflineAction[][] {
     // This would need access to the queue from offlineService
     // For now, we'll return empty batches and let the offlineService handle processing
     return [];
   }
 
-  private async processBatch(batch: OfflineAction[], conflictResolution: "auto" | "manual"): Promise<SyncResult> {
+  private async processBatch(
+    batch: OfflineAction[],
+    conflictResolution: "auto" | "manual",
+  ): Promise<SyncResult> {
     const result: SyncResult = {
       successful: 0,
       failed: 0,
@@ -88,7 +98,10 @@ class SyncQueue {
 
     for (const action of batch) {
       try {
-        await this.processActionWithConflictDetection(action, conflictResolution);
+        await this.processActionWithConflictDetection(
+          action,
+          conflictResolution,
+        );
         result.successful++;
       } catch (error) {
         result.failed++;
@@ -101,21 +114,23 @@ class SyncQueue {
 
   private async processActionWithConflictDetection(
     action: OfflineAction,
-    conflictResolution: "auto" | "manual"
+    conflictResolution: "auto" | "manual",
   ): Promise<void> {
     try {
       // First, try to get the current server state for comparison
       const serverData = await this.fetchServerData(action);
-      
+
       // Check for conflicts
       const conflict = this.detectConflict(action, serverData);
-      
+
       if (conflict) {
         if (conflictResolution === "auto") {
           await this.resolveConflictAutomatically(conflict);
         } else {
           this.addConflict(conflict);
-          throw new Error(`Conflict detected for action ${action.id}, manual resolution required`);
+          throw new Error(
+            `Conflict detected for action ${action.id}, manual resolution required`,
+          );
         }
       }
 
@@ -123,10 +138,13 @@ class SyncQueue {
       await this.executeAction(action);
     } catch (error) {
       // If it's a conflict error, don't retry
-      if (error instanceof Error && error.message.includes("Conflict detected")) {
+      if (
+        error instanceof Error &&
+        error.message.includes("Conflict detected")
+      ) {
         throw error;
       }
-      
+
       // For other errors, let the normal retry logic handle it
       throw error;
     }
@@ -145,11 +163,11 @@ class SyncQueue {
             return response.data;
           }
           break;
-        
+
         case "profile_update":
           const response = await apiClient.get("/contractors/me");
           return response.data;
-          
+
         default:
           return null;
       }
@@ -174,7 +192,10 @@ class SyncQueue {
     return null;
   }
 
-  private detectConflict(action: OfflineAction, serverData: any): SyncConflict | null {
+  private detectConflict(
+    action: OfflineAction,
+    serverData: any,
+  ): SyncConflict | null {
     if (!serverData) {
       return null;
     }
@@ -182,7 +203,10 @@ class SyncQueue {
     switch (action.type) {
       case "task_claim":
         // Check if task is already claimed by someone else
-        if (serverData.status === "assigned" && serverData.assignedContractor !== action.payload.contractorId) {
+        if (
+          serverData.status === "assigned" &&
+          serverData.assignedContractor !== action.payload.contractorId
+        ) {
           return {
             id: `conflict_${action.id}`,
             type: "concurrent_modification",
@@ -196,8 +220,13 @@ class SyncQueue {
 
       case "task_status_update":
         // Check if server status is different from expected
-        const expectedPreviousStatus = this.getExpectedPreviousStatus(action.payload.status);
-        if (serverData.status !== expectedPreviousStatus && serverData.status !== action.payload.status) {
+        const expectedPreviousStatus = this.getExpectedPreviousStatus(
+          action.payload.status,
+        );
+        if (
+          serverData.status !== expectedPreviousStatus &&
+          serverData.status !== action.payload.status
+        ) {
           return {
             id: `conflict_${action.id}`,
             type: "data_conflict",
@@ -231,16 +260,18 @@ class SyncQueue {
 
   private getExpectedPreviousStatus(newStatus: string): string {
     const statusFlow: Record<string, string> = {
-      "assigned": "published",
-      "in_progress": "assigned",
-      "completed": "in_progress",
-      "cancelled": "assigned",
+      assigned: "published",
+      in_progress: "assigned",
+      completed: "in_progress",
+      cancelled: "assigned",
     };
 
     return statusFlow[newStatus] || "published";
   }
 
-  private async resolveConflictAutomatically(conflict: SyncConflict): Promise<void> {
+  private async resolveConflictAutomatically(
+    conflict: SyncConflict,
+  ): Promise<void> {
     let resolution: ConflictResolution;
 
     switch (conflict.type) {
@@ -273,7 +304,13 @@ class SyncQueue {
       const localStatus = conflict.localData.status;
 
       // If server is ahead in the workflow, accept server state
-      const statusOrder = ["published", "assigned", "in_progress", "completed", "cancelled"];
+      const statusOrder = [
+        "published",
+        "assigned",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ];
       const serverIndex = statusOrder.indexOf(serverStatus);
       const localIndex = statusOrder.indexOf(localStatus);
 
@@ -290,9 +327,9 @@ class SyncQueue {
   private mergeProfileData(conflict: SyncConflict): ConflictResolution {
     // Merge profile data by taking non-conflicting fields from both
     const merged = { ...conflict.serverData };
-    
+
     // Apply local changes that don't conflict
-    Object.keys(conflict.localData).forEach(key => {
+    Object.keys(conflict.localData).forEach((key) => {
       if (key !== "updatedAt" && key !== "version") {
         merged[key] = conflict.localData[key];
       }
@@ -304,17 +341,24 @@ class SyncQueue {
     };
   }
 
-  private async applyResolution(conflict: SyncConflict, resolution: ConflictResolution): Promise<void> {
+  private async applyResolution(
+    conflict: SyncConflict,
+    resolution: ConflictResolution,
+  ): Promise<void> {
     switch (resolution.strategy) {
       case "server_wins":
         // Skip the action, server state is authoritative
-        console.log(`Conflict resolved: server wins for action ${conflict.action.id}`);
+        console.log(
+          `Conflict resolved: server wins for action ${conflict.action.id}`,
+        );
         break;
 
       case "client_wins":
         // Proceed with the original action
         await this.executeAction(conflict.action);
-        console.log(`Conflict resolved: client wins for action ${conflict.action.id}`);
+        console.log(
+          `Conflict resolved: client wins for action ${conflict.action.id}`,
+        );
         break;
 
       case "merge":
@@ -324,13 +368,17 @@ class SyncQueue {
           payload: resolution.resolvedData,
         };
         await this.executeAction(mergedAction);
-        console.log(`Conflict resolved: merged data for action ${conflict.action.id}`);
+        console.log(
+          `Conflict resolved: merged data for action ${conflict.action.id}`,
+        );
         break;
 
       case "manual":
         // Add to conflicts list for manual resolution
         this.addConflict(conflict);
-        throw new Error(`Manual resolution required for action ${conflict.action.id}`);
+        throw new Error(
+          `Manual resolution required for action ${conflict.action.id}`,
+        );
     }
   }
 
@@ -351,7 +399,7 @@ class SyncQueue {
   }
 
   private notifyConflictListeners(): void {
-    this.conflictListeners.forEach(listener => listener([...this.conflicts]));
+    this.conflictListeners.forEach((listener) => listener([...this.conflicts]));
   }
 
   public onConflict(listener: (conflicts: SyncConflict[]) => void): () => void {
@@ -368,16 +416,19 @@ class SyncQueue {
     return [...this.conflicts];
   }
 
-  public async resolveConflict(conflictId: string, resolution: ConflictResolution): Promise<void> {
-    const conflict = this.conflicts.find(c => c.id === conflictId);
+  public async resolveConflict(
+    conflictId: string,
+    resolution: ConflictResolution,
+  ): Promise<void> {
+    const conflict = this.conflicts.find((c) => c.id === conflictId);
     if (!conflict) {
       throw new Error(`Conflict not found: ${conflictId}`);
     }
 
     await this.applyResolution(conflict, resolution);
-    
+
     // Remove resolved conflict
-    this.conflicts = this.conflicts.filter(c => c.id !== conflictId);
+    this.conflicts = this.conflicts.filter((c) => c.id !== conflictId);
     this.notifyConflictListeners();
   }
 

@@ -29,7 +29,10 @@ interface AuthActions {
   clearAuth: () => void;
 
   // Biometric authentication
-  enableBiometric: (credentials?: { email: string; password: string }) => Promise<void>;
+  enableBiometric: (credentials?: {
+    email: string;
+    password: string;
+  }) => Promise<void>;
   disableBiometric: () => Promise<void>;
   authenticateWithBiometric: () => Promise<void>;
   loginWithBiometric: () => Promise<void>;
@@ -239,21 +242,18 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await apiClient.put(
-            "/contractors/me",
-            profileData,
-          );
+          const response = await apiClient.put("/contractors/me", profileData);
 
           if (response.success && response.data) {
             const updatedProfile = response.data;
-            
+
             // If the API response includes a name field, split it back into firstName/lastName for the user object
             let updatedUser = get().user;
             if (updatedProfile.name && updatedUser) {
-              const nameParts = updatedProfile.name.split(' ');
-              const firstName = nameParts[0] || '';
-              const lastName = nameParts.slice(1).join(' ') || '';
-              
+              const nameParts = updatedProfile.name.split(" ");
+              const firstName = nameParts[0] || "";
+              const lastName = nameParts.slice(1).join(" ") || "";
+
               updatedUser = {
                 ...updatedUser,
                 firstName,
@@ -262,7 +262,7 @@ export const useAuthStore = create<AuthStore>()(
                 phone: updatedProfile.phone || updatedUser.phone,
               };
             }
-            
+
             set({
               profile: updatedProfile,
               user: updatedUser,
@@ -295,12 +295,12 @@ export const useAuthStore = create<AuthStore>()(
 
       updateProfilePhoto: async (photoUrl: string) => {
         const { user, profile } = get();
-        
+
         // Optimistically update the UI
         if (user) {
           set({
             user: { ...user, profileImage: photoUrl },
-            profile: profile ? { ...profile } : null
+            profile: profile ? { ...profile } : null,
           });
         }
 
@@ -347,56 +347,70 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       // Biometric authentication
-      enableBiometric: async (credentials?: { email: string; password: string }) => {
+      enableBiometric: async (credentials?: {
+        email: string;
+        password: string;
+      }) => {
         try {
-          const { biometricService } = await import('../services/auth/biometricService');
+          const { biometricService } = await import(
+            "../services/auth/biometricService"
+          );
           const { user } = get();
-          
+
           if (!user) {
-            throw new Error('User must be logged in to enable biometric authentication');
+            throw new Error(
+              "User must be logged in to enable biometric authentication",
+            );
           }
 
           // Use provided credentials or current user data
           const biometricCredentials = {
             username: credentials?.email || user.email,
-            password: credentials?.password || '', // Password should be provided for security
+            password: credentials?.password || "", // Password should be provided for security
             accessToken: get().tokens?.accessToken,
             refreshToken: get().tokens?.refreshToken,
-            expiresAt: get().tokens?.expiresAt
+            expiresAt: get().tokens?.expiresAt,
           };
 
-          const result = await biometricService.setupBiometric(biometricCredentials);
-          
+          const result =
+            await biometricService.setupBiometric(biometricCredentials);
+
           if (result.success) {
             set({ biometricEnabled: true });
           } else {
-            throw new Error(result.error || 'Failed to enable biometric authentication');
+            throw new Error(
+              result.error || "Failed to enable biometric authentication",
+            );
           }
         } catch (error) {
-          console.error('Enable biometric error:', error);
+          console.error("Enable biometric error:", error);
           throw error;
         }
       },
 
       disableBiometric: async () => {
         try {
-          const { biometricService } = await import('../services/auth/biometricService');
+          const { biometricService } = await import(
+            "../services/auth/biometricService"
+          );
           await biometricService.disableBiometric();
           set({ biometricEnabled: false });
         } catch (error) {
-          console.error('Disable biometric error:', error);
-          throw new Error('Failed to disable biometric authentication');
+          console.error("Disable biometric error:", error);
+          throw new Error("Failed to disable biometric authentication");
         }
       },
 
       authenticateWithBiometric: async () => {
         try {
-          const { biometricService } = await import('../services/auth/biometricService');
-          
+          const { biometricService } = await import(
+            "../services/auth/biometricService"
+          );
+
           const result = await biometricService.authenticateAndGetCredentials({
-            reason: 'Authenticate to access your account',
-            title: 'Biometric Login',
-            subtitle: 'Use your biometric to sign in'
+            reason: "Authenticate to access your account",
+            title: "Biometric Login",
+            subtitle: "Use your biometric to sign in",
           });
 
           if (result.success && result.credentials) {
@@ -404,36 +418,42 @@ export const useAuthStore = create<AuthStore>()(
             if (result.credentials.accessToken) {
               const tokens = {
                 accessToken: result.credentials.accessToken,
-                refreshToken: result.credentials.refreshToken || '',
-                expiresAt: result.credentials.expiresAt || new Date(Date.now() + APP_CONFIG.JWT_ACCESS_TOKEN_EXPIRY).toISOString(),
-                tokenType: 'Bearer' as const
+                refreshToken: result.credentials.refreshToken || "",
+                expiresAt:
+                  result.credentials.expiresAt ||
+                  new Date(
+                    Date.now() + APP_CONFIG.JWT_ACCESS_TOKEN_EXPIRY,
+                  ).toISOString(),
+                tokenType: "Bearer" as const,
               };
-              
+
               apiClient.setAuthTokens(tokens);
               set({ tokens });
             }
-            
+
             // Refresh session
             await get().refreshToken();
           } else {
-            throw new Error(result.error || 'Biometric authentication failed');
+            throw new Error(result.error || "Biometric authentication failed");
           }
         } catch (error) {
-          console.error('Biometric authentication error:', error);
+          console.error("Biometric authentication error:", error);
           throw error;
         }
       },
 
       loginWithBiometric: async () => {
         set({ isLoading: true, error: null });
-        
+
         try {
-          const { biometricService } = await import('../services/auth/biometricService');
-          
+          const { biometricService } = await import(
+            "../services/auth/biometricService"
+          );
+
           const result = await biometricService.authenticateAndGetCredentials({
-            reason: 'Sign in to your account',
-            title: 'Biometric Login',
-            subtitle: 'Use your biometric to sign in quickly'
+            reason: "Sign in to your account",
+            title: "Biometric Login",
+            subtitle: "Use your biometric to sign in quickly",
           });
 
           if (result.success && result.credentials) {
@@ -441,14 +461,15 @@ export const useAuthStore = create<AuthStore>()(
             await get().login({
               email: result.credentials.username,
               password: result.credentials.password,
-              rememberMe: true
+              rememberMe: true,
             });
           } else {
-            throw new Error(result.error || 'Biometric login failed');
+            throw new Error(result.error || "Biometric login failed");
           }
         } catch (error) {
-          console.error('Biometric login error:', error);
-          const errorMessage = (error as any)?.message || 'Biometric login failed';
+          console.error("Biometric login error:", error);
+          const errorMessage =
+            (error as any)?.message || "Biometric login failed";
           set({ error: errorMessage, isLoading: false });
           throw error;
         }

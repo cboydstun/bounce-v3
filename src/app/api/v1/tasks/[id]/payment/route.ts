@@ -244,7 +244,9 @@ export async function GET(
     }
 
     // Get payment history for this task
-    const paymentHistory = await TaskPaymentHistory.findByTaskId(resolvedParams.id);
+    const paymentHistory = await TaskPaymentHistory.findByTaskId(
+      resolvedParams.id,
+    );
 
     return NextResponse.json({
       taskId: resolvedParams.id,

@@ -246,7 +246,10 @@ export async function PUT(
     }
 
     // Log payment amount change if payment amount was updated
-    if ("paymentAmount" in updateData && updateData.paymentAmount !== originalPaymentAmount) {
+    if (
+      "paymentAmount" in updateData &&
+      updateData.paymentAmount !== originalPaymentAmount
+    ) {
       try {
         await TaskPaymentHistory.createPaymentChange({
           taskId: (updatedTask._id as mongoose.Types.ObjectId).toString(),

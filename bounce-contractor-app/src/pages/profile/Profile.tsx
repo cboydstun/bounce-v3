@@ -8,11 +8,17 @@ import {
   IonButton,
   IonText,
   IonIcon,
+  IonBadge,
 } from "@ionic/react";
-import { logOutOutline, settingsOutline } from "ionicons/icons";
+import {
+  logOutOutline,
+  settingsOutline,
+  documentTextOutline,
+} from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 import { useAuthStore, authSelectors } from "../../store/authStore";
 import { useI18n } from "../../hooks/common/useI18n";
+import { useW9Form } from "../../hooks/quickbooks/useW9Form";
 import EarningsSummary from "../../components/tasks/EarningsSummary";
 
 const Profile: React.FC = () => {
@@ -21,6 +27,7 @@ const Profile: React.FC = () => {
   const user = useAuthStore(authSelectors.user);
   const profile = useAuthStore(authSelectors.profile);
   const logout = useAuthStore((state) => state.logout);
+  const { w9Status } = useW9Form();
 
   const handleLogout = async () => {
     try {
@@ -32,6 +39,10 @@ const Profile: React.FC = () => {
 
   const handleSettings = () => {
     history.push("/notifications/settings");
+  };
+
+  const handleTaxSettings = () => {
+    history.push("/profile/tax-settings");
   };
 
   const handleEditProfile = () => {
@@ -51,11 +62,11 @@ const Profile: React.FC = () => {
   // Mock earnings data - in real app, this would come from API
   const mockEarnings = {
     totalEarnings: 2450.75,
-    thisWeekEarnings: 325.50,
+    thisWeekEarnings: 325.5,
     thisMonthEarnings: 1250.25,
     completedTasks: 18,
     averagePerTask: 136.15,
-    pendingPayments: 175.00,
+    pendingPayments: 175.0,
     lastPaymentDate: "2025-05-25",
     nextPaymentDate: "2025-06-01",
   };
@@ -64,7 +75,7 @@ const Profile: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{t('navigation.profile')}</IonTitle>
+          <IonTitle>{t("navigation.profile")}</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -74,9 +85,9 @@ const Profile: React.FC = () => {
           <div className="text-center mb-8">
             <div className="w-20 h-20 mx-auto bg-primary rounded-full flex items-center justify-center mb-4 overflow-hidden">
               {user?.profileImage ? (
-                <img 
-                  src={user.profileImage} 
-                  alt="Profile" 
+                <img
+                  src={user.profileImage}
+                  alt="Profile"
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -107,19 +118,23 @@ const Profile: React.FC = () => {
               <div className="text-2xl font-bold text-primary">
                 {profile?.totalJobs || 0}
               </div>
-              <IonText className="text-caption">{t('profile.totalJobs')}</IonText>
+              <IonText className="text-caption">
+                {t("profile.totalJobs")}
+              </IonText>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold text-success">
                 {profile?.rating || 0}
               </div>
-              <IonText className="text-caption">{t('profile.rating')}</IonText>
+              <IonText className="text-caption">{t("profile.rating")}</IonText>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold text-secondary">
                 {profile?.completionRate || 0}%
               </div>
-              <IonText className="text-caption">{t('profile.completion')}</IonText>
+              <IonText className="text-caption">
+                {t("profile.completion")}
+              </IonText>
             </div>
           </div>
 
@@ -132,7 +147,35 @@ const Profile: React.FC = () => {
               onClick={handleEditProfile}
             >
               <IonIcon icon={settingsOutline} slot="start" />
-              {t('profile.editProfile')}
+              {t("profile.editProfile")}
+            </IonButton>
+
+            <IonButton
+              expand="block"
+              fill="outline"
+              className="border-blue-300 text-blue-600"
+              onClick={handleTaxSettings}
+            >
+              <IonIcon icon={documentTextOutline} slot="start" />
+              {t("profile.taxSettings", "Tax Settings")}
+              <IonBadge
+                color={
+                  w9Status?.status === "approved"
+                    ? "success"
+                    : w9Status?.status === "submitted"
+                      ? "warning"
+                      : "medium"
+                }
+                slot="end"
+              >
+                {w9Status?.status === "approved"
+                  ? t("tax.status.complete", "Complete")
+                  : w9Status?.status === "submitted"
+                    ? t("tax.status.pending", "Pending")
+                    : w9Status?.status === "draft"
+                      ? t("tax.status.draft", "Draft")
+                      : t("tax.status.notStarted", "Not Started")}
+              </IonBadge>
             </IonButton>
 
             <IonButton
@@ -142,7 +185,7 @@ const Profile: React.FC = () => {
               onClick={handleSettings}
             >
               <IonIcon icon={settingsOutline} slot="start" />
-              {t('profile.notificationSettings')}
+              {t("profile.notificationSettings")}
             </IonButton>
 
             <IonButton
@@ -150,7 +193,7 @@ const Profile: React.FC = () => {
               fill="outline"
               className="border-gray-300 text-gray-600"
             >
-              {t('profile.helpSupport')}
+              {t("profile.helpSupport")}
             </IonButton>
 
             <IonButton
@@ -160,11 +203,9 @@ const Profile: React.FC = () => {
               onClick={handleLogout}
             >
               <IonIcon icon={logOutOutline} slot="start" />
-              {t('profile.signOut')}
+              {t("profile.signOut")}
             </IonButton>
           </div>
-
-
         </div>
       </IonContent>
     </IonPage>

@@ -1,6 +1,6 @@
-import { io, Socket } from 'socket.io-client';
-import { APP_CONFIG } from '../../config/app.config';
-import { AuthTokens } from '../../types/auth.types';
+import { io, Socket } from "socket.io-client";
+import { APP_CONFIG } from "../../config/app.config";
+import { AuthTokens } from "../../types/auth.types";
 
 export interface WebSocketConfig {
   url: string;
@@ -54,7 +54,7 @@ class WebSocketService {
    */
   public async connect(authTokens: AuthTokens): Promise<void> {
     if (this.socket?.connected) {
-      console.log('WebSocket already connected');
+      console.log("WebSocket already connected");
       return;
     }
 
@@ -67,35 +67,34 @@ class WebSocketService {
         auth: {
           token: authTokens.accessToken,
         },
-        transports: ['websocket', 'polling'],
+        transports: ["websocket", "polling"],
         timeout: 10000,
         reconnection: false, // We'll handle reconnection manually
       });
 
       this.setupEventListeners();
-      
+
       // Wait for connection to be established
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
-          reject(new Error('Connection timeout'));
+          reject(new Error("Connection timeout"));
         }, 10000);
 
-        this.socket!.on('connect', () => {
+        this.socket!.on("connect", () => {
           clearTimeout(timeout);
           resolve();
         });
 
-        this.socket!.on('connect_error', (error) => {
+        this.socket!.on("connect_error", (error) => {
           clearTimeout(timeout);
           reject(error);
         });
       });
-
     } catch (error) {
-      console.error('WebSocket connection failed:', error);
+      console.error("WebSocket connection failed:", error);
       this.updateConnectionStatus({
         isConnecting: false,
-        error: error instanceof Error ? error.message : 'Connection failed',
+        error: error instanceof Error ? error.message : "Connection failed",
       });
       this.scheduleReconnect();
       throw error;
@@ -143,7 +142,7 @@ class WebSocketService {
     if (!this.eventHandlers.has(eventType)) {
       this.eventHandlers.set(eventType, new Set());
     }
-    
+
     this.eventHandlers.get(eventType)!.add(handler);
 
     // Return unsubscribe function
@@ -168,7 +167,7 @@ class WebSocketService {
    */
   public emit(eventType: string, data?: any): void {
     if (!this.socket?.connected) {
-      console.warn('Cannot emit event: WebSocket not connected');
+      console.warn("Cannot emit event: WebSocket not connected");
       return;
     }
 
@@ -183,9 +182,9 @@ class WebSocketService {
    * Update contractor location
    */
   public updateLocation(latitude: number, longitude: number): void {
-    this.emit('contractor:location-update', {
+    this.emit("contractor:location-update", {
       location: {
-        type: 'Point',
+        type: "Point",
         coordinates: [longitude, latitude],
       },
       timestamp: new Date().toISOString(),
@@ -196,14 +195,14 @@ class WebSocketService {
    * Join contractor-specific room
    */
   public joinContractorRoom(contractorId: string): void {
-    this.emit('contractor:join-room', { contractorId });
+    this.emit("contractor:join-room", { contractorId });
   }
 
   /**
    * Leave contractor-specific room
    */
   public leaveContractorRoom(contractorId: string): void {
-    this.emit('contractor:leave-room', { contractorId });
+    this.emit("contractor:leave-room", { contractorId });
   }
 
   /**
@@ -213,8 +212,8 @@ class WebSocketService {
     if (!this.socket) return;
 
     // Connection events
-    this.socket.on('connect', () => {
-      console.log('WebSocket connected');
+    this.socket.on("connect", () => {
+      console.log("WebSocket connected");
       this.updateConnectionStatus({
         isConnected: true,
         isConnecting: false,
@@ -225,8 +224,8 @@ class WebSocketService {
       this.startHeartbeat();
     });
 
-    this.socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
+    this.socket.on("disconnect", (reason) => {
+      console.log("WebSocket disconnected:", reason);
       this.updateConnectionStatus({
         isConnected: false,
         isConnecting: false,
@@ -240,8 +239,8 @@ class WebSocketService {
       }
     });
 
-    this.socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
+    this.socket.on("connect_error", (error) => {
+      console.error("WebSocket connection error:", error);
       this.updateConnectionStatus({
         isConnecting: false,
         error: error.message,
@@ -250,51 +249,51 @@ class WebSocketService {
     });
 
     // Heartbeat events
-    this.socket.on('ping', () => {
-      this.socket?.emit('pong');
+    this.socket.on("ping", () => {
+      this.socket?.emit("pong");
     });
 
-    this.socket.on('pong', () => {
+    this.socket.on("pong", () => {
       // Server acknowledged our ping
     });
 
     // Task events
-    this.socket.on('task:new', (data) => {
-      this.handleEvent('task:new', data);
+    this.socket.on("task:new", (data) => {
+      this.handleEvent("task:new", data);
     });
 
-    this.socket.on('task:assigned', (data) => {
-      this.handleEvent('task:assigned', data);
+    this.socket.on("task:assigned", (data) => {
+      this.handleEvent("task:assigned", data);
     });
 
-    this.socket.on('task:updated', (data) => {
-      this.handleEvent('task:updated', data);
+    this.socket.on("task:updated", (data) => {
+      this.handleEvent("task:updated", data);
     });
 
-    this.socket.on('task:claimed', (data) => {
-      this.handleEvent('task:claimed', data);
+    this.socket.on("task:claimed", (data) => {
+      this.handleEvent("task:claimed", data);
     });
 
-    this.socket.on('task:completed', (data) => {
-      this.handleEvent('task:completed', data);
+    this.socket.on("task:completed", (data) => {
+      this.handleEvent("task:completed", data);
     });
 
-    this.socket.on('task:cancelled', (data) => {
-      this.handleEvent('task:cancelled', data);
+    this.socket.on("task:cancelled", (data) => {
+      this.handleEvent("task:cancelled", data);
     });
 
     // Notification events
-    this.socket.on('notification:system', (data) => {
-      this.handleEvent('notification:system', data);
+    this.socket.on("notification:system", (data) => {
+      this.handleEvent("notification:system", data);
     });
 
-    this.socket.on('notification:personal', (data) => {
-      this.handleEvent('notification:personal', data);
+    this.socket.on("notification:personal", (data) => {
+      this.handleEvent("notification:personal", data);
     });
 
     // Connection confirmation
-    this.socket.on('connection:established', (data) => {
-      this.handleEvent('connection:established', data);
+    this.socket.on("connection:established", (data) => {
+      this.handleEvent("connection:established", data);
     });
   }
 
@@ -312,23 +311,26 @@ class WebSocketService {
     // Notify all handlers for this event type
     const handlers = this.eventHandlers.get(eventType);
     if (handlers) {
-      handlers.forEach(handler => {
+      handlers.forEach((handler) => {
         try {
           handler(eventData);
         } catch (error) {
-          console.error(`Error in WebSocket event handler for ${eventType}:`, error);
+          console.error(
+            `Error in WebSocket event handler for ${eventType}:`,
+            error,
+          );
         }
       });
     }
 
     // Also notify wildcard handlers
-    const wildcardHandlers = this.eventHandlers.get('*');
+    const wildcardHandlers = this.eventHandlers.get("*");
     if (wildcardHandlers) {
-      wildcardHandlers.forEach(handler => {
+      wildcardHandlers.forEach((handler) => {
         try {
           handler(eventData);
         } catch (error) {
-          console.error('Error in WebSocket wildcard event handler:', error);
+          console.error("Error in WebSocket wildcard event handler:", error);
         }
       });
     }
@@ -339,9 +341,9 @@ class WebSocketService {
    */
   private updateConnectionStatus(updates: Partial<ConnectionStatus>): void {
     this.connectionStatus = { ...this.connectionStatus, ...updates };
-    
+
     // Emit connection status change event
-    this.handleEvent('connection:status-changed', this.connectionStatus);
+    this.handleEvent("connection:status-changed", this.connectionStatus);
   }
 
   /**
@@ -349,18 +351,25 @@ class WebSocketService {
    */
   private scheduleReconnect(): void {
     if (this.isManualDisconnect) return;
-    if (this.connectionStatus.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
+    if (
+      this.connectionStatus.reconnectAttempts >=
+      this.config.maxReconnectAttempts
+    ) {
+      console.error("Max reconnection attempts reached");
       this.updateConnectionStatus({
-        error: 'Max reconnection attempts reached',
+        error: "Max reconnection attempts reached",
       });
       return;
     }
 
     this.clearReconnectTimer();
-    
-    const delay = this.config.reconnectInterval * Math.pow(2, this.connectionStatus.reconnectAttempts);
-    console.log(`Scheduling WebSocket reconnection in ${delay}ms (attempt ${this.connectionStatus.reconnectAttempts + 1})`);
+
+    const delay =
+      this.config.reconnectInterval *
+      Math.pow(2, this.connectionStatus.reconnectAttempts);
+    console.log(
+      `Scheduling WebSocket reconnection in ${delay}ms (attempt ${this.connectionStatus.reconnectAttempts + 1})`,
+    );
 
     this.reconnectTimer = setTimeout(() => {
       this.attemptReconnect();
@@ -380,7 +389,7 @@ class WebSocketService {
     try {
       await this.connect(this.authTokens);
     } catch (error) {
-      console.error('Reconnection attempt failed:', error);
+      console.error("Reconnection attempt failed:", error);
       this.scheduleReconnect();
     }
   }
@@ -390,10 +399,10 @@ class WebSocketService {
    */
   private startHeartbeat(): void {
     this.clearHeartbeatTimer();
-    
+
     this.heartbeatTimer = setInterval(() => {
       if (this.socket?.connected) {
-        this.socket.emit('ping');
+        this.socket.emit("ping");
       }
     }, 30000); // Send ping every 30 seconds
   }
@@ -430,7 +439,7 @@ class WebSocketService {
    */
   public updateAuthTokens(tokens: AuthTokens): void {
     this.authTokens = tokens;
-    
+
     // If connected, update the socket auth
     if (this.socket?.connected) {
       this.socket.auth = {

@@ -13,10 +13,10 @@ router.get("/me", authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     await contractorController.getProfile(req, res);
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: "Internal server error",
-      code: "INTERNAL_ERROR"
+      code: "INTERNAL_ERROR",
     });
   }
 });
@@ -30,13 +30,13 @@ router.put(
     try {
       await contractorController.updateProfile(req, res);
     } catch (error) {
-      res.status(500).json({ 
+      res.status(500).json({
         success: false,
         error: "Internal server error",
-        code: "INTERNAL_ERROR"
+        code: "INTERNAL_ERROR",
       });
     }
-  }
+  },
 );
 
 // POST /api/contractors/me/photo - Update contractor profile photo
@@ -48,13 +48,13 @@ router.post(
     try {
       await contractorController.updateProfilePhoto(req, res);
     } catch (error) {
-      res.status(500).json({ 
+      res.status(500).json({
         success: false,
         error: "Internal server error",
-        code: "INTERNAL_ERROR"
+        code: "INTERNAL_ERROR",
       });
     }
-  }
+  },
 );
 
 export default router;

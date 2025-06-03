@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import Contractor from "@/models/Contractor";
-import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { ContractorFormData } from "@/types/contractor";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
     // Get the session using NextAuth's recommended approach
@@ -17,26 +16,26 @@ export async function GET(
     // Check if user is authenticated
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Not authorized to view contractors" },
+        { error: "Not authorized to view contractor details" },
         { status: 401 },
       );
     }
 
     await dbConnect();
 
-    // Resolve the params promise
-    const resolvedParams = await params;
+    const contractorId = params.id;
 
-    // Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(resolvedParams.id)) {
+    // Validate contractor ID format
+    if (!contractorId || contractorId.length !== 24) {
       return NextResponse.json(
         { error: "Invalid contractor ID format" },
         { status: 400 },
       );
     }
 
-    // Find the contractor
-    const contractor = await Contractor.findById(resolvedParams.id);
+    // Find contractor by ID
+    const contractor = await Contractor.findById(contractorId).lean();
+
     if (!contractor) {
       return NextResponse.json(
         { error: "Contractor not found" },
@@ -66,7 +65,7 @@ export async function GET(
   } catch (error: unknown) {
     console.error("Error fetching contractor:", error);
     return NextResponse.json(
-      { error: "Failed to fetch contractor" },
+      { error: "Failed to fetch contractor details" },
       { status: 500 },
     );
   }
@@ -74,7 +73,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
     // Get the session using NextAuth's recommended approach
@@ -90,66 +89,41 @@ export async function PUT(
 
     await dbConnect();
 
-    // Resolve the params promise
-    const resolvedParams = await params;
+    const contractorId = params.id;
+    const contractorData: ContractorFormData = await request.json();
 
-    // Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(resolvedParams.id)) {
+    // Validate contractor ID format
+    if (!contractorId || contractorId.length !== 24) {
       return NextResponse.json(
         { error: "Invalid contractor ID format" },
         { status: 400 },
       );
     }
 
-    // Find the contractor
-    const contractor = await Contractor.findById(resolvedParams.id);
-    if (!contractor) {
+    // Validate required fields
+    if (!contractorData.name || !contractorData.name.trim()) {
       return NextResponse.json(
-        { error: "Contractor not found" },
-        { status: 404 },
+        { error: "Contractor name is required" },
+        { status: 400 },
       );
     }
 
-    const updateData: Partial<ContractorFormData> = await request.json();
-
-    // Validate name if provided
-    if (updateData.name !== undefined) {
-      if (!updateData.name || !updateData.name.trim()) {
-        return NextResponse.json(
-          { error: "Contractor name is required" },
-          { status: 400 },
-        );
-      }
-
-      // Check for duplicate name (excluding current contractor)
-      const existingContractor = await Contractor.findOne({
-        _id: { $ne: resolvedParams.id },
-        name: { $regex: new RegExp(`^${updateData.name.trim()}$`, "i") },
-      });
-
-      if (existingContractor) {
-        return NextResponse.json(
-          { error: "A contractor with this name already exists" },
-          { status: 400 },
-        );
-      }
+    if (!contractorData.email || !contractorData.email.trim()) {
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Validate email format if provided
-    if (updateData.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(updateData.email)) {
-        return NextResponse.json(
-          { error: "Invalid email format" },
-          { status: 400 },
-        );
-      }
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(contractorData.email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 },
+      );
     }
 
     // Validate emergency contact email if provided
-    if (updateData.emergencyContact?.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(updateData.emergencyContact.email)) {
+    if (contractorData.emergencyContact?.email) {
+      if (!emailRegex.test(contractorData.emergencyContact.email)) {
         return NextResponse.json(
           { error: "Invalid emergency contact email format" },
           { status: 400 },
@@ -158,9 +132,9 @@ export async function PUT(
     }
 
     // Validate emergency contact phone format if provided
-    if (updateData.emergencyContact?.phone) {
+    if (contractorData.emergencyContact?.phone) {
       const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
-      if (!phoneRegex.test(updateData.emergencyContact.phone)) {
+      if (!phoneRegex.test(contractorData.emergencyContact.phone)) {
         return NextResponse.json(
           { error: "Invalid emergency contact phone format" },
           { status: 400 },
@@ -169,9 +143,9 @@ export async function PUT(
     }
 
     // Validate profile image URL format if provided
-    if (updateData.profileImage) {
+    if (contractorData.profileImage) {
       try {
-        new URL(updateData.profileImage);
+        new URL(contractorData.profileImage);
       } catch {
         return NextResponse.json(
           { error: "Invalid profile image URL format" },
@@ -180,50 +154,79 @@ export async function PUT(
       }
     }
 
-    // Update contractor fields
-    if (updateData.name !== undefined) {
-      contractor.name = updateData.name.trim();
-    }
-    if (updateData.email !== undefined) {
-      contractor.email = updateData.email.trim();
-    }
-    if (updateData.phone !== undefined) {
-      contractor.phone = updateData.phone?.trim() || undefined;
-    }
-    if (updateData.skills !== undefined) {
-      contractor.skills = updateData.skills || [];
-    }
-    if (updateData.isActive !== undefined) {
-      contractor.isActive = updateData.isActive;
-    }
-    if (updateData.isVerified !== undefined) {
-      contractor.isVerified = updateData.isVerified;
-    }
-    if (updateData.notes !== undefined) {
-      contractor.notes = updateData.notes?.trim() || undefined;
-    }
-    if (updateData.businessName !== undefined) {
-      contractor.businessName = updateData.businessName?.trim() || undefined;
-    }
-    if (updateData.profileImage !== undefined) {
-      contractor.profileImage = updateData.profileImage?.trim() || undefined;
-    }
-    if (updateData.emergencyContact !== undefined) {
-      if (updateData.emergencyContact) {
-        contractor.emergencyContact = {
-          name: updateData.emergencyContact.name?.trim() || "",
-          phone: updateData.emergencyContact.phone?.trim() || "",
-          relationship: updateData.emergencyContact.relationship?.trim() || "",
-          email: updateData.emergencyContact.email?.trim() || undefined,
-        };
-      } else {
-        contractor.emergencyContact = undefined;
-      }
+    // Check if contractor exists
+    const existingContractor = await Contractor.findById(contractorId);
+    if (!existingContractor) {
+      return NextResponse.json(
+        { error: "Contractor not found" },
+        { status: 404 },
+      );
     }
 
-    const updatedContractor = await contractor.save();
+    // Check for duplicate email (excluding current contractor)
+    const duplicateContractor = await Contractor.findOne({
+      email: contractorData.email.trim().toLowerCase(),
+      _id: { $ne: contractorId },
+    });
 
-    return NextResponse.json(updatedContractor);
+    if (duplicateContractor) {
+      return NextResponse.json(
+        { error: "A contractor with this email already exists" },
+        { status: 400 },
+      );
+    }
+
+    // Update contractor
+    const updatedContractor = await Contractor.findByIdAndUpdate(
+      contractorId,
+      {
+        name: contractorData.name.trim(),
+        email: contractorData.email.trim(),
+        phone: contractorData.phone?.trim() || undefined,
+        skills: contractorData.skills || [],
+        businessName: contractorData.businessName?.trim() || undefined,
+        profileImage: contractorData.profileImage?.trim() || undefined,
+        emergencyContact: contractorData.emergencyContact
+          ? {
+              name: contractorData.emergencyContact.name?.trim() || "",
+              phone: contractorData.emergencyContact.phone?.trim() || "",
+              relationship:
+                contractorData.emergencyContact.relationship?.trim() || "",
+              email: contractorData.emergencyContact.email?.trim() || undefined,
+            }
+          : undefined,
+        isActive: contractorData.isActive !== false, // Default to true
+        isVerified: contractorData.isVerified !== false, // Default to true for CRM
+        notes: contractorData.notes?.trim() || undefined,
+      },
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedContractor) {
+      return NextResponse.json(
+        { error: "Failed to update contractor" },
+        { status: 500 },
+      );
+    }
+
+    // Filter out sensitive fields from response
+    const responseContractor = {
+      _id: updatedContractor._id,
+      name: updatedContractor.name,
+      email: updatedContractor.email,
+      phone: updatedContractor.phone,
+      skills: updatedContractor.skills,
+      businessName: updatedContractor.businessName,
+      profileImage: updatedContractor.profileImage,
+      emergencyContact: updatedContractor.emergencyContact,
+      isActive: updatedContractor.isActive,
+      isVerified: updatedContractor.isVerified,
+      notes: updatedContractor.notes,
+      createdAt: updatedContractor.createdAt,
+      updatedAt: updatedContractor.updatedAt,
+    };
+
+    return NextResponse.json(responseContractor);
   } catch (error: unknown) {
     console.error("Error updating contractor:", error);
 
@@ -232,6 +235,12 @@ export async function PUT(
       if (error.message.includes("validation failed")) {
         return NextResponse.json(
           { error: `Validation error: ${error.message}` },
+          { status: 400 },
+        );
+      }
+      if (error.message.includes("duplicate key")) {
+        return NextResponse.json(
+          { error: "A contractor with this email already exists" },
           { status: 400 },
         );
       }
@@ -246,7 +255,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
     // Get the session using NextAuth's recommended approach
@@ -255,41 +264,45 @@ export async function DELETE(
     // Check if user is authenticated
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Not authorized to delete contractors" },
+        { error: "Not authorized to deactivate contractors" },
         { status: 401 },
       );
     }
 
     await dbConnect();
 
-    // Resolve the params promise
-    const resolvedParams = await params;
+    const contractorId = params.id;
 
-    // Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(resolvedParams.id)) {
+    // Validate contractor ID format
+    if (!contractorId || contractorId.length !== 24) {
       return NextResponse.json(
         { error: "Invalid contractor ID format" },
         { status: 400 },
       );
     }
 
-    // Find the contractor
-    const contractor = await Contractor.findById(resolvedParams.id);
-    if (!contractor) {
+    // Find and deactivate contractor (soft delete)
+    const updatedContractor = await Contractor.findByIdAndUpdate(
+      contractorId,
+      { isActive: false },
+      { new: true },
+    );
+
+    if (!updatedContractor) {
       return NextResponse.json(
         { error: "Contractor not found" },
         { status: 404 },
       );
     }
 
-    // Instead of hard delete, we'll deactivate the contractor
-    // This preserves data integrity for existing task assignments
-    contractor.isActive = false;
-    await contractor.save();
-
     return NextResponse.json({
       message: "Contractor deactivated successfully",
-      contractor: contractor,
+      contractor: {
+        _id: updatedContractor._id,
+        name: updatedContractor.name,
+        email: updatedContractor.email,
+        isActive: updatedContractor.isActive,
+      },
     });
   } catch (error: unknown) {
     console.error("Error deactivating contractor:", error);

@@ -124,9 +124,12 @@ const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
           // Allow null/undefined for optional field
           if (v === null || v === undefined) return true;
           // Check for valid monetary value (up to 2 decimal places)
-          return Number.isFinite(v) && v >= 0 && Math.round(v * 100) === v * 100;
+          return (
+            Number.isFinite(v) && v >= 0 && Math.round(v * 100) === v * 100
+          );
         },
-        message: "Payment amount must be a valid monetary value with up to 2 decimal places",
+        message:
+          "Payment amount must be a valid monetary value with up to 2 decimal places",
       },
     },
   },

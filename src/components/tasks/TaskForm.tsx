@@ -215,7 +215,10 @@ export function TaskForm({
     }
 
     // Validate payment amount
-    if (formData.paymentAmount !== undefined && formData.paymentAmount !== null) {
+    if (
+      formData.paymentAmount !== undefined &&
+      formData.paymentAmount !== null
+    ) {
       const paymentAmount = Number(formData.paymentAmount);
       if (isNaN(paymentAmount)) {
         newErrors.paymentAmount = "Payment amount must be a valid number";
@@ -240,7 +243,10 @@ export function TaskForm({
     try {
       // Convert paymentAmount from string to number if it exists
       let paymentAmount: number | undefined = undefined;
-      if (formData.paymentAmount !== undefined && formData.paymentAmount !== null) {
+      if (
+        formData.paymentAmount !== undefined &&
+        formData.paymentAmount !== null
+      ) {
         const paymentAmountStr = String(formData.paymentAmount).trim();
         if (paymentAmountStr !== "") {
           const convertedAmount = Number(paymentAmountStr);
@@ -477,7 +483,9 @@ export function TaskForm({
               Leave empty if no payment amount is set for this task
             </p>
             {errors.paymentAmount && (
-              <p className="text-red-500 text-xs mt-1">{errors.paymentAmount}</p>
+              <p className="text-red-500 text-xs mt-1">
+                {errors.paymentAmount}
+              </p>
             )}
           </div>
 

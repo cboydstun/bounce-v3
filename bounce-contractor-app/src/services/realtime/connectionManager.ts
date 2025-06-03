@@ -1,5 +1,5 @@
-import { websocketService, ConnectionStatus } from './websocketService';
-import { AuthTokens } from '../../types/auth.types';
+import { websocketService, ConnectionStatus } from "./websocketService";
+import { AuthTokens } from "../../types/auth.types";
 
 export interface ConnectionManagerConfig {
   autoConnect: boolean;
@@ -21,7 +21,7 @@ class ConnectionManager {
     autoReconnect: true,
     connectionTimeout: 10000,
   };
-  
+
   private status: ConnectionManagerStatus = {
     isInitialized: false,
     isConnecting: false,
@@ -30,7 +30,8 @@ class ConnectionManager {
   };
 
   private authTokens: AuthTokens | null = null;
-  private statusListeners: Set<(status: ConnectionManagerStatus) => void> = new Set();
+  private statusListeners: Set<(status: ConnectionManagerStatus) => void> =
+    new Set();
   private connectionStatusUnsubscribe?: () => void;
 
   constructor(config?: Partial<ConnectionManagerConfig>) {
@@ -44,10 +45,10 @@ class ConnectionManager {
   private initialize(): void {
     // Listen to WebSocket connection status changes
     this.connectionStatusUnsubscribe = websocketService.on(
-      'connection:status-changed',
+      "connection:status-changed",
       (event) => {
         this.handleConnectionStatusChange(event.payload);
-      }
+      },
     );
 
     this.updateStatus({ isInitialized: true });
@@ -56,7 +57,10 @@ class ConnectionManager {
   /**
    * Set authentication tokens and optionally connect
    */
-  public async setAuthTokens(tokens: AuthTokens, autoConnect = true): Promise<void> {
+  public async setAuthTokens(
+    tokens: AuthTokens,
+    autoConnect = true,
+  ): Promise<void> {
     this.authTokens = tokens;
     websocketService.updateAuthTokens(tokens);
 
@@ -70,15 +74,15 @@ class ConnectionManager {
    */
   public async connect(): Promise<void> {
     if (!this.authTokens) {
-      throw new Error('Authentication tokens not set');
+      throw new Error("Authentication tokens not set");
     }
 
     if (this.status.isConnecting || this.status.isConnected) {
       return;
     }
 
-    this.updateStatus({ 
-      isConnecting: true, 
+    this.updateStatus({
+      isConnecting: true,
       lastError: undefined,
       connectionAttempts: this.status.connectionAttempts + 1,
     });
@@ -86,9 +90,10 @@ class ConnectionManager {
     try {
       await websocketService.connect(this.authTokens);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Connection failed';
-      this.updateStatus({ 
-        isConnecting: false, 
+      const errorMessage =
+        error instanceof Error ? error.message : "Connection failed";
+      this.updateStatus({
+        isConnecting: false,
         lastError: errorMessage,
       });
       throw error;
@@ -100,8 +105,8 @@ class ConnectionManager {
    */
   public disconnect(): void {
     websocketService.disconnect();
-    this.updateStatus({ 
-      isConnecting: false, 
+    this.updateStatus({
+      isConnecting: false,
       isConnected: false,
     });
   }
@@ -123,9 +128,11 @@ class ConnectionManager {
   /**
    * Subscribe to status changes
    */
-  public onStatusChange(listener: (status: ConnectionManagerStatus) => void): () => void {
+  public onStatusChange(
+    listener: (status: ConnectionManagerStatus) => void,
+  ): () => void {
     this.statusListeners.add(listener);
-    
+
     // Return unsubscribe function
     return () => {
       this.statusListeners.delete(listener);
@@ -162,7 +169,9 @@ class ConnectionManager {
   /**
    * Handle WebSocket connection status changes
    */
-  private handleConnectionStatusChange(connectionStatus: ConnectionStatus): void {
+  private handleConnectionStatusChange(
+    connectionStatus: ConnectionStatus,
+  ): void {
     this.updateStatus({
       isConnecting: connectionStatus.isConnecting,
       isConnected: connectionStatus.isConnected,
@@ -175,13 +184,13 @@ class ConnectionManager {
    */
   private updateStatus(updates: Partial<ConnectionManagerStatus>): void {
     this.status = { ...this.status, ...updates };
-    
+
     // Notify all listeners
-    this.statusListeners.forEach(listener => {
+    this.statusListeners.forEach((listener) => {
       try {
         listener(this.status);
       } catch (error) {
-        console.error('Error in connection status listener:', error);
+        console.error("Error in connection status listener:", error);
       }
     });
   }
@@ -192,7 +201,7 @@ class ConnectionManager {
   public destroy(): void {
     this.disconnect();
     this.statusListeners.clear();
-    
+
     if (this.connectionStatusUnsubscribe) {
       this.connectionStatusUnsubscribe();
     }

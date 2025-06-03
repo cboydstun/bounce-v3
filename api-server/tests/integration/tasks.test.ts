@@ -40,7 +40,7 @@ describe("Task Management Integration Tests", () => {
         description: "Delivery Task",
         type: "Delivery",
         status: "Pending",
-        paymentAmount: 75.50,
+        paymentAmount: 75.5,
         location: {
           type: "Point",
           coordinates: [-98.4936, 29.4241], // San Antonio
@@ -132,22 +132,22 @@ describe("Task Management Integration Tests", () => {
         .expect(200);
 
       expect(response.body.data.tasks.length).toBeGreaterThan(0);
-      
+
       // Find the task with payment amount
       const taskWithPayment = response.body.data.tasks.find(
-        (task: any) => task.description === "Delivery Task"
+        (task: any) => task.description === "Delivery Task",
       );
-      
+
       expect(taskWithPayment).toBeDefined();
       expect(taskWithPayment.compensation).toBeDefined();
-      expect(taskWithPayment.compensation.baseAmount).toBe(75.50);
-      expect(taskWithPayment.compensation.totalAmount).toBe(75.50);
-      
+      expect(taskWithPayment.compensation.baseAmount).toBe(75.5);
+      expect(taskWithPayment.compensation.totalAmount).toBe(75.5);
+
       // Task without payment amount should default to 50
       const taskWithoutPayment = response.body.data.tasks.find(
-        (task: any) => task.description === "Setup Task"
+        (task: any) => task.description === "Setup Task",
       );
-      
+
       expect(taskWithoutPayment).toBeDefined();
       expect(taskWithoutPayment.compensation.baseAmount).toBe(50);
       expect(taskWithoutPayment.compensation.totalAmount).toBe(50);

@@ -11,7 +11,8 @@ export interface Contractor {
   skills?: string[]; // Array of skills/specialties
   businessName?: string; // Business name (from mobile app)
   profileImage?: string; // Profile photo URL (from mobile app)
-  emergencyContact?: { // Emergency contact info (from mobile app)
+  emergencyContact?: {
+    // Emergency contact info (from mobile app)
     name: string;
     phone: string;
     relationship: string;
@@ -22,7 +23,7 @@ export interface Contractor {
   notes?: string; // Admin notes about contractor
   createdAt: Date; // Contractor creation date
   updatedAt: Date; // Contractor last update date
-  
+
   // Auth fields (hidden from CRM UI but present in database)
   password?: string; // Hashed password (hidden from CRM)
   refreshTokens?: string[]; // JWT refresh tokens (hidden from CRM)
@@ -47,7 +48,8 @@ export interface ContractorFormData {
   skills?: string[]; // Array of skills/specialties
   businessName?: string; // Business name (optional)
   profileImage?: string; // Profile photo URL (optional)
-  emergencyContact?: { // Emergency contact info (optional)
+  emergencyContact?: {
+    // Emergency contact info (optional)
     name: string;
     phone: string;
     relationship: string;

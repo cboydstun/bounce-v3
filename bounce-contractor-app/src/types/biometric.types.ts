@@ -30,13 +30,13 @@ export interface BiometricPromptOptions {
 }
 
 export enum BiometryType {
-  NONE = 'none',
-  TOUCH_ID = 'touchId',
-  FACE_ID = 'faceId',
-  FINGERPRINT = 'fingerprint',
-  FACE_AUTHENTICATION = 'faceAuthentication',
-  IRIS_AUTHENTICATION = 'irisAuthentication',
-  MULTIPLE = 'multiple'
+  NONE = "none",
+  TOUCH_ID = "touchId",
+  FACE_ID = "faceId",
+  FINGERPRINT = "fingerprint",
+  FACE_AUTHENTICATION = "faceAuthentication",
+  IRIS_AUTHENTICATION = "irisAuthentication",
+  MULTIPLE = "multiple",
 }
 
 export enum BiometricErrorCode {
@@ -55,7 +55,7 @@ export enum BiometricErrorCode {
   APP_CANCEL = 18,
   INVALID_CONTEXT = 19,
   NOT_INTERACTIVE = 20,
-  PASSCODE_FALLBACK = 21
+  PASSCODE_FALLBACK = 21,
 }
 
 export interface BiometricSettings {

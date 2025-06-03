@@ -45,7 +45,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
 }) => {
   const { getDistanceFromCurrent } = useGeolocation();
   const { t: tTask } = useTaskTranslation();
-  const { t, formatTaskTime, formatCurrency, formatDistance, isToday, isTomorrow } = useI18n();
+  const {
+    t,
+    formatTaskTime,
+    formatCurrency,
+    formatDistance,
+    isToday,
+    isTomorrow,
+  } = useI18n();
 
   const distance = getDistanceFromCurrent(
     task.location.coordinates.latitude,
@@ -86,11 +93,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
   const formatScheduledDate = (dateString: string) => {
     const date = new Date(dateString);
-    
+
     if (isToday(date)) {
-      return t('time.today') + ' ' + formatTaskTime(date);
+      return t("time.today") + " " + formatTaskTime(date);
     } else if (isTomorrow(date)) {
-      return t('time.tomorrow') + ' ' + formatTaskTime(date);
+      return t("time.tomorrow") + " " + formatTaskTime(date);
     } else {
       return formatTaskTime(date);
     }
@@ -117,7 +124,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           </div>
           <div className="text-right">
-            <CompensationDisplay 
+            <CompensationDisplay
               compensation={task.compensation}
               size="compact"
               className="justify-end"
@@ -186,7 +193,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
           {task.equipment.length > 0 && (
             <div className="mt-2">
               <IonText className="text-xs text-gray-500 font-medium">
-                {tTask('card.equipment')}: {task.equipment.map((eq) => eq.name).join(", ")}
+                {tTask("card.equipment")}:{" "}
+                {task.equipment.map((eq) => eq.name).join(", ")}
               </IonText>
             </div>
           )}
@@ -202,7 +210,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 disabled={isLoading}
                 className="flex-1"
               >
-                {isLoading ? tTask('actions.claiming') : tTask('card.claimButton')}
+                {isLoading
+                  ? tTask("actions.claiming")
+                  : tTask("card.claimButton")}
               </IonButton>
             )}
 
@@ -223,7 +233,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               onClick={() => onViewDetails?.(task.id)}
               className="min-w-0"
             >
-              {tTask('card.viewDetails')}
+              {tTask("card.viewDetails")}
             </IonButton>
           </div>
         </div>

@@ -36,8 +36,16 @@ import {
 } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 import { useAuthStore, authSelectors } from "../../store/authStore";
-import { ContractorProfile, User, ContractorSkill, SkillCategory } from "../../types/auth.types";
-import { photoService, PhotoUploadProgress } from "../../services/api/photoService";
+import {
+  ContractorProfile,
+  User,
+  ContractorSkill,
+  SkillCategory,
+} from "../../types/auth.types";
+import {
+  photoService,
+  PhotoUploadProgress,
+} from "../../services/api/photoService";
 
 interface EditProfileForm {
   firstName: string;
@@ -51,16 +59,32 @@ interface EditProfileForm {
   emergencyContactRelationship: string;
 }
 
-const AVAILABLE_SKILLS: { id: string; name: string; category: SkillCategory }[] = [
+const AVAILABLE_SKILLS: {
+  id: string;
+  name: string;
+  category: SkillCategory;
+}[] = [
   { id: "delivery", name: "Delivery", category: "delivery" },
   { id: "setup", name: "Setup & Installation", category: "setup" },
   { id: "breakdown", name: "Breakdown & Pickup", category: "setup" },
   { id: "electrical", name: "Electrical Work", category: "electrical" },
   { id: "safety_inspection", name: "Safety Inspection", category: "safety" },
-  { id: "customer_service", name: "Customer Service", category: "customer_service" },
-  { id: "equipment_maintenance", name: "Equipment Maintenance", category: "equipment_maintenance" },
+  {
+    id: "customer_service",
+    name: "Customer Service",
+    category: "customer_service",
+  },
+  {
+    id: "equipment_maintenance",
+    name: "Equipment Maintenance",
+    category: "equipment_maintenance",
+  },
   { id: "heavy_lifting", name: "Heavy Lifting", category: "delivery" },
-  { id: "event_coordination", name: "Event Coordination", category: "customer_service" },
+  {
+    id: "event_coordination",
+    name: "Event Coordination",
+    category: "customer_service",
+  },
 ];
 
 const RELATIONSHIP_OPTIONS = [
@@ -100,7 +124,7 @@ const EditProfile: React.FC = () => {
     [K in keyof EditProfileForm]?: string;
   };
   const [formErrors, setFormErrors] = useState<EditProfileFormErrors>({});
-  
+
   // Photo upload states
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -116,10 +140,12 @@ const EditProfile: React.FC = () => {
         email: user.email || "",
         phone: user.phone || "",
         businessName: profile.businessName || "",
-        skills: profile.skills?.map(skill => skill.name).filter(Boolean) || [],
+        skills:
+          profile.skills?.map((skill) => skill.name).filter(Boolean) || [],
         emergencyContactName: profile.emergencyContact?.name || "",
         emergencyContactPhone: profile.emergencyContact?.phone || "",
-        emergencyContactRelationship: profile.emergencyContact?.relationship || "",
+        emergencyContactRelationship:
+          profile.emergencyContact?.relationship || "",
       });
     }
   }, [user, profile]);
@@ -152,41 +178,49 @@ const EditProfile: React.FC = () => {
     }
 
     if (formData.emergencyContactName && !formData.emergencyContactPhone) {
-      errors.emergencyContactPhone = "Emergency contact phone is required when name is provided";
+      errors.emergencyContactPhone =
+        "Emergency contact phone is required when name is provided";
     }
 
     if (formData.emergencyContactPhone && !formData.emergencyContactName) {
-      errors.emergencyContactName = "Emergency contact name is required when phone is provided";
+      errors.emergencyContactName =
+        "Emergency contact name is required when phone is provided";
     }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleStringInputChange = (field: Exclude<keyof EditProfileForm, 'skills'>, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    } as EditProfileForm));
+  const handleStringInputChange = (
+    field: Exclude<keyof EditProfileForm, "skills">,
+    value: string,
+  ) => {
+    setFormData(
+      (prev) =>
+        ({
+          ...prev,
+          [field]: value,
+        }) as EditProfileForm,
+    );
 
     // Clear error for this field when user starts typing
     if (formErrors[field]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
         [field]: undefined,
       }));
     }
   };
 
-  const handleArrayInputChange = (field: 'skills', value: string[]) => {
-    setFormData(prev => ({
+  const handleArrayInputChange = (field: "skills", value: string[]) => {
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
 
     // Clear error for this field when user starts typing
     if (formErrors[field]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
         [field]: undefined,
       }));
@@ -194,14 +228,14 @@ const EditProfile: React.FC = () => {
   };
 
   const handleSkillToggle = (skillName: string) => {
-    if (!skillName || typeof skillName !== 'string') {
-      console.warn('Invalid skill name:', skillName);
+    if (!skillName || typeof skillName !== "string") {
+      console.warn("Invalid skill name:", skillName);
       return;
     }
 
     const currentSkills = formData.skills.filter(Boolean); // Remove any undefined/null values
     const updatedSkills = currentSkills.includes(skillName)
-      ? currentSkills.filter(skill => skill !== skillName)
+      ? currentSkills.filter((skill) => skill !== skillName)
       : [...currentSkills, skillName];
 
     handleArrayInputChange("skills", updatedSkills);
@@ -217,8 +251,9 @@ const EditProfile: React.FC = () => {
 
     try {
       // Combine firstName and lastName into a single name field for the API
-      const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
-      
+      const fullName =
+        `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
+
       // Prepare profile update data - using any type to match API expectations
       const profileUpdateData: any = {
         name: fullName,
@@ -226,11 +261,13 @@ const EditProfile: React.FC = () => {
         email: formData.email || undefined,
         businessName: formData.businessName || undefined,
         skills: formData.skills
-          .filter(skillName => skillName && typeof skillName === 'string')
-          .map(skillName => {
-            const skillInfo = AVAILABLE_SKILLS.find(s => s.name === skillName);
+          .filter((skillName) => skillName && typeof skillName === "string")
+          .map((skillName) => {
+            const skillInfo = AVAILABLE_SKILLS.find(
+              (s) => s.name === skillName,
+            );
             return {
-              id: skillInfo?.id || skillName.toLowerCase().replace(/\s+/g, '_'),
+              id: skillInfo?.id || skillName.toLowerCase().replace(/\s+/g, "_"),
               name: skillName,
               category: skillInfo?.category || "customer_service",
               level: "intermediate" as const,
@@ -255,7 +292,6 @@ const EditProfile: React.FC = () => {
       setTimeout(() => {
         history.goBack();
       }, 1500);
-
     } catch (error) {
       console.error("Failed to update profile:", error);
       setToastMessage("Failed to update profile. Please try again.");
@@ -288,7 +324,7 @@ const EditProfile: React.FC = () => {
         selectedPhoto,
         (progress: PhotoUploadProgress) => {
           setUploadProgress(progress.percentage);
-        }
+        },
       );
 
       // Update the profile photo in the store
@@ -316,9 +352,9 @@ const EditProfile: React.FC = () => {
   };
 
   const handleChangePhotoClick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
     input.onchange = (event) => {
       const target = event.target as HTMLInputElement;
       const file = target.files?.[0];
@@ -383,7 +419,7 @@ const EditProfile: React.FC = () => {
                     </div>
                   )}
                 </IonAvatar>
-                
+
                 {selectedPhoto ? (
                   <div className="space-y-2">
                     <div className="text-sm text-gray-600 mb-2">
@@ -391,25 +427,25 @@ const EditProfile: React.FC = () => {
                     </div>
                     {isUploadingPhoto && (
                       <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                        <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300" 
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all duration-300"
                           style={{ width: `${uploadProgress}%` }}
                         ></div>
                       </div>
                     )}
                     <div className="flex gap-2 justify-center">
-                      <IonButton 
-                        fill="solid" 
-                        size="small" 
+                      <IonButton
+                        fill="solid"
+                        size="small"
                         onClick={handlePhotoUpload}
                         disabled={isUploadingPhoto}
                       >
                         <IonIcon icon={saveOutline} slot="start" />
-                        {isUploadingPhoto ? 'Uploading...' : 'Upload Photo'}
+                        {isUploadingPhoto ? "Uploading..." : "Upload Photo"}
                       </IonButton>
-                      <IonButton 
-                        fill="outline" 
-                        size="small" 
+                      <IonButton
+                        fill="outline"
+                        size="small"
                         onClick={cancelPhotoSelection}
                         disabled={isUploadingPhoto}
                       >
@@ -418,7 +454,11 @@ const EditProfile: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <IonButton fill="outline" size="small" onClick={handleChangePhotoClick}>
+                  <IonButton
+                    fill="outline"
+                    size="small"
+                    onClick={handleChangePhotoClick}
+                  >
                     <IonIcon icon={cameraOutline} slot="start" />
                     Change Photo
                   </IonButton>
@@ -441,7 +481,9 @@ const EditProfile: React.FC = () => {
                   <IonLabel position="stacked">First Name *</IonLabel>
                   <IonInput
                     value={formData.firstName}
-                    onIonInput={(e) => handleStringInputChange("firstName", e.detail.value!)}
+                    onIonInput={(e) =>
+                      handleStringInputChange("firstName", e.detail.value!)
+                    }
                     placeholder="Enter your first name"
                     className={formErrors.firstName ? "ion-invalid" : ""}
                   />
@@ -456,7 +498,9 @@ const EditProfile: React.FC = () => {
                   <IonLabel position="stacked">Last Name *</IonLabel>
                   <IonInput
                     value={formData.lastName}
-                    onIonInput={(e) => handleStringInputChange("lastName", e.detail.value!)}
+                    onIonInput={(e) =>
+                      handleStringInputChange("lastName", e.detail.value!)
+                    }
                     placeholder="Enter your last name"
                     className={formErrors.lastName ? "ion-invalid" : ""}
                   />
@@ -472,7 +516,9 @@ const EditProfile: React.FC = () => {
                   <IonInput
                     type="email"
                     value={formData.email}
-                    onIonInput={(e) => handleStringInputChange("email", e.detail.value!)}
+                    onIonInput={(e) =>
+                      handleStringInputChange("email", e.detail.value!)
+                    }
                     placeholder="Enter your email"
                     className={formErrors.email ? "ion-invalid" : ""}
                   />
@@ -488,7 +534,9 @@ const EditProfile: React.FC = () => {
                   <IonInput
                     type="tel"
                     value={formData.phone}
-                    onIonInput={(e) => handleStringInputChange("phone", e.detail.value!)}
+                    onIonInput={(e) =>
+                      handleStringInputChange("phone", e.detail.value!)
+                    }
                     placeholder="Enter your phone number"
                     className={formErrors.phone ? "ion-invalid" : ""}
                   />
@@ -513,10 +561,14 @@ const EditProfile: React.FC = () => {
             <IonCardContent>
               <IonList>
                 <IonItem>
-                  <IonLabel position="stacked">Business Name (Optional)</IonLabel>
+                  <IonLabel position="stacked">
+                    Business Name (Optional)
+                  </IonLabel>
                   <IonInput
                     value={formData.businessName}
-                    onIonInput={(e) => handleStringInputChange("businessName", e.detail.value!)}
+                    onIonInput={(e) =>
+                      handleStringInputChange("businessName", e.detail.value!)
+                    }
                     placeholder="Enter your business name"
                   />
                 </IonItem>
@@ -535,14 +587,20 @@ const EditProfile: React.FC = () => {
             <IonCardContent>
               <div className="grid grid-cols-1 gap-2">
                 {AVAILABLE_SKILLS.map((skill) => (
-                  <IonItem key={skill.id} button onClick={() => handleSkillToggle(skill.name)}>
+                  <IonItem
+                    key={skill.id}
+                    button
+                    onClick={() => handleSkillToggle(skill.name)}
+                  >
                     <IonCheckbox
                       checked={formData.skills.includes(skill.name)}
                       onIonChange={() => handleSkillToggle(skill.name)}
                     />
                     <IonLabel className="ml-3">
                       <h3>{skill.name}</h3>
-                      <p className="text-sm text-gray-500 capitalize">{skill.category.replace('_', ' ')}</p>
+                      <p className="text-sm text-gray-500 capitalize">
+                        {skill.category.replace("_", " ")}
+                      </p>
                     </IonLabel>
                   </IonItem>
                 ))}
@@ -569,9 +627,16 @@ const EditProfile: React.FC = () => {
                   <IonLabel position="stacked">Contact Name</IonLabel>
                   <IonInput
                     value={formData.emergencyContactName}
-                    onIonInput={(e) => handleStringInputChange("emergencyContactName", e.detail.value!)}
+                    onIonInput={(e) =>
+                      handleStringInputChange(
+                        "emergencyContactName",
+                        e.detail.value!,
+                      )
+                    }
                     placeholder="Enter emergency contact name"
-                    className={formErrors.emergencyContactName ? "ion-invalid" : ""}
+                    className={
+                      formErrors.emergencyContactName ? "ion-invalid" : ""
+                    }
                   />
                   {formErrors.emergencyContactName && (
                     <IonLabel color="danger" className="text-sm mt-1">
@@ -585,9 +650,16 @@ const EditProfile: React.FC = () => {
                   <IonInput
                     type="tel"
                     value={formData.emergencyContactPhone}
-                    onIonInput={(e) => handleStringInputChange("emergencyContactPhone", e.detail.value!)}
+                    onIonInput={(e) =>
+                      handleStringInputChange(
+                        "emergencyContactPhone",
+                        e.detail.value!,
+                      )
+                    }
                     placeholder="Enter emergency contact phone"
-                    className={formErrors.emergencyContactPhone ? "ion-invalid" : ""}
+                    className={
+                      formErrors.emergencyContactPhone ? "ion-invalid" : ""
+                    }
                   />
                   {formErrors.emergencyContactPhone && (
                     <IonLabel color="danger" className="text-sm mt-1">
@@ -600,7 +672,12 @@ const EditProfile: React.FC = () => {
                   <IonLabel position="stacked">Relationship</IonLabel>
                   <IonSelect
                     value={formData.emergencyContactRelationship}
-                    onIonChange={(e: CustomEvent) => handleStringInputChange("emergencyContactRelationship", e.detail.value)}
+                    onIonChange={(e: CustomEvent) =>
+                      handleStringInputChange(
+                        "emergencyContactRelationship",
+                        e.detail.value,
+                      )
+                    }
                     placeholder="Select relationship"
                   >
                     {RELATIONSHIP_OPTIONS.map((relationship) => (

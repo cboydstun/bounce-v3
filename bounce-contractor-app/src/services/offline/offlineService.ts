@@ -11,7 +11,13 @@ import { apiClient } from "../api/apiClient";
 
 export interface OfflineAction {
   id: string;
-  type: "task_claim" | "task_status_update" | "task_complete" | "profile_update" | "photo_upload" | "location_update";
+  type:
+    | "task_claim"
+    | "task_status_update"
+    | "task_complete"
+    | "profile_update"
+    | "photo_upload"
+    | "location_update";
   payload: any;
   timestamp: string;
   retryCount: number;
@@ -114,7 +120,9 @@ class OfflineService {
     return { ...this.networkStatus };
   }
 
-  public onNetworkChange(listener: (status: NetworkStatus) => void): () => void {
+  public onNetworkChange(
+    listener: (status: NetworkStatus) => void,
+  ): () => void {
     this.networkListeners.push(listener);
     return () => {
       const index = this.networkListeners.indexOf(listener);
@@ -158,7 +166,9 @@ class OfflineService {
     }
   }
 
-  public async queueAction(action: Omit<OfflineAction, "id" | "timestamp" | "retryCount" | "status">): Promise<string> {
+  public async queueAction(
+    action: Omit<OfflineAction, "id" | "timestamp" | "retryCount" | "status">,
+  ): Promise<string> {
     const queuedAction: OfflineAction = {
       ...action,
       id: this.generateId(),
@@ -200,9 +210,12 @@ class OfflineService {
       .filter((action) => action.status === "pending")
       .sort((a, b) => {
         const priorityOrder = { high: 3, medium: 2, low: 1 };
-        const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+        const priorityDiff =
+          priorityOrder[b.priority] - priorityOrder[a.priority];
         if (priorityDiff !== 0) return priorityDiff;
-        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+        return (
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
       });
 
     for (const action of pendingActions) {
@@ -215,11 +228,13 @@ class OfflineService {
       } catch (error) {
         action.retryCount++;
         const apiError = error as ApiError;
-        
+
         // Determine if we should retry
         if (this.shouldRetry(action, apiError)) {
           action.status = "pending";
-          console.log(`Will retry action: ${action.type} (attempt ${action.retryCount})`);
+          console.log(
+            `Will retry action: ${action.type} (attempt ${action.retryCount})`,
+          );
         } else {
           action.status = "failed";
           result.failed++;
@@ -238,7 +253,9 @@ class OfflineService {
     // Notify listeners
     this.syncListeners.forEach((listener) => listener(result));
 
-    console.log(`Sync completed: ${result.successful} successful, ${result.failed} failed`);
+    console.log(
+      `Sync completed: ${result.successful} successful, ${result.failed} failed`,
+    );
     return result;
   }
 
@@ -279,7 +296,9 @@ class OfflineService {
     total: number;
   } {
     const pending = this.queue.filter((a) => a.status === "pending").length;
-    const processing = this.queue.filter((a) => a.status === "processing").length;
+    const processing = this.queue.filter(
+      (a) => a.status === "processing",
+    ).length;
     const failed = this.queue.filter((a) => a.status === "failed").length;
 
     return {
@@ -334,7 +353,7 @@ class OfflineService {
       if (!value) return null;
 
       const cacheEntry = JSON.parse(value);
-      
+
       // Check if expired
       if (cacheEntry.expiresAt && new Date() > new Date(cacheEntry.expiresAt)) {
         await this.clearCachedData(key);
@@ -356,7 +375,7 @@ class OfflineService {
     try {
       const { keys } = await Preferences.keys();
       const cacheKeys = keys.filter((key) => key.startsWith("cache_"));
-      
+
       for (const key of cacheKeys) {
         await Preferences.remove({ key });
       }

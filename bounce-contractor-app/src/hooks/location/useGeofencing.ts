@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { 
-  geofencingService, 
-  GeofenceConfig, 
-  GeofenceEvent, 
-  GeofenceStatus 
+import {
+  geofencingService,
+  GeofenceConfig,
+  GeofenceEvent,
+  GeofenceStatus,
 } from "../../services/location/geofencingService";
 import { useAuthStore } from "../../store/authStore";
 
@@ -13,14 +13,19 @@ export interface GeofencingHookResult {
   geofences: GeofenceConfig[];
   activeGeofences: GeofenceConfig[];
   lastEvent: GeofenceEvent | null;
-  
+
   // Actions
-  createGeofence: (config: Omit<GeofenceConfig, "id" | "createdAt">) => Promise<string>;
-  updateGeofence: (id: string, updates: Partial<GeofenceConfig>) => Promise<void>;
+  createGeofence: (
+    config: Omit<GeofenceConfig, "id" | "createdAt">,
+  ) => Promise<string>;
+  updateGeofence: (
+    id: string,
+    updates: Partial<GeofenceConfig>,
+  ) => Promise<void>;
   deleteGeofence: (id: string) => Promise<void>;
   startMonitoring: () => Promise<void>;
   stopMonitoring: () => Promise<void>;
-  
+
   // Utilities
   getGeofencesForTask: (taskId: string) => GeofenceConfig[];
   getGeofenceStatus: (id: string) => GeofenceStatus | null;
@@ -33,7 +38,7 @@ export function useGeofencing(): GeofencingHookResult {
   const [geofences, setGeofences] = useState<GeofenceConfig[]>([]);
   const [activeGeofences, setActiveGeofences] = useState<GeofenceConfig[]>([]);
   const [lastEvent, setLastEvent] = useState<GeofenceEvent | null>(null);
-  
+
   const user = useAuthStore((state) => state.user);
 
   // Update state when geofences change
@@ -41,7 +46,7 @@ export function useGeofencing(): GeofencingHookResult {
     const allGeofences = geofencingService.getAllGeofences();
     const active = geofencingService.getActiveGeofences();
     const monitoring = geofencingService.isMonitoringActive();
-    
+
     setGeofences(allGeofences);
     setActiveGeofences(active);
     setIsMonitoring(monitoring);
@@ -67,7 +72,7 @@ export function useGeofencing(): GeofencingHookResult {
       updateGeofenceState();
       return geofenceId;
     },
-    [updateGeofenceState]
+    [updateGeofenceState],
   );
 
   // Update geofence
@@ -76,7 +81,7 @@ export function useGeofencing(): GeofencingHookResult {
       await geofencingService.updateGeofence(id, updates);
       updateGeofenceState();
     },
-    [updateGeofenceState]
+    [updateGeofenceState],
   );
 
   // Delete geofence
@@ -85,7 +90,7 @@ export function useGeofencing(): GeofencingHookResult {
       await geofencingService.deleteGeofence(id);
       updateGeofenceState();
     },
-    [updateGeofenceState]
+    [updateGeofenceState],
   );
 
   // Start monitoring
@@ -136,14 +141,14 @@ export function useGeofencing(): GeofencingHookResult {
     geofences,
     activeGeofences,
     lastEvent,
-    
+
     // Actions
     createGeofence,
     updateGeofence,
     deleteGeofence,
     startMonitoring,
     stopMonitoring,
-    
+
     // Utilities
     getGeofencesForTask,
     getGeofenceStatus,
@@ -155,16 +160,16 @@ export function useGeofencing(): GeofencingHookResult {
 // Hook for task-specific geofencing
 export function useTaskGeofencing(taskId: string) {
   const geofencing = useGeofencing();
-  
+
   const taskGeofences = geofencing.getGeofencesForTask(taskId);
   const isInsideGeofence = geofencing.isInsideTaskGeofence(taskId);
-  
+
   // Create geofence for this task
   const createTaskGeofence = useCallback(
     async (
       center: { latitude: number; longitude: number },
       radius: number = 100,
-      name?: string
+      name?: string,
     ) => {
       return await geofencing.createGeofence({
         taskId,
@@ -175,7 +180,7 @@ export function useTaskGeofencing(taskId: string) {
         isActive: true,
       });
     },
-    [geofencing, taskId]
+    [geofencing, taskId],
   );
 
   // Delete all geofences for this task
@@ -190,7 +195,7 @@ export function useTaskGeofencing(taskId: string) {
   const getDistanceToTask = useCallback(() => {
     const taskGeofences = geofencing.getGeofencesForTask(taskId);
     if (taskGeofences.length === 0) return null;
-    
+
     const geofence = taskGeofences[0]; // Use first geofence
     const status = geofencing.getGeofenceStatus(geofence.id);
     return status?.distance || null;
@@ -201,7 +206,7 @@ export function useTaskGeofencing(taskId: string) {
     // Task-specific data
     taskGeofences,
     isInsideGeofence,
-    
+
     // Task-specific actions
     createTaskGeofence,
     clearTaskGeofences,

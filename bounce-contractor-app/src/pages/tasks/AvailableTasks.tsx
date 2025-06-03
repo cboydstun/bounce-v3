@@ -20,7 +20,10 @@ import TaskList from "../../components/tasks/TaskList";
 import ConnectionStatus from "../../components/common/ConnectionStatus";
 import { TaskFilters, Task } from "../../types/task.types";
 import { useHistory } from "react-router-dom";
-import { useTaskTranslation, useNotificationTranslation } from "../../hooks/common/useI18n";
+import {
+  useTaskTranslation,
+  useNotificationTranslation,
+} from "../../hooks/common/useI18n";
 
 type ViewMode = "list" | "map";
 
@@ -64,7 +67,9 @@ const AvailableTasks: React.FC = () => {
       refetch();
     },
     onTaskClaimed: (task: Task) => {
-      setRealtimeMessage(`Task "${task.title}" was claimed by another contractor`);
+      setRealtimeMessage(
+        `Task "${task.title}" was claimed by another contractor`,
+      );
       setRealtimeToast(true);
       // Auto-refresh to remove the claimed task
       refetch();
@@ -120,7 +125,7 @@ const AvailableTasks: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{taskT('availableTasks.title')}</IonTitle>
+          <IonTitle>{taskT("availableTasks.title")}</IonTitle>
           <div slot="end" className="flex items-center space-x-2">
             <ConnectionStatus showText={false} size="small" />
             <IonButton fill="clear" onClick={handleFilters}>
@@ -135,9 +140,13 @@ const AvailableTasks: React.FC = () => {
         <div className="p-4 bg-gray-50 border-b">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-medium text-gray-700">{taskT('availableTasks.realtimeUpdates')}</h3>
+              <h3 className="text-sm font-medium text-gray-700">
+                {taskT("availableTasks.realtimeUpdates")}
+              </h3>
               <p className="text-xs text-gray-500">
-                {isConnected ? taskT('availableTasks.liveUpdatesEnabled') : taskT('availableTasks.connectingToUpdates')}
+                {isConnected
+                  ? taskT("availableTasks.liveUpdatesEnabled")
+                  : taskT("availableTasks.connectingToUpdates")}
               </p>
             </div>
             <ConnectionStatus showText={true} size="small" />
@@ -152,11 +161,11 @@ const AvailableTasks: React.FC = () => {
           >
             <IonSegmentButton value="list">
               <IonIcon icon={listOutline} />
-              <IonLabel>{taskT('availableTasks.listView')}</IonLabel>
+              <IonLabel>{taskT("availableTasks.listView")}</IonLabel>
             </IonSegmentButton>
             <IonSegmentButton value="map">
               <IonIcon icon={mapOutline} />
-              <IonLabel>{taskT('availableTasks.mapView')}</IonLabel>
+              <IonLabel>{taskT("availableTasks.mapView")}</IonLabel>
             </IonSegmentButton>
           </IonSegment>
         </div>
@@ -165,7 +174,7 @@ const AvailableTasks: React.FC = () => {
         {locationLoading && (
           <div className="p-4 bg-blue-50 border-l-4 border-blue-400">
             <p className="text-sm text-blue-700">
-              📍 {taskT('availableTasks.gettingLocation')}
+              📍 {taskT("availableTasks.gettingLocation")}
             </p>
           </div>
         )}
@@ -173,7 +182,7 @@ const AvailableTasks: React.FC = () => {
         {locationError && (
           <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400">
             <p className="text-sm text-yellow-700">
-              ⚠️ {taskT('availableTasks.locationDenied')}
+              ⚠️ {taskT("availableTasks.locationDenied")}
             </p>
           </div>
         )}
@@ -181,7 +190,7 @@ const AvailableTasks: React.FC = () => {
         {location && (
           <div className="p-4 bg-green-50 border-l-4 border-green-400">
             <p className="text-sm text-green-700">
-              ✅ {taskT('availableTasks.showingNearbyTasks')}
+              ✅ {taskT("availableTasks.showingNearbyTasks")}
             </p>
           </div>
         )}
@@ -202,7 +211,7 @@ const AvailableTasks: React.FC = () => {
             onTaskNavigate={handleTaskNavigate}
             showClaimButton={true}
             showNavigateButton={false}
-            emptyMessage={taskT('availableTasks.noTasks')}
+            emptyMessage={taskT("availableTasks.noTasks")}
             emptyIcon="📋"
           />
         )}
@@ -230,7 +239,7 @@ const AvailableTasks: React.FC = () => {
           duration={2000}
           position="bottom"
         />
-        
+
         <IonToast
           isOpen={realtimeToast}
           onDidDismiss={() => setRealtimeToast(false)}

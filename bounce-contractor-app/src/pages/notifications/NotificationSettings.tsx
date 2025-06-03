@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   IonContent,
   IonPage,
@@ -21,7 +21,7 @@ import {
   IonNote,
   IonButtons,
   IonBackButton,
-} from '@ionic/react';
+} from "@ionic/react";
 import {
   notificationsOutline,
   checkmarkCircleOutline,
@@ -30,17 +30,19 @@ import {
   phonePortraitOutline,
   desktopOutline,
   warningOutline,
-} from 'ionicons/icons';
-import { usePushNotifications } from '../../hooks/notifications/usePushNotifications';
-import { useRealtimeStore } from '../../store/realtimeStore';
-import ConnectionStatus from '../../components/common/ConnectionStatus';
-import { useNotificationTranslation } from '../../hooks/common/useI18n';
+} from "ionicons/icons";
+import { usePushNotifications } from "../../hooks/notifications/usePushNotifications";
+import { useRealtimeStore } from "../../store/realtimeStore";
+import ConnectionStatus from "../../components/common/ConnectionStatus";
+import { useNotificationTranslation } from "../../hooks/common/useI18n";
 
 const NotificationSettings: React.FC = () => {
   const { t } = useNotificationTranslation();
   const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastColor, setToastColor] = useState<'success' | 'warning' | 'danger'>('success');
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastColor, setToastColor] = useState<
+    "success" | "warning" | "danger"
+  >("success");
 
   const {
     isSupported,
@@ -66,93 +68,103 @@ const NotificationSettings: React.FC = () => {
     markAllNotificationsAsRead,
   } = useRealtimeStore();
 
-  const showMessage = (message: string, color: 'success' | 'warning' | 'danger' = 'success') => {
+  const showMessage = (
+    message: string,
+    color: "success" | "warning" | "danger" = "success",
+  ) => {
     setToastMessage(message);
     setToastColor(color);
     setShowToast(true);
   };
 
   const handleEnableNotifications = async () => {
-    if (permissionStatus === 'denied') {
-      showMessage('Notification permission was denied. Please enable it in your browser settings.', 'warning');
+    if (permissionStatus === "denied") {
+      showMessage(
+        "Notification permission was denied. Please enable it in your browser settings.",
+        "warning",
+      );
       return;
     }
 
-    if (permissionStatus === 'default') {
+    if (permissionStatus === "default") {
       const granted = await requestPermission();
       if (granted) {
-        showMessage('Notifications enabled successfully!', 'success');
+        showMessage("Notifications enabled successfully!", "success");
       } else {
-        showMessage('Failed to enable notifications. Permission denied.', 'danger');
+        showMessage(
+          "Failed to enable notifications. Permission denied.",
+          "danger",
+        );
       }
     } else {
       setEnabled(true);
-      showMessage('Notifications enabled!', 'success');
+      showMessage("Notifications enabled!", "success");
     }
   };
 
   const handleDisableNotifications = () => {
     setEnabled(false);
-    showMessage('Notifications disabled', 'warning');
+    showMessage("Notifications disabled", "warning");
   };
 
   const handleTestNotification = async () => {
     try {
       await testNotification();
-      showMessage('Test notification sent!', 'success');
+      showMessage("Test notification sent!", "success");
     } catch (err) {
-      showMessage('Failed to send test notification', 'danger');
+      showMessage("Failed to send test notification", "danger");
     }
   };
 
   const handleInitialize = async () => {
     try {
       await initialize();
-      showMessage('Push notifications initialized!', 'success');
+      showMessage("Push notifications initialized!", "success");
     } catch (err) {
-      showMessage('Failed to initialize push notifications', 'danger');
+      showMessage("Failed to initialize push notifications", "danger");
     }
   };
 
   const handleClearNotifications = () => {
     clearNotifications();
-    showMessage('All notifications cleared', 'success');
+    showMessage("All notifications cleared", "success");
   };
 
   const handleMarkAllAsRead = () => {
     markAllNotificationsAsRead();
-    showMessage('All notifications marked as read', 'success');
+    showMessage("All notifications marked as read", "success");
   };
 
   const getPermissionStatusInfo = () => {
     switch (permissionStatus) {
-      case 'granted':
+      case "granted":
         return {
-          color: 'success',
+          color: "success",
           icon: checkmarkCircleOutline,
-          text: 'Granted',
-          description: 'You will receive push notifications',
+          text: "Granted",
+          description: "You will receive push notifications",
         };
-      case 'denied':
+      case "denied":
         return {
-          color: 'danger',
+          color: "danger",
           icon: alertCircleOutline,
-          text: 'Denied',
-          description: 'Push notifications are blocked. Enable in browser settings.',
+          text: "Denied",
+          description:
+            "Push notifications are blocked. Enable in browser settings.",
         };
-      case 'default':
+      case "default":
         return {
-          color: 'warning',
+          color: "warning",
           icon: warningOutline,
-          text: 'Not Requested',
-          description: 'Permission has not been requested yet',
+          text: "Not Requested",
+          description: "Permission has not been requested yet",
         };
       default:
         return {
-          color: 'medium',
+          color: "medium",
           icon: settingsOutline,
-          text: 'Unknown',
-          description: 'Permission status is unknown',
+          text: "Unknown",
+          description: "Permission status is unknown",
         };
     }
   };
@@ -166,7 +178,7 @@ const NotificationSettings: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/profile" />
           </IonButtons>
-          <IonTitle>{t('settings.title')}</IonTitle>
+          <IonTitle>{t("settings.title")}</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -195,9 +207,9 @@ const NotificationSettings: React.FC = () => {
         <IonCard>
           <IonCardHeader>
             <IonCardTitle className="flex items-center">
-              <IonIcon 
-                icon={isSupported ? phonePortraitOutline : desktopOutline} 
-                className="mr-2" 
+              <IonIcon
+                icon={isSupported ? phonePortraitOutline : desktopOutline}
+                className="mr-2"
               />
               Push Notification Support
             </IonCardTitle>
@@ -206,25 +218,25 @@ const NotificationSettings: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="font-medium">
-                  {isSupported ? 'Supported' : 'Not Supported'}
+                  {isSupported ? "Supported" : "Not Supported"}
                 </p>
                 <p className="text-sm text-gray-600">
-                  {isSupported 
-                    ? 'Your device supports push notifications'
-                    : 'Push notifications are not available on this device'
-                  }
+                  {isSupported
+                    ? "Your device supports push notifications"
+                    : "Push notifications are not available on this device"}
                 </p>
               </div>
-              <IonBadge color={isSupported ? 'success' : 'danger'}>
-                {isSupported ? 'Available' : 'Unavailable'}
+              <IonBadge color={isSupported ? "success" : "danger"}>
+                {isSupported ? "Available" : "Unavailable"}
               </IonBadge>
             </div>
 
             {!isSupported && (
               <IonNote color="warning">
                 <p className="text-sm">
-                  Push notifications require a modern browser with service worker support.
-                  Try using Chrome, Firefox, or Safari on a supported device.
+                  Push notifications require a modern browser with service
+                  worker support. Try using Chrome, Firefox, or Safari on a
+                  supported device.
                 </p>
               </IonNote>
             )}
@@ -244,17 +256,20 @@ const NotificationSettings: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="font-medium">{permissionInfo.text}</p>
-                  <p className="text-sm text-gray-600">{permissionInfo.description}</p>
+                  <p className="text-sm text-gray-600">
+                    {permissionInfo.description}
+                  </p>
                 </div>
                 <IonBadge color={permissionInfo.color}>
                   {permissionInfo.text}
                 </IonBadge>
               </div>
 
-              {permissionStatus === 'denied' && (
+              {permissionStatus === "denied" && (
                 <IonNote color="warning">
                   <p className="text-sm">
-                    To enable notifications, go to your browser settings and allow notifications for this site.
+                    To enable notifications, go to your browser settings and
+                    allow notifications for this site.
                   </p>
                 </IonNote>
               )}
@@ -287,7 +302,7 @@ const NotificationSettings: React.FC = () => {
                 </IonLabel>
                 <IonToggle
                   checked={isEnabled}
-                  disabled={!isSupported || permissionStatus !== 'granted'}
+                  disabled={!isSupported || permissionStatus !== "granted"}
                   onIonChange={(e) => {
                     if (e.detail.checked) {
                       handleEnableNotifications();
@@ -320,7 +335,7 @@ const NotificationSettings: React.FC = () => {
                 </IonButton>
               )}
 
-              {permissionStatus === 'default' && isSupported && (
+              {permissionStatus === "default" && isSupported && (
                 <IonButton
                   expand="block"
                   color="primary"
@@ -378,7 +393,9 @@ const NotificationSettings: React.FC = () => {
             <IonCardContent>
               <div className="space-y-2">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">FCM Token:</p>
+                  <p className="text-sm font-medium text-gray-700">
+                    FCM Token:
+                  </p>
                   <p className="text-xs text-gray-500 break-all">
                     {fcmToken.substring(0, 50)}...
                   </p>
@@ -386,9 +403,9 @@ const NotificationSettings: React.FC = () => {
                 <div>
                   <p className="text-sm font-medium text-gray-700">Status:</p>
                   <p className="text-xs text-gray-500">
-                    Initialized: {isInitialized ? 'Yes' : 'No'} | 
-                    Enabled: {isEnabled ? 'Yes' : 'No'} | 
-                    Supported: {isSupported ? 'Yes' : 'No'}
+                    Initialized: {isInitialized ? "Yes" : "No"} | Enabled:{" "}
+                    {isEnabled ? "Yes" : "No"} | Supported:{" "}
+                    {isSupported ? "Yes" : "No"}
                   </p>
                 </div>
               </div>
