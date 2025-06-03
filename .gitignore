@@ -62,3 +62,12 @@ next-env.d.ts
 
 # GitHub    
 /.github/
+
+
+# api-server
+/api-server/.env
+/api-server/node_modules
+
+# bounce-contractor-app
+/bounce-contractor-app/.env.local
+/bounce-contractor-app/node_modules
