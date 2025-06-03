@@ -468,7 +468,6 @@ const theme = {
 
 **Impact**: This fix enables the core user story: "As a contractor, I want to see and claim tasks created in the CRM system through the mobile app."
 
-<<<<<<< HEAD
 #### **🔧 Critical Bug Resolution: Push Notification Permission Flow**
 
 **Problem**: Firebase push notifications were failing on initialization with "permission denied" errors, preventing users from enabling notifications.
@@ -538,8 +537,6 @@ const theme = {
 
 **Impact**: This fix enables the core user story: "As a contractor, I want to manage my notification preferences and receive push notifications when the app is closed."
 
-=======
->>>>>>> 5772b46b8 (notifications)
 ### **✅ Phase 3: Advanced Features (COMPLETED)**
 
 #### **Real-time & Notifications**
@@ -557,37 +554,8 @@ const theme = {
 - ✅ **UI Integration**: Real-time connection status and live task updates in AvailableTasks page
 - ✅ **Event Handling**: Complete task event system (new, assigned, updated, claimed, completed, cancelled)
 - ✅ **Auto-refresh**: Automatic query invalidation and data synchronization
-<<<<<<< HEAD
 
 #### **Firebase Push Notifications Framework**
-=======
-
-#### **Firebase Push Notifications Framework**
-
-- ✅ **Firebase Configuration**: Complete FCM setup with environment variables and validation
-- ✅ **Push Notification Service**: Cross-platform service supporting web and mobile platforms
-- ✅ **React Hook**: `usePushNotifications()` for easy notification management in components
-- ✅ **Service Worker**: Background notification handling with deep linking and actions
-- ✅ **Settings Page**: Complete UI for managing notification preferences and permissions
-- ✅ **Permission Management**: Automatic permission requests and status tracking
-- ✅ **Cross-platform Support**: Works on web, Android, and iOS with Capacitor integration
-
-#### **UI Components & Integration**
-
-- ✅ **ConnectionStatus Component**: Real-time connection indicator with status display
-- ✅ **RealtimeNotification Component**: Notification display with actions and timestamps
-- ✅ **Enhanced AvailableTasks Page**: Live updates with real-time notifications and toasts
-- ✅ **Notification Settings Page**: Complete notification management interface
-- ✅ **Real-time Event Handling**: Live task updates with automatic UI refresh
-
-#### **QuickBooks Integration (PLANNED)**
-
-- 📅 **Payment Tracking**: Earnings and payment history
-- 📅 **OAuth Flow**: Secure QuickBooks connection
-- 📅 **W-9 Form Submission**: Digital tax form handling
-
-#### **Offline Support (PLANNED)**
->>>>>>> 5772b46b8 (notifications)
 
 - ✅ **Firebase Configuration**: Complete FCM setup with environment variables and validation
 - ✅ **Push Notification Service**: Cross-platform service supporting web and mobile platforms
@@ -730,20 +698,20 @@ const theme = {
        if (typeof paymentAmount !== "number" || paymentAmount < 0) {
          return NextResponse.json(
            { error: "Payment amount must be a positive number" },
-           { status: 400 },
+           { status: 400 }
          );
        }
        if (paymentAmount > 999999.99) {
          return NextResponse.json(
            { error: "Payment amount cannot exceed $999,999.99" },
-           { status: 400 },
+           { status: 400 }
          );
        }
        // Check for valid monetary value (up to 2 decimal places)
        if (Math.round(paymentAmount * 100) !== paymentAmount * 100) {
          return NextResponse.json(
            { error: "Payment amount must have at most 2 decimal places" },
-           { status: 400 },
+           { status: 400 }
          );
        }
      }
