@@ -698,20 +698,20 @@ const theme = {
        if (typeof paymentAmount !== "number" || paymentAmount < 0) {
          return NextResponse.json(
            { error: "Payment amount must be a positive number" },
-           { status: 400 }
+           { status: 400 },
          );
        }
        if (paymentAmount > 999999.99) {
          return NextResponse.json(
            { error: "Payment amount cannot exceed $999,999.99" },
-           { status: 400 }
+           { status: 400 },
          );
        }
        // Check for valid monetary value (up to 2 decimal places)
        if (Math.round(paymentAmount * 100) !== paymentAmount * 100) {
          return NextResponse.json(
            { error: "Payment amount must have at most 2 decimal places" },
-           { status: 400 }
+           { status: 400 },
          );
        }
      }
