@@ -4,6 +4,7 @@ import { AuthenticatedRequest } from "../middleware/auth.js";
 import ContractorAuth, {
   IContractorAuthDocument,
 } from "../models/ContractorAuth.js";
+import TaskService from "../services/taskService.js";
 
 interface UpdateProfileRequest {
   name?: string;
@@ -352,6 +353,144 @@ class ContractorController {
         success: false,
         error: "Failed to update profile photo",
         code: "PHOTO_UPDATE_FAILED",
+      });
+    }
+  }
+
+  /**
+   * Get contractor earnings summary
+   */
+  async getEarningsSummary(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      const contractorId = req.contractor?.contractorId;
+
+      if (!contractorId) {
+        res.status(401).json({
+          success: false,
+          error: "Authentication required",
+          code: "AUTH_REQUIRED",
+        });
+        return;
+      }
+
+      logger.info("Get contractor earnings summary", { contractorId });
+
+      // Get all completed tasks for this contractor
+      const completedTasks = await TaskService.getContractorTasks(
+        contractorId,
+        {
+          status: "Completed",
+          page: 1,
+          limit: 1000, // Get all completed tasks
+        },
+      );
+
+      // Calculate earnings using Central Time (America/Chicago)
+      const now = new Date();
+      const centralTime = new Date(
+        now.toLocaleString("en-US", { timeZone: "America/Chicago" }),
+      );
+
+      // Calculate week boundaries (Sunday to Saturday)
+      const startOfWeek = new Date(centralTime);
+      startOfWeek.setDate(centralTime.getDate() - centralTime.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      // Calculate month boundaries
+      const startOfMonth = new Date(
+        centralTime.getFullYear(),
+        centralTime.getMonth(),
+        1,
+      );
+      const endOfMonth = new Date(
+        centralTime.getFullYear(),
+        centralTime.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
+
+      let totalEarnings = 0;
+      let thisWeekEarnings = 0;
+      let thisMonthEarnings = 0;
+      let completedTasksCount = 0;
+
+      // Process each completed task
+      for (const task of completedTasks.tasks) {
+        const taskObj = task.toObject();
+        const paymentAmount = taskObj.paymentAmount || 0;
+        const completedAt = taskObj.completedAt
+          ? new Date(taskObj.completedAt)
+          : null;
+
+        if (paymentAmount > 0) {
+          totalEarnings += paymentAmount;
+          completedTasksCount++;
+
+          if (completedAt) {
+            // Convert completed date to Central Time for comparison
+            const completedCentral = new Date(
+              completedAt.toLocaleString("en-US", {
+                timeZone: "America/Chicago",
+              }),
+            );
+
+            // Check if task was completed this week
+            if (
+              completedCentral >= startOfWeek &&
+              completedCentral <= endOfWeek
+            ) {
+              thisWeekEarnings += paymentAmount;
+            }
+
+            // Check if task was completed this month
+            if (
+              completedCentral >= startOfMonth &&
+              completedCentral <= endOfMonth
+            ) {
+              thisMonthEarnings += paymentAmount;
+            }
+          }
+        }
+      }
+
+      // Calculate average per task
+      const averagePerTask =
+        completedTasksCount > 0 ? totalEarnings / completedTasksCount : 0;
+
+      const earningsData = {
+        totalEarnings: Math.round(totalEarnings * 100) / 100, // Round to 2 decimal places
+        thisWeekEarnings: Math.round(thisWeekEarnings * 100) / 100,
+        thisMonthEarnings: Math.round(thisMonthEarnings * 100) / 100,
+        completedTasks: completedTasksCount,
+        averagePerTask: Math.round(averagePerTask * 100) / 100,
+      };
+
+      logger.info("Earnings summary calculated", {
+        contractorId,
+        earningsData,
+      });
+
+      res.json({
+        success: true,
+        data: earningsData,
+        message: "Earnings summary retrieved successfully",
+      });
+    } catch (error) {
+      logger.error("Get earnings summary error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to retrieve earnings summary",
+        code: "EARNINGS_SUMMARY_FAILED",
       });
     }
   }

@@ -20,6 +20,7 @@ import { useAuthStore, authSelectors } from "../../store/authStore";
 import { useI18n } from "../../hooks/common/useI18n";
 import { useW9Form } from "../../hooks/quickbooks/useW9Form";
 import EarningsSummary from "../../components/tasks/EarningsSummary";
+import { useEarnings } from "../../hooks/tasks/useEarnings";
 
 const Profile: React.FC = () => {
   const history = useHistory();
@@ -28,6 +29,13 @@ const Profile: React.FC = () => {
   const profile = useAuthStore(authSelectors.profile);
   const logout = useAuthStore((state) => state.logout);
   const { w9Status } = useW9Form();
+
+  // Get real earnings data from API
+  const {
+    data: earningsData,
+    isLoading: earningsLoading,
+    error: earningsError,
+  } = useEarnings();
 
   const handleLogout = async () => {
     try {
@@ -59,16 +67,13 @@ const Profile: React.FC = () => {
     console.log("View payment history");
   };
 
-  // Mock earnings data - in real app, this would come from API
-  const mockEarnings = {
-    totalEarnings: 2450.75,
-    thisWeekEarnings: 325.5,
-    thisMonthEarnings: 1250.25,
-    completedTasks: 18,
-    averagePerTask: 136.15,
-    pendingPayments: 175.0,
-    lastPaymentDate: "2025-05-25",
-    nextPaymentDate: "2025-06-01",
+  // Fallback earnings data if API fails
+  const fallbackEarnings = {
+    totalEarnings: 0,
+    thisWeekEarnings: 0,
+    thisMonthEarnings: 0,
+    completedTasks: 0,
+    averagePerTask: 0,
   };
 
   return (
@@ -106,7 +111,8 @@ const Profile: React.FC = () => {
           {/* Earnings Summary */}
           <div className="mb-8">
             <EarningsSummary
-              earnings={mockEarnings}
+              earnings={earningsData || fallbackEarnings}
+              isLoading={earningsLoading}
               onViewDetails={handleViewEarningsDetails}
               onViewPaymentHistory={handleViewPaymentHistory}
             />

@@ -57,4 +57,21 @@ router.post(
   },
 );
 
+// GET /api/contractors/earnings-summary - Get contractor earnings summary
+router.get(
+  "/earnings-summary",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      await contractorController.getEarningsSummary(req, res);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Internal server error",
+        code: "INTERNAL_ERROR",
+      });
+    }
+  },
+);
+
 export default router;

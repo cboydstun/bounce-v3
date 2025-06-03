@@ -15,9 +15,7 @@ import {
 import {
   cashOutline,
   trendingUpOutline,
-  calendarOutline,
   checkmarkCircleOutline,
-  timeOutline,
   statsChartOutline,
 } from "ionicons/icons";
 import { useI18n } from "../../hooks/common/useI18n";
@@ -28,9 +26,6 @@ interface EarningsData {
   thisMonthEarnings: number;
   completedTasks: number;
   averagePerTask: number;
-  pendingPayments: number;
-  lastPaymentDate?: string;
-  nextPaymentDate?: string;
 }
 
 interface EarningsSummaryProps {
@@ -46,7 +41,7 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
   onViewDetails,
   onViewPaymentHistory,
 }) => {
-  const { formatCurrency, formatDate } = useI18n();
+  const { formatCurrency } = useI18n();
 
   if (isLoading) {
     return (
@@ -145,57 +140,7 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
                 {formatCurrency(earnings.averagePerTask)}
               </span>
             </div>
-
-            {earnings.pendingPayments > 0 && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <IonIcon
-                    icon={timeOutline}
-                    className="mr-2 text-orange-500"
-                  />
-                  <span className="text-sm text-gray-700">
-                    Pending Payments
-                  </span>
-                </div>
-                <IonBadge color="warning">
-                  {formatCurrency(earnings.pendingPayments)}
-                </IonBadge>
-              </div>
-            )}
           </div>
-
-          {/* Payment Schedule */}
-          {(earnings.lastPaymentDate || earnings.nextPaymentDate) && (
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-              <div className="flex items-center">
-                <IonIcon
-                  icon={calendarOutline}
-                  className="mr-2 text-gray-500"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  Payment Schedule
-                </span>
-              </div>
-
-              {earnings.lastPaymentDate && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Last Payment:</span>
-                  <span className="text-gray-800">
-                    {formatDate(new Date(earnings.lastPaymentDate))}
-                  </span>
-                </div>
-              )}
-
-              {earnings.nextPaymentDate && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Next Payment:</span>
-                  <span className="text-gray-800 font-medium">
-                    {formatDate(new Date(earnings.nextPaymentDate))}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Action Buttons */}
           <div className="flex gap-2 mt-4">
