@@ -1,12 +1,6 @@
-<<<<<<< HEAD
 import { io, Socket } from "socket.io-client";
 import { APP_CONFIG } from "../../config/app.config";
 import { AuthTokens } from "../../types/auth.types";
-=======
-import { io, Socket } from 'socket.io-client';
-import { APP_CONFIG } from '../../config/app.config';
-import { AuthTokens } from '../../types/auth.types';
->>>>>>> 5772b46b8 (notifications)
 
 export interface WebSocketConfig {
   url: string;
@@ -60,11 +54,7 @@ class WebSocketService {
    */
   public async connect(authTokens: AuthTokens): Promise<void> {
     if (this.socket?.connected) {
-<<<<<<< HEAD
       console.log("WebSocket already connected");
-=======
-      console.log('WebSocket already connected');
->>>>>>> 5772b46b8 (notifications)
       return;
     }
 
@@ -77,17 +67,12 @@ class WebSocketService {
         auth: {
           token: authTokens.accessToken,
         },
-<<<<<<< HEAD
         transports: ["websocket", "polling"],
-=======
-        transports: ['websocket', 'polling'],
->>>>>>> 5772b46b8 (notifications)
         timeout: 10000,
         reconnection: false, // We'll handle reconnection manually
       });
 
       this.setupEventListeners();
-<<<<<<< HEAD
 
       // Wait for connection to be established
       await new Promise<void>((resolve, reject) => {
@@ -96,43 +81,20 @@ class WebSocketService {
         }, 10000);
 
         this.socket!.on("connect", () => {
-=======
-      
-      // Wait for connection to be established
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Connection timeout'));
-        }, 10000);
-
-        this.socket!.on('connect', () => {
->>>>>>> 5772b46b8 (notifications)
           clearTimeout(timeout);
           resolve();
         });
 
-<<<<<<< HEAD
         this.socket!.on("connect_error", (error) => {
-=======
-        this.socket!.on('connect_error', (error) => {
->>>>>>> 5772b46b8 (notifications)
           clearTimeout(timeout);
           reject(error);
         });
       });
-<<<<<<< HEAD
     } catch (error) {
       console.error("WebSocket connection failed:", error);
       this.updateConnectionStatus({
         isConnecting: false,
         error: error instanceof Error ? error.message : "Connection failed",
-=======
-
-    } catch (error) {
-      console.error('WebSocket connection failed:', error);
-      this.updateConnectionStatus({
-        isConnecting: false,
-        error: error instanceof Error ? error.message : 'Connection failed',
->>>>>>> 5772b46b8 (notifications)
       });
       this.scheduleReconnect();
       throw error;
@@ -180,11 +142,6 @@ class WebSocketService {
     if (!this.eventHandlers.has(eventType)) {
       this.eventHandlers.set(eventType, new Set());
     }
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 5772b46b8 (notifications)
     this.eventHandlers.get(eventType)!.add(handler);
 
     // Return unsubscribe function
@@ -209,11 +166,7 @@ class WebSocketService {
    */
   public emit(eventType: string, data?: any): void {
     if (!this.socket?.connected) {
-<<<<<<< HEAD
       console.warn("Cannot emit event: WebSocket not connected");
-=======
-      console.warn('Cannot emit event: WebSocket not connected');
->>>>>>> 5772b46b8 (notifications)
       return;
     }
 
@@ -228,15 +181,9 @@ class WebSocketService {
    * Update contractor location
    */
   public updateLocation(latitude: number, longitude: number): void {
-<<<<<<< HEAD
     this.emit("contractor:location-update", {
       location: {
         type: "Point",
-=======
-    this.emit('contractor:location-update', {
-      location: {
-        type: 'Point',
->>>>>>> 5772b46b8 (notifications)
         coordinates: [longitude, latitude],
       },
       timestamp: new Date().toISOString(),
@@ -247,22 +194,14 @@ class WebSocketService {
    * Join contractor-specific room
    */
   public joinContractorRoom(contractorId: string): void {
-<<<<<<< HEAD
     this.emit("contractor:join-room", { contractorId });
-=======
-    this.emit('contractor:join-room', { contractorId });
->>>>>>> 5772b46b8 (notifications)
   }
 
   /**
    * Leave contractor-specific room
    */
   public leaveContractorRoom(contractorId: string): void {
-<<<<<<< HEAD
     this.emit("contractor:leave-room", { contractorId });
-=======
-    this.emit('contractor:leave-room', { contractorId });
->>>>>>> 5772b46b8 (notifications)
   }
 
   /**
@@ -272,13 +211,8 @@ class WebSocketService {
     if (!this.socket) return;
 
     // Connection events
-<<<<<<< HEAD
     this.socket.on("connect", () => {
       console.log("WebSocket connected");
-=======
-    this.socket.on('connect', () => {
-      console.log('WebSocket connected');
->>>>>>> 5772b46b8 (notifications)
       this.updateConnectionStatus({
         isConnected: true,
         isConnecting: false,
@@ -289,13 +223,8 @@ class WebSocketService {
       this.startHeartbeat();
     });
 
-<<<<<<< HEAD
     this.socket.on("disconnect", (reason) => {
       console.log("WebSocket disconnected:", reason);
-=======
-    this.socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
->>>>>>> 5772b46b8 (notifications)
       this.updateConnectionStatus({
         isConnected: false,
         isConnecting: false,
@@ -309,13 +238,8 @@ class WebSocketService {
       }
     });
 
-<<<<<<< HEAD
     this.socket.on("connect_error", (error) => {
       console.error("WebSocket connection error:", error);
-=======
-    this.socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
->>>>>>> 5772b46b8 (notifications)
       this.updateConnectionStatus({
         isConnecting: false,
         error: error.message,
@@ -324,24 +248,15 @@ class WebSocketService {
     });
 
     // Heartbeat events
-<<<<<<< HEAD
     this.socket.on("ping", () => {
       this.socket?.emit("pong");
     });
 
     this.socket.on("pong", () => {
-=======
-    this.socket.on('ping', () => {
-      this.socket?.emit('pong');
-    });
-
-    this.socket.on('pong', () => {
->>>>>>> 5772b46b8 (notifications)
       // Server acknowledged our ping
     });
 
     // Task events
-<<<<<<< HEAD
     this.socket.on("task:new", (data) => {
       this.handleEvent("task:new", data);
     });
@@ -378,44 +293,6 @@ class WebSocketService {
     // Connection confirmation
     this.socket.on("connection:established", (data) => {
       this.handleEvent("connection:established", data);
-=======
-    this.socket.on('task:new', (data) => {
-      this.handleEvent('task:new', data);
-    });
-
-    this.socket.on('task:assigned', (data) => {
-      this.handleEvent('task:assigned', data);
-    });
-
-    this.socket.on('task:updated', (data) => {
-      this.handleEvent('task:updated', data);
-    });
-
-    this.socket.on('task:claimed', (data) => {
-      this.handleEvent('task:claimed', data);
-    });
-
-    this.socket.on('task:completed', (data) => {
-      this.handleEvent('task:completed', data);
-    });
-
-    this.socket.on('task:cancelled', (data) => {
-      this.handleEvent('task:cancelled', data);
-    });
-
-    // Notification events
-    this.socket.on('notification:system', (data) => {
-      this.handleEvent('notification:system', data);
-    });
-
-    this.socket.on('notification:personal', (data) => {
-      this.handleEvent('notification:personal', data);
-    });
-
-    // Connection confirmation
-    this.socket.on('connection:established', (data) => {
-      this.handleEvent('connection:established', data);
->>>>>>> 5772b46b8 (notifications)
     });
   }
 
@@ -433,7 +310,6 @@ class WebSocketService {
     // Notify all handlers for this event type
     const handlers = this.eventHandlers.get(eventType);
     if (handlers) {
-<<<<<<< HEAD
       handlers.forEach((handler) => {
         try {
           handler(eventData);
@@ -442,19 +318,11 @@ class WebSocketService {
             `Error in WebSocket event handler for ${eventType}:`,
             error,
           );
-=======
-      handlers.forEach(handler => {
-        try {
-          handler(eventData);
-        } catch (error) {
-          console.error(`Error in WebSocket event handler for ${eventType}:`, error);
->>>>>>> 5772b46b8 (notifications)
         }
       });
     }
 
     // Also notify wildcard handlers
-<<<<<<< HEAD
     const wildcardHandlers = this.eventHandlers.get("*");
     if (wildcardHandlers) {
       wildcardHandlers.forEach((handler) => {
@@ -462,15 +330,6 @@ class WebSocketService {
           handler(eventData);
         } catch (error) {
           console.error("Error in WebSocket wildcard event handler:", error);
-=======
-    const wildcardHandlers = this.eventHandlers.get('*');
-    if (wildcardHandlers) {
-      wildcardHandlers.forEach(handler => {
-        try {
-          handler(eventData);
-        } catch (error) {
-          console.error('Error in WebSocket wildcard event handler:', error);
->>>>>>> 5772b46b8 (notifications)
         }
       });
     }
@@ -481,15 +340,9 @@ class WebSocketService {
    */
   private updateConnectionStatus(updates: Partial<ConnectionStatus>): void {
     this.connectionStatus = { ...this.connectionStatus, ...updates };
-<<<<<<< HEAD
 
     // Emit connection status change event
     this.handleEvent("connection:status-changed", this.connectionStatus);
-=======
-    
-    // Emit connection status change event
-    this.handleEvent('connection:status-changed', this.connectionStatus);
->>>>>>> 5772b46b8 (notifications)
   }
 
   /**
@@ -497,7 +350,6 @@ class WebSocketService {
    */
   private scheduleReconnect(): void {
     if (this.isManualDisconnect) return;
-<<<<<<< HEAD
     if (
       this.connectionStatus.reconnectAttempts >=
       this.config.maxReconnectAttempts
@@ -505,18 +357,11 @@ class WebSocketService {
       console.error("Max reconnection attempts reached");
       this.updateConnectionStatus({
         error: "Max reconnection attempts reached",
-=======
-    if (this.connectionStatus.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
-      this.updateConnectionStatus({
-        error: 'Max reconnection attempts reached',
->>>>>>> 5772b46b8 (notifications)
       });
       return;
     }
 
     this.clearReconnectTimer();
-<<<<<<< HEAD
 
     const delay =
       this.config.reconnectInterval *
@@ -524,11 +369,6 @@ class WebSocketService {
     console.log(
       `Scheduling WebSocket reconnection in ${delay}ms (attempt ${this.connectionStatus.reconnectAttempts + 1})`,
     );
-=======
-    
-    const delay = this.config.reconnectInterval * Math.pow(2, this.connectionStatus.reconnectAttempts);
-    console.log(`Scheduling WebSocket reconnection in ${delay}ms (attempt ${this.connectionStatus.reconnectAttempts + 1})`);
->>>>>>> 5772b46b8 (notifications)
 
     this.reconnectTimer = setTimeout(() => {
       this.attemptReconnect();
@@ -548,11 +388,7 @@ class WebSocketService {
     try {
       await this.connect(this.authTokens);
     } catch (error) {
-<<<<<<< HEAD
       console.error("Reconnection attempt failed:", error);
-=======
-      console.error('Reconnection attempt failed:', error);
->>>>>>> 5772b46b8 (notifications)
       this.scheduleReconnect();
     }
   }
@@ -562,17 +398,10 @@ class WebSocketService {
    */
   private startHeartbeat(): void {
     this.clearHeartbeatTimer();
-<<<<<<< HEAD
 
     this.heartbeatTimer = setInterval(() => {
       if (this.socket?.connected) {
         this.socket.emit("ping");
-=======
-    
-    this.heartbeatTimer = setInterval(() => {
-      if (this.socket?.connected) {
-        this.socket.emit('ping');
->>>>>>> 5772b46b8 (notifications)
       }
     }, 30000); // Send ping every 30 seconds
   }
@@ -609,11 +438,6 @@ class WebSocketService {
    */
   public updateAuthTokens(tokens: AuthTokens): void {
     this.authTokens = tokens;
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 5772b46b8 (notifications)
     // If connected, update the socket auth
     if (this.socket?.connected) {
       this.socket.auth = {

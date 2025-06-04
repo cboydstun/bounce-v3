@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { initializeApp } from "firebase/app";
 import {
   getMessaging,
@@ -8,18 +7,11 @@ import {
 } from "firebase/messaging";
 import { getAnalytics } from "firebase/analytics";
 import { APP_CONFIG } from "./app.config";
-=======
-import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage, MessagePayload } from 'firebase/messaging';
-import { getAnalytics } from 'firebase/analytics';
-import { APP_CONFIG } from './app.config';
->>>>>>> 5772b46b8 (notifications)
 
 // Firebase configuration
 // Note: These will need to be replaced with actual Firebase project credentials
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "demo-api-key",
-<<<<<<< HEAD
   authDomain:
     import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ||
     "bounce-contractor-demo.firebaseapp.com",
@@ -33,14 +25,6 @@ const firebaseConfig = {
   appId:
     import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789012:web:abcdef123456",
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-XXXXXXXXXX",
-=======
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "bounce-contractor-demo.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "bounce-contractor-demo",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "bounce-contractor-demo.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789012",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789012:web:abcdef123456",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-XXXXXXXXXX"
->>>>>>> 5772b46b8 (notifications)
 };
 
 // Initialize Firebase
@@ -51,27 +35,16 @@ let messaging: any = null;
 let analytics: any = null;
 
 // Initialize services only in browser environment
-<<<<<<< HEAD
 if (typeof window !== "undefined") {
   try {
     messaging = getMessaging(firebaseApp);
 
-=======
-if (typeof window !== 'undefined') {
-  try {
-    messaging = getMessaging(firebaseApp);
-    
->>>>>>> 5772b46b8 (notifications)
     // Initialize Analytics only in production
     if (APP_CONFIG.IS_PRODUCTION) {
       analytics = getAnalytics(firebaseApp);
     }
   } catch (error) {
-<<<<<<< HEAD
     console.warn("Firebase services initialization failed:", error);
-=======
-    console.warn('Firebase services initialization failed:', error);
->>>>>>> 5772b46b8 (notifications)
   }
 }
 
@@ -79,34 +52,21 @@ export { messaging, analytics };
 
 // VAPID key for web push notifications
 // This will need to be replaced with actual VAPID key from Firebase Console
-<<<<<<< HEAD
 export const VAPID_KEY =
   import.meta.env.VITE_FIREBASE_VAPID_KEY || "demo-vapid-key";
-=======
-export const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || "demo-vapid-key";
->>>>>>> 5772b46b8 (notifications)
 
 // Firebase Cloud Messaging helper functions
 export const firebaseMessaging = {
   /**
-<<<<<<< HEAD
    * Get FCM token (only if permission is already granted)
    */
   async getToken(): Promise<string | null> {
     if (!messaging) {
       console.warn("Firebase messaging not initialized");
-=======
-   * Request notification permission and get FCM token
-   */
-  async getToken(): Promise<string | null> {
-    if (!messaging) {
-      console.warn('Firebase messaging not initialized');
->>>>>>> 5772b46b8 (notifications)
       return null;
     }
 
     try {
-<<<<<<< HEAD
       // Check if permission is already granted
       const permission = this.getPermissionStatus();
 
@@ -114,13 +74,6 @@ export const firebaseMessaging = {
         console.warn(
           "Notification permission not granted, cannot get FCM token",
         );
-=======
-      // Request notification permission
-      const permission = await Notification.requestPermission();
-      
-      if (permission !== 'granted') {
-        console.warn('Notification permission denied');
->>>>>>> 5772b46b8 (notifications)
         return null;
       }
 
@@ -130,7 +83,6 @@ export const firebaseMessaging = {
       });
 
       if (token) {
-<<<<<<< HEAD
         console.log("FCM token obtained:", token);
         return token;
       } else {
@@ -178,16 +130,6 @@ export const firebaseMessaging = {
         "Error requesting permission and getting FCM token:",
         error,
       );
-=======
-        console.log('FCM token obtained:', token);
-        return token;
-      } else {
-        console.warn('No FCM token available');
-        return null;
-      }
-    } catch (error) {
-      console.error('Error getting FCM token:', error);
->>>>>>> 5772b46b8 (notifications)
       return null;
     }
   },
@@ -197,11 +139,7 @@ export const firebaseMessaging = {
    */
   onMessage(callback: (payload: MessagePayload) => void): (() => void) | null {
     if (!messaging) {
-<<<<<<< HEAD
       console.warn("Firebase messaging not initialized");
-=======
-      console.warn('Firebase messaging not initialized');
->>>>>>> 5772b46b8 (notifications)
       return null;
     }
 
@@ -209,11 +147,7 @@ export const firebaseMessaging = {
       const unsubscribe = onMessage(messaging, callback);
       return unsubscribe;
     } catch (error) {
-<<<<<<< HEAD
       console.error("Error setting up message listener:", error);
-=======
-      console.error('Error setting up message listener:', error);
->>>>>>> 5772b46b8 (notifications)
       return null;
     }
   },
@@ -223,15 +157,9 @@ export const firebaseMessaging = {
    */
   isSupported(): boolean {
     return (
-<<<<<<< HEAD
       typeof window !== "undefined" &&
       "Notification" in window &&
       "serviceWorker" in navigator &&
-=======
-      typeof window !== 'undefined' &&
-      'Notification' in window &&
-      'serviceWorker' in navigator &&
->>>>>>> 5772b46b8 (notifications)
       messaging !== null
     );
   },
@@ -240,13 +168,8 @@ export const firebaseMessaging = {
    * Check notification permission status
    */
   getPermissionStatus(): NotificationPermission {
-<<<<<<< HEAD
     if (typeof window === "undefined" || !("Notification" in window)) {
       return "denied";
-=======
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      return 'denied';
->>>>>>> 5772b46b8 (notifications)
     }
     return Notification.permission;
   },
@@ -255,26 +178,16 @@ export const firebaseMessaging = {
    * Request notification permission
    */
   async requestPermission(): Promise<NotificationPermission> {
-<<<<<<< HEAD
     if (typeof window === "undefined" || !("Notification" in window)) {
       return "denied";
-=======
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      return 'denied';
->>>>>>> 5772b46b8 (notifications)
     }
 
     try {
       const permission = await Notification.requestPermission();
       return permission;
     } catch (error) {
-<<<<<<< HEAD
       console.error("Error requesting notification permission:", error);
       return "denied";
-=======
-      console.error('Error requesting notification permission:', error);
-      return 'denied';
->>>>>>> 5772b46b8 (notifications)
     }
   },
 };
@@ -283,17 +196,12 @@ export const firebaseMessaging = {
 export const getFirebaseConfig = () => ({
   ...firebaseConfig,
   // Don't expose sensitive keys in logs
-<<<<<<< HEAD
   apiKey: firebaseConfig.apiKey ? "[CONFIGURED]" : "[NOT SET]",
-=======
-  apiKey: firebaseConfig.apiKey ? '[CONFIGURED]' : '[NOT SET]',
->>>>>>> 5772b46b8 (notifications)
 });
 
 // Validation helper
 export const validateFirebaseConfig = (): boolean => {
   const requiredFields = [
-<<<<<<< HEAD
     "apiKey",
     "authDomain",
     "projectId",
@@ -314,23 +222,6 @@ export const validateFirebaseConfig = (): boolean => {
       "Firebase configuration incomplete. Missing or demo values for:",
       missingFields,
     );
-=======
-    'apiKey',
-    'authDomain', 
-    'projectId',
-    'storageBucket',
-    'messagingSenderId',
-    'appId'
-  ];
-
-  const missingFields = requiredFields.filter(field => 
-    !firebaseConfig[field as keyof typeof firebaseConfig] || 
-    firebaseConfig[field as keyof typeof firebaseConfig] === `demo-${field.toLowerCase().replace(/([A-Z])/g, '-$1')}`
-  );
-
-  if (missingFields.length > 0) {
-    console.warn('Firebase configuration incomplete. Missing or demo values for:', missingFields);
->>>>>>> 5772b46b8 (notifications)
     return false;
   }
 

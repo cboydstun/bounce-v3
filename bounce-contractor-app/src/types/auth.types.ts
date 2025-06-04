@@ -141,6 +141,26 @@ export interface RegisterData {
   skills: string[];
 }
 
+// Profile update data for contractor profile endpoint
+export interface ProfileUpdateData {
+  name?: string;
+  phone?: string;
+  skills?: Array<{
+    id: string;
+    name: string;
+    category: string;
+    level: string;
+    certified: boolean;
+  }>;
+  businessName?: string;
+  emergencyContact?: {
+    name: string;
+    phone: string;
+    relationship: string;
+    email?: string;
+  };
+}
+
 export interface RegisterFormData {
   name: string;
   email: string;

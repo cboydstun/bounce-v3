@@ -23,7 +23,7 @@ import { useHistory } from "react-router-dom";
 import { useI18n } from "../../hooks/common/useI18n";
 import { useToast, getToastColor } from "../../hooks/common/useToast";
 import { useAuthStore } from "../../store/authStore";
-import { RegisterData } from "../../types/auth.types";
+import { RegisterData, ProfileUpdateData } from "../../types/auth.types";
 
 // Step Components
 import AccountStep from "./steps/AccountStep";
@@ -156,22 +156,44 @@ export const RegistrationWizard: React.FC = () => {
     finalData: Partial<RegistrationData>,
   ) => {
     try {
-      // Transform data to match API format
-      const apiData: RegisterData = {
+      // Step 1: Basic registration data for auth endpoint
+      const registrationApiData: RegisterData = {
         name: finalData.name || "",
         email: finalData.email || "",
         phone: finalData.phone || "",
         password: finalData.password || "",
         skills: finalData.skills || ["delivery", "setup"],
-        // Include additional profile data
-        businessName: finalData.businessName,
-        profileImage: finalData.profileImage,
-        emergencyContact: finalData.emergencyContact,
       };
 
       // Register with auth store
       const register = useAuthStore.getState().register;
-      await register(apiData);
+      await register(registrationApiData);
+
+      // Step 2: Update profile with additional data if registration was successful
+      if (finalData.businessName || finalData.emergencyContact) {
+        try {
+          // Prepare profile update data
+          const profileUpdateData: ProfileUpdateData = {};
+
+          if (finalData.businessName) {
+            profileUpdateData.businessName = finalData.businessName;
+          }
+
+          if (finalData.emergencyContact) {
+            profileUpdateData.emergencyContact = finalData.emergencyContact;
+          }
+
+          // TODO: Call profile update API endpoint
+          // This would be implemented when the profile service is available
+          console.log("Profile data to update:", profileUpdateData);
+        } catch (profileError) {
+          console.warn(
+            "Profile update failed, but registration succeeded:",
+            profileError,
+          );
+          // Don't fail the entire registration if profile update fails
+        }
+      }
 
       showToast(
         t(
