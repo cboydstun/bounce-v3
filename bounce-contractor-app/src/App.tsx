@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense, lazy } from "react";
 import { Redirect, Route } from "react-router-dom";
 import {
   IonApp,
@@ -8,6 +8,7 @@ import {
   IonTabBar,
   IonTabButton,
   IonTabs,
+  IonSpinner,
   setupIonicReact,
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
@@ -43,30 +44,43 @@ import "./theme/variables.css";
 /* Tailwind CSS */
 import "./theme/tailwind.css";
 
-/* Pages */
-import AvailableTasks from "./pages/tasks/AvailableTasks";
-import MyTasks from "./pages/tasks/MyTasks";
-import TaskDetails from "./pages/tasks/TaskDetails";
-import Profile from "./pages/profile/Profile";
-import EditProfile from "./pages/profile/EditProfile";
-import TaxSettings from "./pages/profile/TaxSettings";
-import NotificationCenter from "./pages/notifications/NotificationCenter";
-import NotificationSettings from "./pages/notifications/NotificationSettings";
+/* Lazy-loaded Pages */
+// Task Pages
+const AvailableTasks = lazy(() => import("./pages/tasks/AvailableTasks"));
+const MyTasks = lazy(() => import("./pages/tasks/MyTasks"));
+const TaskDetails = lazy(() => import("./pages/tasks/TaskDetails"));
 
-/* Auth Pages */
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-import Splash from "./pages/auth/Splash";
+// Profile Pages
+const Profile = lazy(() => import("./pages/profile/Profile"));
+const EditProfile = lazy(() => import("./pages/profile/EditProfile"));
+const TaxSettings = lazy(() => import("./pages/profile/TaxSettings"));
 
-/* QuickBooks Pages */
-import W9FormPage from "./pages/quickbooks/W9FormPage";
+// Notification Pages
+const NotificationCenter = lazy(
+  () => import("./pages/notifications/NotificationCenter"),
+);
+const NotificationSettings = lazy(
+  () => import("./pages/notifications/NotificationSettings"),
+);
 
-/* Components */
+// Auth Pages
+const Login = lazy(() => import("./pages/auth/Login"));
+const Register = lazy(() => import("./pages/auth/Register"));
+const Splash = lazy(() => import("./pages/auth/Splash"));
+
+// QuickBooks Pages
+const W9FormPage = lazy(() => import("./pages/quickbooks/W9FormPage"));
+
+/* Components - Keep critical components as static imports */
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import OfflineBanner from "./components/common/OfflineBanner";
+import LoadingSpinner from "./components/common/LoadingSpinner";
 
 /* Store */
 import { useAuthStore, authSelectors } from "./store/authStore";
+
+/* Utils */
+import { preloadCriticalChunks } from "./utils/preloader";
 
 /* Capacitor */
 import { App as CapacitorApp } from "@capacitor/app";
@@ -128,19 +142,35 @@ const App: React.FC = () => {
     };
   }, [checkAuthStatus, isAuthenticated]);
 
+  // Preload critical chunks after authentication
+  useEffect(() => {
+    if (isAuthenticated) {
+      preloadCriticalChunks();
+    }
+  }, [isAuthenticated]);
+
+  // Loading fallback component
+  const LoadingFallback = () => <LoadingSpinner message="Loading page..." />;
+
   if (!isAuthenticated) {
     return (
       <IonApp>
         <IonReactRouter>
           <IonRouterOutlet className="pt-0">
             <Route exact path="/splash">
-              <Splash />
+              <Suspense fallback={<LoadingFallback />}>
+                <Splash />
+              </Suspense>
             </Route>
             <Route exact path="/login">
-              <Login />
+              <Suspense fallback={<LoadingFallback />}>
+                <Login />
+              </Suspense>
             </Route>
             <Route exact path="/register">
-              <Register />
+              <Suspense fallback={<LoadingFallback />}>
+                <Register />
+              </Suspense>
             </Route>
             <Route exact path="/">
               <Redirect to="/splash" />
@@ -161,32 +191,50 @@ const App: React.FC = () => {
         <IonTabs>
           <IonRouterOutlet className="pt-0">
             <ProtectedRoute exact path="/available-tasks">
-              <AvailableTasks />
+              <Suspense fallback={<LoadingFallback />}>
+                <AvailableTasks />
+              </Suspense>
             </ProtectedRoute>
             <ProtectedRoute exact path="/my-tasks">
-              <MyTasks />
+              <Suspense fallback={<LoadingFallback />}>
+                <MyTasks />
+              </Suspense>
             </ProtectedRoute>
             <ProtectedRoute exact path="/task-details/:id">
-              <TaskDetails />
+              <Suspense fallback={<LoadingFallback />}>
+                <TaskDetails />
+              </Suspense>
             </ProtectedRoute>
 
             <ProtectedRoute exact path="/profile">
-              <Profile />
+              <Suspense fallback={<LoadingFallback />}>
+                <Profile />
+              </Suspense>
             </ProtectedRoute>
             <ProtectedRoute exact path="/profile/edit">
-              <EditProfile />
+              <Suspense fallback={<LoadingFallback />}>
+                <EditProfile />
+              </Suspense>
             </ProtectedRoute>
             <ProtectedRoute exact path="/profile/tax-settings">
-              <TaxSettings />
+              <Suspense fallback={<LoadingFallback />}>
+                <TaxSettings />
+              </Suspense>
             </ProtectedRoute>
             <ProtectedRoute exact path="/notifications">
-              <NotificationCenter />
+              <Suspense fallback={<LoadingFallback />}>
+                <NotificationCenter />
+              </Suspense>
             </ProtectedRoute>
             <ProtectedRoute exact path="/notifications/settings">
-              <NotificationSettings />
+              <Suspense fallback={<LoadingFallback />}>
+                <NotificationSettings />
+              </Suspense>
             </ProtectedRoute>
             <ProtectedRoute exact path="/quickbooks/w9-form">
-              <W9FormPage />
+              <Suspense fallback={<LoadingFallback />}>
+                <W9FormPage />
+              </Suspense>
             </ProtectedRoute>
             <ProtectedRoute exact path="/">
               <Redirect to="/available-tasks" />

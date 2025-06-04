@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:analyze": "npm run build && npm run analyze",
+    "analyze": "node scripts/analyze-bundle.js",
     "preview": "vite preview",
     "test.e2e": "cypress run",
     "test.unit": "vitest",
