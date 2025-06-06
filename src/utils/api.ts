@@ -192,6 +192,7 @@ export const getProducts = async (params?: {
   category?: string;
   search?: string;
   availability?: string;
+  includeRetired?: boolean;
 }) => {
   const queryParams = new URLSearchParams();
 
@@ -205,6 +206,10 @@ export const getProducts = async (params?: {
 
   if (params?.availability) {
     queryParams.append("availability", params.availability);
+  }
+
+  if (params?.includeRetired) {
+    queryParams.append("includeRetired", "true");
   }
 
   const queryString = queryParams.toString();
@@ -611,6 +616,10 @@ export const getOrders = async (params?: {
   paymentStatus?: string;
   contactId?: string;
   orderNumber?: string;
+  customer?: string;
+  taskStatus?: string;
+  page?: number;
+  limit?: number;
 }) => {
   const queryParams = new URLSearchParams();
 
@@ -622,6 +631,10 @@ export const getOrders = async (params?: {
   if (params?.contactId) queryParams.append("contactId", params.contactId);
   if (params?.orderNumber)
     queryParams.append("orderNumber", params.orderNumber);
+  if (params?.customer) queryParams.append("customer", params.customer);
+  if (params?.taskStatus) queryParams.append("taskStatus", params.taskStatus);
+  if (params?.page) queryParams.append("page", params.page.toString());
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
 
   const queryString = queryParams.toString();
   const url = queryString ? `/api/v1/orders?${queryString}` : "/api/v1/orders";

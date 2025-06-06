@@ -26,12 +26,17 @@ export async function GET(request: NextRequest) {
     const category = url.searchParams.get("category");
     const search = url.searchParams.get("search");
     const availability = url.searchParams.get("availability");
+    const includeRetired = url.searchParams.get("includeRetired") === "true";
 
     // Build query - exclude retired products by default for public consumption
-    const query: ProductQuery = {
-      availability: { $ne: "retired" }
-    };
-    
+
+
+    // Only exclude retired products if includeRetired is not true
+    if (!includeRetired) {
+      query.availability = { $ne: "retired" };
+    }
+
+
     if (category) {
       query.category = category;
     }
@@ -45,19 +50,27 @@ export async function GET(request: NextRequest) {
 
     // If search query is provided, use text search
     if (search) {
-      // Build search query that also excludes retired products
-      const searchQuery: any = { 
+
+      // Build search query
+      const searchQuery: any = {
         $text: { $search: search },
-        availability: { $ne: "retired" }
       };
-      
+
+      // Only exclude retired products if includeRetired is not true
+      if (!includeRetired) {
+        searchQuery.availability = { $ne: "retired" };
+      }
+
+
       // If availability is specifically requested, override the default exclusion
       if (availability) {
         searchQuery.availability = availability;
       }
-      
-      products = await Product.find(searchQuery, { score: { $meta: "textScore" } })
-        .sort({ score: { $meta: "textScore" } });
+
+      products = await Product.find(searchQuery, {
+        score: { $meta: "textScore" },
+      }).sort({ score: { $meta: "textScore" } });
+
       total = await Product.countDocuments(searchQuery);
     } else {
       // Otherwise, use regular query

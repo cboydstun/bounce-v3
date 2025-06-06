@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import Order from "@/models/Order";
 import Contact from "@/models/Contact";
+import Task from "@/models/Task";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { parseDateCT, formatDateCT } from "@/utils/dateUtils";
@@ -39,6 +40,10 @@ export async function GET(request: NextRequest) {
     const paymentStatus = url.searchParams.get("paymentStatus");
     const contactId = url.searchParams.get("contactId");
     const orderNumber = url.searchParams.get("orderNumber");
+    const customer = url.searchParams.get("customer");
+    const taskStatus = url.searchParams.get("taskStatus");
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
 
     // Build query
     const query: Record<string, unknown> = {};
@@ -75,12 +80,100 @@ export async function GET(request: NextRequest) {
       query.orderNumber = orderNumber;
     }
 
-    // Execute query with sorting by createdAt (newest first)
-    const orders = await Order.find(query).sort({ createdAt: -1 });
+    // Filter by customer (name, email, or phone)
+    if (customer) {
+      query.$or = [
+        { customerName: { $regex: customer, $options: "i" } },
+        { customerEmail: { $regex: customer, $options: "i" } },
+        { customerPhone: { $regex: customer, $options: "i" } },
+      ];
+    }
 
-    return NextResponse.json({
-      orders,
-    });
+    let orders;
+
+    // If filtering by task status, we need to use aggregation
+    if (taskStatus) {
+      const pipeline: any[] = [
+        // Match orders based on existing filters
+        { $match: query },
+        // Lookup tasks for each order
+        {
+          $lookup: {
+            from: "tasks",
+            localField: "_id",
+            foreignField: "orderId",
+            as: "tasks",
+          },
+        },
+        // Filter orders that have tasks with the specified status
+        {
+          $match: {
+            "tasks.status": taskStatus,
+          },
+        },
+        // Sort by createdAt (newest first)
+        { $sort: { createdAt: -1 } },
+        // Add pagination
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        // Remove tasks field from final result to match original structure
+        { $unset: "tasks" },
+      ];
+
+      orders = await Order.aggregate(pipeline);
+
+      // Get total count for pagination
+      const countPipeline: any[] = [
+        { $match: query },
+        {
+          $lookup: {
+            from: "tasks",
+            localField: "_id",
+            foreignField: "orderId",
+            as: "tasks",
+          },
+        },
+        {
+          $match: {
+            "tasks.status": taskStatus,
+          },
+        },
+        { $count: "total" },
+      ];
+
+      const countResult = await Order.aggregate(countPipeline);
+      const totalOrders = countResult[0]?.total || 0;
+      const totalPages = Math.ceil(totalOrders / limit);
+
+      return NextResponse.json({
+        orders,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalOrders,
+          limit,
+        },
+      });
+    } else {
+      // Regular query without task status filtering
+      const totalOrders = await Order.countDocuments(query);
+      const totalPages = Math.ceil(totalOrders / limit);
+
+      orders = await Order.find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+      return NextResponse.json({
+        orders,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalOrders,
+          limit,
+        },
+      });
+    }
   } catch (error: unknown) {
     console.error("Error fetching orders:", error);
     return NextResponse.json(

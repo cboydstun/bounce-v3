@@ -1,0 +1,171 @@
+{
+  "availableTasks": {
+    "title": "Tareas Disponibles",
+    "realtimeUpdates": "Actualizaciones en Tiempo Real",
+    "liveUpdatesEnabled": "Actualizaciones en vivo habilitadas",
+    "connectingToUpdates": "Conectando a actualizaciones en vivo...",
+    "listView": "Lista",
+    "mapView": "Mapa",
+    "gettingLocation": "Obteniendo tu ubicación...",
+    "locationDenied": "Acceso a ubicación denegado. Habilita la ubicación para mejor coincidencia de tareas.",
+    "showingNearbyTasks": "Mostrando tareas cerca de tu ubicación",
+    "noTasks": "No hay tareas disponibles en tu área"
+  },
+  "discovery": {
+    "title": "Tareas Disponibles",
+    "subtitle": "Encuentra tareas cerca de ti",
+    "noTasks": "No hay tareas disponibles en tu área",
+    "noTasksSubtitle": "Vuelve a revisar más tarde para nuevas oportunidades",
+    "refreshing": "Actualizando tareas...",
+    "filterBySkills": "Filtrar por Habilidades",
+    "sortBy": "Ordenar Por",
+    "distance": "Distancia",
+    "compensation": "Pago",
+    "newest": "Más Recientes Primero",
+    "closest": "Más Cercanas Primero",
+    "highestPay": "Mejor Pago Primero"
+  },
+  "myTasks": {
+    "title": "Mis Tareas",
+    "subtitle": "Tus tareas asignadas",
+    "noTasks": "No tienes tareas asignadas",
+    "noTasksSubtitle": "Reclama tareas desde la pestaña de Tareas Disponibles",
+    "filterByStatus": "Filtrar por Estado",
+    "allTasks": "Todas las Tareas",
+    "upcomingTasks": "Próximas",
+    "inProgressTasks": "En Progreso",
+    "completedTasks": "Completadas"
+  },
+  "card": {
+    "scheduledFor": "Programado para {{time}} CT",
+    "location": "{{distance}} de distancia",
+    "compensation": "{{amount}} total",
+    "claimButton": "Reclamar Tarea",
+    "viewDetails": "Ver Detalles",
+    "skills": "Habilidades: {{skills}}",
+    "customer": "Cliente: {{name}}",
+    "address": "{{address}}",
+    "duration": "Duración: {{duration}}",
+    "equipment": "Equipo: {{equipment}}"
+  },
+  "status": {
+    "published": "Disponible",
+    "assigned": "Asignado",
+    "in_progress": "En Progreso",
+    "completed": "Completado",
+    "cancelled": "Cancelado"
+  },
+  "actions": {
+    "claiming": "Reclamando...",
+    "claimed": "¡Tarea Reclamada!",
+    "startTask": "Iniciar Tarea",
+    "starting": "Iniciando...",
+    "completeTask": "Completar Tarea",
+    "completing": "Completando...",
+    "cancelTask": "Cancelar Tarea",
+    "cancelling": "Cancelando...",
+    "uploadPhotos": "Subir Fotos",
+    "uploading": "Subiendo...",
+    "reportIssue": "Reportar Problema"
+  },
+  "details": {
+    "title": "Detalles de la Tarea",
+    "description": "Descripción",
+    "requirements": "Requisitos",
+    "instructions": "Instrucciones",
+    "customerInfo": "Información del Cliente",
+    "locationInfo": "Información de Ubicación",
+    "paymentInfo": "Información de Pago",
+    "timeline": "Cronograma",
+    "notes": "Notas"
+  },
+  "completion": {
+    "title": "Completar Tarea",
+    "subtitle": "Sube fotos y confirma la finalización",
+    "photosRequired": "Se requieren fotos para completar esta tarea",
+    "addPhotos": "Agregar Fotos",
+    "photosTaken": "{{count}} fotos tomadas",
+    "notes": "Notas de Finalización",
+    "notesPlaceholder": "Agrega cualquier nota sobre la finalización de la tarea...",
+    "confirmCompletion": "Confirmar Finalización",
+    "taskCompleted": "¡Tarea completada exitosamente!"
+  },
+  "geofencing": {
+    "arrival": {
+      "detected": "Llegada detectada a las {{time}} CT",
+      "notification": "Has llegado a la ubicación de la tarea",
+      "autoUpdate": "Estado de tarea actualizado automáticamente a 'En Progreso'"
+    },
+    "departure": {
+      "detected": "Salida detectada a las {{time}} CT",
+      "notification": "Has salido de la ubicación de la tarea"
+    }
+  },
+  "errors": {
+    "claimFailed": "Error al reclamar la tarea. Por favor intenta de nuevo",
+    "updateFailed": "Error al actualizar el estado de la tarea",
+    "completionFailed": "Error al completar la tarea",
+    "photoUploadFailed": "Error al subir las fotos",
+    "networkError": "Error de red. Por favor verifica tu conexión",
+    "taskNotFound": "Tarea no encontrada",
+    "alreadyClaimed": "Esta tarea ya ha sido reclamada",
+    "unauthorized": "No estás autorizado para realizar esta acción"
+  },
+  "success": {
+    "taskClaimed": "¡Tarea reclamada exitosamente!",
+    "taskStarted": "Tarea iniciada",
+    "taskCompleted": "¡Tarea completada exitosamente!",
+    "photosUploaded": "Fotos subidas exitosamente",
+    "statusUpdated": "Estado de tarea actualizado"
+  },
+  "filters": {
+    "title": "Filtrar Tareas",
+    "clear": "Limpiar",
+    "apply": "Aplicar Filtros",
+    "taskTypes": "Tipos de Tarea",
+    "selectTaskTypes": "Seleccionar tipos de tarea",
+    "categories": "Categorías",
+    "selectCategories": "Seleccionar categorías",
+    "priority": "Prioridad",
+    "selectPriority": "Seleccionar prioridad",
+    "status": "Estado",
+    "selectStatus": "Seleccionar estado",
+    "compensation": "Compensación",
+    "minCompensation": "Pago Mínimo",
+    "maxCompensation": "Pago Máximo",
+    "duration": "Duración",
+    "minDuration": "Duración Mínima",
+    "maxDuration": "Duración Máxima",
+    "distance": "Distancia",
+    "maxDistance": "Distancia Máxima",
+    "distanceNote": "Distancia desde tu ubicación actual",
+    "dateRange": "Rango de Fechas",
+    "startDate": "Fecha de Inicio",
+    "endDate": "Fecha de Fin"
+  },
+  "taskTypes": {
+    "delivery_only": "Solo Entrega",
+    "setup_only": "Solo Instalación",
+    "delivery_and_setup": "Entrega e Instalación",
+    "pickup_only": "Solo Recogida",
+    "pickup_and_teardown": "Recogida y Desmontaje",
+    "full_service": "Servicio Completo"
+  },
+  "categories": {
+    "bounce_house": "Casa Inflable",
+    "water_slide": "Tobogán de Agua",
+    "combo_unit": "Unidad Combo",
+    "obstacle_course": "Curso de Obstáculos",
+    "interactive_game": "Juego Interactivo",
+    "tent": "Carpa",
+    "table_chair": "Mesa y Silla",
+    "generator": "Generador",
+    "other": "Otro"
+  },
+  "priority": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta",
+    "urgent": "Urgente"
+  }
+}

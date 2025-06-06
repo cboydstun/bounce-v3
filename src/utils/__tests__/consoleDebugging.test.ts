@@ -196,7 +196,7 @@ describe("Console Debugging Examples", () => {
 
       // Simulate performance monitoring with logging
       const performanceTest = (iterations: number) => {
-        const startTime = Date.now();
+        const startTime = performance.now();
         console.time("[PERF] Operation duration");
         console.log(`[PERF] Starting ${iterations} iterations...`);
 
@@ -209,14 +209,14 @@ describe("Console Debugging Examples", () => {
         }
 
         console.timeEnd("[PERF] Operation duration");
-        const endTime = Date.now();
+        const endTime = performance.now();
         const duration = endTime - startTime;
 
         console.log(
-          `[PERF] Completed ${iterations} iterations in ${duration}ms`,
+          `[PERF] Completed ${iterations} iterations in ${duration.toFixed(3)}ms`,
         );
         console.log(
-          `[PERF] Average time per iteration: ${duration / iterations}ms`,
+          `[PERF] Average time per iteration: ${(duration / iterations).toFixed(6)}ms`,
         );
 
         return { result, duration, iterations };

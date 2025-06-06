@@ -16,7 +16,8 @@ export default function AdminProducts() {
     const fetchProducts = async () => {
       try {
         setIsLoading(true);
-        const data = await getProducts();
+        // Include retired products for admin view
+        const data = await getProducts({ includeRetired: true });
         // Extract products array from the response
         setProducts(data.products || []);
       } catch (err) {
