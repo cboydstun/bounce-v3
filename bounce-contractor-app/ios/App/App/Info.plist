@@ -48,6 +48,17 @@
 	
 	<!-- Privacy Usage Descriptions -->
 	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Bounce Contractor uses your location to find nearby bounce house delivery tasks and provide navigation to task locations.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Bounce Contractor uses your location to find nearby bounce house delivery tasks and provide navigation to task locations.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Bounce Contractor needs camera access to take photos for task completion verification and documentation.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Bounce Contractor needs photo library access to select and upload task completion photos.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Bounce Contractor uses Face ID for secure and convenient app authentication.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Bounce Contractor sends notifications about new tasks, task updates, and important app information.</string>
 	<string>PartyPad uses your location to find nearby bounce house delivery tasks and provide navigation to task locations.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>PartyPad uses your location to find nearby bounce house delivery tasks and provide navigation to task locations.</string>

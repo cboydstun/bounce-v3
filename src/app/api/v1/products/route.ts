@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import Product from "@/models/Product";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { AuthRequest, withAuth } from "@/middleware/auth";
 
 interface ProductQuery {
   category?: string;
@@ -29,7 +26,7 @@ export async function GET(request: NextRequest) {
     const includeRetired = url.searchParams.get("includeRetired") === "true";
 
     // Build query - exclude retired products by default for public consumption
-
+    const query: ProductQuery = {};
 
     // Only exclude retired products if includeRetired is not true
     if (!includeRetired) {
@@ -50,7 +47,6 @@ export async function GET(request: NextRequest) {
 
     // If search query is provided, use text search
     if (search) {
-
       // Build search query
       const searchQuery: any = {
         $text: { $search: search },
@@ -61,7 +57,6 @@ export async function GET(request: NextRequest) {
         searchQuery.availability = { $ne: "retired" };
       }
 
-
       // If availability is specifically requested, override the default exclusion
       if (availability) {
         searchQuery.availability = availability;
@@ -70,7 +65,6 @@ export async function GET(request: NextRequest) {
       products = await Product.find(searchQuery, {
         score: { $meta: "textScore" },
       }).sort({ score: { $meta: "textScore" } });
-
       total = await Product.countDocuments(searchQuery);
     } else {
       // Otherwise, use regular query
@@ -97,99 +91,96 @@ export async function GET(request: NextRequest) {
  * This endpoint requires authentication and admin role
  */
 export async function POST(request: NextRequest) {
-  // Use the withAuth middleware to handle authentication
-  return withAuth(request, async (authReq: AuthRequest) => {
-    try {
-      // Get the user from the request
-      const user = authReq.user;
+  try {
+    // Import NextAuth dependencies only when needed
+    const { getServerSession } = await import("next-auth");
+    const { authOptions } = await import("@/app/api/auth/[...nextauth]/route");
 
-      // Check if user is admin
-      if (user?.role !== "admin") {
-        return NextResponse.json(
-          { error: "Not authorized to create products" },
-          { status: 403 },
-        );
-      }
+    // Get the session using NextAuth.js
+    const session = await getServerSession(authOptions);
 
-      // Get product data
-      let productData;
-      try {
-        // Try to get data from the request directly
-        productData = await request.json();
-      } catch (error) {
-        // If that fails, try to use the mocked json function if available
-        if (typeof (authReq as any).json === "function") {
-          productData = await (authReq as any).json();
-        } else {
-          // If both methods fail, rethrow the error
-          throw error;
-        }
-      }
-
-      await dbConnect();
-
-      // Validate required fields
-      const requiredFields = [
-        "name",
-        "description",
-        "category",
-        "price",
-        "rentalDuration",
-        "dimensions",
-        "capacity",
-        "ageRange",
-        "setupRequirements",
-        "features",
-        "safetyGuidelines",
-      ];
-
-      const missingFields = requiredFields.filter((field) => {
-        if (field === "price") {
-          return !productData.price || !productData.price.base;
-        }
-        if (field === "dimensions") {
-          return (
-            !productData.dimensions ||
-            !productData.dimensions.length ||
-            !productData.dimensions.width ||
-            !productData.dimensions.height
-          );
-        }
-        if (field === "ageRange") {
-          return (
-            !productData.ageRange ||
-            productData.ageRange.min === undefined ||
-            productData.ageRange.max === undefined
-          );
-        }
-
-        if (field === "setupRequirements") {
-          return (
-            !productData.setupRequirements ||
-            !productData.setupRequirements.space ||
-            !productData.setupRequirements.surfaceType
-          );
-        }
-        return !productData[field];
-      });
-
-      if (missingFields.length > 0) {
-        return NextResponse.json(
-          { error: `Missing required fields: ${missingFields.join(", ")}` },
-          { status: 400 },
-        );
-      }
-
-      // Create product
-      const product = await Product.create(productData);
-
-      return NextResponse.json(product, { status: 201 });
-    } catch (error) {
-      console.error("Error creating product:", error);
+    // Check if user is authenticated
+    if (!session?.user) {
       return NextResponse.json(
-        { error: "Failed to create product" },
-        { status: 500 },
+        { error: "Unauthorized - Please log in" },
+        { status: 401 },
       );
     }
-  });
+
+    // Check if user is admin
+    if (session.user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Forbidden - Admin access required" },
+        { status: 403 },
+      );
+    }
+
+    // Get product data from request
+    const productData = await request.json();
+
+    await dbConnect();
+
+    // Validate required fields
+    const requiredFields = [
+      "name",
+      "description",
+      "category",
+      "price",
+      "rentalDuration",
+      "dimensions",
+      "capacity",
+      "ageRange",
+      "setupRequirements",
+      "features",
+      "safetyGuidelines",
+    ];
+
+    const missingFields = requiredFields.filter((field) => {
+      if (field === "price") {
+        return !productData.price || !productData.price.base;
+      }
+      if (field === "dimensions") {
+        return (
+          !productData.dimensions ||
+          !productData.dimensions.length ||
+          !productData.dimensions.width ||
+          !productData.dimensions.height
+        );
+      }
+      if (field === "ageRange") {
+        return (
+          !productData.ageRange ||
+          productData.ageRange.min === undefined ||
+          productData.ageRange.max === undefined
+        );
+      }
+
+      if (field === "setupRequirements") {
+        return (
+          !productData.setupRequirements ||
+          !productData.setupRequirements.space ||
+          !productData.setupRequirements.surfaceType
+        );
+      }
+      return !productData[field];
+    });
+
+    if (missingFields.length > 0) {
+      return NextResponse.json(
+        { error: `Missing required fields: ${missingFields.join(", ")}` },
+        { status: 400 },
+      );
+    }
+
+    // Create product
+    const product = await Product.create(productData);
+
+    return NextResponse.json(product, { status: 201 });
+  } catch (error) {
+    console.error("Error creating product:", error);
+    return NextResponse.json(
+      { error: "Failed to create product" },
+      { status: 500 },
+    );
+  }
 }

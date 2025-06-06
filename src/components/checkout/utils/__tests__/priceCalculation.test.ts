@@ -58,7 +58,6 @@ describe("calculatePrices", () => {
     expect(result.overnightFee).toBe(50);
     expect(result.subtotal).toBeCloseTo(199.95);
     expect(result.taxAmount).toBeCloseTo(16.5);
-
     expect(result.processingFee).toBeCloseTo(6.49);
     expect(result.totalAmount).toBeCloseTo(222.94);
   });
