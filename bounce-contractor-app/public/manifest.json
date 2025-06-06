@@ -1,6 +1,7 @@
 {
-  "short_name": "Ionic App",
-  "name": "My Ionic App",
+  "short_name": "PartyPad",
+  "name": "PartyPad - Contractor App",
+  "description": "The ultimate mobile app for bounce house contractors to discover, claim, and manage party setup tasks",
   "icons": [
     {
       "src": "assets/icon/favicon.png",
@@ -16,6 +17,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff"
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "categories": ["business", "productivity", "utilities"]
 }

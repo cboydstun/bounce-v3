@@ -1,7 +1,7 @@
 {
-  "name": "bounce-contractor-app",
+  "name": "partypad",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -73,5 +73,5 @@
     "vite": "~5.2.0",
     "vitest": "^0.34.6"
   },
-  "description": "An Ionic project"
+  "description": "PartyPad - The ultimate mobile app for bounce house contractors to discover, claim, and manage party setup tasks"
 }

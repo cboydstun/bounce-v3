@@ -1,6 +1,6 @@
-# Bounce Contractor Mobile App
+# PartyPad - Contractor Mobile App
 
-A cross-platform mobile application built with Ionic React for bounce house delivery contractors. This app enables contractors to discover, claim, and manage delivery/setup tasks with real-time notifications and QuickBooks integration.
+A cross-platform mobile application built with Ionic React for bounce house delivery contractors. PartyPad enables contractors to discover, claim, and manage party setup tasks with real-time notifications and QuickBooks integration.
 
 ## 🚀 Features
 
@@ -95,7 +95,7 @@ src/
 
    ```bash
    git clone <repository-url>
-   cd bounce-contractor-app
+   cd partypad
    ```
 
 2. **Install dependencies**

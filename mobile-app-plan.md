@@ -1,8 +1,8 @@
-# Bounce Contractor Mobile App - Ionic Development Plan
+# PartyPad - Ionic Development Plan
 
 ## 📋 Project Overview
 
-This document outlines the complete development plan for a cross-platform mobile application using Ionic Framework that integrates with the Bounce Mobile API Server. The app will enable contractors to discover, claim, and manage bounce house delivery/setup tasks with real-time notifications and QuickBooks integration.
+This document outlines the complete development plan for **PartyPad**, a cross-platform mobile application using Ionic Framework that integrates with the Bounce Mobile API Server. PartyPad enables contractors to discover, claim, and manage bounce house delivery/setup tasks with real-time notifications and QuickBooks integration.
 
 ## 🎯 App Features & User Stories
 
