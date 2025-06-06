@@ -13,8 +13,8 @@ const config: CapacitorConfig = {
       "https://slowbill.xyz",
       "https://*.cloudinary.com",
       "https://*.sendgrid.net",
-      "https://*.intuit.com"
-    ]
+      "https://*.intuit.com",
+    ],
   },
   plugins: {
     CapacitorHttp: {

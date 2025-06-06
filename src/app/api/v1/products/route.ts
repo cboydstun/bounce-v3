@@ -94,10 +94,10 @@ export async function POST(request: NextRequest) {
     // Import NextAuth dependencies only when needed
     const { getServerSession } = await import("next-auth");
     const { authOptions } = await import("@/app/api/auth/[...nextauth]/route");
-    
+
     // Get the session using NextAuth.js
     const session = await getServerSession(authOptions);
-    
+
     // Check if user is authenticated
     if (!session?.user) {
       return NextResponse.json(
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
         { status: 401 },
       );
     }
-    
+
     // Check if user is admin
     if (session.user.role !== "admin") {
       return NextResponse.json(
