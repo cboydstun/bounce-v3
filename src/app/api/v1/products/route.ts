@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
       query.availability = { $ne: "retired" };
     }
 
+
     if (category) {
       query.category = category;
     }

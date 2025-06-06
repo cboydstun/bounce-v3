@@ -9,6 +9,7 @@ A production-ready Express.js API server designed for mobile app communication, 
 
 All phases of development have been successfully implemented and deployed:
 
+
 - ✅ Phase 1: Core Setup & Infrastructure
 - ✅ Phase 2: Authentication System
 - ✅ Phase 3: Task Management
@@ -25,6 +26,7 @@ All phases of development have been successfully implemented and deployed:
 **SSL**: Let's Encrypt certificate (A+ grade)
 **Performance**: 37ms average response time
 **Uptime**: Production-grade with PM2 cluster management
+
 
 ## 📋 Features
 
@@ -391,9 +393,21 @@ JWT_REFRESH_SECRET=your-super-secret-refresh-key
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
 
+# Server
+NODE_ENV=production
+PORT=4000
+
+# Database
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/bounce-mobile-api
+
+# JWT
+JWT_SECRET=your-super-secret-jwt-key
+JWT_REFRESH_SECRET=your-super-secret-refresh-key
+
 # External Services
 SENDGRID_API_KEY=your-sendgrid-key
 CLOUDINARY_CLOUD_NAME=your-cloudinary-name
+
 CLOUDINARY_API_KEY=your-cloudinary-key
 CLOUDINARY_API_SECRET=your-cloudinary-secret
 
@@ -445,6 +459,7 @@ Current production health status can be monitored at:
     "averageResponseTime": 150
   }
 }
+
 ```
 
 ## 🔒 Security Features

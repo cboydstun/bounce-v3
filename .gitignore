@@ -63,7 +63,6 @@ next-env.d.ts
 # GitHub    
 /.github/
 
-
 # api-server
 /api-server/.env
 /api-server/node_modules
