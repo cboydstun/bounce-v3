@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>PartyPad</string>
+        <string>Bounce Contractor</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -48,17 +48,17 @@
 	
 	<!-- Privacy Usage Descriptions -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>PartyPad uses your location to find nearby bounce house delivery tasks and provide navigation to task locations.</string>
+	<string>Bounce Contractor uses your location to find nearby bounce house delivery tasks and provide navigation to task locations.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>PartyPad uses your location to find nearby bounce house delivery tasks and provide navigation to task locations.</string>
+	<string>Bounce Contractor uses your location to find nearby bounce house delivery tasks and provide navigation to task locations.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>PartyPad needs camera access to take photos for task completion verification and documentation.</string>
+	<string>Bounce Contractor needs camera access to take photos for task completion verification and documentation.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>PartyPad needs photo library access to select and upload task completion photos.</string>
+	<string>Bounce Contractor needs photo library access to select and upload task completion photos.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>PartyPad uses Face ID for secure and convenient app authentication.</string>
+	<string>Bounce Contractor uses Face ID for secure and convenient app authentication.</string>
 	<key>NSUserNotificationsUsageDescription</key>
-	<string>PartyPad sends notifications about new tasks, task updates, and important app information.</string>
+	<string>Bounce Contractor sends notifications about new tasks, task updates, and important app information.</string>
 	
 	<!-- App Transport Security -->
 	<key>NSAppTransportSecurity</key>
