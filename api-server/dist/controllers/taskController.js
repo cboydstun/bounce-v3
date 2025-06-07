@@ -196,14 +196,20 @@ export class TaskController {
           "Completed",
           "Cancelled",
         ];
-        if (validStatuses.includes(status)) {
-          filters.status = status;
-        } else {
+        // Handle comma-separated statuses
+        const requestedStatuses = status.split(",").map((s) => s.trim());
+        const invalidStatuses = requestedStatuses.filter(
+          (s) => !validStatuses.includes(s),
+        );
+        if (invalidStatuses.length > 0) {
           return res.status(400).json({
-            error: "Invalid status value",
+            error: "Invalid status value(s)",
+            invalidStatuses,
             validStatuses,
           });
         }
+        // Pass all valid statuses to the service
+        filters.status = requestedStatuses;
       }
       const result = await TaskService.getContractorTasks(
         contractorId,
@@ -538,20 +544,39 @@ export class TaskController {
           error: "Invalid task ID format",
         });
       }
+      console.log(`🔍 [getTaskById] Debug Info:`, {
+        taskId,
+        contractorId,
+        requestHeaders: req.headers.authorization ? "Present" : "Missing",
+      });
       const result = await TaskService.getTaskById(taskId, contractorId);
+      console.log(`📊 [getTaskById] Access Check Result:`, {
+        exists: result.exists,
+        hasAccess: result.hasAccess,
+        taskFound: !!result.task,
+        taskId,
+        contractorId,
+      });
       if (!result.exists) {
+        console.log(`❌ [getTaskById] Task not found: ${taskId}`);
         return res.status(404).json({
           success: false,
           error: "Task not found",
         });
       }
       if (!result.hasAccess) {
+        console.log(
+          `🚫 [getTaskById] Access denied for contractor ${contractorId} to task ${taskId}`,
+        );
         return res.status(403).json({
           success: false,
           error: "You do not have access to this task",
         });
       }
       if (!result.task) {
+        console.log(
+          `⚠️ [getTaskById] Task data unavailable for task ${taskId}`,
+        );
         return res.status(500).json({
           success: false,
           error: "Task data unavailable",

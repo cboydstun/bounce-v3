@@ -49,6 +49,7 @@ import "./theme/tailwind.css";
 const AvailableTasks = lazy(() => import("./pages/tasks/AvailableTasks"));
 const MyTasks = lazy(() => import("./pages/tasks/MyTasks"));
 const TaskDetails = lazy(() => import("./pages/tasks/TaskDetails"));
+const TaskCompletion = lazy(() => import("./pages/tasks/TaskCompletion"));
 
 // Profile Pages
 const Profile = lazy(() => import("./pages/profile/Profile"));
@@ -203,6 +204,11 @@ const App: React.FC = () => {
             <ProtectedRoute exact path="/task-details/:id">
               <Suspense fallback={<LoadingFallback />}>
                 <TaskDetails />
+              </Suspense>
+            </ProtectedRoute>
+            <ProtectedRoute exact path="/tasks/:id/complete">
+              <Suspense fallback={<LoadingFallback />}>
+                <TaskCompletion />
               </Suspense>
             </ProtectedRoute>
 

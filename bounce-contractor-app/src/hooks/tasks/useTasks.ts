@@ -197,9 +197,12 @@ export const useMyTasks = (options: UseTasksOptions = {}) => {
       };
 
       // Add status filter for my tasks (typically assigned, in_progress, etc.)
-      if (filters?.status) {
-        // Convert first status to API format and send
-        params.status = convertStatusForAPI(filters.status[0]);
+      if (filters?.status && filters.status.length > 0) {
+        // Convert all statuses to API format and send as comma-separated string
+        const apiStatuses = filters.status.map((status) =>
+          convertStatusForAPI(status),
+        );
+        params.status = apiStatuses.join(",");
       } else {
         // Default to assigned status (most common active status)
         params.status = "Assigned";
@@ -227,15 +230,28 @@ export const useTaskById = (taskId: string, enabled = true) => {
   return useQuery({
     queryKey: ["tasks", "detail", taskId],
     queryFn: async (): Promise<Task> => {
-      const response: ApiResponse<Task> = await apiClient.get(
-        `/tasks/${taskId}`,
-      );
+      try {
+        const response: ApiResponse<Task> = await apiClient.get(
+          `/tasks/${taskId}`,
+        );
 
-      if (!response.success) {
-        throw new Error(response.error || "Failed to fetch task");
+        if (!response.success) {
+          const errorMessage =
+            response.error || response.message || "Failed to fetch task";
+          console.error(`❌ Task fetch failed:`, errorMessage);
+          throw new Error(errorMessage);
+        }
+
+        if (!response.data) {
+          console.error(`❌ Task data is null/undefined`);
+          throw new Error("Task data not found");
+        }
+
+        return response.data;
+      } catch (error) {
+        console.error(`💥 Task fetch error:`, error);
+        throw error;
       }
-
-      return response.data!;
     },
     enabled: enabled && !!taskId,
     staleTime: 30000,

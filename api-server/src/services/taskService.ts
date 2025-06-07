@@ -9,7 +9,7 @@ export interface TaskFilters {
   lng?: number;
   radius?: number; // in kilometers
   skills?: string[];
-  status?: string;
+  status?: string | string[];
   page?: number;
   limit?: number;
 }
@@ -187,15 +187,33 @@ export class TaskService {
       const { status, page = 1, limit = 20 } = filters;
 
       // Support both assignedContractors array and assignedTo field
+      // Handle both ObjectId and string formats
       const query: any = {
         $or: [
           { assignedContractors: contractorId },
           { assignedTo: contractorId },
+          // Also try ObjectId conversion in case of type mismatch
+          ...(mongoose.Types.ObjectId.isValid(contractorId)
+            ? [
+                {
+                  assignedContractors: new mongoose.Types.ObjectId(
+                    contractorId,
+                  ),
+                },
+                { assignedTo: new mongoose.Types.ObjectId(contractorId) },
+              ]
+            : []),
         ],
       };
 
       if (status) {
-        query.status = status;
+        if (Array.isArray(status)) {
+          // Handle multiple statuses
+          query.status = { $in: status };
+        } else {
+          // Handle single status
+          query.status = status;
+        }
       }
 
       const total = await Task.countDocuments(query);
@@ -531,10 +549,18 @@ export class TaskService {
     exists: boolean;
   }> {
     try {
+      console.log(`🔍 [TaskService.getTaskById] Starting lookup:`, {
+        taskId,
+        contractorId,
+      });
+
       // First, check if the task exists at all
       const task = await Task.findById(taskId);
 
       if (!task) {
+        console.log(
+          `❌ [TaskService.getTaskById] Task not found in database: ${taskId}`,
+        );
         return {
           task: null,
           hasAccess: false,
@@ -542,8 +568,20 @@ export class TaskService {
         };
       }
 
+      console.log(`✅ [TaskService.getTaskById] Task found:`, {
+        taskId: task._id?.toString(),
+        status: task.status,
+        assignedContractors: task.assignedContractors,
+        assignedTo: task.assignedTo,
+        type: task.type,
+        title: task.title,
+      });
+
       // If no contractor ID provided, return the task (admin access)
       if (!contractorId) {
+        console.log(
+          `🔓 [TaskService.getTaskById] Admin access granted (no contractor ID)`,
+        );
         return {
           task,
           hasAccess: true,
@@ -552,10 +590,64 @@ export class TaskService {
       }
 
       // Check if contractor has access to this task
+      const isPending = task.status === "Pending";
+      const inAssignedContractors =
+        task.assignedContractors.includes(contractorId);
+      const matchesAssignedTo = task.assignedTo === contractorId;
+
+      // Additional debugging for contractor ID comparison
+      console.log(`🔐 [TaskService.getTaskById] Access control check:`, {
+        contractorId,
+        contractorIdType: typeof contractorId,
+        taskStatus: task.status,
+        isPending,
+        assignedContractors: task.assignedContractors,
+        assignedContractorsTypes: task.assignedContractors.map(
+          (id) => typeof id,
+        ),
+        inAssignedContractors,
+        assignedTo: task.assignedTo,
+        assignedToType: typeof task.assignedTo,
+        matchesAssignedTo,
+      });
+
+      // Try string comparison for assignedTo field
+      const assignedToString = task.assignedTo
+        ? task.assignedTo.toString()
+        : null;
+      const matchesAssignedToString = assignedToString === contractorId;
+
+      // Try string comparison for assignedContractors array
+      const assignedContractorsStrings = task.assignedContractors.map((id) =>
+        id.toString(),
+      );
+      const inAssignedContractorsString =
+        assignedContractorsStrings.includes(contractorId);
+
+      console.log(`🔍 [TaskService.getTaskById] String comparison check:`, {
+        assignedToString,
+        matchesAssignedToString,
+        assignedContractorsStrings,
+        inAssignedContractorsString,
+      });
+
       const hasAccess =
-        task.status === "Pending" || // Available tasks
-        task.assignedContractors.includes(contractorId) || // Assigned tasks (array)
-        task.assignedTo === contractorId; // Assigned tasks (single field)
+        isPending ||
+        inAssignedContractors ||
+        matchesAssignedTo ||
+        inAssignedContractorsString ||
+        matchesAssignedToString;
+
+      console.log(`📋 [TaskService.getTaskById] Final access decision:`, {
+        hasAccess,
+        reason: hasAccess
+          ? isPending
+            ? "Task is Pending"
+            : inAssignedContractors
+              ? "In assignedContractors array"
+              : "Matches assignedTo field"
+          : "No access criteria met",
+      });
 
       return {
         task: hasAccess ? task : null,
@@ -564,6 +656,7 @@ export class TaskService {
       };
     } catch (error) {
       logger.error("Error getting task by ID:", error);
+      console.log(`💥 [TaskService.getTaskById] Error:`, error);
       return {
         task: null,
         hasAccess: false,

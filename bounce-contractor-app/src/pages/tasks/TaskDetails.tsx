@@ -44,6 +44,7 @@ import {
   useUpdateTaskStatus,
 } from "../../hooks/tasks/useTaskActions";
 import { useTaskById } from "../../hooks/tasks/useTasks";
+import { useAuthStore } from "../../store/authStore";
 
 interface TaskDetailsParams {
   id: string;
@@ -59,8 +60,11 @@ const TaskDetails: React.FC = () => {
   const claimTaskMutation = useClaimTask();
   const updateStatusMutation = useUpdateTaskStatus();
 
+  // Get authentication state for debugging
+  const { user, isAuthenticated } = useAuthStore();
+
   // Fetch task data from API
-  const { data: task, isLoading, isError } = useTaskById(id!);
+  const { data: task, isLoading, isError, error } = useTaskById(id!);
 
   const handleClaimTask = async () => {
     try {
@@ -72,6 +76,12 @@ const TaskDetails: React.FC = () => {
       setShowToast(true);
     } catch (error) {
       console.error("Failed to claim task:", error);
+      setToastMessage(
+        error instanceof Error
+          ? `Failed to claim task: ${error.message}`
+          : "Failed to claim task. Please try again.",
+      );
+      setShowToast(true);
     }
   };
 
@@ -82,10 +92,16 @@ const TaskDetails: React.FC = () => {
         status: "in_progress",
         timestamp: new Date().toISOString(),
       });
-      setToastMessage("Task started!");
+      setToastMessage("Task started successfully!");
       setShowToast(true);
     } catch (error) {
       console.error("Failed to start task:", error);
+      setToastMessage(
+        error instanceof Error
+          ? `Failed to start task: ${error.message}`
+          : "Failed to start task. Please try again.",
+      );
+      setShowToast(true);
     }
   };
 

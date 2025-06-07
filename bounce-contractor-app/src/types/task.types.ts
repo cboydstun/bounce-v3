@@ -350,7 +350,7 @@ export interface TaskStatusUpdate {
 
 export interface TaskCompletionData {
   taskId: string;
-  completionPhotos: string[];
+  completionPhotos: File[];
   customerSignature?: string;
   customerRating?: number;
   customerFeedback?: string;

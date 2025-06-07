@@ -49,11 +49,16 @@
     "equipment": "Equipo: {{equipment}}"
   },
   "status": {
+    "draft": "Borrador",
     "published": "Disponible",
     "assigned": "Asignado",
+    "accepted": "Aceptado",
     "in_progress": "En Progreso",
+    "en_route": "En Camino",
+    "on_site": "En Sitio",
     "completed": "Completado",
-    "cancelled": "Cancelado"
+    "cancelled": "Cancelado",
+    "failed": "Fallido"
   },
   "actions": {
     "claiming": "Reclamando...",

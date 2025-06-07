@@ -4,7 +4,7 @@ export interface TaskFilters {
   lng?: number;
   radius?: number;
   skills?: string[];
-  status?: string;
+  status?: string | string[];
   page?: number;
   limit?: number;
 }

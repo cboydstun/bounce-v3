@@ -5,12 +5,47 @@ import {
   TaskClaimRequest,
   TaskStatusUpdate,
   TaskCompletionData,
+  TaskStatus,
 } from "../../types/task.types";
 import { ApiResponse, ApiError } from "../../types/api.types";
 import { useAuthStore } from "../../store/authStore";
 import { useNetwork } from "../common/useNetwork";
 import { useOfflineQueue } from "../common/useOfflineQueue";
 import { offlineService } from "../../services/offline/offlineService";
+
+// Status mapping from mobile app format to API server format
+const mapMobileStatusToApiStatus = (mobileStatus: TaskStatus): string => {
+  const statusMap: Record<TaskStatus, string> = {
+    draft: "Pending",
+    published: "Pending",
+    assigned: "Assigned",
+    accepted: "Assigned",
+    in_progress: "In Progress",
+    en_route: "In Progress",
+    on_site: "In Progress",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    failed: "Cancelled",
+  };
+
+  return statusMap[mobileStatus] || mobileStatus;
+};
+
+// Status mapping from API server format to mobile app format
+const mapApiStatusToMobileStatus = (apiStatus: string): TaskStatus => {
+  const statusMap: Record<string, TaskStatus> = {
+    Pending: "published",
+    Assigned: "assigned",
+    "In Progress": "in_progress",
+    Completed: "completed",
+    Cancelled: "cancelled",
+  };
+
+  return (
+    statusMap[apiStatus] ||
+    (apiStatus.toLowerCase().replace(" ", "_") as TaskStatus)
+  );
+};
 
 // Hook for claiming a task with offline support
 export const useClaimTask = () => {
@@ -120,11 +155,14 @@ export const useUpdateTaskStatus = () => {
     ): Promise<Task | { queued: true; actionId: string }> => {
       // If offline, queue the action
       if (!isOnline) {
+        // Map mobile app status to API server status format for offline queue
+        const apiStatus = mapMobileStatusToApiStatus(statusUpdate.status);
+
         const actionId = await queueAction({
           type: "task_status_update",
           payload: {
             taskId: statusUpdate.taskId,
-            status: statusUpdate.status,
+            status: apiStatus,
             location: statusUpdate.location,
             notes: statusUpdate.notes,
             photos: statusUpdate.photos,
@@ -140,10 +178,13 @@ export const useUpdateTaskStatus = () => {
       }
 
       // If online, execute immediately
+      // Map mobile app status to API server status format
+      const apiStatus = mapMobileStatusToApiStatus(statusUpdate.status);
+
       const response: ApiResponse<Task> = await apiClient.put(
         `/tasks/${statusUpdate.taskId}/status`,
         {
-          status: statusUpdate.status,
+          status: apiStatus,
           location: statusUpdate.location,
           notes: statusUpdate.notes,
           photos: statusUpdate.photos,

@@ -31,8 +31,32 @@ const availableTasksSchema = Joi.object({
   limit: Joi.number().integer().min(1).max(50).optional(),
 });
 const myTasksSchema = Joi.object({
-  status: Joi.string()
-    .valid("Assigned", "In Progress", "Completed", "Cancelled")
+  status: Joi.alternatives()
+    .try(
+      // Single status value
+      Joi.string().valid("Assigned", "In Progress", "Completed", "Cancelled"),
+      // Comma-separated status values
+      Joi.string().custom((value, helpers) => {
+        const statuses = value.split(",").map((s) => s.trim());
+        const validStatuses = [
+          "Assigned",
+          "In Progress",
+          "Completed",
+          "Cancelled",
+        ];
+        const invalidStatuses = statuses.filter(
+          (s) => !validStatuses.includes(s),
+        );
+        if (invalidStatuses.length > 0) {
+          return helpers.error("any.invalid", {
+            value,
+            invalidStatuses,
+            validStatuses,
+          });
+        }
+        return value;
+      }, "comma-separated statuses"),
+    )
     .optional(),
   page: Joi.number().integer().min(1).optional(),
   limit: Joi.number().integer().min(1).max(50).optional(),
