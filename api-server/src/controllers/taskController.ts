@@ -380,7 +380,8 @@ export class TaskController {
 
       if (result.success) {
         return res.json({
-          task: result.task,
+          success: true,
+          data: result.task,
           message: result.message,
         });
       } else {
@@ -396,6 +397,7 @@ export class TaskController {
         }
 
         return res.status(statusCode).json({
+          success: false,
           error: result.message,
         });
       }
@@ -445,7 +447,8 @@ export class TaskController {
 
       if (result.success) {
         return res.json({
-          task: result.task,
+          success: true,
+          data: result.task,
           message: result.message,
         });
       } else {
@@ -459,6 +462,7 @@ export class TaskController {
         }
 
         return res.status(statusCode).json({
+          success: false,
           error: result.message,
         });
       }
@@ -544,7 +548,8 @@ export class TaskController {
 
       if (result.success) {
         return res.json({
-          task: result.task,
+          success: true,
+          data: result.task,
           message: result.message,
         });
       } else {
@@ -558,6 +563,7 @@ export class TaskController {
         }
 
         return res.status(statusCode).json({
+          success: false,
           error: result.message,
         });
       }

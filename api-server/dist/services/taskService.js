@@ -184,20 +184,46 @@ export class TaskService {
         };
       }
       // Verify contractor has required skills if task has skill requirements
-      // For now, we'll use a simple type-based matching since the test uses task.type
+      // Make skills matching more flexible - allow contractors to claim tasks if they have any relevant skills
       if (contractor.skills && contractor.skills.length > 0) {
         const taskType = existingTask.type.toLowerCase();
-        const hasMatchingSkill = contractor.skills.some(
-          (skill) =>
-            skill.toLowerCase().includes(taskType) ||
-            taskType.includes(skill.toLowerCase()),
-        );
+        const hasMatchingSkill = contractor.skills.some((skill) => {
+          const skillLower = skill.toLowerCase();
+          // More flexible matching - allow partial matches and common skill variations
+          return (
+            skillLower.includes(taskType) ||
+            taskType.includes(skillLower) ||
+            // Allow "delivery" contractors to do "setup" and vice versa
+            (taskType === "setup" &&
+              (skillLower.includes("delivery") ||
+                skillLower.includes("install"))) ||
+            (taskType === "delivery" &&
+              (skillLower.includes("setup") ||
+                skillLower.includes("transport"))) ||
+            // Allow "maintenance" contractors to do any task
+            skillLower.includes("maintenance") ||
+            // Allow "general" or "all" skills to match any task
+            skillLower.includes("general") ||
+            skillLower.includes("all") ||
+            // Allow common skill variations
+            (taskType === "pickup" && skillLower.includes("delivery")) ||
+            (taskType === "delivery" && skillLower.includes("pickup"))
+          );
+        });
         if (!hasMatchingSkill) {
+          logger.warn(
+            `Contractor ${contractorId} with skills [${contractor.skills.join(", ")}] attempted to claim ${taskType} task ${taskId}`,
+          );
           return {
             success: false,
-            message: "You do not have the required skills for this task",
+            message: `You do not have the required skills for this ${existingTask.type} task. Your skills: [${contractor.skills.join(", ")}]`,
           };
         }
+      } else {
+        // If contractor has no skills defined, allow them to claim any task
+        logger.info(
+          `Contractor ${contractorId} has no skills defined, allowing task claim`,
+        );
       }
       // Attempt to claim the task atomically
       const task = await Task.findOneAndUpdate(

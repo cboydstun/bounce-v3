@@ -342,7 +342,8 @@ export class TaskController {
       const result = await TaskService.claimTask(taskId, contractorId);
       if (result.success) {
         return res.json({
-          task: result.task,
+          success: true,
+          data: result.task,
           message: result.message,
         });
       } else {
@@ -357,6 +358,7 @@ export class TaskController {
           statusCode = 409; // Conflict
         }
         return res.status(statusCode).json({
+          success: false,
           error: result.message,
         });
       }
@@ -401,7 +403,8 @@ export class TaskController {
       );
       if (result.success) {
         return res.json({
-          task: result.task,
+          success: true,
+          data: result.task,
           message: result.message,
         });
       } else {
@@ -414,6 +417,7 @@ export class TaskController {
           statusCode = 422; // Unprocessable Entity
         }
         return res.status(statusCode).json({
+          success: false,
           error: result.message,
         });
       }
@@ -489,7 +493,8 @@ export class TaskController {
       );
       if (result.success) {
         return res.json({
-          task: result.task,
+          success: true,
+          data: result.task,
           message: result.message,
         });
       } else {
@@ -502,6 +507,7 @@ export class TaskController {
           statusCode = 400;
         }
         return res.status(statusCode).json({
+          success: false,
           error: result.message,
         });
       }
