@@ -4,33 +4,31 @@ import { logger } from "./logger.js";
 let isInitialized = false;
 // Initialize SendGrid with API key (called lazily)
 function initializeSendGrid() {
-    if (isInitialized)
-        return;
-    const apiKey = process.env.SENDGRID_API_KEY;
-    if (!apiKey) {
-        logger.warn("SENDGRID_API_KEY not set in environment variables");
-        return;
-    }
-    sgMail.setApiKey(apiKey);
-    isInitialized = true;
+  if (isInitialized) return;
+  const apiKey = process.env.SENDGRID_API_KEY;
+  if (!apiKey) {
+    logger.warn("SENDGRID_API_KEY not set in environment variables");
+    return;
+  }
+  sgMail.setApiKey(apiKey);
+  isInitialized = true;
 }
 /**
  * Send an email using SendGrid
  * @param emailData The email data to send
  */
 export async function sendEmail(emailData) {
-    initializeSendGrid();
-    try {
-        await sgMail.send(emailData);
-        logger.info("Email sent successfully", {
-            to: emailData.to,
-            subject: emailData.subject,
-        });
-    }
-    catch (error) {
-        logger.error("Error sending email with SendGrid:", error);
-        throw error;
-    }
+  initializeSendGrid();
+  try {
+    await sgMail.send(emailData);
+    logger.info("Email sent successfully", {
+      to: emailData.to,
+      subject: emailData.subject,
+    });
+  } catch (error) {
+    logger.error("Error sending email with SendGrid:", error);
+    throw error;
+  }
 }
 /**
  * Send email verification email to contractor
@@ -39,12 +37,12 @@ export async function sendEmail(emailData) {
  * @param verificationToken Verification token
  */
 export async function sendVerificationEmail(email, name, verificationToken) {
-    const verificationUrl = `http://localhost:4000/api/auth/contractor/verify-email/${verificationToken}`;
-    const emailData = {
-        to: email,
-        from: process.env.EMAIL_FROM,
-        subject: "Verify Your Bounce House Contractor Account",
-        text: `
+  const verificationUrl = `http://localhost:4000/api/auth/contractor/verify-email/${verificationToken}`;
+  const emailData = {
+    to: email,
+    from: process.env.EMAIL_FROM,
+    subject: "Verify Your Bounce House Contractor Account",
+    text: `
 Hi ${name},
 
 Welcome to the Bounce House Contractor Network!
@@ -59,7 +57,7 @@ If you didn't create this account, please ignore this email.
 Best regards,
 The Bounce House Team
     `.trim(),
-        html: `
+    html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -97,8 +95,8 @@ The Bounce House Team
 </body>
 </html>
     `.trim(),
-    };
-    await sendEmail(emailData);
+  };
+  await sendEmail(emailData);
 }
 /**
  * Send password reset email to contractor
@@ -107,12 +105,12 @@ The Bounce House Team
  * @param resetToken Password reset token
  */
 export async function sendPasswordResetEmail(email, name, resetToken) {
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-    const emailData = {
-        to: email,
-        from: process.env.EMAIL_FROM,
-        subject: "Reset Your Password - Bounce House Contractor",
-        text: `
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const emailData = {
+    to: email,
+    from: process.env.EMAIL_FROM,
+    subject: "Reset Your Password - Bounce House Contractor",
+    text: `
 Hi ${name},
 
 You requested a password reset for your Bounce House Contractor account.
@@ -127,7 +125,7 @@ If you didn't request this password reset, please ignore this email. Your passwo
 Best regards,
 The Bounce House Team
     `.trim(),
-        html: `
+    html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -165,8 +163,8 @@ The Bounce House Team
 </body>
 </html>
     `.trim(),
-    };
-    await sendEmail(emailData);
+  };
+  await sendEmail(emailData);
 }
 /**
  * Send welcome email after email verification
@@ -174,11 +172,11 @@ The Bounce House Team
  * @param name Contractor's name
  */
 export async function sendWelcomeEmail(email, name) {
-    const emailData = {
-        to: email,
-        from: process.env.EMAIL_FROM,
-        subject: "Welcome to the Bounce House Contractor Network!",
-        text: `
+  const emailData = {
+    to: email,
+    from: process.env.EMAIL_FROM,
+    subject: "Welcome to the Bounce House Contractor Network!",
+    text: `
 Hi ${name},
 
 Congratulations! Your email has been verified and your contractor account is now active.
@@ -200,7 +198,7 @@ Welcome aboard!
 Best regards,
 The Bounce House Team
     `.trim(),
-        html: `
+    html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -242,8 +240,8 @@ The Bounce House Team
 </body>
 </html>
     `.trim(),
-    };
-    await sendEmail(emailData);
+  };
+  await sendEmail(emailData);
 }
 /**
  * Send security alert email for password changes
@@ -251,11 +249,11 @@ The Bounce House Team
  * @param name Contractor's name
  */
 export async function sendPasswordChangeAlert(email, name) {
-    const emailData = {
-        to: email,
-        from: process.env.EMAIL_FROM,
-        subject: "Password Changed - Bounce House Contractor",
-        text: `
+  const emailData = {
+    to: email,
+    from: process.env.EMAIL_FROM,
+    subject: "Password Changed - Bounce House Contractor",
+    text: `
 Hi ${name},
 
 This is a security notification to confirm that your password was successfully changed.
@@ -267,7 +265,7 @@ If you did not change your password, please contact our support team immediately
 Best regards,
 The Bounce House Team
     `.trim(),
-        html: `
+    html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -298,7 +296,7 @@ The Bounce House Team
 </body>
 </html>
     `.trim(),
-    };
-    await sendEmail(emailData);
+  };
+  await sendEmail(emailData);
 }
 //# sourceMappingURL=emailService.js.map

@@ -55,6 +55,7 @@ class ApiClient {
         return config;
       },
       (error) => {
+        console.error("❌ Request Interceptor Error:", error);
         return Promise.reject(this.handleError(error));
       },
     );
@@ -139,6 +140,27 @@ class ApiClient {
   }
 
   private handleError(error: any): ApiError {
+    if (error.response) {
+      console.log("📡 Server Response Details:", {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers,
+        config: error.response.config,
+      });
+    } else if (error.request) {
+      console.log("🌐 Network Request Details:", {
+        request: error.request,
+        readyState: error.request.readyState,
+        status: error.request.status,
+        statusText: error.request.statusText,
+        responseText: error.request.responseText,
+        responseURL: error.request.responseURL,
+      });
+    } else {
+      console.log("⚙️ Request Setup Error:", error.message);
+    }
+
     const apiError: ApiError = {
       code: APP_CONFIG.ERROR_CODES.UNKNOWN_ERROR,
       message: "An unexpected error occurred",
@@ -146,24 +168,54 @@ class ApiClient {
     };
 
     if (error.response) {
-      // Server responded with error status
+      // Server responded with error status - PRESERVE the original status code
+      const serverResponse = error.response.data;
+
+      // Always use the actual HTTP status code from the response
       apiError.statusCode = error.response.status;
-      apiError.message = error.response.data?.message || error.message;
-      apiError.code =
-        error.response.data?.code ||
-        this.getErrorCodeFromStatus(error.response.status);
-      apiError.details =
-        error.response.data?.errors || error.response.data?.details;
+
+      // Handle different server response formats
+      if (serverResponse?.error) {
+        // Format: { success: false, error: { code: "...", message: "...", details: {...} } }
+        apiError.code =
+          serverResponse.error.code ||
+          this.getErrorCodeFromStatus(error.response.status);
+        apiError.message = serverResponse.error.message || error.message;
+        apiError.details = serverResponse.error.details;
+      } else if (serverResponse?.message) {
+        // Format: { success: false, message: "...", code: "..." }
+        apiError.code =
+          serverResponse.code ||
+          this.getErrorCodeFromStatus(error.response.status);
+        apiError.message = serverResponse.message;
+        apiError.details = serverResponse.details || serverResponse.errors;
+      } else if (typeof serverResponse === "string") {
+        // Plain text error response (like HTML error pages)
+        apiError.message = `Request failed with status ${error.response.status}`;
+        apiError.code = this.getErrorCodeFromStatus(error.response.status);
+      } else if (serverResponse === null || serverResponse === undefined) {
+        // Empty response body
+        apiError.message = `Request failed with status ${error.response.status}`;
+        apiError.code = this.getErrorCodeFromStatus(error.response.status);
+      } else {
+        // Fallback for other response formats
+        apiError.message =
+          error.message ||
+          `Request failed with status ${error.response.status}`;
+        apiError.code = this.getErrorCodeFromStatus(error.response.status);
+      }
     } else if (error.request) {
-      // Network error
+      // Network error - no response received
       apiError.code = APP_CONFIG.ERROR_CODES.NETWORK_ERROR;
       apiError.message = "Network error. Please check your connection.";
       apiError.statusCode = 0;
     } else {
       // Request setup error
       apiError.message = error.message;
+      apiError.statusCode = 0;
     }
 
+    console.log("Processed API Error:", apiError);
     return apiError;
   }
 
@@ -340,6 +392,52 @@ class ApiClient {
     } catch (error) {
       return false;
     }
+  }
+
+  // Test API connectivity with detailed logging
+  public async testConnectivity(): Promise<void> {
+    console.group("🔍 API Connectivity Test");
+
+    try {
+      console.log("Testing basic connectivity to:", APP_CONFIG.API_BASE_URL);
+
+      // Test 1: Basic health check
+      console.log("Test 1: Health check...");
+      const healthResponse = await this.get("/health");
+      console.log("✅ Health check successful:", healthResponse);
+
+      // Test 2: Test with authentication (if available)
+      if (this.authTokens?.accessToken) {
+        console.log("Test 2: Authenticated request...");
+        const authTestResponse = await this.get("/tasks/my-tasks");
+        console.log("✅ Authenticated request successful:", authTestResponse);
+      } else {
+        console.log("⚠️ No auth token available for authenticated test");
+      }
+    } catch (error) {
+      console.error("❌ Connectivity test failed:", error);
+
+      // Additional diagnostics
+      console.log("🔧 Running additional diagnostics...");
+
+      // Test direct fetch to see if it's an axios issue
+      try {
+        const directResponse = await fetch(`${APP_CONFIG.API_BASE_URL}/health`);
+        console.log("Direct fetch response:", {
+          status: directResponse.status,
+          statusText: directResponse.statusText,
+          headers: Object.fromEntries(directResponse.headers.entries()),
+          url: directResponse.url,
+        });
+
+        const responseText = await directResponse.text();
+        console.log("Direct fetch response body:", responseText);
+      } catch (fetchError) {
+        console.error("❌ Direct fetch also failed:", fetchError);
+      }
+    }
+
+    console.groupEnd();
   }
 
   // Cancel all pending requests

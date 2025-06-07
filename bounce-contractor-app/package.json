@@ -1,5 +1,4 @@
 {
-
   "name": "partypad",
   "private": true,
   "version": "1.0.0",
@@ -23,7 +22,6 @@
     "cap:run:ios": "npx cap run ios",
     "cap:build:android": "npm run build:prod && npx cap sync android && npx cap build android",
     "cap:build:ios": "npm run build:prod && npx cap sync ios && npx cap build ios"
-
   },
   "dependencies": {
     "@capacitor/android": "^7.3.0",
@@ -87,6 +85,5 @@
     "vite": "~5.2.0",
     "vitest": "^0.34.6"
   },
-
   "description": "PartyPad - The ultimate mobile app for bounce house contractors to discover, claim, and manage party setup tasks"
 }

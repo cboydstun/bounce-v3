@@ -53,7 +53,9 @@ export const useClaimTask = () => {
       );
 
       if (!response.success) {
-        throw new Error(response.error || "Failed to claim task");
+        const errorMessage =
+          response.error || response.message || "Failed to claim task";
+        throw new Error(errorMessage);
       }
 
       return response.data!;
