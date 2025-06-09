@@ -265,6 +265,55 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
       type: [String],
       default: [],
     },
+
+    // Agreement tracking fields
+    agreementStatus: {
+      type: String,
+      enum: ["not_sent", "pending", "viewed", "signed"],
+      default: "not_sent",
+      required: true,
+      index: true,
+    },
+    agreementSentAt: {
+      type: Date,
+    },
+    agreementViewedAt: {
+      type: Date,
+    },
+    agreementSignedAt: {
+      type: Date,
+    },
+    docusealSubmissionId: {
+      type: String,
+      trim: true,
+    },
+    signedDocumentUrl: {
+      type: String,
+      trim: true,
+    },
+    deliveryBlocked: {
+      type: Boolean,
+      default: true,
+      required: true,
+    },
+    agreementOverrideReason: {
+      type: String,
+      trim: true,
+    },
+    agreementOverrideBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    // Event and delivery dates
+    deliveryDate: {
+      type: Date,
+      index: true,
+    },
+    eventDate: {
+      type: Date,
+      index: true,
+    },
   },
   {
     timestamps: true,
