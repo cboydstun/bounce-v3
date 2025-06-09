@@ -726,4 +726,45 @@ export const createOrderFromContact = async (
   return order;
 };
 
+// Agreement API calls
+export const sendAgreement = async (orderId: string) => {
+  const response = await api.post(`/api/v1/orders/${orderId}/send-agreement`);
+  return response.data;
+};
+
+export const getAgreementStatus = async (orderId: string) => {
+  const response = await api.get(`/api/v1/orders/${orderId}/send-agreement`);
+  return response.data;
+};
+
+export const resendAgreement = async (orderId: string) => {
+  const response = await api.post(`/api/v1/orders/${orderId}/send-agreement`);
+  return response.data;
+};
+
+export const overrideDeliveryBlock = async (
+  orderId: string,
+  reason: string,
+) => {
+  const response = await api.post(
+    `/api/v1/orders/${orderId}/override-delivery-block`,
+    {
+      reason,
+    },
+  );
+  return response.data;
+};
+
+export const downloadSignedAgreement = async (orderId: string) => {
+  const response = await api.get(`/api/v1/orders/${orderId}/agreement`, {
+    responseType: "blob",
+  });
+  return response.data;
+};
+
+export const getPendingAgreements = async () => {
+  const response = await api.get("/api/v1/orders/pending-agreements");
+  return response.data;
+};
+
 export default api;

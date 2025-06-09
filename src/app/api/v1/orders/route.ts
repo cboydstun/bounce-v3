@@ -214,6 +214,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If contactId is provided, check if an order already exists for this contact
+    // and populate delivery/event dates from the contact
     if (orderData.contactId) {
       const existingOrder = await Order.findOne({
         contactId: orderData.contactId,
@@ -224,6 +225,19 @@ export async function POST(request: NextRequest) {
           { error: "An order already exists for this contact" },
           { status: 400 },
         );
+      }
+
+      // Get contact details to populate delivery and event dates
+      const contact = await Contact.findById(orderData.contactId);
+      if (contact) {
+        // Set deliveryDate from contact if not provided in orderData
+        if (!orderData.deliveryDate && contact.deliveryDate) {
+          orderData.deliveryDate = contact.deliveryDate;
+        }
+        // Set eventDate from contact's partyDate if not provided in orderData
+        if (!orderData.eventDate && contact.partyDate) {
+          orderData.eventDate = contact.partyDate;
+        }
       }
     }
 

@@ -8,6 +8,9 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getOrders, deleteOrder } from "@/utils/api";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
 import { formatDisplayDateCT } from "@/utils/dateUtils";
+import AgreementStatusBadge from "@/components/AgreementStatusBadge";
+import DeliveryCountdown from "@/components/DeliveryCountdown";
+import AgreementActions from "@/components/AgreementActions";
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -378,49 +381,38 @@ export default function OrdersPage() {
 
       {/* Orders table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  Order #
+                  Delivery Date
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  Date
+                  Order Info
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  Customer
+                  Customer Details
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  Total
+                  Agreement Status
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Status
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Payment
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Actions
                 </th>
@@ -430,7 +422,7 @@ export default function OrdersPage() {
               {orders.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={5}
                     className="px-6 py-4 text-center text-sm text-gray-500"
                   >
                     No orders found
@@ -439,48 +431,235 @@ export default function OrdersPage() {
               ) : (
                 orders.map((order) => (
                   <tr key={order._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {order.orderNumber}
+                    {/* Delivery Date Column */}
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <DeliveryCountdown
+                        deliveryDate={
+                          order.deliveryDate
+                            ? new Date(order.deliveryDate)
+                            : undefined
+                        }
+                        eventDate={
+                          order.eventDate
+                            ? new Date(order.eventDate)
+                            : undefined
+                        }
+                        notes={order.notes}
+                      />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(order.createdAt)}
+
+                    {/* Order Info Column */}
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <div className="text-sm font-medium text-gray-900">
+                          {order.orderNumber}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {formatDate(order.createdAt)}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          ${order.totalAmount.toFixed(2)} • {order.status} •{" "}
+                          {order.paymentStatus}
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.customerName ||
-                        order.customerEmail ||
-                        "Contact ID: " + order.contactId}
+
+                    {/* Customer Details Column */}
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                          {order.customerName ||
+                            order.customerEmail ||
+                            `Contact ID: ${order.contactId}`}
+                        </div>
+                        {order.customerPhone && (
+                          <div className="text-xs text-gray-500">
+                            📞 {order.customerPhone}
+                          </div>
+                        )}
+                        {(order.customerAddress || order.customerCity) && (
+                          <div className="text-xs text-gray-500 truncate max-w-xs">
+                            📍{" "}
+                            {[
+                              order.customerAddress,
+                              order.customerCity,
+                              order.customerState,
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </div>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${order.totalAmount.toFixed(2)}
+
+                    {/* Agreement Status Column */}
+                    <td className=" ">
+                      <AgreementStatusBadge
+                        status={order.agreementStatus || "not_sent"}
+                        deliveryDate={
+                          order.deliveryDate
+                            ? new Date(order.deliveryDate)
+                            : undefined
+                        }
+                      />
+                      {/* Agreement Actions */}
+                      <AgreementActions
+                        order={order}
+                        onAgreementSent={() => fetchOrders(currentPage)}
+                      />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                          order.status,
-                        )}`}
-                      >
-                        {order.status}
-                      </span>
+
+                    {/* Actions Column */}
+                    <td className="px-4 py-4 whitespace-nowrap text-right">
+                      <div className="flex flex-col space-y-2 items-end">
+                        {/* Standard Actions */}
+                        <div className="flex space-x-2">
+                          <Link
+                            href={`/admin/orders/${order._id}/edit`}
+                            className="text-blue-600 hover:text-blue-900 text-xs px-2 py-1 rounded border border-blue-200 hover:bg-blue-50"
+                          >
+                            Edit
+                          </Link>
+                          <Link
+                            href={`/admin/orders/${order._id}`}
+                            className="text-gray-600 hover:text-gray-900 text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50"
+                          >
+                            View
+                          </Link>
+                          {order.status !== "Paid" &&
+                            order.status !== "Confirmed" && (
+                              <button
+                                onClick={() => handleDelete(order._id)}
+                                className="text-red-600 hover:text-red-900 text-xs px-2 py-1 rounded border border-red-200 hover:bg-red-50"
+                                disabled={isDeleting}
+                              >
+                                {isDeleting ? (
+                                  <LoadingSpinner className="w-3 h-3" />
+                                ) : (
+                                  "Delete"
+                                )}
+                              </button>
+                            )}
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentStatusColor(
-                          order.paymentStatus,
-                        )}`}
-                      >
-                        {order.paymentStatus}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Card Layout */}
+        <div className="md:hidden">
+          {orders.length === 0 ? (
+            <div className="p-6 text-center text-sm text-gray-500">
+              No orders found
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {orders.map((order) => (
+                <div key={order._id} className="p-4 hover:bg-gray-50">
+                  {/* Card Header - Delivery Date */}
+                  <div className="mb-3">
+                    <DeliveryCountdown
+                      deliveryDate={
+                        order.deliveryDate
+                          ? new Date(order.deliveryDate)
+                          : undefined
+                      }
+                      eventDate={
+                        order.eventDate ? new Date(order.eventDate) : undefined
+                      }
+                      notes={order.notes}
+                    />
+                  </div>
+
+                  {/* Card Body - Order Info and Customer */}
+                  <div className="grid grid-cols-1 gap-3 mb-3">
+                    {/* Order Info */}
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-gray-900 mb-1">
+                        {order.orderNumber}
+                      </div>
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <div>Order Date: {formatDate(order.createdAt)}</div>
+                        <div>Total: ${order.totalAmount.toFixed(2)}</div>
+                        <div className="flex space-x-2">
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full ${getStatusColor(order.status)}`}
+                          >
+                            {order.status}
+                          </span>
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full ${getPaymentStatusColor(order.paymentStatus)}`}
+                          >
+                            {order.paymentStatus}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Customer Details */}
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-gray-900 mb-1">
+                        {order.customerName ||
+                          order.customerEmail ||
+                          `Contact ID: ${order.contactId}`}
+                      </div>
+                      <div className="text-xs text-gray-500 space-y-1">
+                        {order.customerPhone && (
+                          <div>📞 {order.customerPhone}</div>
+                        )}
+                        {(order.customerAddress || order.customerCity) && (
+                          <div>
+                            📍{" "}
+                            {[
+                              order.customerAddress,
+                              order.customerCity,
+                              order.customerState,
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Footer - Agreement and Actions */}
+                  <div className="space-y-3">
+                    {/* Agreement Status */}
+                    <div>
+                      <AgreementStatusBadge
+                        status={order.agreementStatus || "not_sent"}
+                        deliveryDate={
+                          order.deliveryDate
+                            ? new Date(order.deliveryDate)
+                            : undefined
+                        }
+                      />
+                    </div>
+
+                    {/* Agreement Actions */}
+                    <div>
+                      <AgreementActions
+                        order={order}
+                        onAgreementSent={() => fetchOrders(currentPage)}
+                      />
+                    </div>
+
+                    {/* Standard Actions */}
+                    <div className="flex space-x-2">
                       <Link
                         href={`/admin/orders/${order._id}/edit`}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
+                        className="flex-1 text-center text-blue-600 hover:text-blue-900 text-sm py-2 px-3 rounded border border-blue-200 hover:bg-blue-50"
                       >
                         Edit
                       </Link>
                       <Link
                         href={`/admin/orders/${order._id}`}
-                        className="text-gray-600 hover:text-gray-900 mr-4"
+                        className="flex-1 text-center text-gray-600 hover:text-gray-900 text-sm py-2 px-3 rounded border border-gray-200 hover:bg-gray-50"
                       >
                         View
                       </Link>
@@ -488,22 +667,22 @@ export default function OrdersPage() {
                         order.status !== "Confirmed" && (
                           <button
                             onClick={() => handleDelete(order._id)}
-                            className="text-red-600 hover:text-red-900"
+                            className="flex-1 text-red-600 hover:text-red-900 text-sm py-2 px-3 rounded border border-red-200 hover:bg-red-50"
                             disabled={isDeleting}
                           >
                             {isDeleting ? (
-                              <LoadingSpinner className="w-4 h-4" />
+                              <LoadingSpinner className="w-4 h-4 mx-auto" />
                             ) : (
                               "Delete"
                             )}
                           </button>
                         )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Pagination and Page Size Controls */}

@@ -29,6 +29,11 @@ export type PaymentStatus =
 export type PaymentMethod = "paypal" | "cash" | "quickbooks" | "free";
 
 /**
+ * Defines the possible agreement statuses
+ */
+export type AgreementStatus = "not_sent" | "pending" | "viewed" | "signed";
+
+/**
  * Defines the possible order item types
  */
 export type OrderItemType = "bouncer" | "extra" | "add-on";
@@ -118,6 +123,22 @@ export interface Order {
   paypalTransactions?: PayPalTransactionDetails[]; // PayPal transaction details if applicable
   notes?: string; // Additional order notes
   tasks?: string[]; // List of tasks associated with the order
+
+  // Agreement tracking fields
+  agreementStatus: AgreementStatus; // Current agreement status
+  agreementSentAt?: Date; // When agreement was sent
+  agreementViewedAt?: Date; // When agreement was viewed by customer
+  agreementSignedAt?: Date; // When agreement was signed
+  docusealSubmissionId?: string; // DocuSeal submission ID
+  signedDocumentUrl?: string; // URL to signed document
+  deliveryBlocked: boolean; // Whether delivery is blocked due to missing agreement
+  agreementOverrideReason?: string; // Reason for delivery override
+  agreementOverrideBy?: string; // User ID who overrode delivery block
+
+  // Event and delivery dates
+  deliveryDate?: Date; // Scheduled delivery date
+  eventDate?: Date; // Event date
+
   createdAt: Date; // Order creation date
   updatedAt: Date; // Order last update date
 }
