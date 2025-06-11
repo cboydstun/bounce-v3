@@ -197,6 +197,7 @@ export async function POST(request: NextRequest) {
     const missingFields = requiredFields.filter((field) => !orderData[field]);
 
     if (missingFields.length > 0) {
+      console.error("Missing required fields:", missingFields);
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(", ")}` },
         { status: 400 },
@@ -205,6 +206,7 @@ export async function POST(request: NextRequest) {
 
     // Validate that either contactId or customerEmail is provided
     if (!orderData.contactId && !orderData.customerEmail) {
+      console.error("Missing contactId and customerEmail");
       return NextResponse.json(
         { error: "Either contactId or customer email must be provided" },
         { status: 400 },
@@ -217,6 +219,7 @@ export async function POST(request: NextRequest) {
         contactId: orderData.contactId,
       });
       if (existingOrder) {
+        console.error("Order already exists for contact:", orderData.contactId);
         return NextResponse.json(
           { error: "An order already exists for this contact" },
           { status: 400 },
@@ -224,12 +227,91 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate items array is not empty
-    if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
+    // Enhanced items validation with detailed error messages
+    if (!orderData.items) {
+      console.error("Items field is missing from request");
       return NextResponse.json(
-        { error: "Order must contain at least one item" },
+        { 
+          error: "Missing 'items' field in request body",
+          received: typeof orderData.items,
+          debug: "Items field was not provided in the request"
+        },
         { status: 400 },
       );
+    }
+
+    if (!Array.isArray(orderData.items)) {
+      console.error("Items is not an array:", typeof orderData.items, orderData.items);
+      return NextResponse.json(
+        { 
+          error: "Items must be an array", 
+          received: typeof orderData.items,
+          value: orderData.items,
+          debug: "Items field exists but is not an array"
+        },
+        { status: 400 },
+      );
+    }
+
+    if (orderData.items.length === 0) {
+      console.error("Items array is empty");
+      return NextResponse.json(
+        { 
+          error: "Order must contain at least one item",
+          debug: "Items array exists but is empty"
+        },
+        { status: 400 },
+      );
+    }
+
+    // Validate each item structure
+    for (let i = 0; i < orderData.items.length; i++) {
+      const item = orderData.items[i];
+      const requiredItemFields = ['type', 'name', 'quantity', 'unitPrice', 'totalPrice'];
+      
+      for (const field of requiredItemFields) {
+        if (item[field] === undefined || item[field] === null) {
+          console.error(`Item ${i + 1} missing field ${field}:`, item);
+          return NextResponse.json(
+            { 
+              error: `Item ${i + 1} is missing required field: ${field}`,
+              item: item,
+              debug: `Validation failed for item at index ${i}`
+            },
+            { status: 400 },
+          );
+        }
+      }
+    }
+
+    // Additional duplicate prevention: Check for recent orders with same customer email and similar total
+    if (orderData.customerEmail) {
+      // Use shorter window for development (30 seconds) vs production (5 minutes)
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const timeWindow = isDevelopment ? 30 * 1000 : 5 * 60 * 1000; // 30 seconds vs 5 minutes
+      const timeAgo = new Date(Date.now() - timeWindow);
+      const recentOrder = await Order.findOne({
+        customerEmail: orderData.customerEmail,
+        totalAmount: orderData.totalAmount,
+        createdAt: { $gte: timeAgo }
+      });
+      
+      if (recentOrder) {
+        console.error("Potential duplicate order detected:", {
+          customerEmail: orderData.customerEmail,
+          totalAmount: orderData.totalAmount,
+          recentOrderId: recentOrder._id,
+          recentOrderNumber: recentOrder.orderNumber
+        });
+        return NextResponse.json(
+          { 
+            error: "A similar order was recently created. Please wait a few minutes before placing another order.",
+            debug: "Duplicate prevention triggered",
+            existingOrderNumber: recentOrder.orderNumber
+          },
+          { status: 429 },
+        );
+      }
     }
 
     // Generate order number if not provided
