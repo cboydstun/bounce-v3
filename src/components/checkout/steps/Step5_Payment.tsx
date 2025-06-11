@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { CheckoutState, Step5Props } from "../utils/types";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -14,12 +14,57 @@ const Step5_Payment: React.FC<Step5Props> = ({
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  
+  // StrictMode-proof guard: prevents double execution in development
+  const orderCreationAttempted = useRef(false);
+  const componentMountTime = useRef(Date.now());
 
   // Create the order in the database when the component mounts
   useEffect(() => {
     const createOrder = async () => {
-      if (orderCreated || isCreatingOrder || state.orderId) return;
+      // StrictMode-proof guard: prevents double execution in development
+      if (orderCreationAttempted.current) {
+        console.log('Order creation skipped: already attempted (StrictMode protection)', {
+          attemptedAt: componentMountTime.current,
+          timeSinceMount: Date.now() - componentMountTime.current
+        });
+        return;
+      }
 
+      // Enhanced guards to prevent duplicate order creation
+      if (orderCreated || isCreatingOrder || state.orderId) {
+        console.log('Order creation skipped:', { 
+          orderCreated, 
+          isCreatingOrder, 
+          orderId: state.orderId 
+        });
+        return;
+      }
+
+      // Additional guard: check if we have minimum required data
+      if (!state.customerEmail || (!state.selectedBouncers.length && !state.selectedBouncer)) {
+        console.log('Order creation skipped: insufficient data', {
+          hasEmail: !!state.customerEmail,
+          hasBouncers: state.selectedBouncers.length > 0,
+          hasLegacyBouncer: !!state.selectedBouncer
+        });
+        return;
+      }
+
+      // Additional guard: check if we have required customer info
+      if (!state.customerName || !state.customerAddress || !state.deliveryDate || !state.pickupDate) {
+        console.log('Order creation skipped: missing required customer info');
+        return;
+      }
+
+      // Mark that we've attempted order creation (StrictMode protection)
+      orderCreationAttempted.current = true;
+
+      console.log('Creating order for PayPal payment...', {
+        strictModeProtection: true,
+        componentMountTime: componentMountTime.current,
+        currentTime: Date.now()
+      });
       setIsCreatingOrder(true);
       setOrderError(null);
 
@@ -41,22 +86,35 @@ const Step5_Payment: React.FC<Step5Props> = ({
           pickupTimePreference: state.pickupTimePreference,
           specificTimeCharge: state.specificTimeCharge,
 
-          // Order items
-          items: [
-            // Only include bouncer if one is selected
-            ...(state.selectedBouncer
-              ? [
-                  {
-                    type: "bouncer",
-                    name: state.bouncerName,
-                    quantity: 1,
-                    unitPrice: state.bouncerPrice,
-                    totalPrice: state.bouncerPrice,
-                  },
-                ]
-              : []),
-            // Include selected extras
-            ...state.extras
+          // Order items - use the same logic as cash orders
+          items: (() => {
+            const orderItems = [];
+
+            // Add bouncers
+            if (state.selectedBouncers.length > 0) {
+              // Use new multi-bouncer selection
+              orderItems.push(
+                ...state.selectedBouncers.map((bouncer) => ({
+                  type: "bouncer",
+                  name: bouncer.name,
+                  quantity: 1,
+                  unitPrice: bouncer.price,
+                  totalPrice: bouncer.discountedPrice || bouncer.price,
+                }))
+              );
+            } else if (state.selectedBouncer && state.bouncerName) {
+              // Fallback to legacy single bouncer
+              orderItems.push({
+                type: "bouncer",
+                name: state.bouncerName,
+                quantity: 1,
+                unitPrice: state.bouncerPrice || 0,
+                totalPrice: state.bouncerPrice || 0,
+              });
+            }
+
+            // Add selected extras
+            const selectedExtras = state.extras
               .filter((extra) => extra.selected)
               .map((extra) => ({
                 type: "extra",
@@ -66,8 +124,25 @@ const Step5_Payment: React.FC<Step5Props> = ({
                 totalPrice:
                   extra.price *
                   (extra.id === "tablesChairs" ? extra.quantity : 1),
-              })),
-          ],
+              }));
+            orderItems.push(...selectedExtras);
+
+            // Add selected mixers
+            if (state.slushyMixers) {
+              const selectedMixers = state.slushyMixers
+                .filter((mixer) => mixer.mixerId !== "none")
+                .map((mixer) => ({
+                  type: "extra",
+                  name: `Mixer (Tank ${mixer.tankNumber}): ${mixer.name}`,
+                  quantity: 1,
+                  unitPrice: mixer.price,
+                  totalPrice: mixer.price,
+                }));
+              orderItems.push(...selectedMixers);
+            }
+
+            return orderItems;
+          })(),
 
           // Financial details
           subtotal: state.subtotal,
@@ -93,6 +168,8 @@ const Step5_Payment: React.FC<Step5Props> = ({
           }`,
         };
 
+        console.log('Sending order creation request...');
+
         // Create order
         const response = await fetch("/api/v1/orders", {
           method: "POST",
@@ -110,6 +187,8 @@ const Step5_Payment: React.FC<Step5Props> = ({
         }
 
         const order = await response.json();
+
+        console.log('Order created successfully:', order.orderNumber);
 
         // Store order ID and number in state
         dispatch({ type: "SET_ORDER_ID", payload: order._id });
@@ -130,31 +209,17 @@ const Step5_Payment: React.FC<Step5Props> = ({
 
     createOrder();
   }, [
-    state.customerName,
+    // Simplified dependency array - only essential triggers that should cause order creation
     state.customerEmail,
-    state.customerPhone,
-    state.customerAddress,
-    state.customerCity,
-    state.customerState,
-    state.customerZipCode,
-    state.bouncerName,
-    state.bouncerPrice,
-    state.extras,
-    state.subtotal,
-    state.taxAmount,
-    state.discountAmount,
-    state.deliveryFee,
-    state.processingFee,
-    state.totalAmount,
-    state.deliveryDate,
-    state.deliveryTime,
-    state.pickupDate,
-    state.pickupTime,
-    state.deliveryInstructions,
-    state.orderId,
+    state.paymentMethod,
     orderCreated,
     isCreatingOrder,
-    dispatch,
+    state.orderId,
+    // Only include these if they're truly essential for determining when to create order
+    state.customerName,
+    state.customerAddress,
+    state.deliveryDate,
+    state.pickupDate
   ]);
 
   // Handle PayPal payment success
