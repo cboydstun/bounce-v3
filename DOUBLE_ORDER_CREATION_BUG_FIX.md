@@ -145,7 +145,7 @@ if (orderData.customerEmail) {
         debug: "Duplicate prevention triggered",
         existingOrderNumber: recentOrder.orderNumber,
       },
-      { status: 429 }
+      { status: 429 },
     );
   }
 }

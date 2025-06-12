@@ -231,23 +231,27 @@ export async function POST(request: NextRequest) {
     if (!orderData.items) {
       console.error("Items field is missing from request");
       return NextResponse.json(
-        { 
+        {
           error: "Missing 'items' field in request body",
           received: typeof orderData.items,
-          debug: "Items field was not provided in the request"
+          debug: "Items field was not provided in the request",
         },
         { status: 400 },
       );
     }
 
     if (!Array.isArray(orderData.items)) {
-      console.error("Items is not an array:", typeof orderData.items, orderData.items);
+      console.error(
+        "Items is not an array:",
+        typeof orderData.items,
+        orderData.items,
+      );
       return NextResponse.json(
-        { 
-          error: "Items must be an array", 
+        {
+          error: "Items must be an array",
           received: typeof orderData.items,
           value: orderData.items,
-          debug: "Items field exists but is not an array"
+          debug: "Items field exists but is not an array",
         },
         { status: 400 },
       );
@@ -256,9 +260,9 @@ export async function POST(request: NextRequest) {
     if (orderData.items.length === 0) {
       console.error("Items array is empty");
       return NextResponse.json(
-        { 
+        {
           error: "Order must contain at least one item",
-          debug: "Items array exists but is empty"
+          debug: "Items array exists but is empty",
         },
         { status: 400 },
       );
@@ -267,16 +271,22 @@ export async function POST(request: NextRequest) {
     // Validate each item structure
     for (let i = 0; i < orderData.items.length; i++) {
       const item = orderData.items[i];
-      const requiredItemFields = ['type', 'name', 'quantity', 'unitPrice', 'totalPrice'];
-      
+      const requiredItemFields = [
+        "type",
+        "name",
+        "quantity",
+        "unitPrice",
+        "totalPrice",
+      ];
+
       for (const field of requiredItemFields) {
         if (item[field] === undefined || item[field] === null) {
           console.error(`Item ${i + 1} missing field ${field}:`, item);
           return NextResponse.json(
-            { 
+            {
               error: `Item ${i + 1} is missing required field: ${field}`,
               item: item,
-              debug: `Validation failed for item at index ${i}`
+              debug: `Validation failed for item at index ${i}`,
             },
             { status: 400 },
           );
@@ -287,27 +297,28 @@ export async function POST(request: NextRequest) {
     // Additional duplicate prevention: Check for recent orders with same customer email and similar total
     if (orderData.customerEmail) {
       // Use shorter window for development (30 seconds) vs production (5 minutes)
-      const isDevelopment = process.env.NODE_ENV === 'development';
+      const isDevelopment = process.env.NODE_ENV === "development";
       const timeWindow = isDevelopment ? 30 * 1000 : 5 * 60 * 1000; // 30 seconds vs 5 minutes
       const timeAgo = new Date(Date.now() - timeWindow);
       const recentOrder = await Order.findOne({
         customerEmail: orderData.customerEmail,
         totalAmount: orderData.totalAmount,
-        createdAt: { $gte: timeAgo }
+        createdAt: { $gte: timeAgo },
       });
-      
+
       if (recentOrder) {
         console.error("Potential duplicate order detected:", {
           customerEmail: orderData.customerEmail,
           totalAmount: orderData.totalAmount,
           recentOrderId: recentOrder._id,
-          recentOrderNumber: recentOrder.orderNumber
+          recentOrderNumber: recentOrder.orderNumber,
         });
         return NextResponse.json(
-          { 
-            error: "A similar order was recently created. Please wait a few minutes before placing another order.",
+          {
+            error:
+              "A similar order was recently created. Please wait a few minutes before placing another order.",
             debug: "Duplicate prevention triggered",
-            existingOrderNumber: recentOrder.orderNumber
+            existingOrderNumber: recentOrder.orderNumber,
           },
           { status: 429 },
         );

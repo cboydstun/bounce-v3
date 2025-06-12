@@ -122,12 +122,16 @@ export const validateStep = (
       }
 
       // Ensure we have items before allowing order creation
-      const hasBouncers = state.selectedBouncers.length > 0 || state.selectedBouncer;
+      const hasBouncers =
+        state.selectedBouncers.length > 0 || state.selectedBouncer;
       const hasExtras = state.extras.some((extra) => extra.selected);
-      const hasMixers = state.slushyMixers && state.slushyMixers.some((mixer) => mixer.mixerId !== "none");
-      
+      const hasMixers =
+        state.slushyMixers &&
+        state.slushyMixers.some((mixer) => mixer.mixerId !== "none");
+
       if (!hasBouncers && !hasExtras && !hasMixers) {
-        errors.items = "Please select at least one item before proceeding with your order";
+        errors.items =
+          "Please select at least one item before proceeding with your order";
       }
       break;
 

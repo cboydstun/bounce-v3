@@ -7,12 +7,13 @@ import Image from "next/image";
 async function getBlog(slug: string): Promise<Blog> {
   try {
     // Construct absolute URL for server-side fetching
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 
-      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
-      'http://localhost:3000';
-    
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_URL || process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000";
+
     const apiUrl = `${baseUrl}${API_ROUTES.BLOGS}/${slug}`;
-    
+
     const response = await fetch(apiUrl, {
       next: { revalidate: 3600 }, // Revalidate every hour
     });
@@ -53,13 +54,19 @@ export async function generateMetadata({
       description:
         blog.seo?.metaDescription ||
         blog.excerpt ||
-        (blog.introduction ? blog.introduction.substring(0, 160) : `Read about ${blog.title} on SATX Bounce Blog`),
+        (blog.introduction
+          ? blog.introduction.substring(0, 160)
+          : `Read about ${blog.title} on SATX Bounce Blog`),
       alternates: {
         canonical: `/blogs/${slug}`,
       },
       openGraph: {
         title: blog.title,
-        description: blog.excerpt || (blog.introduction ? blog.introduction.substring(0, 160) : `Read about ${blog.title}`),
+        description:
+          blog.excerpt ||
+          (blog.introduction
+            ? blog.introduction.substring(0, 160)
+            : `Read about ${blog.title}`),
         images: blog.featuredImage ? [blog.featuredImage] : [],
         type: "article",
         publishedTime: blog.publishDate,
@@ -69,7 +76,10 @@ export async function generateMetadata({
       keywords: blog.tags ? blog.tags.join(", ") : "",
     };
   } catch (error) {
-    console.error(`Error generating metadata for blog slug: ${(await params).slug}`, error);
+    console.error(
+      `Error generating metadata for blog slug: ${(await params).slug}`,
+      error,
+    );
     return generateFallbackMetadata((await params).slug);
   }
 }
@@ -77,8 +87,9 @@ export async function generateMetadata({
 // Fallback metadata function to ensure title tag is always present
 function generateFallbackMetadata(slug: string): Metadata {
   const fallbackTitle = `Blog Post | SATX Bounce`;
-  const fallbackDescription = "Read our latest blog post about bounce house rentals and party planning tips in San Antonio.";
-  
+  const fallbackDescription =
+    "Read our latest blog post about bounce house rentals and party planning tips in San Antonio.";
+
   return {
     title: fallbackTitle,
     description: fallbackDescription,
@@ -190,13 +201,9 @@ export default async function BlogDetail({ params }: { params: Params }) {
               </div>
             )}
 
-            {blog.body && (
-              <div className="mb-8">{blog.body}</div>
-            )}
+            {blog.body && <div className="mb-8">{blog.body}</div>}
 
-            {blog.conclusion && (
-              <div className="mb-8">{blog.conclusion}</div>
-            )}
+            {blog.conclusion && <div className="mb-8">{blog.conclusion}</div>}
 
             {safeTags.length > 0 && (
               <div className="border-t pt-6 mt-8">

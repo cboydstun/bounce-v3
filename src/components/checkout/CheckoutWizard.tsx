@@ -92,15 +92,19 @@ const CheckoutWizard: React.FC = () => {
   // Function to create order for cash payments
   const createCashOrder = async () => {
     // Pre-validation check to ensure we have items
-    const hasBouncers = state.selectedBouncers.length > 0 || 
-                       (state.selectedBouncer && state.bouncerName);
+    const hasBouncers =
+      state.selectedBouncers.length > 0 ||
+      (state.selectedBouncer && state.bouncerName);
     const hasExtras = state.extras.some((extra) => extra.selected);
-    const hasMixers = state.slushyMixers.some((mixer) => mixer.mixerId !== "none");
-    
+    const hasMixers = state.slushyMixers.some(
+      (mixer) => mixer.mixerId !== "none",
+    );
+
     if (!hasBouncers && !hasExtras && !hasMixers) {
       dispatch({
         type: "ORDER_ERROR",
-        payload: "Please select at least one item before proceeding with your order.",
+        payload:
+          "Please select at least one item before proceeding with your order.",
       });
       return;
     }
@@ -132,7 +136,7 @@ const CheckoutWizard: React.FC = () => {
             quantity: 1,
             unitPrice: bouncer.price,
             totalPrice: bouncer.discountedPrice || bouncer.price,
-          }))
+          })),
         );
       } else if (state.selectedBouncer && state.bouncerName) {
         // Fallback to legacy single bouncer
@@ -154,8 +158,7 @@ const CheckoutWizard: React.FC = () => {
           quantity: extra.id === "tablesChairs" ? extra.quantity : 1,
           unitPrice: extra.price,
           totalPrice:
-            extra.price *
-            (extra.id === "tablesChairs" ? extra.quantity : 1),
+            extra.price * (extra.id === "tablesChairs" ? extra.quantity : 1),
         }));
       orderItems.push(...selectedExtras);
 
@@ -173,7 +176,9 @@ const CheckoutWizard: React.FC = () => {
 
       // Final validation - ensure we have items
       if (orderItems.length === 0) {
-        throw new Error("No items selected for order. Please select at least one bouncer or extra.");
+        throw new Error(
+          "No items selected for order. Please select at least one bouncer or extra.",
+        );
       }
 
       // Log order data for debugging

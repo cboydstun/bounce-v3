@@ -12,7 +12,7 @@ import {
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "About SATX Bounce | Your Trusted Party Rental Experts in San Antonio",
+  title: "About SATX Bounce - San Antonio's Premier Party Rental Company",
   description:
     "Learn about SATX Bounce House Rentals, San Antonio's trusted provider of bounce houses, water slides, and party equipment. Discover our story, values, and commitment to safety and customer satisfaction.",
   alternates: {
@@ -21,8 +21,7 @@ export const metadata: Metadata = {
   keywords:
     "about SATX Bounce House, San Antonio party rentals, bounce house company, inflatable rentals history, party equipment provider, customer service, safety commitment",
   openGraph: {
-    title:
-      "About SATX Bounce | Your Trusted Party Rental Experts in San Antonio",
+    title: "About SATX Bounce - San Antonio's Premier Party Rental Company",
     description:
       "Learn about SATX Bounce House Rentals, San Antonio's trusted provider of bounce houses, water slides, and party equipment. Discover our story, values, and commitment to safety and customer satisfaction.",
     type: "website",
