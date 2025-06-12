@@ -100,7 +100,7 @@ describe("CheckoutWizard", () => {
       ok: false,
       json: async () => ({
         error: "Order must contain at least one item",
-        debug: "Items array exists but is empty"
+        debug: "Items array exists but is empty",
       }),
     });
 
