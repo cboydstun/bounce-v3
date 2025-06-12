@@ -6,16 +6,14 @@ import Image from "next/image";
 
 async function getBlog(slug: string): Promise<Blog> {
   try {
-    // For server components in Next.js App Router, we need to use a properly formatted URL
-    // If we're running on the server, we need to use an absolute URL
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_URL ||
-      (typeof window === "undefined" ? "http://localhost:3000" : "");
-
-    // Construct the URL properly
-    const url = new URL(`${API_ROUTES.BLOGS}/${slug}`, baseUrl || undefined);
-
-    const response = await fetch(url.toString(), {
+    // Construct absolute URL for server-side fetching
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 
+      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
+      'http://localhost:3000';
+    
+    const apiUrl = `${baseUrl}${API_ROUTES.BLOGS}/${slug}`;
+    
+    const response = await fetch(apiUrl, {
       next: { revalidate: 3600 }, // Revalidate every hour
     });
 
@@ -40,28 +38,58 @@ export async function generateMetadata({
 }: {
   params: Params;
 }): Promise<Metadata> {
-  const { slug } = await params;
-  const blog = await getBlog(slug);
+  try {
+    const { slug } = await params;
+    const blog = await getBlog(slug);
 
+    // Ensure we have valid blog data
+    if (!blog || !blog.title) {
+      console.warn(`Blog data incomplete for slug: ${slug}`);
+      return generateFallbackMetadata(slug);
+    }
+
+    return {
+      title: blog.seo?.metaTitle || `${blog.title} | SATX Bounce Blog`,
+      description:
+        blog.seo?.metaDescription ||
+        blog.excerpt ||
+        (blog.introduction ? blog.introduction.substring(0, 160) : `Read about ${blog.title} on SATX Bounce Blog`),
+      alternates: {
+        canonical: `/blogs/${slug}`,
+      },
+      openGraph: {
+        title: blog.title,
+        description: blog.excerpt || (blog.introduction ? blog.introduction.substring(0, 160) : `Read about ${blog.title}`),
+        images: blog.featuredImage ? [blog.featuredImage] : [],
+        type: "article",
+        publishedTime: blog.publishDate,
+        modifiedTime: blog.lastModified,
+        tags: blog.tags || [],
+      },
+      keywords: blog.tags ? blog.tags.join(", ") : "",
+    };
+  } catch (error) {
+    console.error(`Error generating metadata for blog slug: ${(await params).slug}`, error);
+    return generateFallbackMetadata((await params).slug);
+  }
+}
+
+// Fallback metadata function to ensure title tag is always present
+function generateFallbackMetadata(slug: string): Metadata {
+  const fallbackTitle = `Blog Post | SATX Bounce`;
+  const fallbackDescription = "Read our latest blog post about bounce house rentals and party planning tips in San Antonio.";
+  
   return {
-    title: blog.seo?.metaTitle || `${blog.title} | Blog`,
-    description:
-      blog.seo?.metaDescription ||
-      blog.excerpt ||
-      blog.introduction.substring(0, 160),
+    title: fallbackTitle,
+    description: fallbackDescription,
     alternates: {
       canonical: `/blogs/${slug}`,
     },
     openGraph: {
-      title: blog.title,
-      description: blog.excerpt || blog.introduction.substring(0, 160),
-      images: blog.featuredImage ? [blog.featuredImage] : [],
+      title: fallbackTitle,
+      description: fallbackDescription,
       type: "article",
-      publishedTime: blog.publishDate,
-      modifiedTime: blog.lastModified,
-      tags: blog.tags,
     },
-    keywords: blog.tags.join(", "),
   };
 }
 
@@ -69,9 +97,15 @@ export default async function BlogDetail({ params }: { params: Params }) {
   const { slug } = await params;
   const blog = await getBlog(slug);
 
-  if (blog.status !== "published") {
+  if (!blog || blog.status !== "published") {
     throw new Error("This blog post is not available");
   }
+
+  // Ensure we have safe defaults for all data
+  const safeCategories = blog.categories || [];
+  const safeTags = blog.tags || [];
+  const safeImages = blog.images || [];
+  const safeMeta = blog.meta || { views: 0, likes: 0, shares: 0 };
 
   return (
     <div className="w-full bg-secondary-blue/5 py-12">
@@ -81,7 +115,7 @@ export default async function BlogDetail({ params }: { params: Params }) {
             <div className="mb-8 rounded-xl overflow-hidden">
               <Image
                 src={blog.featuredImage}
-                alt={blog.title}
+                alt={blog.title || "Blog post image"}
                 width={1200}
                 height={630}
                 className="w-full h-full object-cover"
@@ -92,7 +126,7 @@ export default async function BlogDetail({ params }: { params: Params }) {
 
           <header className="mb-8">
             <div className="flex flex-wrap gap-2 mb-4">
-              {blog.categories.map((category: string) => (
+              {safeCategories.map((category: string) => (
                 <a
                   key={category}
                   href={`/blogs?category=${encodeURIComponent(category)}`}
@@ -103,7 +137,7 @@ export default async function BlogDetail({ params }: { params: Params }) {
               ))}
             </div>
             <h1 className="text-4xl font-bold text-primary-purple mb-4">
-              {blog.title}
+              {blog.title || "Blog Post"}
             </h1>
             <div className="flex items-center justify-between text-sm text-gray-500">
               <div className="flex items-center gap-4">
@@ -121,18 +155,20 @@ export default async function BlogDetail({ params }: { params: Params }) {
                 )}
               </div>
               <div className="flex items-center gap-4">
-                <span>{blog.meta.views} views</span>
-                <span>{blog.meta.likes} likes</span>
+                <span>{safeMeta.views} views</span>
+                <span>{safeMeta.likes} likes</span>
               </div>
             </div>
           </header>
 
           <div className="prose max-w-none text-gray-600 text-lg space-y-8">
-            <div className="mb-8">{blog.introduction}</div>
+            {blog.introduction && (
+              <div className="mb-8">{blog.introduction}</div>
+            )}
 
-            {blog.images.length > 0 && (
+            {safeImages.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
-                {blog.images.map(
+                {safeImages.map(
                   (
                     image: { public_id: string; url: string },
                     index: number,
@@ -143,7 +179,7 @@ export default async function BlogDetail({ params }: { params: Params }) {
                     >
                       <Image
                         src={image.url}
-                        alt={`${blog.title} image ${index + 1}`}
+                        alt={`${blog.title || "Blog post"} image ${index + 1}`}
                         width={600}
                         height={400}
                         className="w-full h-full object-cover"
@@ -154,14 +190,18 @@ export default async function BlogDetail({ params }: { params: Params }) {
               </div>
             )}
 
-            <div className="mb-8">{blog.body}</div>
+            {blog.body && (
+              <div className="mb-8">{blog.body}</div>
+            )}
 
-            <div className="mb-8">{blog.conclusion}</div>
+            {blog.conclusion && (
+              <div className="mb-8">{blog.conclusion}</div>
+            )}
 
-            {blog.tags.length > 0 && (
+            {safeTags.length > 0 && (
               <div className="border-t pt-6 mt-8">
                 <div className="flex flex-wrap gap-2">
-                  {blog.tags.map((tag: string) => (
+                  {safeTags.map((tag: string) => (
                     <a
                       key={tag}
                       href={`/blogs?tag=${encodeURIComponent(tag)}`}
