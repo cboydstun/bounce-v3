@@ -52,6 +52,14 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
       required: [true, "Party date is required"],
       index: true,
     },
+    deliveryDate: {
+      type: Date,
+      required: [true, "Delivery date is required"],
+      default: function (this: IContactDocument) {
+        return this.partyDate;
+      },
+      index: true,
+    },
     partyZipCode: {
       type: String,
       required: [true, "Party zip code is required"],

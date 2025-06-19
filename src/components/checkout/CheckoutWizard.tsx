@@ -181,15 +181,6 @@ const CheckoutWizard: React.FC = () => {
         );
       }
 
-      // Log order data for debugging
-      console.log("=== ORDER CREATION DEBUG ===");
-      console.log("Order items:", orderItems);
-      console.log("Items count:", orderItems.length);
-      console.log("State selectedBouncers:", state.selectedBouncers);
-      console.log("State selectedBouncer:", state.selectedBouncer);
-      console.log("State bouncerName:", state.bouncerName);
-      console.log("===============================");
-
       // Prepare order data
       const orderData = {
         // Customer information

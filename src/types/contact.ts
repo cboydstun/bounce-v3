@@ -16,6 +16,7 @@ export interface Contact {
   email: string;
   phone?: string;
   partyDate: Date;
+  deliveryDate: Date;
   partyZipCode: string;
   message?: string;
   confirmed: ConfirmationStatus | boolean; // Allow boolean for backward compatibility
@@ -66,6 +67,7 @@ export interface ContactFormData {
   email: string;
   phone?: string;
   partyDate: string;
+  deliveryDate?: string;
   partyZipCode: string;
   message?: string;
   confirmed?: ConfirmationStatus | boolean; // Allow boolean for backward compatibility

@@ -128,6 +128,15 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 - **SMS Notifications**: Twilio integration for order updates and alerts
 - **Multi-step Checkout**: Guided checkout process with progress tracking
 
+### Agreement Management & Digital Signatures
+
+- **DocuSeal Integration**: Complete digital signature workflow for rental agreements
+- **Automated Agreement Generation**: Dynamic agreement creation with order-specific details
+- **Real-time Status Tracking**: Live updates when customers view, sign, or decline agreements
+- **Delivery Protection**: Automatic delivery blocking until agreements are signed
+- **Batch Status Synchronization**: One-click sync for all pending agreements
+- **Email Notifications**: Branded email templates with signing links and reminders
+
 ## API Routes
 
 The application provides a comprehensive RESTful API with the following endpoints:
@@ -444,6 +453,11 @@ node scripts/create-dev-blog.js
           "paymentStatus": "Pending",
           "paymentMethod": "paypal",
           "tasks": ["Delivery", "Setup", "Pickup"],
+          "agreementStatus": "not_sent",
+          "agreementSentAt": null,
+          "agreementSignedAt": null,
+          "deliveryBlocked": false,
+          "docusealSubmissionId": null,
           "createdAt": "2024-04-14T15:00:00.000Z",
           "updatedAt": "2024-04-14T15:00:00.000Z"
         }
@@ -464,6 +478,25 @@ node scripts/create-dev-blog.js
 - `PATCH /api/v1/orders/:id/payment` - Record payment transaction for an order
   - Required fields: `transactionId`, `amount`, `status`
   - Optional fields: `payerId`, `payerEmail`, `currency`
+
+#### Agreement Management API
+
+- `POST /api/v1/orders/:id/send-agreement` - Send rental agreement to customer
+  - Creates DocuSeal submission and sends email with signing link
+  - Updates order status to block delivery until signed
+  - Response includes submission ID and status
+- `GET /api/v1/orders/:id/send-agreement` - Check agreement status for an order
+  - Returns current agreement status and DocuSeal submission details
+- `POST /api/v1/orders/:id/sync-agreement` - Manually sync agreement status with DocuSeal
+  - Checks current status in DocuSeal and updates database accordingly
+  - Returns whether the status was updated and current status
+- `POST /api/v1/orders/sync-all-agreements` - Batch sync all agreement statuses
+  - Syncs all orders with DocuSeal submission IDs
+  - Returns detailed results with counts of updated/current/failed orders
+- `POST /api/v1/docuseal/webhook` - DocuSeal webhook endpoint for real-time updates
+  - Handles `submission.completed`, `submission.viewed`, `submission.declined` events
+  - Automatically updates agreement status when customers sign agreements
+  - Sends confirmation emails when agreements are completed
 
 ## Products Implementation
 
