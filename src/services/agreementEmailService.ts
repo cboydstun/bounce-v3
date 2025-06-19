@@ -14,8 +14,8 @@ export class AgreementEmailService {
 
   constructor() {
     this.fromEmail = process.env.EMAIL || "noreply@bouncehouserental.com";
-    this.companyName = "Bounce House Rentals San Antonio";
-    this.companyPhone = process.env.COMPANY_PHONE || "(210) 555-0123";
+    this.companyName = "SATX Bounce LLC";
+    this.companyPhone = "512-210-0194";
   }
 
   /**
@@ -112,7 +112,6 @@ Thank you for choosing ${this.companyName} for your upcoming event!
 ORDER DETAILS:
 Order Number: ${order.orderNumber}
 Event Date: ${eventDate}
-Delivery Date: ${deliveryDate}
 Total Amount: $${order.totalAmount.toFixed(2)}
 
 RENTAL ITEMS:
@@ -157,7 +156,6 @@ ${this.companyPhone}
             <h3 style="margin-top: 0; color: #667eea;">Order Details</h3>
             <p><strong>Order Number:</strong> ${order.orderNumber}</p>
             <p><strong>Event Date:</strong> ${eventDate}</p>
-            <p><strong>Delivery Date:</strong> ${deliveryDate}</p>
             <p><strong>Total Amount:</strong> $${order.totalAmount.toFixed(2)}</p>
         </div>
         
@@ -470,17 +468,57 @@ ${this.companyName}
 
   // Helper methods
   private formatEventDate(order: Order): string {
-    if (order.eventDate) {
-      return format(new Date(order.eventDate), "EEEE, MMMM do, yyyy");
+    // Event date and delivery date are the same thing
+    const date =
+      order.deliveryDate || order.eventDate || this.extractDateFromNotes(order);
+    if (date) {
+      return format(new Date(date), "EEEE, MMMM do, yyyy");
     }
-    return "TBD";
+    return "Date TBD";
   }
 
   private formatDeliveryDate(order: Order): string {
-    if (order.deliveryDate) {
-      return format(new Date(order.deliveryDate), "EEEE, MMMM do, yyyy");
+    // Event date and delivery date are the same thing
+    const date =
+      order.deliveryDate || order.eventDate || this.extractDateFromNotes(order);
+    if (date) {
+      return format(new Date(date), "EEEE, MMMM do, yyyy");
     }
-    return "TBD";
+    return "Date TBD";
+  }
+
+  /**
+   * Extract delivery date from notes field as fallback
+   * Looks for patterns like "Delivery: 2025-07-08 11:00"
+   */
+  private extractDateFromNotes(order: Order): Date | null {
+    if (!order.notes) return null;
+
+    try {
+      // Look for "Delivery: YYYY-MM-DD HH:MM" pattern
+      const deliveryMatch = order.notes.match(
+        /Delivery:\s*(\d{4}-\d{2}-\d{2})\s*(\d{2}:\d{2})?/i,
+      );
+      if (deliveryMatch) {
+        const dateStr = deliveryMatch[1]; // YYYY-MM-DD
+        const timeStr = deliveryMatch[2] || "12:00"; // Default to noon if no time
+        const fullDateStr = `${dateStr}T${timeStr}:00`;
+
+        console.log(`Extracted date from notes: ${fullDateStr}`);
+        return new Date(fullDateStr);
+      }
+
+      // Look for other date patterns in notes
+      const dateMatch = order.notes.match(/(\d{4}-\d{2}-\d{2})/);
+      if (dateMatch) {
+        console.log(`Extracted date from notes: ${dateMatch[1]}`);
+        return new Date(`${dateMatch[1]}T12:00:00`);
+      }
+    } catch (error) {
+      console.warn("Error parsing date from notes:", error);
+    }
+
+    return null;
   }
 
   private formatItemsList(order: Order): string {

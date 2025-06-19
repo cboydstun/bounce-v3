@@ -1,17 +1,52 @@
 import { Order } from "@/types/order";
 import crypto from "crypto";
 
-export interface DocuSealSubmission {
-  id: string;
-  status: "pending" | "completed" | "declined" | "expired";
-  submitters: Array<{
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    status: string;
-    signing_url?: string;
+/**
+ * Custom error for when a DocuSeal submission is not found (404)
+ */
+export class SubmissionNotFoundError extends Error {
+  public readonly submissionId: string;
+
+  constructor(message: string, submissionId: string) {
+    super(message);
+    this.name = "SubmissionNotFoundError";
+    this.submissionId = submissionId;
+  }
+}
+
+export interface DocuSealSubmitter {
+  id: number;
+  submission_id: number;
+  uuid: string;
+  email: string;
+  slug: string;
+  sent_at: string | null;
+  opened_at: string | null;
+  completed_at: string | null;
+  declined_at: string | null;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  phone?: string;
+  external_id?: string;
+  metadata?: Record<string, any>;
+  status: "sent" | "opened" | "completed" | "declined";
+  values?: Array<{
+    field: string;
+    value: string;
   }>;
+  preferences?: {
+    send_email: boolean;
+    send_sms: boolean;
+  };
+  role: string;
+  embed_src: string; // This is the signing URL
+}
+
+export interface DocuSealSubmission {
+  id: string; // This will be the submission_id from the submitters
+  status: "pending" | "completed" | "declined" | "expired";
+  submitters: DocuSealSubmitter[];
   documents?: Array<{
     id: string;
     url: string;
@@ -104,7 +139,33 @@ export class DocuSealService {
         );
       }
 
-      const submission: DocuSealSubmission = await response.json();
+      // DocuSeal returns an array of submitters, not a submission object
+      const submitters: DocuSealSubmitter[] = await response.json();
+      console.log(
+        "DocuSeal API response:",
+        JSON.stringify(submitters, null, 2),
+      );
+
+      if (!submitters || submitters.length === 0) {
+        throw new Error("DocuSeal returned empty submitters array");
+      }
+
+      const firstSubmitter = submitters[0];
+      if (!firstSubmitter.submission_id) {
+        throw new Error("DocuSeal submitter missing submission_id");
+      }
+
+      // Create a submission object from the submitters array
+      const submission: DocuSealSubmission = {
+        id: String(firstSubmitter.submission_id),
+        status: this.mapSubmitterStatusToSubmissionStatus(
+          firstSubmitter.status,
+        ),
+        submitters: submitters,
+        created_at: firstSubmitter.created_at,
+        updated_at: firstSubmitter.updated_at,
+      };
+
       return submission;
     } catch (error) {
       console.error("Error creating DocuSeal submission:", error);
@@ -130,15 +191,73 @@ export class DocuSealService {
 
       if (!response.ok) {
         const errorText = await response.text();
+
+        // Handle 404 specifically - submission doesn't exist
+        if (response.status === 404) {
+          throw new SubmissionNotFoundError(
+            `Submission ${submissionId} not found in DocuSeal`,
+            submissionId,
+          );
+        }
+
         throw new Error(
           `DocuSeal API error: ${response.status} - ${errorText}`,
         );
       }
 
-      const submission: DocuSealSubmission = await response.json();
+      const rawResponse = await response.json();
+      console.log(
+        "DocuSeal GET submission response:",
+        JSON.stringify(rawResponse, null, 2),
+      );
+
+      // Handle different response formats from GET vs POST
+      let submission: DocuSealSubmission;
+
+      if (Array.isArray(rawResponse)) {
+        // If it's an array (like POST response), convert it
+        const submitters = rawResponse as DocuSealSubmitter[];
+        if (submitters.length === 0) {
+          throw new Error("Empty submitters array from DocuSeal");
+        }
+
+        const firstSubmitter = submitters[0];
+        submission = {
+          id: String(firstSubmitter.submission_id),
+          status: this.mapSubmitterStatusToSubmissionStatus(
+            firstSubmitter.status,
+          ),
+          submitters: submitters,
+          created_at: firstSubmitter.created_at,
+          updated_at: firstSubmitter.updated_at,
+        };
+      } else {
+        // If it's an object (different GET format), use it directly but ensure submitters have embed_src
+        submission = rawResponse as DocuSealSubmission;
+
+        // Ensure submitters have the signing URL field
+        if (submission.submitters) {
+          submission.submitters = submission.submitters.map((submitter) => ({
+            ...submitter,
+            // If embed_src is missing but we have other URL fields, try to use them
+            embed_src:
+              submitter.embed_src ||
+              (submitter as any).signing_url ||
+              (submitter as any).url ||
+              "",
+          }));
+        }
+      }
+
       return submission;
     } catch (error) {
       console.error("Error getting DocuSeal submission status:", error);
+
+      // Re-throw SubmissionNotFoundError as-is
+      if (error instanceof SubmissionNotFoundError) {
+        throw error;
+      }
+
       throw new Error(
         `Failed to get submission status: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
@@ -214,19 +333,124 @@ export class DocuSealService {
     try {
       const submission = await this.getSubmissionStatus(submissionId);
       const submitter = submission.submitters.find(
-        (s: any) => s.email === submitterEmail,
+        (s: DocuSealSubmitter) => s.email === submitterEmail,
       );
 
-      if (!submitter || !submitter.signing_url) {
+      if (!submitter || !submitter.embed_src) {
         throw new Error("Signing URL not found for submitter");
       }
 
-      return submitter.signing_url;
+      return submitter.embed_src;
     } catch (error) {
       console.error("Error getting signing URL:", error);
+
+      // Re-throw SubmissionNotFoundError as-is for proper handling upstream
+      if (error instanceof SubmissionNotFoundError) {
+        throw error;
+      }
+
       throw new Error(
         `Failed to get signing URL: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
+    }
+  }
+
+  /**
+   * Validate if a submission exists and is accessible
+   */
+  async validateSubmission(submissionId: string): Promise<boolean> {
+    try {
+      await this.getSubmissionStatus(submissionId);
+      return true;
+    } catch (error) {
+      if (error instanceof SubmissionNotFoundError) {
+        return false;
+      }
+      // For other errors, we can't be sure, so return false to be safe
+      console.warn(`Could not validate submission ${submissionId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Create a new submission or get existing one if valid
+   */
+  async createOrGetSubmission(
+    order: Order,
+    existingSubmissionId?: string,
+  ): Promise<DocuSealSubmission> {
+    // If we have an existing submission ID, try to validate it first
+    if (
+      existingSubmissionId &&
+      existingSubmissionId !== "undefined" &&
+      existingSubmissionId.trim() !== ""
+    ) {
+      try {
+        console.log(
+          `Attempting to retrieve existing submission: ${existingSubmissionId}`,
+        );
+        const submission = await this.getSubmissionStatus(existingSubmissionId);
+        console.log(
+          `Successfully retrieved existing submission ${existingSubmissionId}`,
+        );
+        return submission;
+      } catch (error) {
+        if (error instanceof SubmissionNotFoundError) {
+          console.log(
+            `Existing submission ${existingSubmissionId} not found, creating new one`,
+          );
+        } else {
+          console.warn(
+            `Error validating existing submission ${existingSubmissionId}, creating new one:`,
+            error,
+          );
+        }
+      }
+    } else if (existingSubmissionId) {
+      console.warn(
+        `Invalid existing submission ID: "${existingSubmissionId}", creating new submission`,
+      );
+    }
+
+    // Create new submission
+    console.log(`Creating new submission for order ${order._id}`);
+    try {
+      const newSubmission = await this.createSubmission(order);
+
+      // Validate the new submission
+      if (!newSubmission || !newSubmission.id) {
+        throw new Error("DocuSeal returned invalid submission - missing ID");
+      }
+
+      console.log(`Successfully created new submission ${newSubmission.id}`);
+      return newSubmission;
+    } catch (error) {
+      console.error(
+        `Failed to create new submission for order ${order._id}:`,
+        error,
+      );
+      throw new Error(
+        `Failed to create DocuSeal submission: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
+
+  /**
+   * Map DocuSeal submitter status to submission status
+   */
+  private mapSubmitterStatusToSubmissionStatus(
+    submitterStatus: "sent" | "opened" | "completed" | "declined",
+  ): "pending" | "completed" | "declined" | "expired" {
+    switch (submitterStatus) {
+      case "sent":
+      case "opened":
+        return "pending";
+      case "completed":
+        return "completed";
+      case "declined":
+        return "declined";
+      default:
+        return "pending";
     }
   }
 
@@ -254,6 +478,101 @@ export class DocuSealService {
     } catch (error) {
       console.error("Error verifying webhook signature:", error);
       return false;
+    }
+  }
+
+  /**
+   * Sync order status with DocuSeal submission status
+   * Useful for manual status updates or recovering from missed webhooks
+   */
+  async syncOrderWithSubmission(
+    orderId: string,
+  ): Promise<{ updated: boolean; status: string }> {
+    try {
+      const Order = (await import("@/models/Order")).default;
+      await (await import("@/lib/db/mongoose")).default();
+
+      // Find the order
+      const order = await Order.findById(orderId);
+      if (!order || !order.docusealSubmissionId) {
+        return {
+          updated: false,
+          status: "Order not found or no submission ID",
+        };
+      }
+
+      // Get current submission status from DocuSeal
+      const submission = await this.getSubmissionStatus(
+        order.docusealSubmissionId,
+      );
+
+      // Check if all submitters are completed
+      const allCompleted = submission.submitters.every(
+        (s) => s.status === "completed",
+      );
+      const anyViewed = submission.submitters.some(
+        (s) => s.status === "opened" || s.status === "completed",
+      );
+      const anyDeclined = submission.submitters.some(
+        (s) => s.status === "declined",
+      );
+
+      let newStatus = order.agreementStatus;
+      let updates: any = {};
+
+      if (allCompleted && order.agreementStatus !== "signed") {
+        // Agreement was signed
+        const completedSubmitter = submission.submitters.find(
+          (s) => s.completed_at,
+        );
+        newStatus = "signed";
+        updates = {
+          agreementStatus: "signed",
+          agreementSignedAt: completedSubmitter?.completed_at
+            ? new Date(completedSubmitter.completed_at)
+            : new Date(),
+          deliveryBlocked: false,
+          updatedAt: new Date(),
+        };
+      } else if (anyDeclined && order.agreementStatus !== "pending") {
+        // Agreement was declined
+        newStatus = "pending";
+        updates = {
+          agreementStatus: "pending",
+          deliveryBlocked: true,
+          updatedAt: new Date(),
+        };
+      } else if (anyViewed && order.agreementStatus === "pending") {
+        // Agreement was viewed but not completed
+        const viewedSubmitter = submission.submitters.find((s) => s.opened_at);
+        newStatus = "viewed";
+        updates = {
+          agreementStatus: "viewed",
+          agreementViewedAt: viewedSubmitter?.opened_at
+            ? new Date(viewedSubmitter.opened_at)
+            : new Date(),
+          updatedAt: new Date(),
+        };
+      }
+
+      // Update the order if status changed
+      if (Object.keys(updates).length > 0) {
+        await Order.findByIdAndUpdate(orderId, updates);
+        console.log(
+          `Synced order ${order.orderNumber} status: ${order.agreementStatus} -> ${newStatus}`,
+        );
+        return { updated: true, status: `Updated to ${newStatus}` };
+      }
+
+      return {
+        updated: false,
+        status: `Already up to date (${order.agreementStatus})`,
+      };
+    } catch (error) {
+      console.error("Error syncing order with submission:", error);
+      throw new Error(
+        `Failed to sync order: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -317,9 +636,9 @@ export class DocuSealService {
       notes: order.notes || "",
 
       // Company Information (these should be in your template)
-      company_name: "Bounce House Rentals San Antonio",
-      company_phone: process.env.COMPANY_PHONE || "",
-      company_email: process.env.COMPANY_EMAIL || "",
+      company_name: "SATX Bounce LLC",
+      company_phone: "512-210-0194",
+      company_email: process.env.EMAIL || "",
       company_address: process.env.COMPANY_ADDRESS || "",
     };
   }

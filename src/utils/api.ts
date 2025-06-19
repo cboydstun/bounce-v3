@@ -767,4 +767,14 @@ export const getPendingAgreements = async () => {
   return response.data;
 };
 
+export const syncAgreementStatus = async (orderId: string) => {
+  const response = await api.post(`/api/v1/orders/${orderId}/sync-agreement`);
+  return response.data;
+};
+
+export const syncAllAgreementStatuses = async () => {
+  const response = await api.post("/api/v1/orders/sync-all-agreements");
+  return response.data;
+};
+
 export default api;

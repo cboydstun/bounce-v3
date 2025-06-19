@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { getOrders, deleteOrder } from "@/utils/api";
+import { getOrders, deleteOrder, syncAllAgreementStatuses } from "@/utils/api";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
 import { formatDisplayDateCT } from "@/utils/dateUtils";
 import AgreementStatusBadge from "@/components/AgreementStatusBadge";
@@ -17,7 +17,9 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [syncResults, setSyncResults] = useState<string | null>(null);
 
   // Filter states
   const [startDate, setStartDate] = useState<string>("");
@@ -118,6 +120,37 @@ export default function OrdersPage() {
   const formatDate = (dateString: string | Date) => {
     const date = new Date(dateString);
     return formatDisplayDateCT(date);
+  };
+
+  // Handle sync all agreements
+  const handleSyncAll = async () => {
+    setIsSyncingAll(true);
+    setError(null);
+    setSyncResults(null);
+
+    try {
+      const result = await syncAllAgreementStatuses();
+
+      const { results } = result;
+      const summary = `✅ ${results.updated} updated, ℹ️ ${results.alreadyCurrent} already current, ❌ ${results.failed} failed (${results.total} total)`;
+
+      setSyncResults(summary);
+
+      // Refresh the orders list to show updated statuses
+      fetchOrders(currentPage);
+
+      // Show detailed errors if any
+      if (results.errors && results.errors.length > 0) {
+        console.error("Sync errors:", results.errors);
+      }
+    } catch (err) {
+      console.error("Error syncing all agreements:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to sync agreements",
+      );
+    } finally {
+      setIsSyncingAll(false);
+    }
   };
 
   // Handle order deletion
@@ -236,12 +269,23 @@ export default function OrdersPage() {
     <div className="max-w-7xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Orders</h1>
-        <Link
-          href="/admin/orders/new"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Create New Order
-        </Link>
+        <div className="flex space-x-3">
+          <button
+            onClick={handleSyncAll}
+            disabled={isSyncingAll}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Sync all agreement statuses with DocuSeal"
+          >
+            {isSyncingAll && <LoadingSpinner className="w-4 h-4 mr-2" />}
+            {isSyncingAll ? "Syncing..." : "🔄 Sync All Agreements"}
+          </button>
+          <Link
+            href="/admin/orders/new"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Create New Order
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -376,6 +420,22 @@ export default function OrdersPage() {
       {error && (
         <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
           {error}
+        </div>
+      )}
+
+      {/* Sync results message */}
+      {syncResults && (
+        <div className="mb-4 p-4 bg-green-50 text-green-700 rounded-md">
+          <div className="flex items-center">
+            <span className="mr-2">🔄</span>
+            <span>Sync completed: {syncResults}</span>
+            <button
+              onClick={() => setSyncResults(null)}
+              className="ml-auto text-green-500 hover:text-green-700"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 

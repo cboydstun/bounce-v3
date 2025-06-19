@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { Order, AgreementStatus } from "@/types/order";
-import { sendAgreement, resendAgreement } from "@/utils/api";
+import {
+  sendAgreement,
+  resendAgreement,
+  syncAgreementStatus,
+} from "@/utils/api";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface AgreementActionsProps {
@@ -15,6 +19,7 @@ export const AgreementActions: React.FC<AgreementActionsProps> = ({
   className = "",
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -46,9 +51,55 @@ export const AgreementActions: React.FC<AgreementActionsProps> = ({
         onAgreementSent();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send agreement");
+      console.error("Error sending agreement:", err);
+
+      // Provide more user-friendly error messages
+      let errorMessage = "Failed to send agreement";
+
+      if (err instanceof Error) {
+        if (err.message.includes("Customer email is required")) {
+          errorMessage = "Customer email is required to send agreement";
+        } else if (err.message.includes("already been signed")) {
+          errorMessage = "Agreement has already been signed";
+        } else if (err.message.includes("DocuSeal")) {
+          errorMessage =
+            "There was an issue with the document service. Please try again.";
+        } else if (err.message.includes("Failed to create or send agreement")) {
+          errorMessage =
+            "Unable to create agreement document. Please check the order details and try again.";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSyncStatus = async () => {
+    setIsSyncing(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await syncAgreementStatus(order._id);
+
+      if (result.updated) {
+        setSuccess(`Status synced: ${result.status}`);
+        // Call the callback to refresh the parent component
+        if (onAgreementSent) {
+          onAgreementSent();
+        }
+      } else {
+        setSuccess(result.status);
+      }
+    } catch (err) {
+      console.error("Error syncing agreement status:", err);
+      setError(err instanceof Error ? err.message : "Failed to sync status");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -98,19 +149,34 @@ export const AgreementActions: React.FC<AgreementActionsProps> = ({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <button
-        onClick={handleSendAgreement}
-        disabled={isDisabled}
-        className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md transition-colors ${getButtonStyle()}`}
-      >
-        {isLoading && <LoadingSpinner className="w-4 h-4 mr-2" />}
-        {(order.agreementStatus || "not_sent") === "signed" && (
-          <span className="mr-2" role="img" aria-label="signed">
-            ✅
-          </span>
+      <div className="flex space-x-2">
+        <button
+          onClick={handleSendAgreement}
+          disabled={isDisabled}
+          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md transition-colors ${getButtonStyle()}`}
+        >
+          {isLoading && <LoadingSpinner className="w-4 h-4 mr-2" />}
+          {(order.agreementStatus || "not_sent") === "signed" && (
+            <span className="mr-2" role="img" aria-label="signed">
+              ✅
+            </span>
+          )}
+          {getButtonText()}
+        </button>
+
+        {/* Sync Status Button - only show if there's a submission ID */}
+        {order.docusealSubmissionId && (
+          <button
+            onClick={handleSyncStatus}
+            disabled={isSyncing}
+            className="inline-flex items-center px-2 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            title="Sync agreement status with DocuSeal"
+          >
+            {isSyncing && <LoadingSpinner className="w-4 h-4 mr-1" />}
+            {isSyncing ? "Syncing..." : "🔄"}
+          </button>
         )}
-        {getButtonText()}
-      </button>
+      </div>
 
       {/* Show customer email if available */}
       {order.customerEmail && (
