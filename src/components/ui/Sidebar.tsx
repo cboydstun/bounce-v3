@@ -38,6 +38,11 @@ const navItems: NavItem[] = [
   { name: "Products", href: "/admin/products", icon: ShoppingBagIcon },
   { name: "Contacts", href: "/admin/contacts", icon: UserGroupIcon },
   { name: "Contractors", href: "/admin/contractors", icon: UsersIcon },
+  {
+    name: "Tasks",
+    href: "/admin/tasks",
+    icon: ShoppingBagIcon, // Assuming this is a placeholder for tasks
+  },
   { name: "Orders", href: "/admin/orders", icon: ShoppingCartIcon },
   { name: "Calendar", href: "/admin/calendar", icon: CalendarIcon },
   { name: "Routes", href: "/admin/routes", icon: MapIcon },
