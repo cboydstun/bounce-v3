@@ -61,12 +61,14 @@ const authOptions: NextAuthOptions = {
   callbacks: {
     jwt: async ({ token, user }) => {
       if (user) {
+        token.id = user.id; // Ensure user ID is included in JWT
         token.role = user.role;
       }
       return token;
     },
     session: async ({ session, token }) => {
       if (token && session.user) {
+        session.user.id = token.id as string; // Map user ID to session
         session.user.role = token.role as string;
       }
       return session;

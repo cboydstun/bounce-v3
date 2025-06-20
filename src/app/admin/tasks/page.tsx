@@ -3,20 +3,18 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+import TaskCreateModal from "@/components/admin/TaskCreateModal";
+import TaskEditModal from "@/components/admin/TaskEditModal";
+import TaskActionButtons from "@/components/admin/TaskActionButtons";
+import PriorityBadge from "@/components/admin/PriorityBadge";
+import { Task, TaskPriority } from "@/types/task";
 
-interface Task {
-  _id: string;
-  orderId: string;
-  type: string;
-  title?: string;
-  description: string;
-  scheduledDateTime: string;
-  priority: string;
-  status: string;
-  assignedContractors: string[];
-  paymentAmount?: number;
-  createdAt: string;
-  updatedAt: string;
+interface EnhancedTask extends Task {
+  orderNumber?: string;
+  customerName?: string;
+  customerEmail?: string;
+  eventDate?: string;
+  contractorNames?: string[];
 }
 
 interface PaymentStats {
@@ -29,7 +27,7 @@ interface PaymentStats {
 
 export default function TasksAdminPage() {
   const { data: session, status } = useSession();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<EnhancedTask[]>([]);
   const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +35,15 @@ export default function TasksAdminPage() {
   const [paymentAmount, setPaymentAmount] = useState<string>("");
   const [paymentReason, setPaymentReason] = useState<string>("");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filters, setFilters] = useState({
     status: "",
+    taskType: "",
+    priority: "",
+    contractorId: "",
+    search: "",
     minAmount: "",
     maxAmount: "",
     startDate: "",
@@ -58,17 +63,19 @@ export default function TasksAdminPage() {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams();
-      queryParams.append("type", "detailed");
 
       if (filters.status) queryParams.append("status", filters.status);
+      if (filters.taskType) queryParams.append("taskType", filters.taskType);
+      if (filters.priority) queryParams.append("priority", filters.priority);
+      if (filters.contractorId)
+        queryParams.append("contractorId", filters.contractorId);
+      if (filters.search) queryParams.append("search", filters.search);
       if (filters.minAmount) queryParams.append("minAmount", filters.minAmount);
       if (filters.maxAmount) queryParams.append("maxAmount", filters.maxAmount);
       if (filters.startDate) queryParams.append("startDate", filters.startDate);
       if (filters.endDate) queryParams.append("endDate", filters.endDate);
 
-      const response = await fetch(
-        `/api/v1/tasks/payment-reports?${queryParams}`,
-      );
+      const response = await fetch(`/api/v1/tasks?${queryParams}`);
       if (!response.ok) throw new Error("Failed to fetch tasks");
 
       const data = await response.json();
@@ -188,8 +195,10 @@ export default function TasksAdminPage() {
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatDate = (dateString: string | Date) => {
+    const date =
+      typeof dateString === "string" ? new Date(dateString) : dateString;
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -198,15 +207,85 @@ export default function TasksAdminPage() {
     });
   };
 
+  // New CRUD handlers
+  const handleTaskCreated = () => {
+    fetchTasks();
+    fetchPaymentStats();
+  };
+
+  const handleTaskUpdated = () => {
+    fetchTasks();
+    fetchPaymentStats();
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteTask = async (task: Task) => {
+    if (task.status !== "Pending") {
+      alert("Only tasks with 'Pending' status can be deleted");
+      return;
+    }
+
+    if (
+      !confirm(
+        `Are you sure you want to delete this task: ${task.title || task.description}?`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/v1/tasks/${task._id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete task");
+      }
+
+      // Refresh tasks and stats
+      await fetchTasks();
+      await fetchPaymentStats();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete task");
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Task Payment Management
-        </h1>
-        <p className="text-gray-600">
-          Manage payment amounts for tasks and view payment reports
-        </p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Enhanced Task Management
+          </h1>
+          <p className="text-gray-600">
+            Create, manage, and track tasks with full CRUD operations and
+            payment management
+          </p>
+        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+        >
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Add Task
+        </button>
       </div>
 
       {/* Payment Statistics */}
@@ -334,6 +413,10 @@ export default function TasksAdminPage() {
             onClick={() =>
               setFilters({
                 status: "",
+                taskType: "",
+                priority: "",
+                contractorId: "",
+                search: "",
                 minAmount: "",
                 maxAmount: "",
                 startDate: "",
@@ -370,10 +453,10 @@ export default function TasksAdminPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Task
+                    Task & Order
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
+                    Type & Priority
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -382,7 +465,10 @@ export default function TasksAdminPage() {
                     Scheduled
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Payment Amount
+                    Contractors
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Payment
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -392,21 +478,39 @@ export default function TasksAdminPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {tasks.map((task) => (
                   <tr key={task._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    {/* Task & Order */}
+                    <td className="px-6 py-4">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
                           {task.title || `Task ${task._id.slice(-6)}`}
                         </div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                        <div className="text-sm text-gray-500 truncate max-w-xs mb-1">
                           {task.description}
+                        </div>
+                        {task.orderNumber && (
+                          <div className="text-xs text-blue-600">
+                            Order: {task.orderNumber}
+                            {task.customerName && ` • ${task.customerName}`}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Type & Priority */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="space-y-1">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {task.type}
+                        </span>
+                        <div>
+                          <PriorityBadge
+                            priority={task.priority as TaskPriority}
+                          />
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {task.type}
-                      </span>
-                    </td>
+
+                    {/* Status */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -424,9 +528,43 @@ export default function TasksAdminPage() {
                         {task.status}
                       </span>
                     </td>
+
+                    {/* Scheduled */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatDate(task.scheduledDateTime)}
                     </td>
+
+                    {/* Contractors */}
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        {task.contractorNames &&
+                        task.contractorNames.length > 0 ? (
+                          <div className="space-y-1">
+                            {task.contractorNames
+                              .slice(0, 2)
+                              .map((name, index) => (
+                                <div
+                                  key={index}
+                                  className="text-xs bg-gray-100 px-2 py-1 rounded"
+                                >
+                                  {name}
+                                </div>
+                              ))}
+                            {task.contractorNames.length > 2 && (
+                              <div className="text-xs text-gray-500">
+                                +{task.contractorNames.length - 2} more
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">
+                            Not assigned
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Payment */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`text-sm font-medium ${
@@ -438,21 +576,15 @@ export default function TasksAdminPage() {
                         {formatCurrency(task.paymentAmount)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => openPaymentModal(task)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        {task.paymentAmount ? "Edit" : "Set"} Payment
-                      </button>
-                      {task.paymentAmount && (
-                        <button
-                          onClick={() => handleClearPayment(task)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Clear
-                        </button>
-                      )}
+
+                    {/* Actions */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <TaskActionButtons
+                        task={task}
+                        onEdit={handleEditTask}
+                        onDelete={handleDeleteTask}
+                        onPaymentEdit={openPaymentModal}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -524,6 +656,24 @@ export default function TasksAdminPage() {
           </div>
         </div>
       )}
+
+      {/* Task Create Modal */}
+      <TaskCreateModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onTaskCreated={handleTaskCreated}
+      />
+
+      {/* Task Edit Modal */}
+      <TaskEditModal
+        isOpen={showEditModal}
+        task={editingTask}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingTask(null);
+        }}
+        onTaskUpdated={handleTaskUpdated}
+      />
     </div>
   );
 }

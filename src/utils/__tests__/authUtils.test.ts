@@ -1,5 +1,5 @@
 import { checkOwnership, requireOwnership } from "../authUtils";
-import { AuthRequest } from "@/middleware/auth";
+import { AuthRequest } from "@/middleware/roleAuth";
 import { NextResponse } from "next/server";
 
 // Mock NextResponse

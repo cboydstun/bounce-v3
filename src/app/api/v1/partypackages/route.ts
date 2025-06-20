@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import PartyPackage from "@/models/PartyPackage";
-import { withAuth, AuthRequest } from "@/middleware/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import mongoose from "mongoose";
 
 interface PackageQuery {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,77 +58,95 @@ export async function GET(request: NextRequest) {
  * This endpoint requires authentication
  */
 export async function POST(request: NextRequest) {
-  return withAuth(request, async (req: AuthRequest) => {
-    try {
-      // Check if user is authenticated
-      if (!req.user) {
-        return NextResponse.json(
-          { error: "Unauthorized - Not authenticated" },
-          { status: 401 },
-        );
-      }
+  try {
+    // Get the session using NextAuth's recommended approach
+    const session = await getServerSession(authOptions);
 
-      await dbConnect();
-      const packageData = await request.json();
-
-      // Validate required fields
-      const requiredFields = [
-        "id",
-        "name",
-        "description",
-        "items",
-        "totalRetailPrice",
-        "packagePrice",
-        "savings",
-        "savingsPercentage",
-        "recommendedPartySize",
-        "ageRange",
-        "duration",
-        "spaceRequired",
-      ];
-
-      const missingFields = requiredFields.filter((field) => {
-        if (field === "recommendedPartySize") {
-          return (
-            !packageData.recommendedPartySize ||
-            packageData.recommendedPartySize.min === undefined ||
-            packageData.recommendedPartySize.max === undefined
-          );
-        }
-        if (field === "ageRange") {
-          return (
-            !packageData.ageRange ||
-            packageData.ageRange.min === undefined ||
-            packageData.ageRange.max === undefined
-          );
-        }
-        if (field === "items") {
-          return (
-            !packageData.items ||
-            !Array.isArray(packageData.items) ||
-            packageData.items.length === 0
-          );
-        }
-        return !packageData[field];
-      });
-
-      if (missingFields.length > 0) {
-        return NextResponse.json(
-          { error: `Missing required fields: ${missingFields.join(", ")}` },
-          { status: 400 },
-        );
-      }
-
-      // Create party package
-      const partyPackage = await PartyPackage.create(packageData);
-
-      return NextResponse.json(partyPackage, { status: 201 });
-    } catch (error) {
-      console.error("Error creating party package:", error);
+    // Check if user is authenticated
+    if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Failed to create party package" },
-        { status: 500 },
+        { error: "Not authorized to create party packages" },
+        { status: 401 },
       );
     }
-  });
+
+    // Validate that we have a proper user ID
+    if (!session.user.id) {
+      return NextResponse.json(
+        { error: "User session is invalid - missing user ID" },
+        { status: 401 },
+      );
+    }
+
+    // Validate that the user ID is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(session.user.id)) {
+      return NextResponse.json(
+        { error: "User session is invalid - invalid user ID format" },
+        { status: 401 },
+      );
+    }
+
+    await dbConnect();
+
+    const packageData = await request.json();
+
+    // Validate required fields
+    const requiredFields = [
+      "id",
+      "name",
+      "description",
+      "items",
+      "totalRetailPrice",
+      "packagePrice",
+      "savings",
+      "savingsPercentage",
+      "recommendedPartySize",
+      "ageRange",
+      "duration",
+      "spaceRequired",
+    ];
+
+    const missingFields = requiredFields.filter((field) => {
+      if (field === "recommendedPartySize") {
+        return (
+          !packageData.recommendedPartySize ||
+          packageData.recommendedPartySize.min === undefined ||
+          packageData.recommendedPartySize.max === undefined
+        );
+      }
+      if (field === "ageRange") {
+        return (
+          !packageData.ageRange ||
+          packageData.ageRange.min === undefined ||
+          packageData.ageRange.max === undefined
+        );
+      }
+      if (field === "items") {
+        return (
+          !packageData.items ||
+          !Array.isArray(packageData.items) ||
+          packageData.items.length === 0
+        );
+      }
+      return !packageData[field];
+    });
+
+    if (missingFields.length > 0) {
+      return NextResponse.json(
+        { error: `Missing required fields: ${missingFields.join(", ")}` },
+        { status: 400 },
+      );
+    }
+
+    // Create party package
+    const partyPackage = await PartyPackage.create(packageData);
+
+    return NextResponse.json(partyPackage, { status: 201 });
+  } catch (error) {
+    console.error("Error creating party package:", error);
+    return NextResponse.json(
+      { error: "Failed to create party package" },
+      { status: 500 },
+    );
+  }
 }

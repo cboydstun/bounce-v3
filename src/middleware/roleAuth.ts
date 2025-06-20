@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { AuthRequest } from "./auth";
+import { IUser } from "@/types/user";
 
-export type Role = "admin" | "customer";
+export type Role = IUser["role"]; // Use the role type from IUser for consistency
+
+export interface AuthRequest extends NextRequest {
+  user?: {
+    id: string;
+    email: string;
+    role: IUser["role"]; // Use the proper role type from IUser
+  };
+}
 
 /**
  * Role-based authentication middleware for Next.js API routes

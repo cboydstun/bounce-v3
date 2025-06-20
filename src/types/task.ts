@@ -113,11 +113,12 @@ export interface Task {
  * Form data interface for creating/updating tasks
  */
 export interface TaskFormData {
+  orderId: string; // Reference to the Order (required for creation)
   type: TaskType; // Type of task
   title?: string; // Optional task title
   description: string; // Task description/notes
   scheduledDateTime: Date | string; // When the task is scheduled
-  priority: TaskPriority; // Task priority level
+  priority?: TaskPriority; // Task priority level (optional, defaults to "Medium")
   status?: TaskStatus; // Optional: defaults to "Pending"
   assignedContractors?: string[]; // Optional: array of contractor IDs
   assignedTo?: string; // Optional: contractor name/company (backward compatibility)
