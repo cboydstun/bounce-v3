@@ -240,14 +240,113 @@ export async function checkKeywordRanking(
           break;
         }
 
-        // Add a small delay between API calls to be respectful
+        // Add proper rate limiting between API calls (1.5 seconds)
         if (page < maxPages - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          console.log(
+            `⏳ Rate limiting: waiting 1.5 seconds before next API call...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 1500));
         }
       } catch (error) {
         console.error(`❌ Error searching page ${page + 1}:`, error);
-        // Continue with next page if one page fails
-        continue;
+
+        // Handle rate limiting (429 errors) with exponential backoff
+        if ((error as any).response?.status === 429) {
+          const retryDelay = Math.min(5000 * Math.pow(2, page), 30000); // 5s, 10s, 20s, 30s max
+          console.log(
+            `🚫 Rate limit hit! Waiting ${retryDelay}ms before retrying...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+
+          // Retry the same page once
+          try {
+            console.log(`🔄 Retrying page ${page + 1} after rate limit...`);
+            const retryResponse = await axios.get(
+              `https://www.googleapis.com/customsearch/v1`,
+              {
+                params: {
+                  key: apiKey,
+                  cx: cx,
+                  q: keyword,
+                  num: resultsPerPage,
+                  start: startIndex,
+                },
+              },
+            );
+
+            totalApiCalls++;
+            const apiData: GoogleSearchApiResponse = retryResponse.data;
+            const items = apiData.items || [];
+
+            // Store search info from first page
+            if (page === 0) {
+              searchInfo = apiData.searchInformation || {
+                totalResults: "0",
+                searchTime: "0",
+              };
+            }
+
+            console.log(
+              `📋 Page ${page + 1} (retry): ${items.length} results returned`,
+            );
+
+            // Process results for this page
+            const pageResults: SearchResult[] = items.map(
+              (item: any, index: number) => ({
+                position: startIndex + index,
+                url: item.link,
+                title: item.title,
+                snippet: item.snippet || "",
+              }),
+            );
+
+            allResults = [...allResults, ...pageResults];
+
+            // Check if we found our domain on this page
+            for (const result of pageResults) {
+              const normalizedResultUrl = result.url
+                .toLowerCase()
+                .replace(/^https?:\/\//, "")
+                .replace(/^www\./, "");
+
+              if (
+                normalizedResultUrl === normalizedTargetDomain ||
+                normalizedResultUrl.startsWith(normalizedTargetDomain + "/") ||
+                normalizedResultUrl.startsWith(normalizedTargetDomain + ".")
+              ) {
+                ourPosition = result.position;
+                ourUrl = result.url;
+                console.log(
+                  `🎯 Found target domain at position ${ourPosition}: ${result.url}`,
+                );
+                break;
+              }
+            }
+
+            // If we found our domain, we can stop searching
+            if (ourPosition > 0) {
+              console.log(
+                `✅ Target domain found! Stopping search at page ${page + 1}`,
+              );
+              break;
+            }
+
+            // If this page returned fewer results than expected, we've reached the end
+            if (items.length < resultsPerPage) {
+              console.log(
+                `📄 Reached end of results at page ${page + 1} (${items.length} results)`,
+              );
+              break;
+            }
+          } catch (retryError) {
+            console.error(`❌ Retry failed for page ${page + 1}:`, retryError);
+            // If retry also fails, continue to next page
+            continue;
+          }
+        } else {
+          // For non-rate-limit errors, continue with next page
+          continue;
+        }
       }
     }
 

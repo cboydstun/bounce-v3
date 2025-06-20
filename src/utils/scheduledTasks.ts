@@ -40,16 +40,19 @@ export async function checkAllKeywordRankings() {
     let checkedCount = 0;
     let errorCount = 0;
 
-    // Check ranking for each keyword
-    for (const keyword of keywords) {
+    // Check ranking for each keyword sequentially with delays to prevent rate limiting
+    for (let i = 0; i < keywords.length; i++) {
+      const keyword = keywords[i];
       try {
-        console.log(`🔍 Checking ranking for keyword: "${keyword.keyword}"`);
+        console.log(
+          `🔍 Checking ranking for keyword ${i + 1}/${keywords.length}: "${keyword.keyword}"`,
+        );
 
-        // Get the ranking result using enhanced search (standard depth)
+        // Get the ranking result using enhanced search (reduced depth for bulk operations)
         const result = await checkKeywordRanking(
           keyword.keyword,
           targetDomain,
-          50,
+          30, // Reduced from 50 to 30 for bulk operations to save API calls
         );
 
         // Ensure we have a valid URL even if the site wasn't found in search results
@@ -123,12 +126,35 @@ export async function checkAllKeywordRankings() {
             );
           }
         }
+
+        // Add delay between keywords to prevent rate limiting (except for the last keyword)
+        if (i < keywords.length - 1) {
+          const delaySeconds = 3; // 3 second delay between keywords
+          console.log(
+            `⏳ Waiting ${delaySeconds} seconds before next keyword...`,
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, delaySeconds * 1000),
+          );
+        }
       } catch (error) {
         console.error(
           `❌ Error checking ranking for keyword "${keyword.keyword}":`,
           error,
         );
         errorCount++;
+
+        // Add delay even after errors to prevent rapid retries
+        if (i < keywords.length - 1) {
+          const errorDelaySeconds = 5; // Longer delay after errors
+          console.log(
+            `⏳ Error delay: waiting ${errorDelaySeconds} seconds before next keyword...`,
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, errorDelaySeconds * 1000),
+          );
+        }
+
         // Continue with the next keyword
         continue;
       }
