@@ -149,9 +149,47 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
         </div>
       </div>
 
+      {/* Enhanced Search Information */}
+      {rankings.length > 0 && rankings[0].metadata && (
+        <div className="mt-6 border-t pt-4">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">
+            Latest Search Details
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="text-gray-500">Search Depth:</span>
+              <span className="ml-2 font-medium">
+                {rankings[0].metadata.searchDepth ||
+                  rankings[0].metadata.resultCount}{" "}
+                positions
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-500">API Calls:</span>
+              <span className="ml-2 font-medium">
+                {rankings[0].metadata.apiCallsUsed || 1}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-500">Total Results:</span>
+              <span className="ml-2 font-medium">
+                {parseInt(rankings[0].metadata.totalResults).toLocaleString()}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-500">Search Time:</span>
+              <span className="ml-2 font-medium">
+                {rankings[0].metadata.searchTime}s
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 text-sm text-gray-500 text-center">
         Position refers to where your website appears in Google search results
-        (1 = top result)
+        (1 = top result). Enhanced search now checks up to 50 positions by
+        default.
       </div>
     </div>
   );

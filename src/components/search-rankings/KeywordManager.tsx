@@ -18,6 +18,7 @@ interface KeywordManagerProps {
   ) => Promise<{ success: boolean; error?: string }>;
   onCheckRanking: (
     keywordId: string,
+    searchDepth?: number,
   ) => Promise<{ success: boolean; error?: string }>;
   isCheckingRanking: boolean;
 }
@@ -83,8 +84,11 @@ export default function KeywordManager({
     }
   };
 
-  const handleCheckRanking = async (keywordId: string) => {
-    const result = await onCheckRanking(keywordId);
+  const handleCheckRanking = async (
+    keywordId: string,
+    searchDepth?: number,
+  ) => {
+    const result = await onCheckRanking(keywordId, searchDepth);
 
     if (!result.success) {
       alert(result.error || "Failed to check ranking");
@@ -221,23 +225,69 @@ export default function KeywordManager({
         )}
       </div>
 
-      {/* Check ranking button */}
+      {/* Check ranking section */}
       {selectedKeywordId && (
         <div className="p-4 border-t">
-          <button
-            onClick={() => handleCheckRanking(selectedKeywordId)}
-            disabled={isCheckingRanking}
-            className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
-          >
-            {isCheckingRanking ? (
-              <>
-                <LoadingSpinner className="w-4 h-4 mr-2 text-white" />
-                Checking...
-              </>
-            ) : (
-              "Check Ranking Now"
-            )}
-          </button>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Search Depth
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => handleCheckRanking(selectedKeywordId, 10)}
+                  disabled={isCheckingRanking}
+                  className="px-3 py-2 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+                >
+                  Quick
+                  <div className="text-xs text-gray-500">Top 10</div>
+                </button>
+                <button
+                  onClick={() => handleCheckRanking(selectedKeywordId, 50)}
+                  disabled={isCheckingRanking}
+                  className="px-3 py-2 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+                >
+                  Standard
+                  <div className="text-xs text-gray-500">Top 50</div>
+                </button>
+                <button
+                  onClick={() => handleCheckRanking(selectedKeywordId, 100)}
+                  disabled={isCheckingRanking}
+                  className="px-3 py-2 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+                >
+                  Deep
+                  <div className="text-xs text-gray-500">Top 100</div>
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => handleCheckRanking(selectedKeywordId)}
+              disabled={isCheckingRanking}
+              className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
+            >
+              {isCheckingRanking ? (
+                <>
+                  <LoadingSpinner className="w-4 h-4 mr-2 text-white" />
+                  Searching...
+                </>
+              ) : (
+                "Check Ranking (Default: 50)"
+              )}
+            </button>
+          </div>
+
+          <div className="mt-3 text-xs text-gray-500">
+            <p>
+              <strong>Quick:</strong> 1 API call, fastest
+            </p>
+            <p>
+              <strong>Standard:</strong> Up to 5 API calls, balanced
+            </p>
+            <p>
+              <strong>Deep:</strong> Up to 10 API calls, most thorough
+            </p>
+          </div>
         </div>
       )}
     </div>

@@ -33,6 +33,16 @@ export interface SearchRanking {
   position: number;
   url: string;
   competitors: Competitor[];
+  metadata?: {
+    totalResults: string;
+    searchTime: string;
+    resultCount: number;
+    isValidationPassed: boolean;
+    validationWarnings: string[];
+    apiCallsUsed?: number;
+    searchDepth?: number;
+    maxPositionSearched?: number;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,4 +67,36 @@ export interface RankingChangeNotification {
   change: number;
   date: Date;
   url: string;
+}
+
+// CSE Validation interfaces
+export interface CseValidationResult {
+  isHealthy: boolean;
+  issues: string[];
+  recommendations: string[];
+  testResults: Array<{
+    keyword: string;
+    position: number;
+    warnings: string[];
+  }>;
+}
+
+export interface ValidationGuidance {
+  checklistItems: Array<{
+    id: string;
+    title: string;
+    description: string;
+    priority: "high" | "medium" | "low";
+  }>;
+  commonIssues: Array<{
+    issue: string;
+    cause: string;
+    solution: string;
+  }>;
+  cseConfigurationSteps: string[];
+}
+
+export interface RankingValidationStatus {
+  isValid: boolean;
+  warnings: string[];
 }

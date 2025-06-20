@@ -3,6 +3,7 @@ import { checkKeywordRanking } from "./googleSearchApi";
 import dbConnect from "@/lib/db/mongoose";
 import { sendRankingChangeNotification } from "./emailService";
 import { RankingChangeNotification } from "@/types/searchRanking";
+import { getCurrentDateCT } from "./dateUtils";
 
 /**
  * Checks rankings for all active keywords and stores the results
@@ -10,6 +11,9 @@ import { RankingChangeNotification } from "@/types/searchRanking";
  */
 export async function checkAllKeywordRankings() {
   try {
+    console.log(
+      `🤖 Starting automated ranking check at ${getCurrentDateCT().toISOString()}`,
+    );
     await dbConnect();
 
     const targetDomain = process.env.TARGET_DOMAIN;
@@ -20,19 +24,33 @@ export async function checkAllKeywordRankings() {
 
     // Get all active keywords
     const keywords = await SearchKeyword.findActiveKeywords();
+    console.log(`📋 Found ${keywords.length} active keywords to check`);
 
     if (keywords.length === 0) {
-      console.log("No active keywords to check");
-      return;
+      console.log("⚠️ No active keywords to check");
+      return {
+        success: true,
+        message: "No active keywords to check",
+        checkedCount: 0,
+        notificationsSent: 0,
+      };
     }
 
     const significantChanges: RankingChangeNotification[] = [];
+    let checkedCount = 0;
+    let errorCount = 0;
 
     // Check ranking for each keyword
     for (const keyword of keywords) {
       try {
-        // Get the ranking result
-        const result = await checkKeywordRanking(keyword.keyword, targetDomain);
+        console.log(`🔍 Checking ranking for keyword: "${keyword.keyword}"`);
+
+        // Get the ranking result using enhanced search (standard depth)
+        const result = await checkKeywordRanking(
+          keyword.keyword,
+          targetDomain,
+          50,
+        );
 
         // Ensure we have a valid URL even if the site wasn't found in search results
         let rankingUrl = result.url;
@@ -43,64 +61,109 @@ export async function checkAllKeywordRankings() {
             : `https://${targetDomain}`;
         }
 
-        // Save the ranking result
-        await SearchRanking.create({
+        console.log(
+          `📊 Result for "${keyword.keyword}": Position ${result.position}, ${result.metadata.apiCallsUsed} API calls`,
+        );
+
+        // Save the ranking result with enhanced metadata
+        const newRanking = await SearchRanking.create({
           keywordId: keyword._id,
           keyword: keyword.keyword,
           date: new Date(),
           position: result.position,
           url: rankingUrl,
           competitors: result.competitors,
+          // Store enhanced metadata for future analysis
+          metadata: {
+            totalResults: result.metadata.totalResults,
+            searchTime: result.metadata.searchTime,
+            resultCount: result.metadata.resultCount,
+            isValidationPassed: result.metadata.isValidationPassed,
+            validationWarnings: result.metadata.validationWarnings,
+            apiCallsUsed: result.metadata.apiCallsUsed,
+            searchDepth: result.metadata.searchDepth,
+            maxPositionSearched: result.metadata.maxPositionSearched,
+          },
         });
+
+        console.log(`💾 Saved ranking with ID: ${newRanking._id}`);
+        checkedCount++;
 
         // Get previous ranking for comparison
         const previousRankings = await SearchRanking.find({
           keywordId: keyword._id,
+          _id: { $ne: newRanking._id }, // Exclude the current ranking
         })
           .sort({ date: -1 })
-          .limit(2);
+          .limit(1);
 
-        // If we have at least 2 rankings (current and previous)
-        if (previousRankings.length >= 2) {
-          const currentRanking = previousRankings[0];
-          const previousRanking = previousRankings[1];
+        // If we have a previous ranking for comparison
+        if (previousRankings.length > 0) {
+          const previousRanking = previousRankings[0];
 
-          // Calculate position change
-          const positionChange =
-            previousRanking.position - currentRanking.position;
+          // Calculate position change (positive = improved, negative = worsened)
+          const positionChange = previousRanking.position - result.position;
 
-          // Check if the change is significant (5 or more positions)
-          if (Math.abs(positionChange) >= 5) {
+          console.log(
+            `📈 Position change for "${keyword.keyword}": ${previousRanking.position} → ${result.position} (${positionChange > 0 ? "+" : ""}${positionChange})`,
+          );
+
+          // Check if the change is significant (3 or more positions)
+          if (Math.abs(positionChange) >= 3) {
             significantChanges.push({
               keyword: keyword.keyword,
               previousPosition: previousRanking.position,
-              currentPosition: currentRanking.position,
+              currentPosition: result.position,
               change: positionChange,
-              date: currentRanking.date,
-              url: currentRanking.url,
+              date: newRanking.date,
+              url: newRanking.url,
             });
+            console.log(
+              `🚨 Significant change detected for "${keyword.keyword}"`,
+            );
           }
         }
       } catch (error) {
         console.error(
-          `Error checking ranking for keyword "${keyword.keyword}":`,
+          `❌ Error checking ranking for keyword "${keyword.keyword}":`,
           error,
         );
+        errorCount++;
         // Continue with the next keyword
         continue;
       }
     }
 
     // Send notification if there are significant changes
+    let notificationsSent = 0;
     if (significantChanges.length > 0) {
-      await sendRankingChangeNotification(significantChanges);
+      try {
+        await sendRankingChangeNotification(significantChanges);
+        notificationsSent = 1;
+        console.log(
+          `📧 Sent notification for ${significantChanges.length} significant changes`,
+        );
+      } catch (emailError) {
+        console.error(
+          "❌ Error sending ranking change notification:",
+          emailError,
+        );
+      }
     }
 
-    console.log(
-      `Successfully checked rankings for ${keywords.length} keywords`,
-    );
+    const summary = {
+      success: true,
+      message: `Successfully checked rankings for ${checkedCount} keywords`,
+      checkedCount,
+      errorCount,
+      notificationsSent,
+      significantChanges: significantChanges.length,
+    };
+
+    console.log(`✅ Automated ranking check completed:`, summary);
+    return summary;
   } catch (error) {
-    console.error("Error in checkAllKeywordRankings:", error);
+    console.error("❌ Error in checkAllKeywordRankings:", error);
     throw error;
   }
 }

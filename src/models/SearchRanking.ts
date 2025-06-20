@@ -29,6 +29,16 @@ export interface ISearchRankingDocument extends Document {
     url: string;
     snippet?: string;
   }>;
+  metadata?: {
+    totalResults: string;
+    searchTime: string;
+    resultCount: number;
+    isValidationPassed: boolean;
+    validationWarnings: string[];
+    apiCallsUsed?: number;
+    searchDepth?: number;
+    maxPositionSearched?: number;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -72,6 +82,16 @@ const SearchRankingSchema = new Schema<
       required: true,
     },
     competitors: [CompetitorSchema],
+    metadata: {
+      totalResults: String,
+      searchTime: String,
+      resultCount: Number,
+      isValidationPassed: Boolean,
+      validationWarnings: [String],
+      apiCallsUsed: Number,
+      searchDepth: Number,
+      maxPositionSearched: Number,
+    },
   },
   { timestamps: true },
 );
