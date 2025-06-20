@@ -26,23 +26,33 @@ const LoginForm = () => {
       setError(`You need to be logged in to access ${from}`);
     }
 
-    // If already authenticated, redirect
-    if (status === "authenticated") {
+    // If already authenticated, redirect immediately
+    if (status === "authenticated" && session?.user) {
       // Prioritize returnUrl over from if both are present
-      router.push(returnUrl || from || "/admin");
+      const redirectTo = returnUrl || from || "/admin";
+
+      // Use replace instead of push to prevent back button issues
+      router.replace(redirectTo);
+      return;
     }
 
-    // Debug session on mount
-    const checkSession = async () => {
-      try {
-        const sessionData = await getSession();
-      } catch (err) {
-        console.error("Error fetching session:", err);
-        setError("Failed to fetch session data");
-      }
-    };
+    // Debug session on mount only if not authenticated
+    if (status === "unauthenticated") {
+      const checkSession = async () => {
+        try {
+          const sessionData = await getSession();
+          console.log(
+            "Session check result:",
+            sessionData ? "Found session" : "No session",
+          );
+        } catch (err) {
+          console.error("Error fetching session:", err);
+          setError("Failed to fetch session data");
+        }
+      };
 
-    checkSession();
+      checkSession();
+    }
   }, [searchParams, router, status, session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,7 +109,8 @@ const LoginForm = () => {
         const returnUrl = searchParams.get("returnUrl");
 
         // Prioritize returnUrl over from if both are present
-        router.push(returnUrl || from || "/admin");
+        // Use replace to prevent back button issues
+        router.replace(returnUrl || from || "/admin");
       }
     } catch (err) {
       console.error("Login error:", err);

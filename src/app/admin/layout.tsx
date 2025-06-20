@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Sidebar from "@/components/ui/Sidebar";
 
@@ -10,26 +9,15 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-  const { logout, loading, isAdmin, user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
+  const { logout, loading, user } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  useEffect(() => {
-    // The loading state is managed by the useAuth hook
-    setIsLoading(false);
-
-    // Redirect non-admin users
-    if (!loading && !isAdmin) {
-      router.push("/login?message=Admin access required");
-    }
-  }, [loading, isAdmin, router]);
 
   const handleLogout = () => {
     logout();
   };
 
-  if (isLoading || loading) {
+  // Show loading state while auth is initializing
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-xl font-semibold">Loading...</div>
@@ -37,17 +25,8 @@ export default function AdminLayout({
     );
   }
 
-  // Don't render admin content for non-admin users
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-xl font-semibold text-red-600">
-          Unauthorized - Admin role required
-        </div>
-      </div>
-    );
-  }
-
+  // Note: Authentication and authorization is handled by middleware
+  // This layout assumes the user is already authenticated and authorized
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Sidebar with logout and role indicator */}

@@ -51,7 +51,7 @@ api.interceptors.request.use(
         const session = await getSession();
         if (session?.user) {
           // Set the Authorization header with the session token
-          // This is what the withAuth middleware expects
+          // This is used by the NextAuth.js middleware for authentication
           config.headers.Authorization = `Bearer ${session.user.id}`;
 
           // Also set the user role in a custom header for debugging
