@@ -82,19 +82,20 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 
 ### Technical Features
 
-- **Authentication & Authorization**: Secure JWT-based authentication with comprehensive role-based access control:
+- **Authentication & Authorization**: Unified NextAuth.js-based authentication with comprehensive role-based access control:
 
-  - Token storage in both localStorage and cookies for robust auth persistence
-  - "Remember Me" functionality with configurable token expiration
-  - Protected routes with middleware-based access control
-  - Secure password hashing with bcrypt
-  - Rate limiting for login attempts
-  - NextAuth.js integration with simplified configuration for production stability
-  - Role-based access control (RBAC) at multiple levels:
-    - Database level: User model with role validation
-    - API level: Role-based middleware for route protection
-    - UI level: Conditional rendering based on user role
-    - Application level: Route protection in Next.js middleware
+  - **NextAuth.js Integration**: Exclusive use of NextAuth.js 4.24.11 for all web authentication
+  - **JWT Strategy**: Secure JWT-based session management with configurable token expiration
+  - **Session Validation**: Consistent user ID validation across all API routes
+  - **Secure Password Hashing**: bcryptjs integration with pre-save hooks
+  - **Rate Limiting**: Built-in protection against brute force attacks
+  - **Role-based Access Control (RBAC)** at multiple levels:
+    - **Database Level**: User model with enum role validation (`admin`, `customer`, `user`)
+    - **API Level**: Role-based middleware (`withRoleAuth`, `withAdminAuth`, `withUserAuth`)
+    - **UI Level**: Conditional rendering based on user role with type safety
+    - **Application Level**: Route protection in Next.js middleware
+  - **Type Safety**: Consistent role types derived from User model across the application
+  - **Error Handling**: Standardized 401/403 responses with descriptive error messages
 
 - **Route Optimization**: Delivery route planning with OpenRouteService integration
 - **Mobile Authentication**: Dedicated mobile API endpoints with device-specific authentication
@@ -575,7 +576,7 @@ const ProductSchema = new Schema<IProductDocument, IProductModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -709,7 +710,7 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -757,7 +758,7 @@ export interface IContactModel extends Model<IContactDocument> {
   findByPartyDate(date: string): Promise<IContactDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string,
+    endDate: string
   ): Promise<IContactDocument[]>;
 }
 ```
@@ -889,7 +890,7 @@ const PromoOptinSchema = new Schema<IPromoOptinDocument, IPromoOptinModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -1082,7 +1083,7 @@ const OrderItemSchema = new Schema(
       min: 0,
     },
   },
-  { _id: false },
+  { _id: false }
 );
 
 // PayPal transaction schema
@@ -1123,7 +1124,7 @@ const PayPalTransactionSchema = new Schema(
     },
     updatedAt: Date,
   },
-  { _id: false },
+  { _id: false }
 );
 
 // Main Order schema
@@ -1283,7 +1284,7 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
@@ -1354,7 +1355,7 @@ export interface IOrderModel extends Model<IOrderDocument> {
   findByStatus(status: OrderStatus): Promise<IOrderDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string,
+    endDate: string
   ): Promise<IOrderDocument[]>;
   generateOrderNumber(): Promise<string>;
 }
@@ -1438,7 +1439,7 @@ export interface IPromoOptinModel extends Model<IPromoOptinDocument> {
   findByPromoName(promoName: string): Promise<IPromoOptinDocument[]>;
   findByDateRange(
     startDate: string,
-    endDate: string,
+    endDate: string
   ): Promise<IPromoOptinDocument[]>;
 }
 ```
@@ -1583,7 +1584,7 @@ const handleGetCoupon = () => {
 
   // Navigate to the coupon form
   router.push(
-    `/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`,
+    `/coupon-form?promo=${encodeURIComponent(currentPromo?.name || "")}`
   );
 };
 ```
@@ -1747,7 +1748,7 @@ const ReviewSchema = new Schema<IReviewDocument, IReviewModel>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 ```
 
