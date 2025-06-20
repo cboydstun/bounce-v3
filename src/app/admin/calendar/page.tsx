@@ -60,7 +60,7 @@ export default function CalendarPage() {
   // Set default date range to current month on component mount
   useEffect(() => {
     setThisMonth();
-  });
+  }, []);
 
   useEffect(() => {
     const fetchContacts = async () => {

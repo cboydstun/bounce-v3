@@ -34,6 +34,22 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Validate that we have a proper user ID
+    if (!session.user.id) {
+      return NextResponse.json(
+        { error: "User session is invalid - missing user ID" },
+        { status: 401 },
+      );
+    }
+
+    // Validate that the user ID is a valid ObjectId
+    if (!session.user.id || typeof session.user.id !== "string") {
+      return NextResponse.json(
+        { error: "User session is invalid - invalid user ID format" },
+        { status: 401 },
+      );
+    }
+
     await dbConnect();
     const data = await request.json();
 
