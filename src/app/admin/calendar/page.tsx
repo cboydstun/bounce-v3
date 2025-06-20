@@ -5,7 +5,6 @@ import { getContacts } from "@/utils/api";
 import ContactCalendar from "@/components/ContactCalendar";
 import { Contact } from "@/types/contact";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { set } from "mongoose";
 
 export default function CalendarPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);

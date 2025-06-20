@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withRoleAuth, withAdminAuth, withUserAuth } from "../roleAuth";
+import {
+  withRoleAuth,
+  withAdminAuth,
+  withUserAuth,
+  AuthRequest,
+} from "../roleAuth";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
-import { AuthRequest } from "../auth";
 
 // Mock dependencies
 jest.mock("next/server", () => ({
