@@ -161,6 +161,7 @@ export async function POST(request: NextRequest) {
         to: [
           process.env.OTHER_EMAIL as string,
           process.env.SECOND_EMAIL as string,
+          process.env.ADMIN_EMAIL as string,
         ],
         subject: `New Bounce Contact ${contactData.bouncer.toUpperCase()}`,
         text: `
@@ -204,11 +205,29 @@ export async function POST(request: NextRequest) {
                     Phone: ${contactData.phone || "Not provided"}
                 `.trim();
 
-        await client.messages.create({
-          body: smsBody,
-          from: process.env.TWILIO_PHONE_NUMBER,
-          to: process.env.USER_PHONE_NUMBER || "",
-        });
+        // Create array of recipient phone numbers
+        const recipients = [
+          process.env.USER_PHONE_NUMBER,
+          process.env.ADMIN_PHONE_NUMBER,
+        ].filter(Boolean); // Remove any undefined/null values
+
+        // Send SMS to each recipient
+        for (const phoneNumber of recipients) {
+          try {
+            await client.messages.create({
+              body: smsBody,
+              from: process.env.TWILIO_PHONE_NUMBER,
+              to: phoneNumber as string,
+            });
+            console.log(`SMS sent successfully to ${phoneNumber}`);
+          } catch (individualSmsError) {
+            console.error(
+              `Error sending SMS to ${phoneNumber}:`,
+              individualSmsError,
+            );
+            // Continue to next recipient even if this one fails
+          }
+        }
       }
     } catch (smsError) {
       console.error("Error sending SMS notification:", smsError);
