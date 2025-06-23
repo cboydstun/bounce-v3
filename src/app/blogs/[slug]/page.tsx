@@ -148,7 +148,7 @@ export default async function BlogDetail({ params }: { params: Params }) {
               ))}
             </div>
             <h1 className="text-4xl font-bold text-primary-purple mb-4">
-              {blog.title || "Blog Post"}
+              {blog.title || "Blog Post"} | SATX Bounce Blog
             </h1>
             <div className="flex items-center justify-between text-sm text-gray-500">
               <div className="flex items-center gap-4">

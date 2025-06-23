@@ -182,7 +182,7 @@ function CouponFormContent() {
     <div className="container mx-auto px-4 py-12">
       <div className="w-full max-w-[800px] mx-auto bg-white/90 backdrop-blur-sm rounded-2xl border-2 border-secondary-blue/20 shadow-lg p-8 space-y-6">
         <h1 className="text-3xl font-bold text-primary-purple mb-6 text-center">
-          See Our Party Package Deals
+          Exclusive Special Offers & Coupons
         </h1>
 
         {submitStatus === "error" && (

@@ -10,6 +10,7 @@ import {
   Phone,
 } from "lucide-react";
 import type { Metadata } from "next";
+import PopularProducts from "../../components/PopularProducts";
 
 export const metadata: Metadata = {
   title: "About SATX Bounce - San Antonio's Premier Party Rental Company",
@@ -222,6 +223,15 @@ export default function AboutPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Popular Products Section */}
+          <div className="mb-16">
+            <PopularProducts
+              maxProducts={6}
+              title="Our Most Popular Rentals"
+              showViewAll={true}
+            />
           </div>
 
           {/* CTA Section */}

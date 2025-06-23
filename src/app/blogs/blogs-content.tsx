@@ -159,10 +159,10 @@ export function BlogsContent() {
       <div className="container mx-auto px-4">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4 text-white">
-            Our{" "}
             <span className="bg-gradient-to-r from-blue-400 to-purple-600 text-transparent bg-clip-text">
               Blog Posts
-            </span>
+            </span>{" "}
+            | SATX Bounce House Rentals
           </h1>
           <p className="text-white text-lg">
             Stay updated with our latest news and insights

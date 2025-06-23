@@ -5,6 +5,8 @@ import { getProductBySlug } from "../../../utils/api";
 import ContactForm from "../../../components/ContactForm";
 import ProductAvailabilitySection from "./ProductAvailabilitySection";
 import ImageGallery from "./ImageGallery";
+import RelatedProducts from "../../../components/RelatedProducts";
+import Breadcrumb from "../../../components/Breadcrumb";
 
 async function getProduct(slug: string): Promise<ProductWithId> {
   try {
@@ -66,6 +68,14 @@ export default async function ProductDetail({ params }: { params: Params }) {
     <>
       <div className="w-full bg-secondary-blue/5 py-12">
         <div className="container mx-auto px-4">
+          {/* Breadcrumb Navigation */}
+          <Breadcrumb
+            items={[
+              { label: "Products", href: "/products" },
+              { label: product.name },
+            ]}
+          />
+
           {/* Product Details Section */}
           <div className="bg-white rounded-xl shadow-lg p-8 mb-12">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -142,6 +152,11 @@ export default async function ProductDetail({ params }: { params: Params }) {
               productSlug={product.slug}
               productName={product.name}
             />
+          </div>
+
+          {/* Related Products Section */}
+          <div className="mb-12">
+            <RelatedProducts currentProduct={product} />
           </div>
 
           {/* Contact Form Section */}

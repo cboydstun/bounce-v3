@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Plus, Minus } from "lucide-react";
 import { useState } from "react";
 import { faqs } from "@/app/faq/data";
+import PopularProducts from "./PopularProducts";
 
 const FaqContent = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -57,6 +58,15 @@ const FaqContent = () => {
                   )}
                 </div>
               ))}
+            </div>
+
+            {/* Popular Products Section */}
+            <div className="mt-12">
+              <PopularProducts
+                maxProducts={4}
+                title="Browse Our Equipment"
+                showViewAll={true}
+              />
             </div>
 
             <div className="bg-secondary-blue/5 p-6 rounded-lg mt-12">

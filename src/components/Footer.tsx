@@ -16,7 +16,7 @@ const Footer = () => {
   return (
     <footer className="bg-white border-t border-gray-100">
       <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-12">
           {/* Brand Section */}
           <div className="space-y-6">
             <Link
@@ -103,6 +103,45 @@ const Footer = () => {
                 </div>
                 San Antonio, TX
               </li>
+            </ul>
+          </div>
+
+          {/* Featured Products */}
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-primary-purple">
+              Featured Rentals
+            </h2>
+            <ul className="space-y-4">
+              {[
+                {
+                  href: "/products/sunburst-tropical-waterslide",
+                  label: "Sunburst Waterslide",
+                },
+                {
+                  href: "/products/tropical-waterslide",
+                  label: "Tropical Waterslide",
+                },
+                {
+                  href: "/products/blue-double-lane-waterslide",
+                  label: "Blue Double Lane Waterslide",
+                },
+                { href: "/products/popcorn-machine", label: "Popcorn Machine" },
+                {
+                  href: "/products/cotton-candy-machine",
+                  label: "Cotton Candy",
+                },
+                { href: "/products/tables-chairs", label: "Tables & Chairs" },
+              ].map((product) => (
+                <li key={product.href}>
+                  <Link
+                    href={product.href}
+                    className="text-gray-600 hover:text-primary-blue transition-colors duration-300 flex items-center gap-2 group"
+                  >
+                    <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" />
+                    {product.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

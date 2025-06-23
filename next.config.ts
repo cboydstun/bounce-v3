@@ -5,31 +5,31 @@ const nextConfig = {
     return [
       // Redirect non-www to www (permanent redirect for SEO)
       {
-        source: '/:path*',
+        source: "/:path*",
         has: [
           {
-            type: 'host',
-            value: 'satxbounce.com',
+            type: "host",
+            value: "satxbounce.com",
           },
         ],
-        destination: 'https://www.satxbounce.com/:path*',
+        destination: "https://www.satxbounce.com/:path*",
         permanent: true,
       },
       // Redirect HTTP to HTTPS for www domain
       {
-        source: '/:path*',
+        source: "/:path*",
         has: [
           {
-            type: 'header',
-            key: 'x-forwarded-proto',
-            value: 'http',
+            type: "header",
+            key: "x-forwarded-proto",
+            value: "http",
           },
           {
-            type: 'host',
-            value: 'www.satxbounce.com',
+            type: "host",
+            value: "www.satxbounce.com",
           },
         ],
-        destination: 'https://www.satxbounce.com/:path*',
+        destination: "https://www.satxbounce.com/:path*",
         permanent: true,
       },
     ];

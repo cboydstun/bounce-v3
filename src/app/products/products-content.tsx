@@ -95,7 +95,9 @@ export function ProductsContent() {
         {/* Header Section */}
         <div className="flex flex-col gap-6 mb-12">
           <div className="flex flex-wrap justify-between items-center gap-4">
-            <h1 className="text-3xl font-bold text-white">Our Products</h1>
+            <h1 className="text-3xl font-bold text-white">
+              Browse San Antonio Bounce House Rentals
+            </h1>
           </div>
           <ProductFilters
             products={initialProducts}
