@@ -1,5 +1,39 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Redirect configuration for canonical URLs
+  async redirects() {
+    return [
+      // Redirect non-www to www (permanent redirect for SEO)
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'satxbounce.com',
+          },
+        ],
+        destination: 'https://www.satxbounce.com/:path*',
+        permanent: true,
+      },
+      // Redirect HTTP to HTTPS for www domain
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'header',
+            key: 'x-forwarded-proto',
+            value: 'http',
+          },
+          {
+            type: 'host',
+            value: 'www.satxbounce.com',
+          },
+        ],
+        destination: 'https://www.satxbounce.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
   images: {
     domains: [
       "media.giphy.com",
