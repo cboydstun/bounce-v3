@@ -18,7 +18,14 @@ interface SitemapUrl {
 }
 
 // Pages that should be excluded from the sitemap
-const EXCLUDED_ROUTES = ["/debug-auth", "/paypal-test", "/login", "/admin"];
+const EXCLUDED_ROUTES = [
+  "/debug-auth",
+  "/paypal-test",
+  "/login",
+  "/admin",
+  "/contact-form-success",
+  "/party-packages",
+];
 
 // Format date to ISO 8601 (YYYY-MM-DD) format
 function formatDate(
