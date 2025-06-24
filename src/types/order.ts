@@ -139,6 +139,11 @@ export interface Order {
   deliveryDate?: Date; // Scheduled delivery date
   eventDate?: Date; // Event date
 
+  // Kudos email tracking fields
+  kudosEmailSent: boolean; // Whether kudos email has been sent
+  kudosEmailSentAt?: Date; // When kudos email was sent
+  kudosEmailContent?: string; // Content of the sent kudos email
+
   createdAt: Date; // Order creation date
   updatedAt: Date; // Order last update date
 }

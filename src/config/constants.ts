@@ -6,4 +6,16 @@ export const API_ROUTES = {
   USERS: "/api/v1/users",
   CONTACTS: "/api/v1/contacts",
   REVIEWS: "/api/v1/reviews",
+  KUDOS: "/api/v1/admin/kudos",
+} as const;
+
+// Google Review Configuration
+export const GOOGLE_REVIEW_LINK =
+  "https://g.page/r/CYourGoogleBusinessID/review";
+
+// Business Information
+export const BUSINESS_INFO = {
+  name: "SATX Bounce LLC",
+  email: process.env.EMAIL || "satxbounce@gmail.com",
+  phone: process.env.USER_PHONE_NUMBER || "(512) 210-0194",
 } as const;

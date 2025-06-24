@@ -314,6 +314,20 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
       type: Date,
       index: true,
     },
+
+    // Kudos email tracking fields
+    kudosEmailSent: {
+      type: Boolean,
+      default: false,
+      required: true,
+    },
+    kudosEmailSentAt: {
+      type: Date,
+    },
+    kudosEmailContent: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,
