@@ -307,14 +307,16 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
     if (!step) return "";
 
     switch (step) {
-      case "delivery":
-        return "Rental Selection";
+      case "selection":
+        return "Choose Bounce House";
+      case "datetime":
+        return "Date & Time";
       case "details":
-        return "Delivery Information";
+        return "Your Info";
       case "extras":
         return "Add Extras";
       case "review":
-        return "Order Review";
+        return "Review Order";
       case "payment":
         return "Payment";
       default:

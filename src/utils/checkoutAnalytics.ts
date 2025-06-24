@@ -100,7 +100,8 @@ export function getCheckoutFunnelData(visitors: IVisitor[]) {
   // Count interactions by type and step
   const stepCounts = {
     booking_started: 0,
-    delivery: { view: 0, complete: 0 },
+    selection: { view: 0, complete: 0 },
+    datetime: { view: 0, complete: 0 },
     details: { view: 0, complete: 0 },
     extras: { view: 0, complete: 0 },
     review: { view: 0, complete: 0 },
@@ -149,10 +150,12 @@ export function getCheckoutFunnelData(visitors: IVisitor[]) {
   return {
     labels: [
       "Booking Started",
-      "Delivery View",
-      "Delivery Complete",
-      "Details View",
-      "Details Complete",
+      "Selection View",
+      "Selection Complete",
+      "Date & Time View",
+      "Date & Time Complete",
+      "Your Info View",
+      "Your Info Complete",
       "Extras View",
       "Extras Complete",
       "Review View",
@@ -166,8 +169,10 @@ export function getCheckoutFunnelData(visitors: IVisitor[]) {
         label: "Checkout Funnel",
         data: [
           stepCounts.booking_started,
-          stepCounts.delivery.view,
-          stepCounts.delivery.complete,
+          stepCounts.selection.view,
+          stepCounts.selection.complete,
+          stepCounts.datetime.view,
+          stepCounts.datetime.complete,
           stepCounts.details.view,
           stepCounts.details.complete,
           stepCounts.extras.view,
@@ -218,7 +223,8 @@ export function getCheckoutFunnelData(visitors: IVisitor[]) {
 export function getStepAbandonmentData(visitors: IVisitor[]) {
   // Count views, errors, and abandonments by step
   const stepData = {
-    delivery: { views: 0, errors: 0, abandonments: 0 },
+    selection: { views: 0, errors: 0, abandonments: 0 },
+    datetime: { views: 0, errors: 0, abandonments: 0 },
     details: { views: 0, errors: 0, abandonments: 0 },
     extras: { views: 0, errors: 0, abandonments: 0 },
     review: { views: 0, errors: 0, abandonments: 0 },
@@ -255,10 +261,26 @@ export function getStepAbandonmentData(visitors: IVisitor[]) {
 
   // Prepare chart data
   return {
-    labels: abandonmentRates.map(
-      (item) =>
-        item.step.charAt(0).toUpperCase() + item.step.slice(1) + " Step",
-    ),
+    labels: abandonmentRates.map((item) => {
+      switch (item.step) {
+        case "selection":
+          return "Choose Bounce House";
+        case "datetime":
+          return "Date & Time";
+        case "details":
+          return "Your Info";
+        case "extras":
+          return "Add Extras";
+        case "review":
+          return "Review Order";
+        case "payment":
+          return "Payment";
+        default:
+          return (
+            item.step.charAt(0).toUpperCase() + item.step.slice(1) + " Step"
+          );
+      }
+    }),
     datasets: [
       {
         label: "Abandonment Rate (%)",

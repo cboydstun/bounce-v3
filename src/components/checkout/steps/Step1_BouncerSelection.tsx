@@ -5,6 +5,7 @@ import { getProducts } from "@/utils/api";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { CheckoutState } from "../utils/types";
 import ProductCard from "../ProductCard";
+import { useFormFieldTracking } from "@/hooks/useFormFieldTracking";
 
 interface Specification {
   name: string;
@@ -38,6 +39,10 @@ const Step1_BouncerSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
   const [sortBy, setSortBy] = useState<"price-low" | "price-high" | "name">(
     "price-low",
   );
+
+  // Use form field tracking hook
+  const { trackFieldFocus, trackFieldBlur, trackFieldChange } =
+    useFormFieldTracking();
 
   // Helper function to determine if a product is available
   const isProductAvailable = (bouncer: Bouncer) => {
@@ -143,17 +148,42 @@ const Step1_BouncerSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
     );
 
     if (isAlreadySelected) {
+      // Track deselection
+      trackFieldChange("bouncerDeselection", {
+        bouncerId: selectedBouncer._id,
+        bouncerName: selectedBouncer.name,
+        price: selectedBouncer.extractedPrice || 0,
+        currentSelectionCount: state.selectedBouncers.length,
+      });
+
       // Always allow deselection
       dispatch({ type: "REMOVE_BOUNCER", payload: bouncerId });
     } else {
       // Only prevent addition if we're at the limit
       if (state.selectedBouncers.length >= 3) {
+        // Track limit reached event
+        trackFieldChange("bouncerSelectionLimitReached", {
+          attemptedBouncerId: selectedBouncer._id,
+          attemptedBouncerName: selectedBouncer.name,
+          currentSelectionCount: state.selectedBouncers.length,
+        });
+
         // Show user feedback instead of silent failure
         alert(
           "You can select up to 3 bounce houses maximum. Please deselect one first if you want to choose a different one.",
         );
         return;
       }
+
+      // Track selection
+      trackFieldChange("bouncerSelection", {
+        bouncerId: selectedBouncer._id,
+        bouncerName: selectedBouncer.name,
+        price: selectedBouncer.extractedPrice || 0,
+        type: getBouncerType(selectedBouncer),
+        currentSelectionCount: state.selectedBouncers.length,
+        newSelectionCount: state.selectedBouncers.length + 1,
+      });
 
       // Add the bouncer to the order
       dispatch({
@@ -245,7 +275,10 @@ const Step1_BouncerSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               <label className="text-sm font-medium text-gray-700">Type:</label>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setTypeFilter("ALL")}
+                  onClick={() => {
+                    setTypeFilter("ALL");
+                    trackFieldChange("typeFilter", "ALL");
+                  }}
                   className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                     typeFilter === "ALL"
                       ? "bg-primary-purple text-white"
@@ -255,7 +288,10 @@ const Step1_BouncerSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                   All
                 </button>
                 <button
-                  onClick={() => setTypeFilter("WET")}
+                  onClick={() => {
+                    setTypeFilter("WET");
+                    trackFieldChange("typeFilter", "WET");
+                  }}
                   className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                     typeFilter === "WET"
                       ? "bg-blue-500 text-white"
@@ -265,7 +301,10 @@ const Step1_BouncerSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
                   💦 Wet
                 </button>
                 <button
-                  onClick={() => setTypeFilter("DRY")}
+                  onClick={() => {
+                    setTypeFilter("DRY");
+                    trackFieldChange("typeFilter", "DRY");
+                  }}
                   className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                     typeFilter === "DRY"
                       ? "bg-orange-500 text-white"
@@ -284,11 +323,16 @@ const Step1_BouncerSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
               </label>
               <select
                 value={sortBy}
-                onChange={(e) =>
-                  setSortBy(
-                    e.target.value as "price-low" | "price-high" | "name",
-                  )
-                }
+                onChange={(e) => {
+                  const newSortBy = e.target.value as
+                    | "price-low"
+                    | "price-high"
+                    | "name";
+                  setSortBy(newSortBy);
+                  trackFieldChange("sortBy", newSortBy);
+                }}
+                onFocus={() => trackFieldFocus("sortBy")}
+                onBlur={() => trackFieldBlur("sortBy", sortBy)}
                 className="px-3 py-1 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-purple"
               >
                 <option value="price-low">Price: Low to High</option>
