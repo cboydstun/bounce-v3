@@ -99,14 +99,18 @@ Please provide both a subject line and the email content. Format your response a
     try {
       // Clean the response - remove any markdown code blocks if present
       let cleanResponse = claudeResponse.trim();
-      
+
       // Remove markdown code blocks if present
-      if (cleanResponse.startsWith('```json')) {
-        cleanResponse = cleanResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      } else if (cleanResponse.startsWith('```')) {
-        cleanResponse = cleanResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      if (cleanResponse.startsWith("```json")) {
+        cleanResponse = cleanResponse
+          .replace(/^```json\s*/, "")
+          .replace(/\s*```$/, "");
+      } else if (cleanResponse.startsWith("```")) {
+        cleanResponse = cleanResponse
+          .replace(/^```\s*/, "")
+          .replace(/\s*```$/, "");
       }
-      
+
       // Try to parse as JSON
       const parsedResponse = JSON.parse(cleanResponse);
 

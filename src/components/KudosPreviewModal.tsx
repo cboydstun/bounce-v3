@@ -81,9 +81,22 @@ export default function KudosPreviewModal({
       onEmailSent(customer.id);
     } catch (error) {
       console.error("Error sending email:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to send email",
-      );
+
+      // Show more specific error messages
+      let errorMessage = "Failed to send email";
+      if (error instanceof Error) {
+        if (error.message.includes("SendGrid authentication")) {
+          errorMessage = "Email configuration error. Please contact support.";
+        } else if (error.message.includes("verify your sender email")) {
+          errorMessage = "Email sender not verified. Please contact support.";
+        } else if (error.message.includes("SendGrid error")) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsSending(false);
     }

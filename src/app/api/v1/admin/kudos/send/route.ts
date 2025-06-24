@@ -42,9 +42,11 @@ async function handler(req: NextRequest) {
     let customerEmail: string;
     let customerName: string;
 
+    let order: any = null;
+
     // Get customer information based on type
     if (customerType === "order") {
-      const order = await Order.findById(customerId);
+      order = await Order.findById(customerId);
       if (!order) {
         return NextResponse.json({ error: "Order not found" }, { status: 404 });
       }
@@ -66,12 +68,6 @@ async function handler(req: NextRequest) {
 
       customerEmail = order.customerEmail;
       customerName = order.customerName || "Valued Customer";
-
-      // Update order with kudos email information
-      order.kudosEmailSent = true;
-      order.kudosEmailSentAt = new Date();
-      order.kudosEmailContent = content;
-      await order.save();
     } else if (customerType === "contact") {
       const contact = await Contact.findById(customerId);
       if (!contact) {
@@ -99,14 +95,29 @@ async function handler(req: NextRequest) {
       );
     }
 
-    // Send the email
-    await sendEmail({
-      to: customerEmail,
-      from: adminEmail,
-      subject,
-      text: content,
-      html: htmlContent,
-    });
+    // Send the email FIRST - if this fails, we don't update the database
+    try {
+      await sendEmail({
+        to: customerEmail,
+        from: adminEmail,
+        subject,
+        text: content,
+        html: htmlContent,
+      });
+    } catch (emailError) {
+      console.error("Failed to send kudos email:", emailError);
+      throw new Error(
+        `Email sending failed: ${emailError instanceof Error ? emailError.message : "Unknown error"}`,
+      );
+    }
+
+    // Only update the database AFTER email is successfully sent
+    if (customerType === "order" && order) {
+      order.kudosEmailSent = true;
+      order.kudosEmailSentAt = new Date();
+      order.kudosEmailContent = content;
+      await order.save();
+    }
 
     return NextResponse.json({
       success: true,

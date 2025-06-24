@@ -10,8 +10,7 @@ export const API_ROUTES = {
 } as const;
 
 // Google Review Configuration
-export const GOOGLE_REVIEW_LINK =
-  "https://g.page/r/CYourGoogleBusinessID/review";
+export const GOOGLE_REVIEW_LINK = "https://g.page/r/CRD8_XzLRehLEB0/review";
 
 // Business Information
 export const BUSINESS_INFO = {
