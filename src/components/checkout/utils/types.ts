@@ -15,7 +15,8 @@ export interface AvailabilityResult {
 
 // Define the step types
 export type OrderStep =
-  | "delivery"
+  | "selection"
+  | "datetime"
   | "details"
   | "extras"
   | "review"
@@ -29,8 +30,9 @@ export interface StepConfig {
 
 // Define the steps array
 export const steps: StepConfig[] = [
-  { id: "delivery", label: "Rental Selection" },
-  { id: "details", label: "Delivery Info" },
+  { id: "selection", label: "Choose Bounce House" },
+  { id: "datetime", label: "Date & Time" },
+  { id: "details", label: "Your Info" },
   { id: "extras", label: "Add Extras" },
   { id: "review", label: "Review Order" },
   { id: "payment", label: "Payment" },
@@ -44,6 +46,9 @@ export const SLUSHY_MIXERS = [
   { id: "margarita", name: "Margarita", price: 19.95 },
   { id: "strawberry", name: "Strawberry Daiquiri", price: 24.95 },
   { id: "pinacolada", name: "Piña Colada", price: 24.95 },
+  { id: "blueRaspberry", name: "Blue Raspberry", price: 24.95 },
+  { id: "mango", name: "Mango", price: 24.95 },
+  { id: "cherry", name: "Cherry", price: 24.95 },
 ];
 
 // Define the extras with their prices

@@ -19,16 +19,25 @@ import OrderFormTracker from "./OrderFormTracker";
 import StepSkeleton from "./StepSkeleton";
 
 // Dynamically import step components with proper typing
-const Step1_RentalSelection = dynamic<Step1Props>(
+const Step1_BouncerSelection = dynamic<Step1Props>(
   () =>
-    import("./steps/Step1_RentalSelection").then((mod) => mod.default as any),
+    import("./steps/Step1_BouncerSelection").then((mod) => mod.default as any),
   {
     loading: () => <StepSkeleton />,
     ssr: false,
   },
 );
 
-const Step2_DeliveryInfo = dynamic<Step2Props>(
+const Step2_DeliveryDateTime = dynamic<Step2Props>(
+  () =>
+    import("./steps/Step2_DeliveryDateTime").then((mod) => mod.default as any),
+  {
+    loading: () => <StepSkeleton />,
+    ssr: false,
+  },
+);
+
+const Step3_DeliveryInfo = dynamic<Step2Props>(
   () => import("./steps/Step2_DeliveryInfo").then((mod) => mod.default as any),
   {
     loading: () => <StepSkeleton />,
@@ -291,7 +300,7 @@ const CheckoutWizard: React.FC = () => {
     const errors = validateStep(state.currentStep, state);
 
     // Check for availability error first
-    if (state.currentStep === "delivery" && dateAvailabilityErrorRef.current) {
+    if (state.currentStep === "datetime" && dateAvailabilityErrorRef.current) {
       dispatch({
         type: "SET_ERRORS",
         payload: { deliveryDate: dateAvailabilityErrorRef.current },
@@ -397,10 +406,12 @@ const CheckoutWizard: React.FC = () => {
   // Render the appropriate step content
   const renderStepContent = () => {
     switch (state.currentStep) {
-      case "delivery":
-        return <Step1_RentalSelection state={state} dispatch={dispatch} />;
+      case "selection":
+        return <Step1_BouncerSelection state={state} dispatch={dispatch} />;
+      case "datetime":
+        return <Step2_DeliveryDateTime state={state} dispatch={dispatch} />;
       case "details":
-        return <Step2_DeliveryInfo state={state} dispatch={dispatch} />;
+        return <Step3_DeliveryInfo state={state} dispatch={dispatch} />;
       case "extras":
         return <Step3_Extras state={state} dispatch={dispatch} />;
       case "review":
@@ -449,9 +460,8 @@ const CheckoutWizard: React.FC = () => {
             onNext={goToNextStep}
             onPrevious={goToPreviousStep}
             isNextDisabled={
-              // Disable next button if there are validation errors
-              Object.keys(state.errors).length > 0 ||
-              // Or if we're on extras step and no items are selected
+              // Only disable for logical impossibilities, not validation errors
+              // If we're on extras step and no items are selected
               (state.currentStep === "extras" &&
                 state.selectedBouncers.length === 0 &&
                 !state.selectedBouncer &&

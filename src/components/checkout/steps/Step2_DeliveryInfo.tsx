@@ -160,7 +160,7 @@ const Step2_DeliveryInfo: React.FC<Step2Props> = ({ state, dispatch }) => {
             htmlFor="customerPhone"
             className="block text-lg font-medium text-gray-700"
           >
-            📞 Phone Number
+            📞 Phone Number <span className="text-red-500">*</span>
           </label>
           <input
             type="tel"

@@ -29,7 +29,7 @@ const calculateSpecificTimeCharge = (
 
 // Define the initial state
 export const initialState: CheckoutState = {
-  currentStep: "delivery",
+  currentStep: "selection",
 
   // Step 1
   selectedBouncers: [],

@@ -13,17 +13,19 @@ export const validateStep = (
   const errors: Record<string, string> = {};
 
   switch (step) {
-    case "delivery": // Rental Selection
+    case "selection": // Bouncer Selection
       // Validate bouncer selection
       if (state.selectedBouncers.length === 0 && !state.selectedBouncer) {
-        errors.selectedBouncer = "Please select a bouncer";
+        errors.selectedBouncer = "Please select at least one bounce house";
       }
+      break;
 
+    case "datetime": // Date and Time Selection
       if (!state.deliveryDate) {
         errors.deliveryDate = "Please select a delivery date";
       }
 
-      if (state.deliveryTimePreference === "specific" && !state.deliveryTime) {
+      if (!state.deliveryTime) {
         errors.deliveryTime = "Please select a delivery time";
       }
 
@@ -31,17 +33,22 @@ export const validateStep = (
         errors.pickupDate = "Please select a pickup date";
       }
 
-      if (state.pickupTimePreference === "specific" && !state.pickupTime) {
+      if (!state.pickupTime) {
         errors.pickupTime = "Please select a pickup time";
       }
 
       // Validate that delivery is before pickup
-      if (state.deliveryDate && state.pickupDate) {
+      if (
+        state.deliveryDate &&
+        state.pickupDate &&
+        state.deliveryTime &&
+        state.pickupTime
+      ) {
         const deliveryDateTime = new Date(
-          `${state.deliveryDate}T${state.deliveryTime || "00:00"}`,
+          `${state.deliveryDate}T${state.deliveryTime}`,
         );
         const pickupDateTime = new Date(
-          `${state.pickupDate}T${state.pickupTime || "00:00"}`,
+          `${state.pickupDate}T${state.pickupTime}`,
         );
 
         if (deliveryDateTime >= pickupDateTime) {
@@ -64,8 +71,10 @@ export const validateStep = (
         errors.customerEmail = "Please enter a valid email address";
       }
 
-      // Validate phone (optional but must be valid if provided)
-      if (state.customerPhone && !validatePhone(state.customerPhone)) {
+      // Validate phone (required)
+      if (!state.customerPhone) {
+        errors.customerPhone = "Please enter your phone number";
+      } else if (!validatePhone(state.customerPhone)) {
         errors.customerPhone =
           "Please enter a valid phone number in format (###)-###-####";
       }
