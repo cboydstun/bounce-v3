@@ -6,6 +6,9 @@ import {
   KudosEmailRequest,
 } from "@/utils/claudeService";
 
+// Allow up to 30 seconds for Claude API calls to prevent Vercel timeout
+export const maxDuration = 30;
+
 async function handler(req: NextRequest) {
   if (req.method !== "POST") {
     return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
