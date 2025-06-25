@@ -361,14 +361,14 @@ const Step1_BouncerSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
             <span className="text-sm text-green-600">
               {state.selectedBouncers.length < 3
                 ? `Add ${3 - state.selectedBouncers.length} more for extra discounts!`
-                : "Maximum reached"}
+                : "Max reached - Call 512-210-0194 to add more!"}
             </span>
           </div>
         </div>
       )}
 
       {/* Product Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
         {filteredBouncers.map((bouncer) => (
           <ProductCard
             key={bouncer._id}

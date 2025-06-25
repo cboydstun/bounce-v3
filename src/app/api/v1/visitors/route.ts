@@ -15,9 +15,32 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
  */
 export async function POST(req: NextRequest) {
   try {
-    await dbConnect();
+    // Connect to database with timeout
+    const dbConnectPromise = dbConnect();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Database connection timeout")), 10000),
+    );
 
-    const data = await req.json();
+    await Promise.race([dbConnectPromise, timeoutPromise]);
+
+    // Parse and validate request body
+    let data;
+    try {
+      data = await req.json();
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON in request body" },
+        { status: 400 },
+      );
+    }
+
+    // Basic validation
+    if (!data || typeof data !== "object") {
+      return NextResponse.json(
+        { success: false, error: "Request body must be a valid object" },
+        { status: 400 },
+      );
+    }
 
     const {
       visitorId,
@@ -31,15 +54,38 @@ export async function POST(req: NextRequest) {
       ...visitorData
     } = data;
 
-    // Get IP address from request
-    const ipAddress = getClientIp(req);
+    // Get IP address from request with error handling
+    let ipAddress;
+    try {
+      ipAddress = getClientIp(req);
+    } catch (error) {
+      console.error("Error getting client IP:", error);
+      ipAddress = "unknown";
+    }
 
-    // Detect device type
+    // Detect device type with error handling
     const userAgent = req.headers.get("user-agent") || "";
-    const device = detectDevice(userAgent);
+    let device;
+    try {
+      device = detectDevice(userAgent);
+    } catch (error) {
+      console.error("Error detecting device:", error);
+      device = "Desktop"; // Default fallback
+    }
 
-    // Get location data from IP address
-    const locationData = await getLocationFromIp(ipAddress);
+    // Get location data from IP address with error handling
+    let locationData = null;
+    try {
+      locationData = await Promise.race([
+        getLocationFromIp(ipAddress),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Geolocation timeout")), 5000),
+        ),
+      ]);
+    } catch (error) {
+      console.error("Error getting location data:", error);
+      // Continue without location data
+    }
 
     // Get current timestamp
     const now = new Date();
@@ -244,7 +290,27 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      await visitor.save();
+      // Save with error handling
+      try {
+        await visitor.save();
+      } catch (saveError) {
+        console.error("Error saving existing visitor:", saveError);
+        // Try to save with minimal data if full save fails
+        try {
+          await Visitor.updateOne(
+            { visitorId },
+            {
+              $set: {
+                lastVisit: now,
+                visitCount: visitor.visitCount,
+              },
+            },
+          );
+        } catch (fallbackError) {
+          console.error("Fallback save also failed:", fallbackError);
+          throw saveError; // Re-throw original error
+        }
+      }
     } else {
       // Create new visitor
       const newVisitor = {
