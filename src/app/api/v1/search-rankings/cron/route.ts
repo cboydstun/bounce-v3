@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkAllKeywordRankings } from "@/utils/scheduledTasks";
 import dbConnect from "@/lib/db/mongoose";
 import { getCurrentDateCT } from "@/utils/dateUtils";
+import { getToken } from "next-auth/jwt";
 
 /**
  * GET /api/v1/search-rankings/cron
@@ -12,51 +13,74 @@ export async function GET(req: NextRequest) {
   const startTime = Date.now();
   const currentTime = getCurrentDateCT();
 
-  console.log(`🕐 Cron job triggered at ${currentTime.toISOString()}`);
-
   try {
-    // Enhanced authentication for cron jobs
+    // Enhanced authentication for cron jobs and admin users
     const authHeader = req.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
     const userAgent = req.headers.get("user-agent");
 
     // Check for proper authentication
+    let isAuthorized = false;
+    let authMethod = "";
+
     if (process.env.NODE_ENV === "production") {
-      // In production, require either:
-      // 1. Authorization header with cron secret
-      // 2. Vercel cron user agent
+      // Method 1: Vercel cron job
       const isVercelCron = userAgent?.includes("vercel-cron");
+
+      // Method 2: Manual cron trigger with secret
       const hasValidSecret = authHeader === `Bearer ${cronSecret}`;
 
-      if (!isVercelCron && !hasValidSecret) {
+      // Method 3: Authenticated admin user
+      let isAdminUser = false;
+      try {
+        const token = await getToken({
+          req,
+          secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
+        });
+
+        if (token && token.role === "admin") {
+          isAdminUser = true;
+          authMethod = "admin-user";
+        }
+      } catch (tokenError) {
+        console.log("Token validation error:", tokenError);
+      }
+
+      if (isVercelCron) {
+        isAuthorized = true;
+        authMethod = "vercel-cron";
+      } else if (hasValidSecret) {
+        isAuthorized = true;
+        authMethod = "cron-secret";
+      } else if (isAdminUser) {
+        isAuthorized = true;
+        authMethod = "admin-user";
+      }
+
+      if (!isAuthorized) {
         console.log(
           `🚫 Unauthorized cron request - User-Agent: ${userAgent}, Auth: ${authHeader ? "present" : "missing"}`,
         );
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
       }
-
-      console.log(
-        `✅ Authorized cron request - Vercel: ${isVercelCron}, Secret: ${hasValidSecret}`,
-      );
     } else {
       console.log(`🔧 Development mode - allowing cron request`);
+      authMethod = "development";
     }
 
     // Connect to the database
-    console.log(`🔌 Connecting to database...`);
     await dbConnect();
 
     // Run the enhanced ranking check
-    console.log(`🚀 Starting automated ranking check...`);
     const result = await checkAllKeywordRankings();
 
     const duration = Date.now() - startTime;
-    console.log(`⏱️ Cron job completed in ${duration}ms`);
 
     return NextResponse.json({
       message: "Ranking check completed successfully",
       timestamp: currentTime.toISOString(),
       duration: `${duration}ms`,
+      authMethod,
       result,
     });
   } catch (error) {
