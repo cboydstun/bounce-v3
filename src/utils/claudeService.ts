@@ -1,5 +1,5 @@
 import { EmailData } from "./emailService";
-import { GOOGLE_REVIEW_LINK } from "@/config/constants";
+import { GOOGLE_REVIEW_LINK, EMAIL_SIGNATURE } from "@/config/constants";
 
 export interface KudosEmailRequest {
   customerName: string;
@@ -49,14 +49,20 @@ Positive Comments from Admin:
 
 Instructions:
 - Write a warm, genuine thank you email
+- Use the customer's name and mention their event date
+- Mention the rental items they chose
+- Use more than 5 emojis to make it friendly and engaging
 - Naturally incorporate all three positive comments into the email
 - Express gratitude for choosing our business
-- Include a clear call-to-action to leave a 5-star Google review
 - Keep the tone friendly, personal, and authentic
 - Make it feel like it's coming from a real person, not a template
-- Include the Google review link: ${googleReviewLink}
+- Include a clear call-to-action to leave a 5-star Google review
+- Include the Google review link as a button: ${googleReviewLink}
 - The email should be 200-300 words
 - End with a warm closing and invitation to book again
+- IMPORTANT: End the email with exactly this signature (do not modify it):
+
+${EMAIL_SIGNATURE}
 
 Please provide both a subject line and the email content. Format your response as JSON with "subject", "content" (plain text), and "htmlContent" (HTML formatted) fields.`;
 

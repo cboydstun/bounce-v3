@@ -17,4 +17,13 @@ export const BUSINESS_INFO = {
   name: "SATX Bounce LLC",
   email: process.env.EMAIL || "satxbounce@gmail.com",
   phone: process.env.USER_PHONE_NUMBER || "(512) 210-0194",
+  website: "https://www.satxbounce.com",
+  owner: "Chris Boydstun",
+  ownerTitle: "Owner, SATX Bounce",
 } as const;
+
+// Email Signature Template
+export const EMAIL_SIGNATURE = `Chris Boydstun
+Owner, SATX Bounce
+https://www.satxbounce.com <- Book Online!
+512-210-0194`;
