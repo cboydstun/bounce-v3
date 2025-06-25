@@ -138,6 +138,21 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 - **Batch Status Synchronization**: One-click sync for all pending agreements
 - **Email Notifications**: Branded email templates with signing links and reminders
 
+### Customer Relationship Management
+
+- **Kudos Email System**: Personalized follow-up email system to maintain positive customer relationships and encourage Google reviews:
+  - **Admin Dashboard**: Comprehensive interface at `/admin/kudos` for managing customer follow-up emails
+  - **Smart Customer Detection**: Automatically identifies eligible customers from recent orders and contacts
+  - **Intelligent Name Resolution**: Uses actual customer names from database records, with professional fallback for missing names
+  - **Claude AI Integration**: Leverages Claude Sonnet 4 to generate personalized, warm thank-you emails
+  - **Customizable Templates**: Three-field input system for positive comments that get naturally incorporated into emails
+  - **Google Review Integration**: Includes clear call-to-action for 5-star Google reviews with direct review links
+  - **Email Tracking**: Comprehensive tracking of sent emails with timestamps and status monitoring
+  - **Duplicate Prevention**: Prevents sending multiple kudos emails to the same customer
+  - **Professional Email Delivery**: SendGrid integration for reliable email delivery
+  - **Filtering & Pagination**: Advanced filtering by date range, email status, and customer type
+  - **Name Validation**: Robust validation ensures only quality customer names are used for personalization
+
 ## API Routes
 
 The application provides a comprehensive RESTful API with the following endpoints:
