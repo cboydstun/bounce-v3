@@ -19,12 +19,53 @@ export interface EmailData {
  */
 export async function sendEmail(emailData: EmailData): Promise<void> {
   try {
-    // Just use the standard approach with text and html properties
-    // SendGrid will handle the MIME types correctly
-    await sgMail.send(emailData);
-  } catch (error) {
-    console.error("Error sending email with SendGrid:", error);
-    throw error;
+    // Validate SendGrid API key
+    if (!process.env.SENDGRID_API_KEY) {
+      throw new Error("SENDGRID_API_KEY environment variable is not set");
+    }
+
+    // Log email attempt (without sensitive data)
+    console.log("Attempting to send email:", {
+      to: emailData.to,
+      from: emailData.from,
+      subject: emailData.subject,
+      hasHtml: !!emailData.html,
+      textLength: emailData.text.length,
+    });
+
+    // Send the email
+    const response = await sgMail.send(emailData);
+
+    // Log successful send
+    console.log("Email sent successfully:", {
+      messageId: response[0]?.headers?.["x-message-id"],
+      statusCode: response[0]?.statusCode,
+    });
+  } catch (error: any) {
+    console.error("Error sending email with SendGrid:", {
+      error: error.message,
+      code: error.code,
+      response: error.response?.body,
+      statusCode: error.response?.statusCode,
+    });
+
+    // Provide more specific error messages
+    if (error.code === 401) {
+      throw new Error(
+        "SendGrid authentication failed. Please check your API key.",
+      );
+    } else if (error.code === 403) {
+      throw new Error(
+        "SendGrid access forbidden. Please verify your sender email address.",
+      );
+    } else if (error.response?.body?.errors) {
+      const errorMessages = error.response.body.errors
+        .map((err: any) => err.message)
+        .join(", ");
+      throw new Error(`SendGrid error: ${errorMessages}`);
+    } else {
+      throw new Error(`Email sending failed: ${error.message}`);
+    }
   }
 }
 

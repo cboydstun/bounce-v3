@@ -17,6 +17,7 @@ import {
   ChevronRightIcon,
   ArrowRightOnRectangleIcon,
   MagnifyingGlassIcon,
+  HeartIcon,
 } from "@heroicons/react/24/outline";
 
 interface SidebarProps {
@@ -44,6 +45,7 @@ const navItems: NavItem[] = [
     icon: ShoppingBagIcon, // Assuming this is a placeholder for tasks
   },
   { name: "Orders", href: "/admin/orders", icon: ShoppingCartIcon },
+  { name: "Kudos", href: "/admin/kudos", icon: HeartIcon },
   { name: "Calendar", href: "/admin/calendar", icon: CalendarIcon },
   { name: "Routes", href: "/admin/routes", icon: MapIcon },
   { name: "Reviews", href: "/admin/reviews", icon: StarIcon },
