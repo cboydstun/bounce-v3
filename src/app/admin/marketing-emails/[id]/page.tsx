@@ -113,6 +113,9 @@ export default function CampaignDetailsPage({
   const [activeTab, setActiveTab] = useState<
     "overview" | "content" | "recipients" | "analytics"
   >("overview");
+  const [sending, setSending] = useState(false);
+  const [showSendDialog, setShowSendDialog] = useState(false);
+  const [sendTestMode, setSendTestMode] = useState(false);
 
   useEffect(() => {
     fetchCampaignDetails();
@@ -207,6 +210,47 @@ export default function CampaignDetailsPage({
     });
   };
 
+  const sendCampaign = async (testMode: boolean = false) => {
+    try {
+      setSending(true);
+      setError(null);
+
+      const response = await fetch(
+        `/api/v1/marketing/campaigns/${params.id}/send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ testMode }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Refresh campaign details to show updated status
+        await fetchCampaignDetails();
+        setShowSendDialog(false);
+
+        // Show success message
+        alert(data.message || "Campaign sent successfully!");
+      } else {
+        setError(data.details || "Failed to send campaign");
+      }
+    } catch (err) {
+      setError("Error sending campaign");
+      console.error("Error:", err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSendClick = () => {
+    setShowSendDialog(true);
+    setSendTestMode(campaign?.testMode || false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -279,15 +323,34 @@ export default function CampaignDetailsPage({
 
         <div className="flex space-x-3">
           {campaign.status === "draft" && (
-            <button
-              onClick={() =>
-                router.push(`/admin/marketing-emails/${params.id}/edit`)
-              }
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <PencilIcon className="h-4 w-4 mr-2" />
-              Edit
-            </button>
+            <>
+              <button
+                onClick={() =>
+                  router.push(`/admin/marketing-emails/${params.id}/edit`)
+                }
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <PencilIcon className="h-4 w-4 mr-2" />
+                Edit
+              </button>
+              <button
+                onClick={handleSendClick}
+                disabled={sending}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {sending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <PaperAirplaneIcon className="h-4 w-4 mr-2" />
+                    Send Campaign
+                  </>
+                )}
+              </button>
+            </>
           )}
           <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-purple hover:bg-primary-purple/90">
             <EyeIcon className="h-4 w-4 mr-2" />
@@ -709,6 +772,99 @@ export default function CampaignDetailsPage({
           )}
         </div>
       </div>
+
+      {/* Send Campaign Dialog */}
+      {showSendDialog && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Send Campaign
+                </h3>
+                <button
+                  onClick={() => setShowSendDialog(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  Are you sure you want to send this campaign to{" "}
+                  {analytics?.stats.total || 0} recipients?
+                </p>
+
+                <div className="space-y-3">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="sendMode"
+                      checked={!sendTestMode}
+                      onChange={() => setSendTestMode(false)}
+                      className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300"
+                    />
+                    <span className="ml-3 text-sm font-medium text-gray-700">
+                      Send to all recipients ({analytics?.stats.total || 0}{" "}
+                      emails)
+                    </span>
+                  </label>
+
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="sendMode"
+                      checked={sendTestMode}
+                      onChange={() => setSendTestMode(true)}
+                      className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300"
+                    />
+                    <span className="ml-3 text-sm font-medium text-gray-700">
+                      Test mode (send only to admin email)
+                    </span>
+                  </label>
+                </div>
+
+                {sendTestMode && (
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-sm text-yellow-800">
+                      Test mode will send the email only to your admin email
+                      address for testing purposes.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowSendDialog(false)}
+                  disabled={sending}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => sendCampaign(sendTestMode)}
+                  disabled={sending}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></div>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <PaperAirplaneIcon className="h-4 w-4 mr-2 inline-block" />
+                      {sendTestMode ? "Send Test Email" : "Send Campaign"}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

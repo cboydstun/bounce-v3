@@ -810,49 +810,101 @@ export default function CreateCampaignPage() {
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <div className="px-4 py-5 sm:p-6">
           <nav aria-label="Progress">
-            <ol className="flex items-center">
-              {STEPS.map((step, stepIdx) => (
-                <li
-                  key={step.id}
-                  className={`${stepIdx !== STEPS.length - 1 ? "pr-8 sm:pr-20" : ""} relative`}
+            {/* Mobile: Vertical Layout */}
+            <div className="block sm:hidden">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-medium text-gray-900">
+                  Step {currentStep} of {STEPS.length}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {Math.round((currentStep / STEPS.length) * 100)}% Complete
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                <div
+                  className="bg-primary-purple h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
+                ></div>
+              </div>
+              <div className="text-center">
+                <div
+                  className={`inline-flex h-10 w-10 items-center justify-center rounded-full mb-2 ${
+                    currentStep === STEPS[currentStep - 1]?.id
+                      ? "bg-primary-purple text-white"
+                      : "border-2 border-primary-purple text-primary-purple"
+                  }`}
                 >
-                  <div className="flex items-center">
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                        step.id < currentStep
-                          ? "bg-primary-purple text-white"
-                          : step.id === currentStep
-                            ? "border-2 border-primary-purple text-primary-purple"
-                            : "border-2 border-gray-300 text-gray-500"
-                      }`}
-                    >
-                      {step.id < currentStep ? (
-                        <CheckCircleIcon className="h-5 w-5" />
-                      ) : (
-                        <span className="text-sm font-medium">{step.id}</span>
-                      )}
-                    </div>
-                    <div className="ml-4 min-w-0">
-                      <p
-                        className={`text-sm font-medium ${
-                          step.id <= currentStep
-                            ? "text-gray-900"
-                            : "text-gray-500"
+                  <span className="text-sm font-medium">{currentStep}</span>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900">
+                  {STEPS[currentStep - 1]?.name}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {STEPS[currentStep - 1]?.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Desktop: Horizontal Layout */}
+            <div className="hidden sm:block">
+              <ol className="flex items-center justify-between">
+                {STEPS.map((step, stepIdx) => (
+                  <li key={step.id} className="relative flex-1">
+                    <div className="flex flex-col items-center">
+                      {/* Step Circle */}
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-200 ${
+                          step.id < currentStep
+                            ? "bg-primary-purple border-primary-purple text-white"
+                            : step.id === currentStep
+                              ? "border-primary-purple text-primary-purple bg-white"
+                              : "border-gray-300 text-gray-500 bg-white"
                         }`}
                       >
-                        {step.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {step.description}
-                      </p>
+                        {step.id < currentStep ? (
+                          <CheckCircleIcon className="h-5 w-5" />
+                        ) : (
+                          <span className="text-sm font-semibold">
+                            {step.id}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Step Content */}
+                      <div className="mt-3 text-center max-w-32">
+                        <p
+                          className={`text-sm font-medium leading-tight ${
+                            step.id <= currentStep
+                              ? "text-gray-900"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          {step.name}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1 leading-tight">
+                          {step.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  {stepIdx !== STEPS.length - 1 && (
-                    <div className="absolute top-4 left-4 -ml-px mt-0.5 h-full w-0.5 bg-gray-300" />
-                  )}
-                </li>
-              ))}
-            </ol>
+
+                    {/* Connector Line */}
+                    {stepIdx !== STEPS.length - 1 && (
+                      <div
+                        className={`absolute top-5 left-1/2 w-full h-0.5 -translate-y-0.5 ${
+                          step.id < currentStep
+                            ? "bg-primary-purple"
+                            : "bg-gray-300"
+                        }`}
+                        style={{
+                          left: "calc(50% + 20px)",
+                          width: "calc(100% - 40px)",
+                        }}
+                      />
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </div>
           </nav>
         </div>
       </div>

@@ -210,7 +210,13 @@ export async function sendMarketingCampaign(
       throw new Error("Campaign not found");
     }
 
-    if (campaign.status !== "draft" && campaign.status !== "scheduled") {
+    // Allow campaigns in "draft", "scheduled", or "sending" status
+    // "sending" is allowed to handle cases where the API route already updated the status
+    if (
+      campaign.status !== "draft" &&
+      campaign.status !== "scheduled" &&
+      campaign.status !== "sending"
+    ) {
       throw new Error("Campaign is not in a sendable state");
     }
 
