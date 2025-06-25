@@ -13,6 +13,13 @@ import Competitor from "./Competitor";
 import Task from "./Task";
 import Contractor from "./Contractor";
 import TaskStatusHistory from "./TaskStatusHistory";
+import MarketingCampaign from "./MarketingCampaign";
+import KudosEmail from "./KudosEmail";
+import Order from "./Order";
+import PromoOptin from "./PromoOptin";
+import Counter from "./Counter";
+import Settings from "./Settings";
+import TaskPaymentHistory from "./TaskPaymentHistory";
 
 // Export models for convenience
 export {
@@ -29,6 +36,13 @@ export {
   Competitor,
   Task,
   Contractor,
+  MarketingCampaign,
+  KudosEmail,
+  Order,
+  PromoOptin,
+  Counter,
+  Settings,
+  TaskPaymentHistory,
 };
 
 // This file ensures all models are registered together

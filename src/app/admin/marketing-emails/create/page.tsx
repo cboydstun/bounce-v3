@@ -1,0 +1,907 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  SparklesIcon,
+  EyeIcon,
+  PaperAirplaneIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
+
+interface RecipientData {
+  email: string;
+  name: string;
+  source: "contacts" | "orders" | "promoOptins";
+  sourceId: string;
+  consentStatus: boolean;
+  lastActivity?: Date;
+  orderHistory?: string[];
+  preferences?: string[];
+}
+
+interface RecipientSummary {
+  total: number;
+  bySource: {
+    contacts: number;
+    orders: number;
+    promoOptins: number;
+  };
+  withConsent: number;
+  withOrderHistory: number;
+}
+
+interface CampaignData {
+  name: string;
+  description: string;
+  template: "promotional" | "seasonal" | "product" | "custom";
+
+  // AI Generation
+  campaignType: "promotional" | "seasonal" | "product" | "custom";
+  targetAudience: string;
+  keyMessage: string;
+  promotionDetails: string;
+  callToAction: string;
+  tone: "friendly" | "professional" | "exciting" | "urgent";
+
+  // Email Content
+  subject: string;
+  content: string;
+  htmlContent: string;
+
+  // Recipients
+  recipientSources: ("contacts" | "orders" | "promoOptins")[];
+  filters: {
+    dateRange?: {
+      start: Date;
+      end: Date;
+    };
+    hasOrders?: boolean;
+    consentOnly: boolean;
+  };
+
+  // Settings
+  testMode: boolean;
+  sendImmediately: boolean;
+  notes: string;
+}
+
+const STEPS = [
+  {
+    id: 1,
+    name: "Campaign Details",
+    description: "Basic campaign information",
+  },
+  {
+    id: 2,
+    name: "AI Content Generation",
+    description: "Generate email content with AI",
+  },
+  {
+    id: 3,
+    name: "Email Content",
+    description: "Review and edit email content",
+  },
+  { id: 4, name: "Recipients", description: "Select target audience" },
+  {
+    id: 5,
+    name: "Review & Send",
+    description: "Final review and send options",
+  },
+];
+
+export default function CreateCampaignPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [recipients, setRecipients] = useState<RecipientData[]>([]);
+  const [recipientSummary, setRecipientSummary] =
+    useState<RecipientSummary | null>(null);
+  const [generatingContent, setGeneratingContent] = useState(false);
+
+  const [campaignData, setCampaignData] = useState<CampaignData>({
+    name: "",
+    description: "",
+    template: "custom",
+    campaignType: "promotional",
+    targetAudience: "",
+    keyMessage: "",
+    promotionDetails: "",
+    callToAction: "",
+    tone: "friendly",
+    subject: "",
+    content: "",
+    htmlContent: "",
+    recipientSources: ["contacts", "orders", "promoOptins"],
+    filters: {
+      consentOnly: true,
+    },
+    testMode: false,
+    sendImmediately: false,
+    notes: "",
+  });
+
+  const updateCampaignData = (updates: Partial<CampaignData>) => {
+    setCampaignData((prev) => ({ ...prev, ...updates }));
+  };
+
+  const fetchRecipients = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+
+      if (campaignData.recipientSources.length > 0) {
+        params.append("sources", campaignData.recipientSources.join(","));
+      }
+
+      if (campaignData.filters.dateRange) {
+        params.append(
+          "startDate",
+          campaignData.filters.dateRange.start.toISOString(),
+        );
+        params.append(
+          "endDate",
+          campaignData.filters.dateRange.end.toISOString(),
+        );
+      }
+
+      if (campaignData.filters.hasOrders) {
+        params.append("hasOrders", "true");
+      }
+
+      params.append("consentOnly", campaignData.filters.consentOnly.toString());
+
+      const response = await fetch(`/api/v1/marketing/recipients?${params}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setRecipients(data.data.recipients);
+        setRecipientSummary(data.data.summary);
+      } else {
+        setError("Failed to fetch recipients");
+      }
+    } catch (err) {
+      setError("Error fetching recipients");
+      console.error("Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateContent = async () => {
+    try {
+      setGeneratingContent(true);
+      setError(null);
+
+      const response = await fetch("/api/v1/marketing/generate-content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          campaignType: campaignData.campaignType,
+          targetAudience: campaignData.targetAudience,
+          keyMessage: campaignData.keyMessage,
+          promotionDetails: campaignData.promotionDetails,
+          callToAction: campaignData.callToAction,
+          tone: campaignData.tone,
+          customerData: recipientSummary
+            ? {
+                totalRecipients: recipientSummary.total,
+                hasOrderHistory: recipientSummary.withOrderHistory > 0,
+                commonPreferences: [], // Could be enhanced with actual preference analysis
+              }
+            : undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        updateCampaignData({
+          subject: data.data.subject,
+          content: data.data.content,
+          htmlContent: data.data.htmlContent,
+        });
+        setCurrentStep(3); // Move to content review step
+      } else {
+        setError(data.details || "Failed to generate content");
+      }
+    } catch (err) {
+      setError("Error generating content");
+      console.error("Error:", err);
+    } finally {
+      setGeneratingContent(false);
+    }
+  };
+
+  const createCampaign = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch("/api/v1/marketing/campaigns", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...campaignData,
+          filters: {
+            ...campaignData.filters,
+            sources: campaignData.recipientSources,
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        router.push(`/admin/marketing-emails/${data.data.id}`);
+      } else {
+        setError(data.details || "Failed to create campaign");
+      }
+    } catch (err) {
+      setError("Error creating campaign");
+      console.error("Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep < STEPS.length) {
+      setCurrentStep(currentStep + 1);
+
+      // Fetch recipients when moving to recipients step
+      if (currentStep + 1 === 4) {
+        fetchRecipients();
+      }
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const canProceed = () => {
+    switch (currentStep) {
+      case 1:
+        return campaignData.name.trim() !== "";
+      case 2:
+        return (
+          campaignData.targetAudience.trim() !== "" &&
+          campaignData.keyMessage.trim() !== "" &&
+          campaignData.callToAction.trim() !== ""
+        );
+      case 3:
+        return (
+          campaignData.subject.trim() !== "" &&
+          campaignData.content.trim() !== ""
+        );
+      case 4:
+        return recipients.length > 0;
+      case 5:
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Campaign Name *
+              </label>
+              <input
+                type="text"
+                value={campaignData.name}
+                onChange={(e) => updateCampaignData({ name: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                placeholder="e.g., Summer Bounce House Special"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Description
+              </label>
+              <textarea
+                value={campaignData.description}
+                onChange={(e) =>
+                  updateCampaignData({ description: e.target.value })
+                }
+                rows={3}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                placeholder="Brief description of this campaign..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Campaign Template
+              </label>
+              <select
+                value={campaignData.template}
+                onChange={(e) =>
+                  updateCampaignData({
+                    template: e.target.value as CampaignData["template"],
+                    campaignType: e.target
+                      .value as CampaignData["campaignType"],
+                  })
+                }
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+              >
+                <option value="promotional">Promotional</option>
+                <option value="seasonal">Seasonal</option>
+                <option value="product">Product Announcement</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <div className="flex">
+                <SparklesIcon className="h-5 w-5 text-blue-400" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">
+                    AI Content Generation
+                  </h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    Provide details about your campaign and our AI will generate
+                    personalized email content for you.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Target Audience *
+              </label>
+              <input
+                type="text"
+                value={campaignData.targetAudience}
+                onChange={(e) =>
+                  updateCampaignData({ targetAudience: e.target.value })
+                }
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                placeholder="e.g., Parents planning summer parties"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Key Message *
+              </label>
+              <textarea
+                value={campaignData.keyMessage}
+                onChange={(e) =>
+                  updateCampaignData({ keyMessage: e.target.value })
+                }
+                rows={3}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                placeholder="What's the main message you want to convey?"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Promotion Details
+              </label>
+              <textarea
+                value={campaignData.promotionDetails}
+                onChange={(e) =>
+                  updateCampaignData({ promotionDetails: e.target.value })
+                }
+                rows={2}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                placeholder="Specific promotion details, discounts, or offers..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Call to Action *
+              </label>
+              <input
+                type="text"
+                value={campaignData.callToAction}
+                onChange={(e) =>
+                  updateCampaignData({ callToAction: e.target.value })
+                }
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                placeholder="e.g., Book your bounce house today!"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Tone
+              </label>
+              <select
+                value={campaignData.tone}
+                onChange={(e) =>
+                  updateCampaignData({
+                    tone: e.target.value as CampaignData["tone"],
+                  })
+                }
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+              >
+                <option value="friendly">Friendly</option>
+                <option value="professional">Professional</option>
+                <option value="exciting">Exciting</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+
+            <div className="pt-4">
+              <button
+                onClick={generateContent}
+                disabled={generatingContent || !canProceed()}
+                className="w-full flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-purple hover:bg-primary-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generatingContent ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Generating Content...
+                  </>
+                ) : (
+                  <>
+                    <SparklesIcon className="h-4 w-4 mr-2" />
+                    Generate Email Content
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Email Subject *
+              </label>
+              <input
+                type="text"
+                value={campaignData.subject}
+                onChange={(e) =>
+                  updateCampaignData({ subject: e.target.value })
+                }
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                placeholder="Email subject line"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Email Content *
+              </label>
+              <textarea
+                value={campaignData.content}
+                onChange={(e) =>
+                  updateCampaignData({ content: e.target.value })
+                }
+                rows={12}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                placeholder="Email content (plain text)"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                HTML Content
+              </label>
+              <textarea
+                value={campaignData.htmlContent}
+                onChange={(e) =>
+                  updateCampaignData({ htmlContent: e.target.value })
+                }
+                rows={8}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple font-mono text-sm"
+                placeholder="HTML version of the email (optional)"
+              />
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Recipient Sources
+              </label>
+              <div className="mt-2 space-y-2">
+                {[
+                  {
+                    value: "contacts",
+                    label: "Contacts",
+                    description: "People who have contacted us",
+                  },
+                  {
+                    value: "orders",
+                    label: "Orders",
+                    description: "Customers who have placed orders",
+                  },
+                  {
+                    value: "promoOptins",
+                    label: "Promo Opt-ins",
+                    description: "Users who opted in for promotions",
+                  },
+                ].map((source) => (
+                  <label key={source.value} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={campaignData.recipientSources.includes(
+                        source.value as any,
+                      )}
+                      onChange={(e) => {
+                        const sources = e.target.checked
+                          ? [
+                              ...campaignData.recipientSources,
+                              source.value as any,
+                            ]
+                          : campaignData.recipientSources.filter(
+                              (s) => s !== source.value,
+                            );
+                        updateCampaignData({ recipientSources: sources });
+                      }}
+                      className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <div className="text-sm font-medium text-gray-700">
+                        {source.label}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {source.description}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={campaignData.filters.consentOnly}
+                  onChange={(e) =>
+                    updateCampaignData({
+                      filters: {
+                        ...campaignData.filters,
+                        consentOnly: e.target.checked,
+                      },
+                    })
+                  }
+                  className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                />
+                <span className="ml-3 text-sm font-medium text-gray-700">
+                  Only include recipients who have given consent
+                </span>
+              </label>
+            </div>
+
+            {recipientSummary && (
+              <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">
+                  Recipient Summary
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="text-gray-500">Total Recipients</div>
+                    <div className="font-medium">
+                      {recipientSummary.total.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">With Consent</div>
+                    <div className="font-medium">
+                      {recipientSummary.withConsent.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">From Contacts</div>
+                    <div className="font-medium">
+                      {recipientSummary.bySource.contacts.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">From Orders</div>
+                    <div className="font-medium">
+                      {recipientSummary.bySource.orders.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">From Promo Opt-ins</div>
+                    <div className="font-medium">
+                      {recipientSummary.bySource.promoOptins.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">With Order History</div>
+                    <div className="font-medium">
+                      {recipientSummary.withOrderHistory.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={fetchRecipients}
+              disabled={loading}
+              className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                  Loading Recipients...
+                </>
+              ) : (
+                "Refresh Recipients"
+              )}
+            </button>
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-6">
+            <div className="bg-green-50 border border-green-200 rounded-md p-4">
+              <div className="flex">
+                <CheckCircleIcon className="h-5 w-5 text-green-400" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-green-800">
+                    Campaign Ready
+                  </h3>
+                  <div className="mt-2 text-sm text-green-700">
+                    Your campaign is ready to send to{" "}
+                    {recipients.length.toLocaleString()} recipients.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-md p-4">
+              <h4 className="text-sm font-medium text-gray-900 mb-3">
+                Campaign Summary
+              </h4>
+              <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Name</dt>
+                  <dd className="text-sm text-gray-900">{campaignData.name}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Subject</dt>
+                  <dd className="text-sm text-gray-900">
+                    {campaignData.subject}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">
+                    Recipients
+                  </dt>
+                  <dd className="text-sm text-gray-900">
+                    {recipients.length.toLocaleString()}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">
+                    Template
+                  </dt>
+                  <dd className="text-sm text-gray-900 capitalize">
+                    {campaignData.template}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <div>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={campaignData.testMode}
+                  onChange={(e) =>
+                    updateCampaignData({ testMode: e.target.checked })
+                  }
+                  className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                />
+                <span className="ml-3 text-sm font-medium text-gray-700">
+                  Test Mode (send only to admin email)
+                </span>
+              </label>
+            </div>
+
+            <div>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={campaignData.sendImmediately}
+                  onChange={(e) =>
+                    updateCampaignData({ sendImmediately: e.target.checked })
+                  }
+                  className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                />
+                <span className="ml-3 text-sm font-medium text-gray-700">
+                  Send immediately after creation
+                </span>
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Notes
+              </label>
+              <textarea
+                value={campaignData.notes}
+                onChange={(e) => updateCampaignData({ notes: e.target.value })}
+                rows={3}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                placeholder="Any additional notes about this campaign..."
+              />
+            </div>
+
+            <button
+              onClick={createCampaign}
+              disabled={loading}
+              className="w-full flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-purple hover:bg-primary-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating Campaign...
+                </>
+              ) : (
+                <>
+                  <PaperAirplaneIcon className="h-4 w-4 mr-2" />
+                  Create Campaign
+                </>
+              )}
+            </button>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center space-x-4">
+        <button
+          onClick={() => router.back()}
+          className="p-2 text-gray-400 hover:text-gray-600"
+        >
+          <ArrowLeftIcon className="h-5 w-5" />
+        </button>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Create Marketing Campaign
+          </h1>
+          <p className="mt-2 text-gray-600">
+            Create an AI-powered email marketing campaign
+          </p>
+        </div>
+      </div>
+
+      {/* Progress Steps */}
+      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <div className="px-4 py-5 sm:p-6">
+          <nav aria-label="Progress">
+            <ol className="flex items-center">
+              {STEPS.map((step, stepIdx) => (
+                <li
+                  key={step.id}
+                  className={`${stepIdx !== STEPS.length - 1 ? "pr-8 sm:pr-20" : ""} relative`}
+                >
+                  <div className="flex items-center">
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                        step.id < currentStep
+                          ? "bg-primary-purple text-white"
+                          : step.id === currentStep
+                            ? "border-2 border-primary-purple text-primary-purple"
+                            : "border-2 border-gray-300 text-gray-500"
+                      }`}
+                    >
+                      {step.id < currentStep ? (
+                        <CheckCircleIcon className="h-5 w-5" />
+                      ) : (
+                        <span className="text-sm font-medium">{step.id}</span>
+                      )}
+                    </div>
+                    <div className="ml-4 min-w-0">
+                      <p
+                        className={`text-sm font-medium ${
+                          step.id <= currentStep
+                            ? "text-gray-900"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {step.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {step.description}
+                      </p>
+                    </div>
+                  </div>
+                  {stepIdx !== STEPS.length - 1 && (
+                    <div className="absolute top-4 left-4 -ml-px mt-0.5 h-full w-0.5 bg-gray-300" />
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <div className="mt-2 text-sm text-red-700">{error}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step Content */}
+      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <div className="px-4 py-5 sm:p-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-6">
+            {STEPS[currentStep - 1].name}
+          </h2>
+          {renderStepContent()}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <button
+          onClick={prevStep}
+          disabled={currentStep === 1}
+          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ArrowLeftIcon className="h-4 w-4 mr-2" />
+          Previous
+        </button>
+
+        {currentStep < STEPS.length && (
+          <button
+            onClick={nextStep}
+            disabled={!canProceed() || loading || generatingContent}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-purple hover:bg-primary-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+            <ArrowRightIcon className="h-4 w-4 ml-2" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
