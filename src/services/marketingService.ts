@@ -225,9 +225,64 @@ export async function sendMarketingCampaign(
     campaign.sentAt = new Date();
     await campaign.save();
 
-    const pendingRecipients = campaign.recipients.filter(
+    let pendingRecipients = campaign.recipients.filter(
       (r) => r.status === "pending",
     );
+
+    // 🚨 CRITICAL TEST MODE SAFETY CHECK 🚨
+    if (campaign.testMode) {
+      const adminEmail = process.env.OTHER_EMAIL;
+
+      if (!adminEmail) {
+        throw new Error(
+          "OTHER_EMAIL environment variable not configured - cannot send test emails",
+        );
+      }
+
+      // HARD LIMIT: Only 1 email in test mode
+      pendingRecipients = [
+        {
+          email: adminEmail,
+          name: "Test Admin",
+          source: "contacts" as const,
+          sourceId: "test",
+          status: "pending" as const,
+          unsubscribeToken: "test-token",
+        },
+      ];
+
+      // SAFETY CHECK: Verify we only have 1 recipient
+      if (pendingRecipients.length !== 1) {
+        throw new Error(
+          `TEST MODE SAFETY VIOLATION: ${pendingRecipients.length} recipients found, expected exactly 1`,
+        );
+      }
+
+      // EXTRA SAFETY: Verify the email is correct
+      if (pendingRecipients[0].email !== adminEmail) {
+        throw new Error(
+          `TEST MODE SAFETY VIOLATION: Wrong email ${pendingRecipients[0].email}, expected ${adminEmail}`,
+        );
+      }
+
+      console.log("🚨 TEST MODE SEND INITIATED:", {
+        timestamp: new Date().toISOString(),
+        campaignId,
+        campaignName: campaign.name,
+        testEmail: adminEmail,
+        originalRecipientCount: campaign.recipients.length,
+        actualSendCount: 1,
+        subject: campaign.subject,
+      });
+    } else {
+      console.log("📧 PRODUCTION MODE SEND INITIATED:", {
+        timestamp: new Date().toISOString(),
+        campaignId,
+        campaignName: campaign.name,
+        recipientCount: pendingRecipients.length,
+        subject: campaign.subject,
+      });
+    }
 
     // Process recipients in batches
     for (let i = 0; i < pendingRecipients.length; i += batchSize) {

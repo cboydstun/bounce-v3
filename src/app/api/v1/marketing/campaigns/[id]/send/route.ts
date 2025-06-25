@@ -58,13 +58,23 @@ export async function POST(
       campaign.testMode = testMode;
 
       if (testMode) {
+        // 🚨 CRITICAL TEST MODE SAFETY 🚨
+        const adminEmail = process.env.OTHER_EMAIL;
+
+        if (!adminEmail) {
+          return NextResponse.json(
+            {
+              error:
+                "OTHER_EMAIL environment variable not configured - cannot send test emails",
+            },
+            { status: 500 },
+          );
+        }
+
         // For test mode, replace recipients with admin email only
         campaign.recipients = [
           {
-            email:
-              session.user.email ||
-              process.env.ADMIN_EMAIL ||
-              "admin@example.com",
+            email: adminEmail,
             name: "Test Admin",
             source: "contacts",
             sourceId: "test",
@@ -72,9 +82,20 @@ export async function POST(
             unsubscribeToken: "test-token",
           },
         ];
+
+        console.log("🚨 TEST MODE RECIPIENTS SET:", {
+          timestamp: new Date().toISOString(),
+          campaignId,
+          campaignName: campaign.name,
+          adminEmail,
+          recipientCount: 1,
+        });
       }
 
       await campaign.save();
+
+      // Wait for database consistency to prevent race conditions
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     // Update campaign status to sending

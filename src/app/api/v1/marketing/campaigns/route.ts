@@ -167,10 +167,23 @@ export async function POST(request: NextRequest) {
         console.error("Error sending campaign:", error);
       });
     } else if (body.sendImmediately && body.testMode) {
+      // 🚨 CRITICAL TEST MODE SAFETY 🚨
+      const adminEmail = process.env.OTHER_EMAIL;
+
+      if (!adminEmail) {
+        return NextResponse.json(
+          {
+            error:
+              "OTHER_EMAIL environment variable not configured - cannot send test emails",
+          },
+          { status: 500 },
+        );
+      }
+
       // For test mode, send only to admin email
       const testRecipients = [
         {
-          email: session.user.email || process.env.EMAIL || "admin@example.com",
+          email: adminEmail,
           name: "Test Admin",
           source: "contacts" as const,
           sourceId: "test",
@@ -181,6 +194,14 @@ export async function POST(request: NextRequest) {
 
       campaign.recipients = testRecipients;
       await campaign.save();
+
+      console.log("🚨 TEST MODE CAMPAIGN CREATED AND SENDING:", {
+        timestamp: new Date().toISOString(),
+        campaignId: campaign._id,
+        campaignName: campaign.name,
+        adminEmail,
+        recipientCount: 1,
+      });
 
       // Send test email
       sendMarketingCampaign(String(campaign._id)).catch((error) => {

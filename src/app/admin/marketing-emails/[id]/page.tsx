@@ -16,6 +16,12 @@ import {
   UserGroupIcon,
   EnvelopeIcon,
   CursorArrowRaysIcon,
+  PlusIcon,
+  TrashIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
 interface Recipient {
@@ -116,6 +122,20 @@ export default function CampaignDetailsPage({
   const [sending, setSending] = useState(false);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [sendTestMode, setSendTestMode] = useState(false);
+
+  // Recipient management state
+  const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(
+    new Set(),
+  );
+  const [recipientFilter, setRecipientFilter] = useState<string>("all");
+  const [recipientSearch, setRecipientSearch] = useState<string>("");
+  const [showAddRecipient, setShowAddRecipient] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [newRecipientEmail, setNewRecipientEmail] = useState("");
+  const [newRecipientName, setNewRecipientName] = useState("");
+  const [recipientToEdit, setRecipientToEdit] = useState<Recipient | null>(
+    null,
+  );
 
   useEffect(() => {
     fetchCampaignDetails();
@@ -249,6 +269,192 @@ export default function CampaignDetailsPage({
   const handleSendClick = () => {
     setShowSendDialog(true);
     setSendTestMode(campaign?.testMode || false);
+  };
+
+  // Recipient management functions
+  const filteredRecipients =
+    analytics?.recipients.filter((recipient) => {
+      const matchesSearch =
+        !recipientSearch ||
+        recipient.email.toLowerCase().includes(recipientSearch.toLowerCase()) ||
+        recipient.name.toLowerCase().includes(recipientSearch.toLowerCase());
+
+      const matchesFilter =
+        recipientFilter === "all" || recipient.status === recipientFilter;
+
+      return matchesSearch && matchesFilter;
+    }) || [];
+
+  const handleSelectAll = () => {
+    if (
+      selectedRecipients.size === filteredRecipients.length &&
+      filteredRecipients.length > 0
+    ) {
+      setSelectedRecipients(new Set());
+    } else {
+      setSelectedRecipients(new Set(filteredRecipients.map((r) => r.email)));
+    }
+  };
+
+  const handleRecipientSelect = (email: string) => {
+    const newSelected = new Set(selectedRecipients);
+    if (newSelected.has(email)) {
+      newSelected.delete(email);
+    } else {
+      newSelected.add(email);
+    }
+    setSelectedRecipients(newSelected);
+  };
+
+  const handleRemoveRecipient = async (email: string) => {
+    if (!campaign || campaign.status !== "draft") return;
+
+    try {
+      const response = await fetch(
+        `/api/v1/marketing/campaigns/${params.id}/recipients`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emails: [email] }),
+        },
+      );
+
+      if (response.ok) {
+        await fetchCampaignDetails();
+        setSelectedRecipients((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(email);
+          return newSet;
+        });
+      } else {
+        setError("Failed to remove recipient");
+      }
+    } catch (err) {
+      setError("Error removing recipient");
+    }
+  };
+
+  const handleResendToRecipient = async (email: string) => {
+    try {
+      const response = await fetch(
+        `/api/v1/marketing/campaigns/${params.id}/resend`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emails: [email] }),
+        },
+      );
+
+      if (response.ok) {
+        await fetchCampaignDetails();
+      } else {
+        setError("Failed to resend to recipient");
+      }
+    } catch (err) {
+      setError("Error resending to recipient");
+    }
+  };
+
+  const generateRecipientCSV = () => {
+    const headers = [
+      "Name",
+      "Email",
+      "Status",
+      "Sent At",
+      "Delivered At",
+      "Opened At",
+      "Clicked At",
+      "Failure Reason",
+    ];
+    const rows = filteredRecipients.map((recipient) => [
+      recipient.name,
+      recipient.email,
+      recipient.status,
+      recipient.sentAt || "",
+      recipient.deliveredAt || "",
+      recipient.openedAt || "",
+      recipient.clickedAt || "",
+      recipient.failureReason || "",
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((field) => `"${field}"`).join(","))
+      .join("\n");
+
+    return csvContent;
+  };
+
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleAddRecipient = async () => {
+    if (!newRecipientEmail || !newRecipientName || campaign?.status !== "draft")
+      return;
+
+    try {
+      const response = await fetch(
+        `/api/v1/marketing/campaigns/${params.id}/recipients`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipients: [
+              {
+                email: newRecipientEmail,
+                name: newRecipientName,
+              },
+            ],
+          }),
+        },
+      );
+
+      if (response.ok) {
+        await fetchCampaignDetails();
+        setShowAddRecipient(false);
+        setNewRecipientEmail("");
+        setNewRecipientName("");
+      } else {
+        setError("Failed to add recipient");
+      }
+    } catch (err) {
+      setError("Error adding recipient");
+    }
+  };
+
+  const handleBulkRemove = async () => {
+    if (selectedRecipients.size === 0 || campaign?.status !== "draft") return;
+
+    try {
+      const response = await fetch(
+        `/api/v1/marketing/campaigns/${params.id}/recipients`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emails: Array.from(selectedRecipients) }),
+        },
+      );
+
+      if (response.ok) {
+        await fetchCampaignDetails();
+        setSelectedRecipients(new Set());
+        setShowRemoveDialog(false);
+      } else {
+        setError("Failed to remove recipients");
+      }
+    } catch (err) {
+      setError("Error removing recipients");
+    }
   };
 
   if (loading) {
@@ -599,74 +805,236 @@ export default function CampaignDetailsPage({
           )}
 
           {activeTab === "recipients" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Recipients ({analytics.recipients.length})
-                </h3>
+            <div className="space-y-6">
+              {/* Recipients Header with Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Recipients Management
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {analytics.recipients.length} total recipients
+                  </p>
+                </div>
+
+                {campaign.status === "draft" && (
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => setShowAddRecipient(true)}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-purple hover:bg-primary-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      Add Recipient
+                    </button>
+
+                    {selectedRecipients.size > 0 && (
+                      <button
+                        onClick={() => setShowRemoveDialog(true)}
+                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <TrashIcon className="h-4 w-4 mr-2" />
+                        Remove ({selectedRecipients.size})
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Recipient
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Sent At
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Last Activity
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {analytics.recipients.map((recipient, index) => (
-                      <tr key={index}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {recipient.name}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {recipient.email}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRecipientStatusColor(recipient.status)}`}
-                          >
-                            {recipient.status}
-                          </span>
-                          {recipient.failureReason && (
-                            <div className="text-xs text-red-600 mt-1">
-                              {recipient.failureReason}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {recipient.sentAt
-                            ? formatDate(recipient.sentAt)
-                            : "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {recipient.clickedAt
-                            ? `Clicked: ${formatDate(recipient.clickedAt)}`
-                            : recipient.openedAt
-                              ? `Opened: ${formatDate(recipient.openedAt)}`
-                              : recipient.deliveredAt
-                                ? `Delivered: ${formatDate(recipient.deliveredAt)}`
-                                : "-"}
-                        </td>
+              {/* Search and Filter Controls */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search recipients by email or name..."
+                      value={recipientSearch}
+                      onChange={(e) => setRecipientSearch(e.target.value)}
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-purple focus:border-primary-purple"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex space-x-3">
+                  <div className="relative">
+                    <select
+                      value={recipientFilter}
+                      onChange={(e) => setRecipientFilter(e.target.value)}
+                      className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary-purple focus:border-primary-purple rounded-md"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="sent">Sent</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="opened">Opened</option>
+                      <option value="clicked">Clicked</option>
+                      <option value="failed">Failed</option>
+                      <option value="unsubscribed">Unsubscribed</option>
+                    </select>
+                    <FunnelIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      const csvContent = generateRecipientCSV();
+                      downloadCSV(
+                        csvContent,
+                        `${campaign.name}-recipients.csv`,
+                      );
+                    }}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                  >
+                    <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                    Export
+                  </button>
+                </div>
+              </div>
+
+              {/* Recipients Table */}
+              <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        {campaign.status === "draft" && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input
+                              type="checkbox"
+                              checked={
+                                selectedRecipients.size ===
+                                  filteredRecipients.length &&
+                                filteredRecipients.length > 0
+                              }
+                              onChange={handleSelectAll}
+                              className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                            />
+                          </th>
+                        )}
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Recipient
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Sent At
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Last Activity
+                        </th>
+                        {campaign.status === "draft" && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        )}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredRecipients.map((recipient, index) => (
+                        <tr
+                          key={`${recipient.email}-${index}`}
+                          className="hover:bg-gray-50"
+                        >
+                          {campaign.status === "draft" && (
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <input
+                                type="checkbox"
+                                checked={selectedRecipients.has(
+                                  recipient.email,
+                                )}
+                                onChange={() =>
+                                  handleRecipientSelect(recipient.email)
+                                }
+                                className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                              />
+                            </td>
+                          )}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {recipient.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {recipient.email}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRecipientStatusColor(recipient.status)}`}
+                            >
+                              {recipient.status}
+                            </span>
+                            {recipient.failureReason && (
+                              <div className="text-xs text-red-600 mt-1">
+                                {recipient.failureReason}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {recipient.sentAt
+                              ? formatDate(recipient.sentAt)
+                              : "-"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {recipient.clickedAt
+                              ? `Clicked: ${formatDate(recipient.clickedAt)}`
+                              : recipient.openedAt
+                                ? `Opened: ${formatDate(recipient.openedAt)}`
+                                : recipient.deliveredAt
+                                  ? `Delivered: ${formatDate(recipient.deliveredAt)}`
+                                  : "-"}
+                          </td>
+                          {campaign.status === "draft" && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => setRecipientToEdit(recipient)}
+                                  className="text-primary-purple hover:text-primary-purple/80"
+                                >
+                                  <PencilIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleRemoveRecipient(recipient.email)
+                                  }
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                                {recipient.status === "failed" && (
+                                  <button
+                                    onClick={() =>
+                                      handleResendToRecipient(recipient.email)
+                                    }
+                                    className="text-green-600 hover:text-green-800"
+                                    title="Retry sending"
+                                  >
+                                    <ArrowPathIcon className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {filteredRecipients.length === 0 && (
+                  <div className="text-center py-12">
+                    <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">
+                      No recipients found
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {recipientSearch || recipientFilter !== "all"
+                        ? "Try adjusting your search or filter criteria."
+                        : "Get started by adding your first recipient."}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -792,8 +1160,7 @@ export default function CampaignDetailsPage({
 
               <div className="mb-4">
                 <p className="text-sm text-gray-600 mb-4">
-                  Are you sure you want to send this campaign to{" "}
-                  {analytics?.stats.total || 0} recipients?
+                  Are you sure you want to send this campaign?
                 </p>
 
                 <div className="space-y-3">
@@ -806,8 +1173,8 @@ export default function CampaignDetailsPage({
                       className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-700">
-                      Send to all recipients ({analytics?.stats.total || 0}{" "}
-                      emails)
+                      🚨 PRODUCTION MODE: Send to all recipients (
+                      {analytics?.stats.total || 0} emails)
                     </span>
                   </label>
 
@@ -820,16 +1187,25 @@ export default function CampaignDetailsPage({
                       className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-700">
-                      Test mode (send only to admin email)
+                      🧪 TEST MODE: Send only to admin email (1 email)
                     </span>
                   </label>
                 </div>
 
+                {!sendTestMode && (
+                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-800 font-medium">
+                      ⚠️ PRODUCTION MODE WARNING: This will send{" "}
+                      {analytics?.stats.total || 0} emails to real customers!
+                    </p>
+                  </div>
+                )}
+
                 {sendTestMode && (
-                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-sm text-yellow-800">
-                      Test mode will send the email only to your admin email
-                      address for testing purposes.
+                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-sm text-green-800 font-medium">
+                      ✅ TEST MODE: Only 1 email will be sent to the admin email
+                      address (OTHER_EMAIL) for testing purposes.
                     </p>
                   </div>
                 )}
@@ -859,6 +1235,240 @@ export default function CampaignDetailsPage({
                       {sendTestMode ? "Send Test Email" : "Send Campaign"}
                     </>
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Recipient Dialog */}
+      {showAddRecipient && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Add Recipient
+                </h3>
+                <button
+                  onClick={() => setShowAddRecipient(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newRecipientName}
+                    onChange={(e) => setNewRecipientName(e.target.value)}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                    placeholder="Enter recipient name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={newRecipientEmail}
+                    onChange={(e) => setNewRecipientEmail(e.target.value)}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                    placeholder="Enter email address"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowAddRecipient(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddRecipient}
+                  disabled={!newRecipientEmail || !newRecipientName}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-purple hover:bg-primary-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <PlusIcon className="h-4 w-4 mr-2 inline-block" />
+                  Add Recipient
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Remove Dialog */}
+      {showRemoveDialog && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Remove Recipients
+                </h3>
+                <button
+                  onClick={() => setShowRemoveDialog(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-600">
+                  Are you sure you want to remove {selectedRecipients.size}{" "}
+                  selected recipient{selectedRecipients.size !== 1 ? "s" : ""}?
+                </p>
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-800">
+                    This action cannot be undone. The recipients will be
+                    permanently removed from this campaign.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowRemoveDialog(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkRemove}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  <TrashIcon className="h-4 w-4 mr-2 inline-block" />
+                  Remove Recipients
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Recipient Dialog */}
+      {recipientToEdit && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Edit Recipient
+                </h3>
+                <button
+                  onClick={() => setRecipientToEdit(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={recipientToEdit.name}
+                    onChange={(e) =>
+                      setRecipientToEdit({
+                        ...recipientToEdit,
+                        name: e.target.value,
+                      })
+                    }
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={recipientToEdit.email}
+                    onChange={(e) =>
+                      setRecipientToEdit({
+                        ...recipientToEdit,
+                        email: e.target.value,
+                      })
+                    }
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Status
+                  </label>
+                  <select
+                    value={recipientToEdit.status}
+                    onChange={(e) =>
+                      setRecipientToEdit({
+                        ...recipientToEdit,
+                        status: e.target.value as Recipient["status"],
+                      })
+                    }
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="sent">Sent</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="opened">Opened</option>
+                    <option value="clicked">Clicked</option>
+                    <option value="failed">Failed</option>
+                    <option value="unsubscribed">Unsubscribed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setRecipientToEdit(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    // Handle edit recipient logic here
+                    try {
+                      const response = await fetch(
+                        `/api/v1/marketing/campaigns/${params.id}/recipients`,
+                        {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ recipient: recipientToEdit }),
+                        },
+                      );
+
+                      if (response.ok) {
+                        await fetchCampaignDetails();
+                        setRecipientToEdit(null);
+                      } else {
+                        setError("Failed to update recipient");
+                      }
+                    } catch (err) {
+                      setError("Error updating recipient");
+                    }
+                  }}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-purple hover:bg-primary-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                >
+                  <PencilIcon className="h-4 w-4 mr-2 inline-block" />
+                  Update Recipient
                 </button>
               </div>
             </div>
