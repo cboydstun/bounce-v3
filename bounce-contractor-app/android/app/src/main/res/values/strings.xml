@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">PartyPad</string>
-    <string name="title_activity_main">PartyPad</string>
-    <string name="package_name">com.partypad.app</string>
-    <string name="custom_url_scheme">com.partypad.app</string>
-</resources>

@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAdminAuth } from "@/middleware/roleAuth";
 import Order from "@/models/Order";
 import Contact from "@/models/Contact";
+import KudosEmail from "@/models/KudosEmail";
 import dbConnect from "@/lib/db/mongoose";
+import { getValidatedCustomerName } from "@/utils/nameUtils";
 
 interface EligibleCustomer {
   id: string;
@@ -42,37 +44,66 @@ async function handler(req: NextRequest) {
 
     const eligibleCustomers: EligibleCustomer[] = [];
 
-    // Fetch eligible orders
+    // Fetch all kudos emails for efficient lookup
+    const allKudosEmails = await KudosEmail.find({}).lean();
+    const kudosEmailMap = new Map();
+    allKudosEmails.forEach((kudos) => {
+      kudosEmailMap.set(`${kudos.customerId}-${kudos.customerType}`, kudos);
+    });
+
+    // Fetch eligible orders - check both eventDate and createdAt since not all orders have eventDate
     const orderQuery: any = {
-      eventDate: {
-        $gte: queryStartDate,
-        $lte: queryEndDate,
-      },
+      $or: [
+        {
+          eventDate: {
+            $gte: queryStartDate,
+            $lte: queryEndDate,
+          },
+        },
+        {
+          eventDate: { $exists: false },
+          createdAt: {
+            $gte: queryStartDate,
+            $lte: queryEndDate,
+          },
+        },
+      ],
       customerEmail: { $exists: true, $ne: null },
     };
-
-    // Filter by kudos email status if specified
-    if (kudosEmailSent === "true") {
-      orderQuery.kudosEmailSent = true;
-    } else if (kudosEmailSent === "false") {
-      orderQuery.kudosEmailSent = { $ne: true };
-    }
 
     const orders = await Order.find(orderQuery).sort({ eventDate: -1 }).lean();
 
     // Process orders
     for (const order of orders) {
       if (order.customerEmail) {
+        const orderId = order._id.toString();
+        const kudosEmail = kudosEmailMap.get(`${orderId}-order`);
+        const hasKudosEmailSent = !!(order.kudosEmailSent || kudosEmail);
+
+        // Apply kudos email status filter
+        if (kudosEmailSent === "true" && !hasKudosEmailSent) continue;
+        if (kudosEmailSent === "false" && hasKudosEmailSent) continue;
+
+        // Get customer name - use validated name or fallback to "Valued Customer"
+        const validatedCustomerName = getValidatedCustomerName(
+          order.customerName,
+        );
+        const displayName = validatedCustomerName || "Valued Customer";
+
         eligibleCustomers.push({
-          id: order._id.toString(),
+          id: orderId,
           type: "order",
-          customerName: order.customerName || "Valued Customer",
+          customerName: displayName,
           customerEmail: order.customerEmail,
           eventDate:
             order.eventDate?.toISOString() || order.createdAt.toISOString(),
           rentalItems: order.items?.map((item: any) => item.name) || [],
-          kudosEmailSent: order.kudosEmailSent || false,
-          kudosEmailSentAt: order.kudosEmailSentAt?.toISOString(),
+          kudosEmailSent: hasKudosEmailSent,
+          kudosEmailSentAt:
+            (order.kudosEmailSentAt || kudosEmail?.sentAt)?.toISOString?.() ||
+            (kudosEmail?.sentAt
+              ? new Date(kudosEmail.sentAt).toISOString()
+              : undefined),
           createdAt: order.createdAt.toISOString(),
         });
       }
@@ -91,40 +122,47 @@ async function handler(req: NextRequest) {
       .sort({ partyDate: -1 })
       .lean();
 
-    // Process contacts (contacts don't have kudos email tracking, so they're always eligible)
-    if (kudosEmailSent !== "true") {
-      // Only include contacts if not filtering for sent emails
-      for (const contact of contacts) {
-        // Check if this contact already has an order (to avoid duplicates)
-        const hasOrder = eligibleCustomers.some(
-          (customer) => customer.customerEmail === contact.email,
-        );
+    // Process contacts - use "Valued Customer" since contacts don't have name fields
+    for (const contact of contacts) {
+      // Check if this contact already has an order (to avoid duplicates)
+      const hasOrder = eligibleCustomers.some(
+        (customer) => customer.customerEmail === contact.email,
+      );
 
-        if (!hasOrder) {
-          const rentalItems = [];
-          if (contact.bouncer) rentalItems.push(contact.bouncer);
-          if (contact.tablesChairs) rentalItems.push("Tables & Chairs");
-          if (contact.generator) rentalItems.push("Generator");
-          if (contact.popcornMachine) rentalItems.push("Popcorn Machine");
-          if (contact.cottonCandyMachine)
-            rentalItems.push("Cotton Candy Machine");
-          if (contact.snowConeMachine) rentalItems.push("Snow Cone Machine");
-          if (contact.basketballShoot) rentalItems.push("Basketball Shoot");
-          if (contact.slushyMachine) rentalItems.push("Slushy Machine");
+      if (!hasOrder) {
+        const contactId = contact._id.toString();
+        const kudosEmail = kudosEmailMap.get(`${contactId}-contact`);
+        const hasKudosEmailSent = !!kudosEmail;
 
-          eligibleCustomers.push({
-            id: contact._id.toString(),
-            type: "contact",
-            customerName: "Valued Customer", // Contacts don't have names
-            customerEmail: contact.email,
-            eventDate: contact.partyDate.toISOString(),
-            rentalItems,
-            kudosEmailSent: false, // Contacts don't track kudos emails
-            createdAt:
-              contact.createdAt?.toISOString() ||
-              contact.partyDate.toISOString(),
-          });
-        }
+        // Apply kudos email status filter
+        if (kudosEmailSent === "true" && !hasKudosEmailSent) continue;
+        if (kudosEmailSent === "false" && hasKudosEmailSent) continue;
+
+        const rentalItems = [];
+        if (contact.bouncer) rentalItems.push(contact.bouncer);
+        if (contact.tablesChairs) rentalItems.push("Tables & Chairs");
+        if (contact.generator) rentalItems.push("Generator");
+        if (contact.popcornMachine) rentalItems.push("Popcorn Machine");
+        if (contact.cottonCandyMachine)
+          rentalItems.push("Cotton Candy Machine");
+        if (contact.snowConeMachine) rentalItems.push("Snow Cone Machine");
+        if (contact.basketballShoot) rentalItems.push("Basketball Shoot");
+        if (contact.slushyMachine) rentalItems.push("Slushy Machine");
+
+        eligibleCustomers.push({
+          id: contactId,
+          type: "contact",
+          customerName: "Valued Customer",
+          customerEmail: contact.email,
+          eventDate: contact.partyDate.toISOString(),
+          rentalItems,
+          kudosEmailSent: hasKudosEmailSent,
+          kudosEmailSentAt: kudosEmail?.sentAt
+            ? new Date(kudosEmail.sentAt).toISOString()
+            : undefined,
+          createdAt:
+            contact.createdAt?.toISOString() || contact.partyDate.toISOString(),
+        });
       }
     }
 

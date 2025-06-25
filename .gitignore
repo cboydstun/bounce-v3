@@ -72,3 +72,5 @@ next-env.d.ts
 /bounce-contractor-app/.env.local
 /bounce-contractor-app/node_modules
 /bounce-contractor-app/dist
+/bounce-contractor-app/ios
+/bounce-contractor-app/android

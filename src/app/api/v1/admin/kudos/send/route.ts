@@ -3,7 +3,9 @@ import { withAdminAuth } from "@/middleware/roleAuth";
 import { sendEmail } from "@/utils/emailService";
 import Order from "@/models/Order";
 import Contact from "@/models/Contact";
+import KudosEmail from "@/models/KudosEmail";
 import dbConnect from "@/lib/db/mongoose";
+import { getValidatedCustomerName } from "@/utils/nameUtils";
 
 interface SendKudosEmailRequest {
   customerId: string;
@@ -51,8 +53,12 @@ async function handler(req: NextRequest) {
         return NextResponse.json({ error: "Order not found" }, { status: 404 });
       }
 
-      // Check if kudos email already sent
-      if (order.kudosEmailSent) {
+      // Check if kudos email already sent (for orders, check both order field and KudosEmail collection)
+      const existingKudosEmail = await KudosEmail.findByCustomer(
+        customerId,
+        customerType,
+      );
+      if (order.kudosEmailSent || existingKudosEmail) {
         return NextResponse.json(
           { error: "Kudos email has already been sent for this order" },
           { status: 400 },
@@ -67,7 +73,8 @@ async function handler(req: NextRequest) {
       }
 
       customerEmail = order.customerEmail;
-      customerName = order.customerName || "Valued Customer";
+      customerName =
+        getValidatedCustomerName(order.customerName) || "Valued Customer";
     } else if (customerType === "contact") {
       const contact = await Contact.findById(customerId);
       if (!contact) {
@@ -77,8 +84,20 @@ async function handler(req: NextRequest) {
         );
       }
 
+      // Check if kudos email already sent for this contact
+      const existingKudosEmail = await KudosEmail.findByCustomer(
+        customerId,
+        customerType,
+      );
+      if (existingKudosEmail) {
+        return NextResponse.json(
+          { error: "Kudos email has already been sent for this contact" },
+          { status: 400 },
+        );
+      }
+
       customerEmail = contact.email;
-      customerName = "Valued Customer"; // Contacts don't have a name field
+      customerName = "Valued Customer"; // Contacts don't have name fields
     } else {
       return NextResponse.json(
         { error: "Invalid customer type" },
@@ -111,12 +130,40 @@ async function handler(req: NextRequest) {
       );
     }
 
-    // Only update the database AFTER email is successfully sent
+    // Track the kudos email for ALL customer types (orders and contacts)
+    try {
+      const kudosEmailRecord = new KudosEmail({
+        customerId,
+        customerType,
+        customerEmail,
+        subject,
+        content,
+        sentAt: new Date(),
+      });
+
+      await kudosEmailRecord.save();
+    } catch (kudosError) {
+      console.error("Failed to create kudos email record:", kudosError);
+      // Don't throw here - email was sent successfully, just tracking failed
+    }
+
+    // Also update the order record if it's an order (for backward compatibility)
     if (customerType === "order" && order) {
-      order.kudosEmailSent = true;
-      order.kudosEmailSentAt = new Date();
-      order.kudosEmailContent = content;
-      await order.save();
+      try {
+        order.kudosEmailSent = true;
+        order.kudosEmailSentAt = new Date();
+        order.kudosEmailContent = content;
+
+        const savedOrder = await order.save();
+
+        console.log("Order updated with kudos email:", {
+          orderId: savedOrder._id,
+          customerId: savedOrder.customerId,
+        });
+      } catch (saveError) {
+        console.error("Failed to save order after sending email:", saveError);
+        // Don't throw here - email was sent and tracked in KudosEmail collection
+      }
     }
 
     return NextResponse.json({
