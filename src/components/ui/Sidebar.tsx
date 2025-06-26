@@ -46,6 +46,11 @@ const navItems: NavItem[] = [
   },
   { name: "Orders", href: "/admin/orders", icon: ShoppingCartIcon },
   { name: "Kudos", href: "/admin/kudos", icon: HeartIcon },
+  {
+    name: "Marketing Emails",
+    href: "/admin/marketing-emails",
+    icon: NewspaperIcon,
+  },
   { name: "Calendar", href: "/admin/calendar", icon: CalendarIcon },
   { name: "Routes", href: "/admin/routes", icon: MapIcon },
   { name: "Reviews", href: "/admin/reviews", icon: StarIcon },
