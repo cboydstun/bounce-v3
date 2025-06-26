@@ -8,6 +8,9 @@ import {
 } from "@/utils/claudeService";
 import dbConnect from "@/lib/db/mongoose";
 
+// Allow up to 30 seconds for Claude API calls to prevent Vercel timeout
+export const maxDuration = 30;
+
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
