@@ -11,6 +11,14 @@ import {
   PaperAirplaneIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
+  PlusIcon,
+  TrashIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  ArrowDownTrayIcon,
+  PencilIcon,
+  UserGroupIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 
 interface RecipientData {
@@ -104,6 +112,20 @@ export default function CreateCampaignPage() {
   const [recipientSummary, setRecipientSummary] =
     useState<RecipientSummary | null>(null);
   const [generatingContent, setGeneratingContent] = useState(false);
+
+  // Recipient management state
+  const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(
+    new Set(),
+  );
+  const [recipientFilter, setRecipientFilter] = useState<string>("all");
+  const [recipientSearch, setRecipientSearch] = useState<string>("");
+  const [showAddRecipient, setShowAddRecipient] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [newRecipientEmail, setNewRecipientEmail] = useState("");
+  const [newRecipientName, setNewRecipientName] = useState("");
+  const [recipientToEdit, setRecipientToEdit] = useState<RecipientData | null>(
+    null,
+  );
 
   const [campaignData, setCampaignData] = useState<CampaignData>({
     name: "",
@@ -269,6 +291,127 @@ export default function CreateCampaignPage() {
   const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+    }
+  };
+
+  // Recipient management functions
+  const filteredRecipients = recipients.filter((recipient) => {
+    const matchesSearch =
+      !recipientSearch ||
+      recipient.email.toLowerCase().includes(recipientSearch.toLowerCase()) ||
+      recipient.name.toLowerCase().includes(recipientSearch.toLowerCase());
+
+    const matchesFilter =
+      recipientFilter === "all" ||
+      (recipientFilter === "consent" && recipient.consentStatus) ||
+      (recipientFilter === "no-consent" && !recipient.consentStatus) ||
+      recipient.source === recipientFilter;
+
+    return matchesSearch && matchesFilter;
+  });
+
+  const handleSelectAll = () => {
+    if (
+      selectedRecipients.size === filteredRecipients.length &&
+      filteredRecipients.length > 0
+    ) {
+      setSelectedRecipients(new Set());
+    } else {
+      setSelectedRecipients(new Set(filteredRecipients.map((r) => r.email)));
+    }
+  };
+
+  const handleRecipientSelect = (email: string) => {
+    const newSelected = new Set(selectedRecipients);
+    if (newSelected.has(email)) {
+      newSelected.delete(email);
+    } else {
+      newSelected.add(email);
+    }
+    setSelectedRecipients(newSelected);
+  };
+
+  const handleRemoveRecipient = (email: string) => {
+    setRecipients((prev) => prev.filter((r) => r.email !== email));
+    setSelectedRecipients((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(email);
+      return newSet;
+    });
+  };
+
+  const handleAddRecipient = () => {
+    if (!newRecipientEmail || !newRecipientName) return;
+
+    // Check for duplicates
+    const exists = recipients.some(
+      (r) => r.email.toLowerCase() === newRecipientEmail.toLowerCase(),
+    );
+    if (exists) {
+      setError("Recipient with this email already exists");
+      return;
+    }
+
+    const newRecipient: RecipientData = {
+      email: newRecipientEmail.toLowerCase().trim(),
+      name: newRecipientName.trim(),
+      source: "contacts",
+      sourceId: "manual",
+      consentStatus: true,
+      lastActivity: new Date(),
+    };
+
+    setRecipients((prev) => [...prev, newRecipient]);
+    setShowAddRecipient(false);
+    setNewRecipientEmail("");
+    setNewRecipientName("");
+    setError(null);
+  };
+
+  const handleBulkRemove = () => {
+    setRecipients((prev) =>
+      prev.filter((r) => !selectedRecipients.has(r.email)),
+    );
+    setSelectedRecipients(new Set());
+    setShowRemoveDialog(false);
+  };
+
+  const generateRecipientCSV = () => {
+    const headers = [
+      "Name",
+      "Email",
+      "Source",
+      "Consent Status",
+      "Last Activity",
+    ];
+    const rows = filteredRecipients.map((recipient) => [
+      recipient.name,
+      recipient.email,
+      recipient.source,
+      recipient.consentStatus ? "Yes" : "No",
+      recipient.lastActivity
+        ? new Date(recipient.lastActivity).toLocaleDateString()
+        : "",
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((field) => `"${field}"`).join(","))
+      .join("\n");
+
+    return csvContent;
+  };
+
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -526,11 +669,12 @@ export default function CreateCampaignPage() {
       case 4:
         return (
           <div className="space-y-6">
+            {/* Recipient Sources Configuration */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Recipient Sources
               </label>
-              <div className="mt-2 space-y-2">
+              <div className="grid grid-cols-1 gap-3">
                 {[
                   {
                     value: "contacts",
@@ -548,7 +692,10 @@ export default function CreateCampaignPage() {
                     description: "Users who opted in for promotions",
                   },
                 ].map((source) => (
-                  <label key={source.value} className="flex items-center">
+                  <label
+                    key={source.value}
+                    className="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50"
+                  >
                     <input
                       type="checkbox"
                       checked={campaignData.recipientSources.includes(
@@ -580,7 +727,8 @@ export default function CreateCampaignPage() {
               </div>
             </div>
 
-            <div>
+            {/* Consent Filter */}
+            <div className="border border-gray-200 rounded-md p-3">
               <label className="flex items-center">
                 <input
                   type="checkbox"
@@ -601,55 +749,10 @@ export default function CreateCampaignPage() {
               </label>
             </div>
 
-            {recipientSummary && (
-              <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
-                <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  Recipient Summary
-                </h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <div className="text-gray-500">Total Recipients</div>
-                    <div className="font-medium">
-                      {recipientSummary.total.toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500">With Consent</div>
-                    <div className="font-medium">
-                      {recipientSummary.withConsent.toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500">From Contacts</div>
-                    <div className="font-medium">
-                      {recipientSummary.bySource.contacts.toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500">From Orders</div>
-                    <div className="font-medium">
-                      {recipientSummary.bySource.orders.toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500">From Promo Opt-ins</div>
-                    <div className="font-medium">
-                      {recipientSummary.bySource.promoOptins.toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500">With Order History</div>
-                    <div className="font-medium">
-                      {recipientSummary.withOrderHistory.toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
+            {/* Fetch Recipients Button */}
             <button
               onClick={fetchRecipients}
-              disabled={loading}
+              disabled={loading || campaignData.recipientSources.length === 0}
               className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple disabled:opacity-50"
             >
               {loading ? (
@@ -658,9 +761,276 @@ export default function CreateCampaignPage() {
                   Loading Recipients...
                 </>
               ) : (
-                "Refresh Recipients"
+                "Load Recipients"
               )}
             </button>
+
+            {/* Recipients Management Interface */}
+            {recipients.length > 0 && (
+              <>
+                {/* Recipients Header with Controls */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-gray-200">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Recipients Management
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {recipients.length} total recipients loaded
+                    </p>
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => setShowAddRecipient(true)}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-purple hover:bg-primary-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      Add Recipient
+                    </button>
+
+                    {selectedRecipients.size > 0 && (
+                      <button
+                        onClick={() => setShowRemoveDialog(true)}
+                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <TrashIcon className="h-4 w-4 mr-2" />
+                        Remove ({selectedRecipients.size})
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Search and Filter Controls */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search recipients by email or name..."
+                        value={recipientSearch}
+                        onChange={(e) => setRecipientSearch(e.target.value)}
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-purple focus:border-primary-purple"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <div className="relative">
+                      <select
+                        value={recipientFilter}
+                        onChange={(e) => setRecipientFilter(e.target.value)}
+                        className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary-purple focus:border-primary-purple rounded-md"
+                      >
+                        <option value="all">All Recipients</option>
+                        <option value="consent">With Consent</option>
+                        <option value="no-consent">No Consent</option>
+                        <option value="contacts">From Contacts</option>
+                        <option value="orders">From Orders</option>
+                        <option value="promoOptins">From Promo Opt-ins</option>
+                      </select>
+                      <FunnelIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        const csvContent = generateRecipientCSV();
+                        downloadCSV(
+                          csvContent,
+                          `${campaignData.name || "campaign"}-recipients.csv`,
+                        );
+                      }}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                    >
+                      <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                      Export
+                    </button>
+                  </div>
+                </div>
+
+                {/* Recipients Table */}
+                <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input
+                              type="checkbox"
+                              checked={
+                                selectedRecipients.size ===
+                                  filteredRecipients.length &&
+                                filteredRecipients.length > 0
+                              }
+                              onChange={handleSelectAll}
+                              className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                            />
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Recipient
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Source
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Consent
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Last Activity
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredRecipients.map((recipient, index) => (
+                          <tr
+                            key={`${recipient.email}-${index}`}
+                            className="hover:bg-gray-50"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <input
+                                type="checkbox"
+                                checked={selectedRecipients.has(
+                                  recipient.email,
+                                )}
+                                onChange={() =>
+                                  handleRecipientSelect(recipient.email)
+                                }
+                                className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                              />
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {recipient.name}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {recipient.email}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                                {recipient.source}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  recipient.consentStatus
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {recipient.consentStatus ? "Yes" : "No"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {recipient.lastActivity
+                                ? new Date(
+                                    recipient.lastActivity,
+                                  ).toLocaleDateString()
+                                : "-"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => setRecipientToEdit(recipient)}
+                                  className="text-primary-purple hover:text-primary-purple/80"
+                                  title="Edit recipient"
+                                >
+                                  <PencilIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleRemoveRecipient(recipient.email)
+                                  }
+                                  className="text-red-600 hover:text-red-800"
+                                  title="Remove recipient"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {filteredRecipients.length === 0 && (
+                    <div className="text-center py-12">
+                      <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400" />
+                      <h3 className="mt-2 text-sm font-medium text-gray-900">
+                        No recipients found
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {recipientSearch || recipientFilter !== "all"
+                          ? "Try adjusting your search or filter criteria."
+                          : "Load recipients using the button above."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Summary Statistics */}
+                {recipientSummary && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">
+                      Recipient Summary
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="text-gray-500">Total Recipients</div>
+                        <div className="font-medium">
+                          {recipients.length.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">With Consent</div>
+                        <div className="font-medium">
+                          {recipients
+                            .filter((r) => r.consentStatus)
+                            .length.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">From Contacts</div>
+                        <div className="font-medium">
+                          {recipients
+                            .filter((r) => r.source === "contacts")
+                            .length.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">From Orders</div>
+                        <div className="font-medium">
+                          {recipients
+                            .filter((r) => r.source === "orders")
+                            .length.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">From Promo Opt-ins</div>
+                        <div className="font-medium">
+                          {recipients
+                            .filter((r) => r.source === "promoOptins")
+                            .length.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">Selected</div>
+                        <div className="font-medium">
+                          {selectedRecipients.size.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         );
 
@@ -954,6 +1324,242 @@ export default function CreateCampaignPage() {
           </button>
         )}
       </div>
+
+      {/* Add Recipient Dialog */}
+      {showAddRecipient && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Add Recipient
+                </h3>
+                <button
+                  onClick={() => setShowAddRecipient(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newRecipientName}
+                    onChange={(e) => setNewRecipientName(e.target.value)}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                    placeholder="Enter recipient name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={newRecipientEmail}
+                    onChange={(e) => setNewRecipientEmail(e.target.value)}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                    placeholder="Enter email address"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowAddRecipient(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddRecipient}
+                  disabled={!newRecipientEmail || !newRecipientName}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-purple hover:bg-primary-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <PlusIcon className="h-4 w-4 mr-2 inline-block" />
+                  Add Recipient
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Remove Dialog */}
+      {showRemoveDialog && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Remove Recipients
+                </h3>
+                <button
+                  onClick={() => setShowRemoveDialog(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-600">
+                  Are you sure you want to remove {selectedRecipients.size}{" "}
+                  selected recipient{selectedRecipients.size !== 1 ? "s" : ""}?
+                </p>
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-800">
+                    This action cannot be undone. The recipients will be removed
+                    from this campaign.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowRemoveDialog(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkRemove}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  <TrashIcon className="h-4 w-4 mr-2 inline-block" />
+                  Remove Recipients
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Recipient Dialog */}
+      {recipientToEdit && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Edit Recipient
+                </h3>
+                <button
+                  onClick={() => setRecipientToEdit(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={recipientToEdit.name}
+                    onChange={(e) =>
+                      setRecipientToEdit({
+                        ...recipientToEdit,
+                        name: e.target.value,
+                      })
+                    }
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={recipientToEdit.email}
+                    onChange={(e) =>
+                      setRecipientToEdit({
+                        ...recipientToEdit,
+                        email: e.target.value,
+                      })
+                    }
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Source
+                  </label>
+                  <select
+                    value={recipientToEdit.source}
+                    onChange={(e) =>
+                      setRecipientToEdit({
+                        ...recipientToEdit,
+                        source: e.target.value as RecipientData["source"],
+                      })
+                    }
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-purple focus:border-primary-purple"
+                  >
+                    <option value="contacts">Contacts</option>
+                    <option value="orders">Orders</option>
+                    <option value="promoOptins">Promo Opt-ins</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={recipientToEdit.consentStatus}
+                      onChange={(e) =>
+                        setRecipientToEdit({
+                          ...recipientToEdit,
+                          consentStatus: e.target.checked,
+                        })
+                      }
+                      className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                    />
+                    <span className="ml-3 text-sm font-medium text-gray-700">
+                      Has given consent
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setRecipientToEdit(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    // Update the recipient in the list
+                    setRecipients((prev) =>
+                      prev.map((r) =>
+                        r.email === recipientToEdit.email ? recipientToEdit : r,
+                      ),
+                    );
+                    setRecipientToEdit(null);
+                  }}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-purple hover:bg-primary-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-purple"
+                >
+                  <PencilIcon className="h-4 w-4 mr-2 inline-block" />
+                  Update Recipient
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

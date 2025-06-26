@@ -141,6 +141,7 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
 ### Customer Relationship Management
 
 - **Kudos Email System**: Personalized follow-up email system to maintain positive customer relationships and encourage Google reviews:
+
   - **Admin Dashboard**: Comprehensive interface at `/admin/kudos` for managing customer follow-up emails
   - **Smart Customer Detection**: Automatically identifies eligible customers from recent orders and contacts
   - **Intelligent Name Resolution**: Uses actual customer names from database records, with professional fallback for missing names
@@ -152,6 +153,21 @@ A modern web application built with Next.js, React, and TypeScript, featuring a 
   - **Professional Email Delivery**: SendGrid integration for reliable email delivery
   - **Filtering & Pagination**: Advanced filtering by date range, email status, and customer type
   - **Name Validation**: Robust validation ensures only quality customer names are used for personalization
+
+- **AI-Powered Marketing Email Campaign System**: Comprehensive email marketing platform leveraging Claude 4 API and SendGrid integration:
+  - **Campaign Management Dashboard**: Full-featured interface at `/admin/marketing-emails` for creating, managing, and analyzing email campaigns
+  - **AI Content Generation**: Claude 4 API integration for generating personalized email content based on campaign parameters
+  - **Multi-Source Recipient Management**: Automatically aggregates recipients from contacts, orders, and promo opt-ins collections with deduplication
+  - **Advanced Filtering & Targeting**: Filter recipients by date range, consent status, order history, and source collection
+  - **Campaign Creation Wizard**: Multi-step campaign creation process with AI assistance and content preview
+  - **Template System**: Support for promotional, seasonal, product announcement, and custom email templates
+  - **Test Mode**: Safe testing functionality to send campaigns to admin email before full deployment
+  - **Bulk Email Delivery**: SendGrid integration with rate limiting and batch processing for reliable delivery
+  - **Real-time Analytics**: Comprehensive tracking of delivery rates, open rates, click rates, and recipient engagement
+  - **Campaign Status Tracking**: Monitor campaigns through draft, sending, completed, and failed states
+  - **Compliance Features**: Automatic unsubscribe links, consent respect, and GDPR compliance
+  - **Campaign History**: Complete audit trail with timestamps, recipient lists, and performance metrics
+  - **Edit & Resend**: Full CRUD operations for draft campaigns with content regeneration capabilities
 
 ## API Routes
 

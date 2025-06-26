@@ -239,8 +239,9 @@ export async function sendMarketingCampaign(
         );
       }
 
-      // HARD LIMIT: Only 1 email in test mode
-      pendingRecipients = [
+      // In test mode, replace all recipients with admin email only
+      // But keep the original recipient structure for webhook processing
+      campaign.recipients = [
         {
           email: adminEmail,
           name: "Test Admin",
@@ -250,6 +251,11 @@ export async function sendMarketingCampaign(
           unsubscribeToken: "test-token",
         },
       ];
+
+      // Update pendingRecipients to match
+      pendingRecipients = campaign.recipients.filter(
+        (r) => r.status === "pending",
+      );
 
       // SAFETY CHECK: Verify we only have 1 recipient
       if (pendingRecipients.length !== 1) {
@@ -270,10 +276,13 @@ export async function sendMarketingCampaign(
         campaignId,
         campaignName: campaign.name,
         testEmail: adminEmail,
-        originalRecipientCount: campaign.recipients.length,
+        originalRecipientCount: 1,
         actualSendCount: 1,
         subject: campaign.subject,
       });
+
+      // Save the campaign with updated recipients for test mode
+      await campaign.save();
     } else {
       console.log("📧 PRODUCTION MODE SEND INITIATED:", {
         timestamp: new Date().toISOString(),
@@ -369,54 +378,221 @@ export async function sendMarketingCampaign(
  */
 export async function handleEmailWebhook(events: any[]): Promise<void> {
   try {
+    console.log("🔄 PROCESSING EMAIL WEBHOOK EVENTS:", {
+      timestamp: new Date().toISOString(),
+      eventCount: events.length,
+    });
+
+    let processedCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
+
     for (const event of events) {
-      const { email, event: eventType, timestamp, sg_message_id } = event;
+      try {
+        const {
+          email,
+          event: eventType,
+          timestamp,
+          sg_message_id,
+          reason,
+        } = event;
 
-      if (!email || !eventType) continue;
-
-      // Find campaigns with this recipient email
-      const campaigns = await MarketingCampaign.find({
-        "recipients.email": email,
-        status: { $in: ["sending", "completed"] },
-      });
-
-      for (const campaign of campaigns) {
-        const recipient = campaign.recipients.find((r) => r.email === email);
-        if (!recipient) continue;
-
-        const eventDate = new Date(timestamp * 1000);
-
-        switch (eventType) {
-          case "delivered":
-            if (recipient.status === "sent") {
-              recipient.status = "delivered";
-              recipient.deliveredAt = eventDate;
-            }
-            break;
-          case "open":
-            if (["sent", "delivered"].includes(recipient.status)) {
-              recipient.status = "opened";
-              recipient.openedAt = eventDate;
-            }
-            break;
-          case "click":
-            if (["sent", "delivered", "opened"].includes(recipient.status)) {
-              recipient.status = "clicked";
-              recipient.clickedAt = eventDate;
-            }
-            break;
-          case "bounce":
-          case "dropped":
-            recipient.status = "failed";
-            recipient.failureReason = event.reason || eventType;
-            break;
+        // Skip events without required fields
+        if (!email || !eventType) {
+          console.warn("⚠️ SKIPPING EVENT: Missing email or event type", {
+            timestamp: new Date().toISOString(),
+            event,
+          });
+          skippedCount++;
+          continue;
         }
 
-        await campaign.save();
+        console.log("📧 PROCESSING EVENT:", {
+          timestamp: new Date().toISOString(),
+          email,
+          eventType,
+          messageId: sg_message_id,
+          eventTimestamp: timestamp,
+        });
+
+        // Find campaigns with this recipient email
+        const campaigns = await MarketingCampaign.find({
+          "recipients.email": email,
+          status: { $in: ["sending", "completed"] },
+        });
+
+        if (campaigns.length === 0) {
+          console.warn("⚠️ NO CAMPAIGNS FOUND for email:", {
+            timestamp: new Date().toISOString(),
+            email,
+            eventType,
+          });
+          skippedCount++;
+          continue;
+        }
+
+        console.log("🎯 FOUND CAMPAIGNS:", {
+          timestamp: new Date().toISOString(),
+          email,
+          campaignCount: campaigns.length,
+          campaignIds: campaigns.map((c) => String(c._id)),
+        });
+
+        for (const campaign of campaigns) {
+          const recipient = campaign.recipients.find((r) => r.email === email);
+          if (!recipient) {
+            console.warn("⚠️ RECIPIENT NOT FOUND in campaign:", {
+              timestamp: new Date().toISOString(),
+              email,
+              campaignId: String(campaign._id),
+              campaignName: campaign.name,
+            });
+            continue;
+          }
+
+          const eventDate = new Date(timestamp * 1000);
+          const previousStatus = recipient.status;
+
+          console.log("📊 UPDATING RECIPIENT STATUS:", {
+            timestamp: new Date().toISOString(),
+            email,
+            campaignId: String(campaign._id),
+            campaignName: campaign.name,
+            previousStatus,
+            eventType,
+            eventDate: eventDate.toISOString(),
+          });
+
+          switch (eventType) {
+            case "delivered":
+              if (recipient.status === "sent") {
+                recipient.status = "delivered";
+                recipient.deliveredAt = eventDate;
+                console.log("✅ STATUS UPDATED: sent → delivered", {
+                  timestamp: new Date().toISOString(),
+                  email,
+                  campaignId: String(campaign._id),
+                });
+              } else {
+                console.log(
+                  "ℹ️ DELIVERY EVENT IGNORED: recipient not in 'sent' status",
+                  {
+                    timestamp: new Date().toISOString(),
+                    email,
+                    currentStatus: recipient.status,
+                  },
+                );
+              }
+              break;
+
+            case "open":
+              if (["sent", "delivered"].includes(recipient.status)) {
+                recipient.status = "opened";
+                recipient.openedAt = eventDate;
+                console.log("✅ STATUS UPDATED: → opened", {
+                  timestamp: new Date().toISOString(),
+                  email,
+                  campaignId: String(campaign._id),
+                  previousStatus,
+                });
+              } else {
+                console.log(
+                  "ℹ️ OPEN EVENT IGNORED: recipient not in valid status",
+                  {
+                    timestamp: new Date().toISOString(),
+                    email,
+                    currentStatus: recipient.status,
+                  },
+                );
+              }
+              break;
+
+            case "click":
+              if (["sent", "delivered", "opened"].includes(recipient.status)) {
+                recipient.status = "clicked";
+                recipient.clickedAt = eventDate;
+                console.log("✅ STATUS UPDATED: → clicked", {
+                  timestamp: new Date().toISOString(),
+                  email,
+                  campaignId: String(campaign._id),
+                  previousStatus,
+                });
+              } else {
+                console.log(
+                  "ℹ️ CLICK EVENT IGNORED: recipient not in valid status",
+                  {
+                    timestamp: new Date().toISOString(),
+                    email,
+                    currentStatus: recipient.status,
+                  },
+                );
+              }
+              break;
+
+            case "bounce":
+            case "dropped":
+            case "spamreport":
+            case "unsubscribe":
+              const newStatus =
+                eventType === "unsubscribe" ? "unsubscribed" : "failed";
+              recipient.status = newStatus;
+              recipient.failureReason = reason || eventType;
+              console.log("❌ STATUS UPDATED: → " + newStatus, {
+                timestamp: new Date().toISOString(),
+                email,
+                campaignId: String(campaign._id),
+                previousStatus,
+                reason: reason || eventType,
+              });
+              break;
+
+            default:
+              console.log("ℹ️ UNKNOWN EVENT TYPE:", {
+                timestamp: new Date().toISOString(),
+                email,
+                eventType,
+                campaignId: String(campaign._id),
+              });
+              break;
+          }
+
+          // Save the campaign with updated recipient status
+          await campaign.save();
+
+          console.log("💾 CAMPAIGN SAVED:", {
+            timestamp: new Date().toISOString(),
+            campaignId: String(campaign._id),
+            email,
+            newStatus: recipient.status,
+          });
+        }
+
+        processedCount++;
+      } catch (eventError) {
+        console.error("❌ ERROR PROCESSING INDIVIDUAL EVENT:", {
+          timestamp: new Date().toISOString(),
+          event,
+          error:
+            eventError instanceof Error ? eventError.message : "Unknown error",
+          stack: eventError instanceof Error ? eventError.stack : undefined,
+        });
+        errorCount++;
       }
     }
+
+    console.log("✅ WEBHOOK PROCESSING COMPLETE:", {
+      timestamp: new Date().toISOString(),
+      totalEvents: events.length,
+      processedCount,
+      skippedCount,
+      errorCount,
+    });
   } catch (error) {
-    console.error("Error handling email webhook:", error);
+    console.error("❌ CRITICAL ERROR in handleEmailWebhook:", {
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw error;
   }
 }

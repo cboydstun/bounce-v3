@@ -137,6 +137,11 @@ export default function CampaignDetailsPage({
     null,
   );
 
+  // Debug state
+  const [showDebug, setShowDebug] = useState(false);
+  const [debugData, setDebugData] = useState<any>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+
   useEffect(() => {
     fetchCampaignDetails();
   }, [params.id]);
@@ -150,6 +155,8 @@ export default function CampaignDetailsPage({
       if (data.success) {
         setCampaign(data.data.campaign);
         setAnalytics(data.data.analytics);
+        setDebugData(data.data); // Store raw debug data
+        setLastRefresh(new Date());
       } else {
         setError("Failed to fetch campaign details");
       }
@@ -158,6 +165,77 @@ export default function CampaignDetailsPage({
       console.error("Error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefreshAnalytics = async () => {
+    await fetchCampaignDetails();
+  };
+
+  const testWebhookEvent = async (eventType: string) => {
+    try {
+      const response = await fetch("/api/v1/marketing/webhooks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([
+          {
+            email: "chrisboydstun@gmail.com",
+            event: eventType,
+            timestamp: Math.floor(Date.now() / 1000),
+            sg_message_id: `test-${eventType}-${Date.now()}`,
+          },
+        ]),
+      });
+
+      const result = await response.json();
+      console.log(`Test ${eventType} webhook result:`, result);
+
+      // Refresh analytics after webhook test
+      setTimeout(() => {
+        fetchCampaignDetails();
+      }, 1000);
+
+      return result;
+    } catch (error) {
+      console.error(`Error testing ${eventType} webhook:`, error);
+      throw error;
+    }
+  };
+
+  const fixCampaignStatus = async () => {
+    try {
+      const response = await fetch(
+        `/api/v1/marketing/campaigns/${params.id}/fix-status`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        console.log("✅ Campaign status fixed:", result);
+        alert(`Fixed ${result.data.updatedCount} recipient statuses!`);
+
+        // Refresh analytics after fix
+        setTimeout(() => {
+          fetchCampaignDetails();
+        }, 1000);
+      } else {
+        console.error("❌ Failed to fix campaign status:", result);
+        alert(`Failed to fix status: ${result.error}`);
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error fixing campaign status:", error);
+      alert("Error fixing campaign status");
+      throw error;
     }
   };
 
@@ -1041,6 +1119,212 @@ export default function CampaignDetailsPage({
 
           {activeTab === "analytics" && (
             <div className="space-y-6">
+              {/* Debug Controls */}
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Analytics Dashboard
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Last updated: {lastRefresh.toLocaleTimeString()}
+                  </p>
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleRefreshAnalytics}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    <ArrowPathIcon className="h-4 w-4 mr-2" />
+                    Refresh
+                  </button>
+                  <button
+                    onClick={() => setShowDebug(!showDebug)}
+                    className={`inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium ${
+                      showDebug
+                        ? "text-white bg-red-600 hover:bg-red-700"
+                        : "text-white bg-blue-600 hover:bg-blue-700"
+                    }`}
+                  >
+                    🐛 Debug {showDebug ? "OFF" : "ON"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Debug Panel */}
+              {showDebug && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                  <h4 className="text-lg font-medium text-yellow-800 mb-4">
+                    🐛 Debug Information
+                  </h4>
+
+                  {/* Campaign Debug Info */}
+                  <div className="mb-6">
+                    <h5 className="font-medium text-yellow-800 mb-2">
+                      Campaign Info:
+                    </h5>
+                    <div className="bg-white p-3 rounded border text-xs font-mono">
+                      <div>
+                        <strong>ID:</strong> {campaign.id}
+                      </div>
+                      <div>
+                        <strong>Status:</strong> {campaign.status}
+                      </div>
+                      <div>
+                        <strong>Test Mode:</strong>{" "}
+                        {campaign.testMode ? "YES" : "NO"}
+                      </div>
+                      <div>
+                        <strong>Sent At:</strong>{" "}
+                        {campaign.sentAt || "Not sent"}
+                      </div>
+                      <div>
+                        <strong>Completed At:</strong>{" "}
+                        {campaign.completedAt || "Not completed"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recipients Debug Info */}
+                  <div className="mb-6">
+                    <h5 className="font-medium text-yellow-800 mb-2">
+                      Recipients Debug:
+                    </h5>
+                    <div className="bg-white p-3 rounded border text-xs font-mono">
+                      <div>
+                        <strong>Total Recipients:</strong>{" "}
+                        {analytics.recipients.length}
+                      </div>
+                      {analytics.recipients.map((recipient, index) => (
+                        <div
+                          key={index}
+                          className="mt-2 p-2 bg-gray-50 rounded"
+                        >
+                          <div>
+                            <strong>Email:</strong> {recipient.email}
+                          </div>
+                          <div>
+                            <strong>Status:</strong> {recipient.status}
+                          </div>
+                          <div>
+                            <strong>Sent At:</strong>{" "}
+                            {recipient.sentAt || "Not sent"}
+                          </div>
+                          <div>
+                            <strong>Delivered At:</strong>{" "}
+                            {recipient.deliveredAt || "Not delivered"}
+                          </div>
+                          <div>
+                            <strong>Opened At:</strong>{" "}
+                            {recipient.openedAt || "Not opened"}
+                          </div>
+                          <div>
+                            <strong>Clicked At:</strong>{" "}
+                            {recipient.clickedAt || "Not clicked"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Analytics Debug Info */}
+                  <div className="mb-6">
+                    <h5 className="font-medium text-yellow-800 mb-2">
+                      Analytics Calculation:
+                    </h5>
+                    <div className="bg-white p-3 rounded border text-xs font-mono">
+                      <div>
+                        <strong>Raw Stats:</strong>
+                      </div>
+                      <div>- Total: {analytics.stats.total}</div>
+                      <div>- Sent: {analytics.stats.sent}</div>
+                      <div>- Delivered: {analytics.stats.delivered}</div>
+                      <div>- Opened: {analytics.stats.opened}</div>
+                      <div>- Clicked: {analytics.stats.clicked}</div>
+                      <div>- Failed: {analytics.stats.failed}</div>
+                      <div>- Unsubscribed: {analytics.stats.unsubscribed}</div>
+                      <div className="mt-2">
+                        <strong>Rates:</strong>
+                      </div>
+                      <div>
+                        - Delivery Rate:{" "}
+                        {analytics.rates.deliveryRate.toFixed(2)}%
+                      </div>
+                      <div>
+                        - Open Rate: {analytics.rates.openRate.toFixed(2)}%
+                      </div>
+                      <div>
+                        - Click Rate: {analytics.rates.clickRate.toFixed(2)}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Webhook Test Buttons */}
+                  <div className="mb-6">
+                    <h5 className="font-medium text-yellow-800 mb-2">
+                      Test Webhook Events:
+                    </h5>
+                    <div className="flex space-x-2 flex-wrap gap-2">
+                      <button
+                        onClick={() => testWebhookEvent("delivered")}
+                        className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                      >
+                        Test Delivered
+                      </button>
+                      <button
+                        onClick={() => testWebhookEvent("open")}
+                        className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                      >
+                        Test Open
+                      </button>
+                      <button
+                        onClick={() => testWebhookEvent("click")}
+                        className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                      >
+                        Test Click
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Fix Status Button */}
+                  {campaign.status === "completed" &&
+                    analytics.recipients.some(
+                      (r) => r.status === "pending",
+                    ) && (
+                      <div className="mb-6">
+                        <h5 className="font-medium text-yellow-800 mb-2">
+                          Fix Campaign Status:
+                        </h5>
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md mb-3">
+                          <p className="text-sm text-red-800">
+                            ⚠️ <strong>Issue Detected:</strong> Campaign is
+                            completed but recipients are still in "pending"
+                            status. This prevents webhook events from working.
+                            Click below to fix this.
+                          </p>
+                        </div>
+                        <button
+                          onClick={fixCampaignStatus}
+                          className="px-4 py-2 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 font-medium"
+                        >
+                          🔧 Fix Recipient Status (pending → sent)
+                        </button>
+                      </div>
+                    )}
+
+                  {/* Raw API Response */}
+                  {debugData && (
+                    <div>
+                      <h5 className="font-medium text-yellow-800 mb-2">
+                        Raw API Response:
+                      </h5>
+                      <div className="bg-white p-3 rounded border text-xs font-mono max-h-40 overflow-y-auto">
+                        <pre>{JSON.stringify(debugData, null, 2)}</pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
