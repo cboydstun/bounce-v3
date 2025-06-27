@@ -47,6 +47,10 @@ const ContactSchema = new Schema<IContactDocument, IContactModel>(
       trim: true,
       match: [phoneRegex, "Please enter a valid phone number"],
     },
+    customerName: {
+      type: String,
+      trim: true,
+    },
     partyDate: {
       type: Date,
       required: [true, "Party date is required"],

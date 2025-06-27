@@ -18,42 +18,57 @@ interface OpenRouteGeocodingResponse {
 }
 
 /**
- * Geocode an address using OpenRoute Service
+ * Geocode an address using OpenRoute Service and return TaskLocation format
  * @param address The address to geocode
  * @returns Promise resolving to TaskLocation or null if geocoding fails
  */
-export async function geocodeAddress(
+export async function geocodeAddressToTaskLocation(
   address: string,
 ): Promise<TaskLocation | null> {
   try {
-    const apiKey = process.env.OPENROUTESERVICE_API_KEY;
-    if (!apiKey) {
-      console.error("OPENROUTESERVICE_API_KEY environment variable is not set");
-      return null;
-    }
+    const coordinates = await geocodeAddress(address);
+    return {
+      type: "Point",
+      coordinates,
+    };
+  } catch (error) {
+    console.error("Error geocoding address to TaskLocation:", error);
+    return null;
+  }
+}
 
-    const encodedAddress = encodeURIComponent(address);
-    const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodedAddress}&size=1`;
-
-    const response = await fetch(url, {
-      method: "GET",
+/**
+ * Geocode an address using OpenRoute Service
+ * @param address The address to geocode
+ * @returns Promise resolving to [longitude, latitude] coordinates
+ */
+export async function geocodeAddress(
+  address: string,
+): Promise<[number, number]> {
+  try {
+    // Use our API route instead of calling OpenRouteService directly
+    const response = await fetch("/api/v1/geocode", {
+      method: "POST",
       headers: {
-        Accept: "application/json",
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({ address }),
     });
 
     if (!response.ok) {
-      console.error(
-        `OpenRoute Service API error: ${response.status} ${response.statusText}`,
-      );
-      return null;
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || `HTTP ${response.status}`;
+      throw new Error(`Geocoding failed: ${errorMessage}`);
     }
 
-    const data: OpenRouteGeocodingResponse = await response.json();
+    const data = await response.json();
 
-    if (data.features && data.features.length > 0) {
-      const feature = data.features[0];
-      const [longitude, latitude] = feature.geometry.coordinates;
+    if (
+      data.coordinates &&
+      Array.isArray(data.coordinates) &&
+      data.coordinates.length === 2
+    ) {
+      const [longitude, latitude] = data.coordinates;
 
       // Validate coordinates
       if (
@@ -64,18 +79,14 @@ export async function geocodeAddress(
         latitude >= -90 &&
         latitude <= 90
       ) {
-        return {
-          type: "Point",
-          coordinates: [longitude, latitude],
-        };
+        return [longitude, latitude];
       }
     }
 
-    console.warn(`No valid coordinates found for address: ${address}`);
-    return null;
+    throw new Error(`Invalid coordinates received for address: ${address}`);
   } catch (error) {
     console.error("Error geocoding address:", error);
-    return null;
+    throw error instanceof Error ? error : new Error("Unknown geocoding error");
   }
 }
 
@@ -90,35 +101,33 @@ export async function reverseGeocode(
   latitude: number,
 ): Promise<string | null> {
   try {
-    const apiKey = process.env.OPENROUTESERVICE_API_KEY;
-    if (!apiKey) {
-      console.error("OPENROUTESERVICE_API_KEY environment variable is not set");
-      return null;
-    }
-
-    const url = `https://api.openrouteservice.org/geocode/reverse?api_key=${apiKey}&point.lon=${longitude}&point.lat=${latitude}&size=1`;
-
-    const response = await fetch(url, {
-      method: "GET",
+    // Use our API route instead of calling OpenRouteService directly
+    const response = await fetch("/api/v1/reverse-geocode", {
+      method: "POST",
       headers: {
-        Accept: "application/json",
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({ longitude, latitude }),
     });
 
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
       console.error(
-        `OpenRoute Service API error: ${response.status} ${response.statusText}`,
+        "Reverse geocoding failed:",
+        errorData.error || `HTTP ${response.status}`,
       );
       return null;
     }
 
-    const data: OpenRouteGeocodingResponse = await response.json();
+    const data = await response.json();
 
-    if (data.features && data.features.length > 0) {
-      return data.features[0].properties.label;
+    if (data.address && typeof data.address === "string") {
+      return data.address;
     }
 
-    console.warn(`No address found for coordinates: ${longitude}, ${latitude}`);
+    console.warn(
+      `No address found for coordinates: [${longitude}, ${latitude}]`,
+    );
     return null;
   } catch (error) {
     console.error("Error reverse geocoding coordinates:", error);

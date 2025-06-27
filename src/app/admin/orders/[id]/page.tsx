@@ -6,8 +6,9 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { TaskSection } from "@/components/tasks/TaskSection";
-import { getOrderById } from "@/utils/api";
+import { getOrderById, getContactById } from "@/utils/api";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
+import { Contact } from "@/types/contact";
 import { CENTRAL_TIMEZONE } from "@/utils/dateUtils";
 
 interface PageProps {
@@ -23,6 +24,7 @@ export default function OrderDetailPage({ params }: PageProps) {
   const id = unwrappedParams.id;
   const router = useRouter();
   const [order, setOrder] = useState<Order | null>(null);
+  const [contact, setContact] = useState<Contact | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +48,20 @@ export default function OrderDetailPage({ params }: PageProps) {
 
           const orderData = await getOrderById(id);
           setOrder(orderData);
+
+          // If order has contactId but missing customer info, fetch contact as fallback
+          if (orderData.contactId && !orderData.customerEmail) {
+            try {
+              const contactData = await getContactById(orderData.contactId);
+              setContact(contactData);
+              console.log(
+                "Fetched contact data as fallback for missing customer info",
+              );
+            } catch (contactError) {
+              console.warn("Could not fetch contact data:", contactError);
+              // Don't set error, just continue without contact fallback
+            }
+          }
         } catch (error) {
           console.error("Error fetching order:", error);
           setError(
@@ -252,24 +268,33 @@ export default function OrderDetailPage({ params }: PageProps) {
 
       {/* Customer Information */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-        <h2 className="text-lg font-medium mb-4">Customer Information</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-medium">Customer Information</h2>
+          {contact && !order.customerEmail && (
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              Data from Contact
+            </span>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm font-medium text-gray-500">Name</p>
             <p className="text-sm text-gray-900">
-              {order.customerName || "N/A"}
+              {order.customerName ||
+                contact?.customerName ||
+                (contact?.email ? contact.email.split("@")[0] : "N/A")}
             </p>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500">Email</p>
             <p className="text-sm text-gray-900">
-              {order.customerEmail || "N/A"}
+              {order.customerEmail || contact?.email || "N/A"}
             </p>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500">Phone</p>
             <p className="text-sm text-gray-900">
-              {order.customerPhone || "N/A"}
+              {order.customerPhone || contact?.phone || "N/A"}
             </p>
           </div>
           <div>
@@ -279,10 +304,29 @@ export default function OrderDetailPage({ params }: PageProps) {
                 ? `${order.customerAddress}, ${order.customerCity || ""}, ${
                     order.customerState || ""
                   } ${order.customerZipCode || ""}`
-                : "N/A"}
+                : contact?.streetAddress
+                  ? `${contact.streetAddress}, ${contact.city || ""}, ${
+                      contact.state || ""
+                    } ${contact.partyZipCode || ""}`
+                  : "N/A"}
             </p>
           </div>
         </div>
+        {contact && !order.customerEmail && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-800">
+              <strong>Note:</strong> This order is missing customer information.
+              The data shown above is from the associated contact record.
+              <Link
+                href={`/admin/orders/${order._id}/edit`}
+                className="text-yellow-900 underline hover:text-yellow-700 ml-1"
+              >
+                Edit this order
+              </Link>{" "}
+              to populate the customer fields permanently.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Order Items */}

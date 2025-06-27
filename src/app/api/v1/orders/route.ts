@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If contactId is provided, check if an order already exists for this contact
-    // and populate delivery/event dates from the contact
+    // and populate customer information and dates from the contact
     if (orderData.contactId) {
       const existingOrder = await Order.findOne({
         contactId: orderData.contactId,
@@ -227,18 +227,64 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Get contact details to populate delivery and event dates
+      // Get contact details to populate customer information and dates
       const contact = await Contact.findById(orderData.contactId);
-      if (contact) {
-        // Set deliveryDate from contact if not provided in orderData
-        if (!orderData.deliveryDate && contact.deliveryDate) {
-          orderData.deliveryDate = contact.deliveryDate;
-        }
-        // Set eventDate from contact's partyDate if not provided in orderData
-        if (!orderData.eventDate && contact.partyDate) {
-          orderData.eventDate = contact.partyDate;
-        }
+      if (!contact) {
+        console.error("Contact not found:", orderData.contactId);
+        return NextResponse.json(
+          { error: "Contact not found" },
+          { status: 404 },
+        );
       }
+
+      // Populate customer information from contact
+      if (!orderData.customerName) {
+        // Use customerName from contact if available, otherwise derive from email
+        orderData.customerName =
+          contact.customerName ||
+          (contact.email ? contact.email.split("@")[0] : "Customer");
+      }
+
+      if (!orderData.customerEmail) {
+        orderData.customerEmail = contact.email;
+      }
+
+      if (!orderData.customerPhone && contact.phone) {
+        orderData.customerPhone = contact.phone;
+      }
+
+      if (!orderData.customerAddress && contact.streetAddress) {
+        orderData.customerAddress = contact.streetAddress;
+      }
+
+      if (!orderData.customerCity && contact.city) {
+        orderData.customerCity = contact.city;
+      }
+
+      if (!orderData.customerState && contact.state) {
+        orderData.customerState = contact.state;
+      }
+
+      if (!orderData.customerZipCode && contact.partyZipCode) {
+        orderData.customerZipCode = contact.partyZipCode;
+      }
+
+      // Set deliveryDate from contact if not provided in orderData
+      if (!orderData.deliveryDate && contact.deliveryDate) {
+        orderData.deliveryDate = contact.deliveryDate;
+      }
+      // Set eventDate from contact's partyDate if not provided in orderData
+      if (!orderData.eventDate && contact.partyDate) {
+        orderData.eventDate = contact.partyDate;
+      }
+
+      console.log("Populated customer information from contact:", {
+        contactId: orderData.contactId,
+        customerName: orderData.customerName,
+        customerEmail: orderData.customerEmail,
+        customerPhone: orderData.customerPhone,
+        customerAddress: orderData.customerAddress,
+      });
     }
 
     // Enhanced items validation with detailed error messages

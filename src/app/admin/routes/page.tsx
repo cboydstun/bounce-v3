@@ -13,6 +13,7 @@ import { Contact } from "../../../types/contact";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getContacts } from "../../../utils/api";
+import { formatDateCT } from "../../../utils/dateUtils";
 
 export default function RoutePlannerPage() {
   const router = useRouter();
@@ -57,12 +58,8 @@ export default function RoutePlannerPage() {
     async function fetchContacts() {
       try {
         setError(null);
-        // Format date as YYYY-MM-DD
-        const formattedDate = new Date(
-          selectedDate.getFullYear(),
-          selectedDate.getMonth(),
-          selectedDate.getDate(),
-        ).toLocaleDateString("en-US");
+        // Format date as YYYY-MM-DD using centralized date utilities
+        const formattedDate = formatDateCT(selectedDate);
 
         // Use the API utility instead of direct fetch
         try {

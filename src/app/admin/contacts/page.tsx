@@ -7,6 +7,14 @@ import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getContacts, updateContact, deleteContact } from "@/utils/api";
 import { Contact as ApiContact, ConfirmationStatus } from "@/types/contact";
+import {
+  formatDateCT,
+  parseDateCT,
+  formatDisplayDateCT,
+  getFirstDayOfMonthCT,
+  getLastDayOfMonthCT,
+  getCurrentDateCT,
+} from "@/utils/dateUtils";
 
 interface Contact {
   id: string;
@@ -65,19 +73,18 @@ export default function AdminContacts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
-  // Helper functions for date ranges
-  const formatDateForInput = (date: Date): string => {
-    return date.toISOString().split("T")[0];
-  };
-
-  // Initialize with first and last day of current month
+  // Initialize with first and last day of current month using dateUtils
   const getCurrentMonthDates = () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const now = getCurrentDateCT();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // getMonth() returns 0-11, but our utility expects 1-12
+
+    const start = getFirstDayOfMonthCT(year, month);
+    const end = getLastDayOfMonthCT(year, month);
+
     return {
-      startDate: formatDateForInput(start),
-      endDate: formatDateForInput(end),
+      startDate: formatDateCT(start),
+      endDate: formatDateCT(end),
     };
   };
 
@@ -92,36 +99,41 @@ export default function AdminContacts() {
     useState<DateRangeFilter>("month");
 
   const setThisWeek = () => {
-    const now = new Date();
+    const now = getCurrentDateCT();
     const start = new Date(now);
     start.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
     const end = new Date(now);
     end.setDate(now.getDate() + (6 - now.getDay())); // End of week (Saturday)
 
-    setStartDate(formatDateForInput(start));
-    setEndDate(formatDateForInput(end));
+    setStartDate(formatDateCT(start));
+    setEndDate(formatDateCT(end));
     setDateRangeFilter("week");
     setCurrentPage(1);
   };
 
   const setThisMonth = () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const now = getCurrentDateCT();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // getMonth() returns 0-11, but our utility expects 1-12
 
-    setStartDate(formatDateForInput(start));
-    setEndDate(formatDateForInput(end));
+    const start = getFirstDayOfMonthCT(year, month);
+    const end = getLastDayOfMonthCT(year, month);
+
+    setStartDate(formatDateCT(start));
+    setEndDate(formatDateCT(end));
     setDateRangeFilter("month");
     setCurrentPage(1);
   };
 
   const setThisYear = () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), 0, 1);
-    const end = new Date(now.getFullYear(), 11, 31);
+    const now = getCurrentDateCT();
+    const year = now.getFullYear();
 
-    setStartDate(formatDateForInput(start));
-    setEndDate(formatDateForInput(end));
+    const start = getFirstDayOfMonthCT(year, 1); // January 1st
+    const end = getLastDayOfMonthCT(year, 12); // December 31st
+
+    setStartDate(formatDateCT(start));
+    setEndDate(formatDateCT(end));
     setDateRangeFilter("year");
     setCurrentPage(1);
   };
@@ -150,17 +162,35 @@ export default function AdminContacts() {
           startDate?: string;
           endDate?: string;
           confirmed?: boolean;
+          confirmationStatus?: string;
+          includeAllStatuses?: boolean;
         } = {};
 
         // Add date filters if set
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
 
-        // Add confirmation filter if not "all"
-        if (confirmationFilter === "confirmed") {
+        // Add confirmation filter based on the selected filter
+        if (confirmationFilter === "all") {
+          // Include all statuses when "all" is selected
+          params.includeAllStatuses = true;
+        } else if (confirmationFilter === "confirmed") {
           params.confirmed = true;
         } else if (confirmationFilter === "pending") {
           params.confirmed = false;
+        } else {
+          // For specific status filters (converted, called, declined, cancelled)
+          // Map the filter values to the actual confirmation status values
+          const statusMap: Record<string, string> = {
+            converted: "Converted",
+            called: "Called / Texted",
+            declined: "Declined",
+            cancelled: "Cancelled",
+          };
+
+          if (statusMap[confirmationFilter]) {
+            params.confirmationStatus = statusMap[confirmationFilter];
+          }
         }
 
         // Call the API with filters
@@ -342,62 +372,74 @@ export default function AdminContacts() {
     setCurrentPage(1);
   };
 
-  // Filter contacts by date range and confirmation status
-  const filteredContacts = contacts.filter((contact) => {
-    // Date filter - Fix timezone issues by using consistent date handling
-    const dateStr = contact.partyDate;
-    let partyDate;
-
-    // Handle MM/DD/YYYY format (e.g., "4/13/2025")
-    if (
-      typeof dateStr === "string" &&
-      dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)
-    ) {
-      // For MM/DD/YYYY format, parse directly without timezone conversion
-      const [month, day, year] = dateStr.split("/").map(Number);
-      partyDate = new Date(year, month - 1, day);
-    }
-    // Handle ISO format dates (YYYY-MM-DD)
-    else if (
-      typeof dateStr === "string" &&
-      dateStr.match(/^\d{4}-\d{2}-\d{2}$/)
-    ) {
-      partyDate = new Date(`${dateStr}T12:00:00`);
-    } else {
-      // For dates with time component, create a date object in local timezone
-      const date = new Date(dateStr);
-      partyDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    }
-
-    // Apply same handling to start/end dates
-    let start = null;
-    if (startDate) {
-      if (startDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        start = new Date(`${startDate}T00:00:00`);
+  // Helper function to parse party dates consistently
+  const parsePartyDate = (dateStr: string): Date | null => {
+    try {
+      // Handle MM/DD/YYYY format (e.g., "4/13/2025")
+      if (
+        typeof dateStr === "string" &&
+        dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)
+      ) {
+        const [month, day, year] = dateStr.split("/").map(Number);
+        const isoDateStr = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+        return parseDateCT(isoDateStr);
+      }
+      // Handle ISO format dates (YYYY-MM-DD)
+      else if (
+        typeof dateStr === "string" &&
+        dateStr.match(/^\d{4}-\d{2}-\d{2}$/)
+      ) {
+        return parseDateCT(dateStr);
+      }
+      // Handle ISO datetime format - extract just the date part
+      else if (
+        typeof dateStr === "string" &&
+        dateStr.match(/^\d{4}-\d{2}-\d{2}T/)
+      ) {
+        return parseDateCT(dateStr.split("T")[0]);
       } else {
-        const sDate = new Date(startDate);
-        start = new Date(
-          sDate.getFullYear(),
-          sDate.getMonth(),
-          sDate.getDate(),
-        );
+        // For other formats, try to parse and extract date part
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+          return parseDateCT(formatDateCT(date));
+        }
+        return null;
+      }
+    } catch (error) {
+      console.warn(`Failed to parse party date: ${dateStr}`, error);
+      return null;
+    }
+  };
+
+  // Filter contacts by date range and confirmation status using dateUtils
+  const filteredContacts = contacts.filter((contact) => {
+    // Date filter - Use centralized date parsing for consistency
+    const partyDate = parsePartyDate(contact.partyDate);
+
+    if (!partyDate) {
+      // If parsing fails, skip this contact
+      return false;
+    }
+
+    // Parse start and end dates using dateUtils
+    let start: Date | null = null;
+    let end: Date | null = null;
+
+    if (startDate) {
+      try {
+        start = parseDateCT(startDate);
+      } catch (error) {
+        console.warn(`Failed to parse start date: ${startDate}`, error);
       }
     }
 
-    let end = null;
     if (endDate) {
-      if (endDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        end = new Date(`${endDate}T23:59:59`);
-      } else {
-        const eDate = new Date(endDate);
-        end = new Date(
-          eDate.getFullYear(),
-          eDate.getMonth(),
-          eDate.getDate(),
-          23,
-          59,
-          59,
-        );
+      try {
+        end = parseDateCT(endDate);
+        // Set end date to end of day for inclusive filtering
+        end.setHours(23, 59, 59, 999);
+      } catch (error) {
+        console.warn(`Failed to parse end date: ${endDate}`, error);
       }
     }
 
@@ -440,40 +482,21 @@ export default function AdminContacts() {
     return meetsDateCriteria && meetsConfirmationCriteria;
   });
 
-  // Sort contacts based on current sort column and direction
+  // Sort contacts based on current sort column and direction using dateUtils
   const sortedContacts = [...filteredContacts].sort((a, b) => {
     if (sortColumn === "partyDate") {
-      // Use consistent date handling for sorting
-      const getConsistentDate = (dateStr: string) => {
-        // Handle MM/DD/YYYY format (e.g., "4/13/2025")
-        if (
-          typeof dateStr === "string" &&
-          dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)
-        ) {
-          // For MM/DD/YYYY format, parse directly without timezone conversion
-          const [month, day, year] = dateStr.split("/").map(Number);
-          return new Date(year, month - 1, day).getTime();
-        }
-        // Handle ISO format dates (YYYY-MM-DD)
-        else if (
-          typeof dateStr === "string" &&
-          dateStr.match(/^\d{4}-\d{2}-\d{2}$/)
-        ) {
-          return new Date(`${dateStr}T12:00:00`).getTime();
-        } else {
-          // For dates with time component or Date objects
-          const date = new Date(dateStr);
-          return new Date(
-            date.getFullYear(),
-            date.getMonth(),
-            date.getDate(),
-          ).getTime();
-        }
-      };
+      // Use the helper function for consistent date parsing
+      const dateA = parsePartyDate(a.partyDate);
+      const dateB = parsePartyDate(b.partyDate);
 
-      const dateA = getConsistentDate(a.partyDate);
-      const dateB = getConsistentDate(b.partyDate);
-      return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
+      // Handle null dates (put them at the end)
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+
+      const timeA = dateA.getTime();
+      const timeB = dateB.getTime();
+      return sortDirection === "asc" ? timeA - timeB : timeB - timeA;
     }
     return 0;
   });
@@ -810,43 +833,14 @@ export default function AdminContacts() {
                     <tr key={contact.id}>
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6">
                         {(() => {
-                          // Fix timezone issue by parsing the date and preserving the day
-                          const dateStr = contact.partyDate;
-
-                          // Handle MM/DD/YYYY format (e.g., "4/13/2025")
-                          if (
-                            typeof dateStr === "string" &&
-                            dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)
-                          ) {
-                            // For MM/DD/YYYY format, parse directly without timezone conversion
-                            const [month, day, year] = dateStr
-                              .split("/")
-                              .map(Number);
-                            return new Date(
-                              year,
-                              month - 1,
-                              day,
-                            ).toLocaleDateString();
+                          // Use the helper function for consistent date display
+                          const partyDate = parsePartyDate(contact.partyDate);
+                          if (partyDate) {
+                            return formatDisplayDateCT(partyDate);
+                          } else {
+                            // Fallback to original date string if parsing fails
+                            return contact.partyDate;
                           }
-
-                          // If the date is in ISO format (YYYY-MM-DD), add time to ensure correct day
-                          if (
-                            typeof dateStr === "string" &&
-                            dateStr.match(/^\d{4}-\d{2}-\d{2}$/)
-                          ) {
-                            return new Date(
-                              `${dateStr}T12:00:00`,
-                            ).toLocaleDateString();
-                          }
-
-                          // For dates with time component or Date objects
-                          const date = new Date(dateStr);
-                          const localDate = new Date(
-                            date.getFullYear(),
-                            date.getMonth(),
-                            date.getDate() + 1, // Add 1 day to ensure correct day
-                          );
-                          return localDate.toLocaleDateString();
                         })()}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm">

@@ -15,6 +15,7 @@ export interface Contact {
   bouncer: string;
   email: string;
   phone?: string;
+  customerName?: string; // Customer's full name
   partyDate: Date;
   deliveryDate: Date;
   partyZipCode: string;
@@ -66,6 +67,7 @@ export interface ContactFormData {
   bouncer: string;
   email: string;
   phone?: string;
+  customerName?: string; // Customer's full name
   partyDate: string;
   deliveryDate?: string;
   partyZipCode: string;

@@ -3,18 +3,24 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { address } = body;
+    const { longitude, latitude } = body;
 
-    if (!address || typeof address !== "string") {
+    if (typeof longitude !== "number" || typeof latitude !== "number") {
       return NextResponse.json(
-        { error: "Address string is required" },
+        { error: "Longitude and latitude numbers are required" },
         { status: 400 },
       );
     }
 
-    if (address.trim().length === 0) {
+    // Validate coordinate ranges
+    if (
+      longitude < -180 ||
+      longitude > 180 ||
+      latitude < -90 ||
+      latitude > 90
+    ) {
       return NextResponse.json(
-        { error: "Address cannot be empty" },
+        { error: `Invalid coordinates: [${longitude}, ${latitude}]` },
         { status: 400 },
       );
     }
@@ -28,10 +34,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Making geocoding request for address: ${address}`);
+    console.log(
+      `Making reverse geocoding request for coordinates: [${longitude}, ${latitude}]`,
+    );
 
-    const encodedAddress = encodeURIComponent(address);
-    const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodedAddress}&size=1`;
+    const url = `https://api.openrouteservice.org/geocode/reverse?api_key=${apiKey}&point.lon=${longitude}&point.lat=${latitude}&size=1`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -63,7 +70,7 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json(
-        { error: `Geocoding API error: ${response.status}` },
+        { error: `Reverse geocoding API error: ${response.status}` },
         { status: 500 },
       );
     }
@@ -72,34 +79,25 @@ export async function POST(request: NextRequest) {
 
     if (data.features && data.features.length > 0) {
       const feature = data.features[0];
-      const [longitude, latitude] = feature.geometry.coordinates;
-
-      // Validate coordinates
-      if (
-        typeof longitude === "number" &&
-        typeof latitude === "number" &&
-        longitude >= -180 &&
-        longitude <= 180 &&
-        latitude >= -90 &&
-        latitude <= 90
-      ) {
-        return NextResponse.json({
-          coordinates: [longitude, latitude],
-          label: feature.properties.label,
-          confidence: feature.properties.confidence,
-        });
-      }
+      return NextResponse.json({
+        address: feature.properties.label,
+        confidence: feature.properties.confidence,
+      });
     }
 
-    console.warn(`No valid coordinates found for address: ${address}`);
+    console.warn(
+      `No address found for coordinates: [${longitude}, ${latitude}]`,
+    );
     return NextResponse.json(
-      { error: `Could not geocode address: ${address}` },
+      {
+        error: `No address found for coordinates: [${longitude}, ${latitude}]`,
+      },
       { status: 404 },
     );
   } catch (error) {
-    console.error("Geocoding error:", error);
+    console.error("Reverse geocoding error:", error);
     return NextResponse.json(
-      { error: "Failed to geocode address" },
+      { error: "Failed to reverse geocode coordinates" },
       { status: 500 },
     );
   }

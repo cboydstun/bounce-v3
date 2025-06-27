@@ -1,5 +1,6 @@
 import React from "react";
-import { differenceInHours, differenceInDays, format } from "date-fns";
+import { differenceInHours, differenceInDays } from "date-fns";
+import { formatDisplayDateCT } from "@/utils/dateUtils";
 
 interface DeliveryCountdownProps {
   deliveryDate?: Date;
@@ -115,7 +116,7 @@ export const DeliveryCountdown: React.FC<DeliveryCountdownProps> = ({
   };
 
   const config = getCountdownConfig();
-  const formattedDate = format(delivery, "MMM d, yyyy 'at' h:mm a");
+  const formattedDate = formatDisplayDateCT(delivery);
 
   return (
     <div className={`${className}`}>

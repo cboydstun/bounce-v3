@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getOrderById, updateOrder, getContactById } from "@/utils/api";
 import { Order, OrderItemType } from "@/types/order";
 import { Contact } from "@/types/contact";
+import { formatDateCT, CENTRAL_TIMEZONE } from "@/utils/dateUtils";
 
 interface OrderItem {
   type: OrderItemType;
@@ -330,11 +331,16 @@ export default function EditOrderPage({ params }: PageProps) {
     }
   };
 
-  // Format date for display
+  // Format date for display in Central Time
   const formatDate = (dateString: string | Date) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toLocaleDateString();
+    return date.toLocaleDateString("en-US", {
+      timeZone: CENTRAL_TIMEZONE,
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   // Show loading spinner when session is loading or when fetching order
@@ -467,6 +473,152 @@ export default function EditOrderPage({ params }: PageProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Customer Information */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium">Customer Information</h2>
+            {contact && !order.customerEmail && (
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                Auto-populated from Contact
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Customer Name
+                <input
+                  type="text"
+                  name="customerName"
+                  value={
+                    formData.customerName !== undefined
+                      ? formData.customerName
+                      : order.customerName ||
+                        contact?.customerName ||
+                        (contact?.email ? contact.email.split("@")[0] : "") ||
+                        ""
+                  }
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Enter customer name"
+                />
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Customer Email
+                <input
+                  type="email"
+                  name="customerEmail"
+                  value={
+                    formData.customerEmail !== undefined
+                      ? formData.customerEmail
+                      : order.customerEmail || contact?.email || ""
+                  }
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="customer@example.com"
+                />
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Customer Phone
+                <input
+                  type="tel"
+                  name="customerPhone"
+                  value={
+                    formData.customerPhone !== undefined
+                      ? formData.customerPhone
+                      : order.customerPhone || contact?.phone || ""
+                  }
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="(555) 123-4567"
+                />
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Customer Address
+                <input
+                  type="text"
+                  name="customerAddress"
+                  value={
+                    formData.customerAddress !== undefined
+                      ? formData.customerAddress
+                      : order.customerAddress || contact?.streetAddress || ""
+                  }
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="123 Main Street"
+                />
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Customer City
+                <input
+                  type="text"
+                  name="customerCity"
+                  value={
+                    formData.customerCity !== undefined
+                      ? formData.customerCity
+                      : order.customerCity || contact?.city || ""
+                  }
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="San Antonio"
+                />
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Customer State
+                <input
+                  type="text"
+                  name="customerState"
+                  value={
+                    formData.customerState !== undefined
+                      ? formData.customerState
+                      : order.customerState || contact?.state || "Texas"
+                  }
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Texas"
+                />
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Customer Zip Code
+                <input
+                  type="text"
+                  name="customerZipCode"
+                  value={
+                    formData.customerZipCode !== undefined
+                      ? formData.customerZipCode
+                      : order.customerZipCode || contact?.partyZipCode || ""
+                  }
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="78201"
+                />
+              </label>
+            </div>
+          </div>
+          {contact && !order.customerEmail && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Customer information has been
+                auto-populated from the associated contact record. You can
+                modify these fields as needed and save the changes to update the
+                order permanently.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Order Information */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-lg font-medium mb-4">Order Information</h2>

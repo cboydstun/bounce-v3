@@ -298,6 +298,7 @@ export const getContacts = async (params?: {
   startDate?: string;
   endDate?: string;
   confirmed?: boolean | string; // Support both boolean and string values
+  confirmationStatus?: string; // New parameter for specific confirmation status filtering
   limit?: number;
   page?: number;
   deliveryDay?: string;
@@ -313,8 +314,12 @@ export const getContacts = async (params?: {
     queryParams.append("endDate", params.endDate);
   }
 
-  // Only include confirmed parameter if includeAllStatuses is not true
-  if (params?.confirmed !== undefined && !params?.includeAllStatuses) {
+  // Handle specific confirmation status filtering
+  if (params?.confirmationStatus) {
+    queryParams.append("confirmationStatus", params.confirmationStatus);
+  }
+  // Only include confirmed parameter if includeAllStatuses is not true and no specific status is requested
+  else if (params?.confirmed !== undefined && !params?.includeAllStatuses) {
     queryParams.append("confirmed", params.confirmed.toString());
   }
 
@@ -388,6 +393,7 @@ export const updateContact = async (
     bouncer: string;
     email: string;
     phone: string;
+    customerName: string;
     partyDate: string;
     partyZipCode: string;
     message: string;

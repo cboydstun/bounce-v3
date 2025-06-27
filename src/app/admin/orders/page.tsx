@@ -7,7 +7,14 @@ import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getOrders, deleteOrder, syncAllAgreementStatuses } from "@/utils/api";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
-import { formatDisplayDateCT } from "@/utils/dateUtils";
+import {
+  formatDateCT,
+  parseDateCT,
+  formatDisplayDateCT,
+  getFirstDayOfMonthCT,
+  getLastDayOfMonthCT,
+  getCurrentDateCT,
+} from "@/utils/dateUtils";
 import AgreementStatusBadge from "@/components/AgreementStatusBadge";
 import DeliveryCountdown from "@/components/DeliveryCountdown";
 import AgreementActions from "@/components/AgreementActions";
@@ -21,14 +28,76 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [syncResults, setSyncResults] = useState<string | null>(null);
 
+  // Initialize with first and last day of current month using dateUtils
+  const getCurrentMonthDates = () => {
+    const now = getCurrentDateCT();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // getMonth() returns 0-11, but our utility expects 1-12
+
+    const start = getFirstDayOfMonthCT(year, month);
+    const end = getLastDayOfMonthCT(year, month);
+
+    return {
+      startDate: formatDateCT(start),
+      endDate: formatDateCT(end),
+    };
+  };
+
+  const { startDate: initialStartDate, endDate: initialEndDate } =
+    getCurrentMonthDates();
+
   // Filter states
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>(initialStartDate);
+  const [endDate, setEndDate] = useState<string>(initialEndDate);
   const [status, setStatus] = useState<string>("");
   const [paymentStatus, setPaymentStatus] = useState<string>("");
   const [orderNumber, setOrderNumber] = useState<string>("");
   const [customerSearch, setCustomerSearch] = useState<string>("");
   const [taskStatus, setTaskStatus] = useState<string>("");
+  const [dateRangeFilter, setDateRangeFilter] = useState<
+    "none" | "week" | "month" | "year"
+  >("month");
+
+  // Date range helper functions using centralized date utilities
+  const setThisWeek = () => {
+    const now = getCurrentDateCT();
+    const start = new Date(now);
+    start.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    const end = new Date(now);
+    end.setDate(now.getDate() + (6 - now.getDay())); // End of week (Saturday)
+
+    setStartDate(formatDateCT(start));
+    setEndDate(formatDateCT(end));
+    setDateRangeFilter("week");
+    setCurrentPage(1);
+  };
+
+  const setThisMonth = () => {
+    const now = getCurrentDateCT();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // getMonth() returns 0-11, but our utility expects 1-12
+
+    const start = getFirstDayOfMonthCT(year, month);
+    const end = getLastDayOfMonthCT(year, month);
+
+    setStartDate(formatDateCT(start));
+    setEndDate(formatDateCT(end));
+    setDateRangeFilter("month");
+    setCurrentPage(1);
+  };
+
+  const setThisYear = () => {
+    const now = getCurrentDateCT();
+    const year = now.getFullYear();
+
+    const start = getFirstDayOfMonthCT(year, 1); // January 1st
+    const end = getLastDayOfMonthCT(year, 12); // December 31st
+
+    setStartDate(formatDateCT(start));
+    setEndDate(formatDateCT(end));
+    setDateRangeFilter("year");
+    setCurrentPage(1);
+  };
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -320,30 +389,85 @@ export default function OrdersPage() {
             </div>
           </div>
 
-          {/* Advanced Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Date Range Filters */}
+          <div className="flex flex-wrap items-end gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="start-date"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Start Date
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
               </label>
+              <input
+                type="date"
+                id="start-date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setDateRangeFilter("none");
+                  setCurrentPage(1);
+                }}
+                className="mt-1 block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="end-date"
+                className="block text-sm font-medium text-gray-700"
+              >
                 End Date
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
               </label>
+              <input
+                type="date"
+                id="end-date"
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setDateRangeFilter("none");
+                  setCurrentPage(1);
+                }}
+                className="mt-1 block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              />
             </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={setThisWeek}
+                className={`rounded-md px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ${
+                  dateRangeFilter === "week"
+                    ? "bg-blue-600 text-white ring-blue-600"
+                    : "bg-white text-gray-900 ring-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                This Week
+              </button>
+              <button
+                type="button"
+                onClick={setThisMonth}
+                className={`rounded-md px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ${
+                  dateRangeFilter === "month"
+                    ? "bg-blue-600 text-white ring-blue-600"
+                    : "bg-white text-gray-900 ring-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                This Month
+              </button>
+              <button
+                type="button"
+                onClick={setThisYear}
+                className={`rounded-md px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ${
+                  dateRangeFilter === "year"
+                    ? "bg-blue-600 text-white ring-blue-600"
+                    : "bg-white text-gray-900 ring-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                This Year
+              </button>
+            </div>
+          </div>
+
+          {/* Advanced Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Order Status
@@ -496,12 +620,16 @@ export default function OrdersPage() {
                       <DeliveryCountdown
                         deliveryDate={
                           order.deliveryDate
-                            ? new Date(order.deliveryDate)
+                            ? parseDateCT(
+                                order.deliveryDate.toString().split("T")[0],
+                              )
                             : undefined
                         }
                         eventDate={
                           order.eventDate
-                            ? new Date(order.eventDate)
+                            ? parseDateCT(
+                                order.eventDate.toString().split("T")[0],
+                              )
                             : undefined
                         }
                         notes={order.notes}
@@ -625,11 +753,17 @@ export default function OrdersPage() {
                     <DeliveryCountdown
                       deliveryDate={
                         order.deliveryDate
-                          ? new Date(order.deliveryDate)
+                          ? parseDateCT(
+                              order.deliveryDate.toString().split("T")[0],
+                            )
                           : undefined
                       }
                       eventDate={
-                        order.eventDate ? new Date(order.eventDate) : undefined
+                        order.eventDate
+                          ? parseDateCT(
+                              order.eventDate.toString().split("T")[0],
+                            )
+                          : undefined
                       }
                       notes={order.notes}
                     />
