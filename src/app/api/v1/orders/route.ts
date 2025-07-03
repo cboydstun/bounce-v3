@@ -50,16 +50,16 @@ export async function GET(request: NextRequest) {
     // Build query
     const query: Record<string, unknown> = {};
 
-    // Date range filter for createdAt using Central Time
+    // Date range filter for deliveryDate using Central Time
     if (startDate && endDate) {
-      query.createdAt = {
+      query.deliveryDate = {
         $gte: parseDateCT(startDate),
         $lte: parseDateCT(endDate),
       };
     } else if (startDate) {
-      query.createdAt = { $gte: parseDateCT(startDate) };
+      query.deliveryDate = { $gte: parseDateCT(startDate) };
     } else if (endDate) {
-      query.createdAt = { $lte: parseDateCT(endDate) };
+      query.deliveryDate = { $lte: parseDateCT(endDate) };
     }
 
     // Filter by status
@@ -95,33 +95,8 @@ export async function GET(request: NextRequest) {
     const sortObj: Record<string, 1 | -1> = {};
     sortObj[sortBy] = sortOrder === "asc" ? 1 : -1;
 
-    // Handle null delivery dates by adding a secondary sort
+    // Handle delivery date sorting - clean implementation
     if (sortBy === "deliveryDate") {
-      // For delivery date sorting, put null values at the end regardless of sort order
-      const sortPipeline = [
-        {
-          $addFields: {
-            deliveryDateSortKey: {
-              $cond: {
-                if: { $eq: ["$deliveryDate", null] },
-                then:
-                  sortOrder === "asc"
-                    ? new Date("2099-12-31")
-                    : new Date("1900-01-01"),
-                else: "$deliveryDate",
-              },
-            },
-          },
-        },
-        {
-          $sort: {
-            deliveryDateSortKey: sortOrder === "asc" ? 1 : -1,
-            createdAt: -1,
-          },
-        },
-        { $unset: "deliveryDateSortKey" },
-      ];
-
       let orders;
 
       // If filtering by task status, we need to use aggregation
@@ -144,8 +119,8 @@ export async function GET(request: NextRequest) {
               "tasks.status": taskStatus,
             },
           },
-          // Add delivery date sorting logic
-          ...sortPipeline,
+          // Sort by delivery date
+          { $sort: { deliveryDate: sortOrder === "asc" ? 1 : -1 } },
           // Add pagination
           { $skip: (page - 1) * limit },
           { $limit: limit },
@@ -188,17 +163,14 @@ export async function GET(request: NextRequest) {
           },
         });
       } else {
-        // Regular query without task status filtering - use aggregation for delivery date sorting
-        const pipeline: any[] = [
-          { $match: query },
-          ...sortPipeline,
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
-        ];
-
-        orders = await Order.aggregate(pipeline);
+        // Use simple find with sort - no aggregation
         const totalOrders = await Order.countDocuments(query);
         const totalPages = Math.ceil(totalOrders / limit);
+
+        orders = await Order.find(query)
+          .sort({ deliveryDate: sortOrder === "asc" ? 1 : -1 })
+          .skip((page - 1) * limit)
+          .limit(limit);
 
         return NextResponse.json({
           orders,

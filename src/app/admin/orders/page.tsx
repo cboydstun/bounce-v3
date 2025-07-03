@@ -80,7 +80,7 @@ export default function OrdersPage() {
   const [taskStatus, setTaskStatus] = useState<string>("");
   const [dateRangeFilter, setDateRangeFilter] = useState<
     "none" | "week" | "month" | "year" | "saturday" | "weekend"
-  >("week");
+  >("none");
   const [viewMode, setViewMode] = useState<"table" | "timeline">("table");
 
   // Sorting states
@@ -280,9 +280,10 @@ export default function OrdersPage() {
     fetchOrders(page);
   };
 
-  // Initial fetch
+  // Initial fetch - show all orders by default
   useEffect(() => {
     if (authStatus === "authenticated") {
+      // Fetch all orders without any date filter
       fetchOrders();
     }
   }, [authStatus]);
