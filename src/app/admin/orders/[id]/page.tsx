@@ -49,14 +49,12 @@ export default function OrderDetailPage({ params }: PageProps) {
           const orderData = await getOrderById(id);
           setOrder(orderData);
 
-          // If order has contactId but missing customer info, fetch contact as fallback
-          if (orderData.contactId && !orderData.customerEmail) {
+          // If order has a contactId, fetch the contact data for fallback information
+          if (orderData.contactId) {
             try {
               const contactData = await getContactById(orderData.contactId);
               setContact(contactData);
-              console.log(
-                "Fetched contact data as fallback for missing customer info",
-              );
+              console.log("Fetched contact data for fallback information");
             } catch (contactError) {
               console.warn("Could not fetch contact data:", contactError);
               // Don't set error, just continue without contact fallback
@@ -264,6 +262,61 @@ export default function OrderDetailPage({ params }: PageProps) {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Event & Delivery Information */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-medium">Event & Delivery Information</h2>
+          {contact && (!order.deliveryDate || !order.eventDate) && (
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              Data from Contact
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm font-medium text-gray-500">Delivery Date</p>
+            <p className="text-sm text-gray-900">
+              {order.deliveryDate
+                ? formatDate(order.deliveryDate)
+                : contact?.deliveryDate
+                  ? formatDate(contact.deliveryDate)
+                  : "Not set"}
+            </p>
+            {!order.deliveryDate && contact?.deliveryDate && (
+              <p className="text-xs text-blue-600">From contact record</p>
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500">Event Date</p>
+            <p className="text-sm text-gray-900">
+              {order.eventDate
+                ? formatDate(order.eventDate)
+                : contact?.partyDate
+                  ? formatDate(contact.partyDate)
+                  : "Not set"}
+            </p>
+            {!order.eventDate && contact?.partyDate && (
+              <p className="text-xs text-blue-600">From contact party date</p>
+            )}
+          </div>
+        </div>
+        {contact && (!order.deliveryDate || !order.eventDate) && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-800">
+              <strong>Note:</strong> Some date information is missing from this
+              order and is being shown from the associated contact record.
+              <Link
+                href={`/admin/orders/${order._id}/edit`}
+                className="text-yellow-900 underline hover:text-yellow-700 ml-1"
+              >
+                Edit this order
+              </Link>{" "}
+              to set the delivery and event dates permanently.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Customer Information */}

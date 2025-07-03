@@ -83,6 +83,10 @@ export default function OrdersPage() {
   >("week");
   const [viewMode, setViewMode] = useState<"table" | "timeline">("table");
 
+  // Sorting states
+  const [sortBy, setSortBy] = useState<string>("deliveryDate");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
   // Date range helper functions using centralized date utilities
   const setThisWeek = () => {
     const now = getCurrentDateCT();
@@ -247,6 +251,10 @@ export default function OrdersPage() {
       if (effectiveOrderNumber) filters.orderNumber = effectiveOrderNumber;
       if (effectiveCustomerSearch) filters.customer = effectiveCustomerSearch;
       if (effectiveTaskStatus) filters.taskStatus = effectiveTaskStatus;
+
+      // Add sorting parameters
+      filters.sortBy = sortBy;
+      filters.sortOrder = sortOrder;
 
       const data = await getOrders(filters);
       setOrders(data.orders || []);
@@ -509,6 +517,24 @@ export default function OrdersPage() {
       default:
         return "bg-gray-100 text-gray-800";
     }
+  };
+
+  // Handle sorting
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      // Toggle sort order if clicking the same field
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      // Set new field and default to ascending
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+
+    // Reset to first page and fetch with new sort
+    setCurrentPage(1);
+    setTimeout(() => {
+      fetchOrders(1);
+    }, 0);
   };
 
   // Show loading spinner when session is loading
@@ -971,9 +997,17 @@ export default function OrdersPage() {
                 <tr>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={() => handleSort("deliveryDate")}
                   >
-                    Delivery Date
+                    <div className="flex items-center space-x-1">
+                      <span>Delivery Date</span>
+                      {sortBy === "deliveryDate" && (
+                        <span className="text-blue-600">
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </div>
                   </th>
                   <th
                     scope="col"

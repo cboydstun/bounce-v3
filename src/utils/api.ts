@@ -624,6 +624,8 @@ export const getOrders = async (params?: {
   orderNumber?: string;
   customer?: string;
   taskStatus?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
 }) => {
@@ -639,6 +641,8 @@ export const getOrders = async (params?: {
     queryParams.append("orderNumber", params.orderNumber);
   if (params?.customer) queryParams.append("customer", params.customer);
   if (params?.taskStatus) queryParams.append("taskStatus", params.taskStatus);
+  if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+  if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
   if (params?.page) queryParams.append("page", params.page.toString());
   if (params?.limit) queryParams.append("limit", params.limit.toString());
 
