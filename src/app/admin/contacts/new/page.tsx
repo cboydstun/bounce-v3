@@ -68,11 +68,24 @@ export default function NewContact() {
       setError(null);
 
       // Use the centralized API client which handles NextAuth authentication
-      // Cast the formData to match the expected API type
+      // Prepare the contact data with proper formatting
       const contactData = {
         ...formData,
-        confirmed: formData.confirmed as boolean | undefined, // Cast to boolean for API compatibility
+        // Keep confirmed as string for the new enum system
+        confirmed: formData.confirmed || "Pending",
+        // Ensure partyDate is properly formatted as ISO string
+        partyDate: formData.partyDate,
+        // Set deliveryDate to partyDate if not provided (model default might not work in all cases)
+        deliveryDate: formData.deliveryDay || formData.partyDate,
+        // Ensure all required fields are present
+        bouncer: formData.bouncer.trim(),
+        email: formData.email.trim(),
+        partyZipCode: formData.partyZipCode.trim(),
+        sourcePage: formData.sourcePage || "admin",
       };
+
+      console.log("Sending contact data:", contactData); // Debug log
+
       await createContact(contactData);
 
       // Redirect to contacts list on success

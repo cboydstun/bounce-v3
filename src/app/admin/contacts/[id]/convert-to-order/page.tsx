@@ -245,11 +245,12 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         (sum, item) => sum + item.totalPrice,
         0,
       );
+      const taxAmount = Math.round(subtotal * 0.0825 * 100) / 100;
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
       const totalAmount =
         Math.round(
           (subtotal +
-            formData.taxAmount +
+            taxAmount +
             formData.deliveryFee +
             processingFee -
             formData.discountAmount) *
@@ -263,6 +264,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         ...prev,
         items: updatedItems,
         subtotal,
+        taxAmount,
         processingFee,
         totalAmount,
         balanceDue,
@@ -376,11 +378,12 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         (sum, item) => sum + item.totalPrice,
         0,
       );
+      const taxAmount = Math.round(subtotal * 0.0825 * 100) / 100;
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
       const totalAmount =
         Math.round(
           (subtotal +
-            prev.taxAmount +
+            taxAmount +
             prev.deliveryFee +
             processingFee -
             prev.discountAmount) *
@@ -393,6 +396,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         ...prev,
         items: updatedItems,
         subtotal,
+        taxAmount,
         processingFee,
         totalAmount,
         balanceDue,
@@ -421,11 +425,12 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         (sum, item) => sum + item.totalPrice,
         0,
       );
+      const taxAmount = Math.round(subtotal * 0.0825 * 100) / 100;
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
       const totalAmount =
         Math.round(
           (subtotal +
-            prev.taxAmount +
+            taxAmount +
             prev.deliveryFee +
             processingFee -
             prev.discountAmount) *
@@ -438,6 +443,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         ...prev,
         items: updatedItems,
         subtotal,
+        taxAmount,
         processingFee,
         totalAmount,
         balanceDue,
@@ -459,11 +465,12 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         (sum, item) => sum + item.totalPrice,
         0,
       );
+      const taxAmount = Math.round(subtotal * 0.0825 * 100) / 100;
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
       const totalAmount =
         Math.round(
           (subtotal +
-            prev.taxAmount +
+            taxAmount +
             prev.deliveryFee +
             processingFee -
             prev.discountAmount) *
@@ -476,6 +483,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         ...prev,
         items: updatedItems,
         subtotal,
+        taxAmount,
         processingFee,
         totalAmount,
         balanceDue,
@@ -489,11 +497,12 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         (sum, item) => sum + item.totalPrice,
         0,
       );
+      const taxAmount = Math.round(subtotal * 0.0825 * 100) / 100;
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
       const totalAmount =
         Math.round(
           (subtotal +
-            prev.taxAmount +
+            taxAmount +
             prev.deliveryFee +
             processingFee -
             prev.discountAmount) *
@@ -505,6 +514,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
       return {
         ...prev,
         subtotal,
+        taxAmount,
         processingFee,
         totalAmount,
         balanceDue,

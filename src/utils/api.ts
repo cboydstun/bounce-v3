@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
 import { getSession } from "next-auth/react";
+import { ConfirmationStatus } from "@/types/contact";
 
 // Use relative URLs for API endpoints when in the browser
 // This ensures we're using the Next.js API routes
@@ -363,7 +364,7 @@ export const createContact = async (contactData: {
   partyDate: string;
   partyZipCode: string;
   message?: string;
-  confirmed?: boolean;
+  confirmed?: boolean | ConfirmationStatus;
   tablesChairs?: boolean;
   generator?: boolean;
   popcornMachine?: boolean;
@@ -384,8 +385,6 @@ export const createContact = async (contactData: {
     throw error;
   }
 };
-
-import { ConfirmationStatus } from "@/types/contact";
 
 export const updateContact = async (
   id: string,
