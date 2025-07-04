@@ -16,7 +16,7 @@ export default function TermsOfService() {
       </h1>
 
       <div className="prose prose-lg max-w-none">
-        <p className="mb-6">Last updated: {new Date().toLocaleDateString()}</p>
+        <p className="mb-6">Last updated: 7/3/2025</p>
 
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4 text-primary-blue">
@@ -65,10 +65,10 @@ export default function TermsOfService() {
           </h2>
           <p>Our payment terms include:</p>
           <ul className="list-disc pl-6 mb-4">
-            <li>Deposit required at booking</li>
-            <li>Full payment due before delivery</li>
+            <li>NO deposit required at booking</li>
+            <li>NO refunds for cancellations</li>
+            <li>Full payment due at delivery</li>
             <li>Additional charges for damages</li>
-            <li>Cancellation fees may apply</li>
           </ul>
         </section>
 
