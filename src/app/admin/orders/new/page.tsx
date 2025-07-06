@@ -48,7 +48,7 @@ export default function NewOrder() {
     subtotal: 0,
     taxAmount: 0,
     discountAmount: 0,
-    deliveryFee: 20,
+    deliveryFee: 0,
     processingFee: 0,
     totalAmount: 0,
     depositAmount: 0,
@@ -157,11 +157,12 @@ export default function NewOrder() {
         (sum, item) => sum + item.totalPrice,
         0,
       );
+      const taxAmount = Math.round(subtotal * 0.0825 * 100) / 100;
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
       const totalAmount =
         Math.round(
           (subtotal +
-            prev.taxAmount +
+            taxAmount +
             prev.deliveryFee +
             processingFee -
             prev.discountAmount) *
@@ -174,6 +175,7 @@ export default function NewOrder() {
         ...prev,
         items: updatedItems,
         subtotal,
+        taxAmount,
         processingFee,
         totalAmount,
         balanceDue,
@@ -195,11 +197,12 @@ export default function NewOrder() {
         (sum, item) => sum + item.totalPrice,
         0,
       );
+      const taxAmount = Math.round(subtotal * 0.0825 * 100) / 100;
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
       const totalAmount =
         Math.round(
           (subtotal +
-            prev.taxAmount +
+            taxAmount +
             prev.deliveryFee +
             processingFee -
             prev.discountAmount) *
@@ -212,6 +215,7 @@ export default function NewOrder() {
         ...prev,
         items: updatedItems,
         subtotal,
+        taxAmount,
         processingFee,
         totalAmount,
         balanceDue,
@@ -225,11 +229,12 @@ export default function NewOrder() {
         (sum, item) => sum + item.totalPrice,
         0,
       );
+      const taxAmount = Math.round(subtotal * 0.0825 * 100) / 100;
       const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
       const totalAmount =
         Math.round(
           (subtotal +
-            prev.taxAmount +
+            taxAmount +
             prev.deliveryFee +
             processingFee -
             prev.discountAmount) *
@@ -241,6 +246,7 @@ export default function NewOrder() {
       return {
         ...prev,
         subtotal,
+        taxAmount,
         processingFee,
         totalAmount,
         balanceDue,
@@ -650,16 +656,16 @@ export default function NewOrder() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Tax Amount
+                Tax Amount (8.25%)
                 <input
                   type="number"
                   name="taxAmount"
                   value={formData.taxAmount}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
                   step="0.01"
                   min="0"
-                  onBlur={handleUpdatePricing}
+                  readOnly
                 />
               </label>
             </div>
