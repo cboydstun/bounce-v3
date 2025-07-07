@@ -117,9 +117,22 @@ export default function EditOrderPage({ params }: PageProps) {
     >,
   ) => {
     const { name, value, type } = e.target;
+
+    let processedValue: any = value;
+
+    if (type === "number") {
+      processedValue = parseFloat(value);
+    } else if (type === "date" && value) {
+      // Convert date string to Date object for proper handling
+      processedValue = new Date(value + "T12:00:00");
+    } else if (type === "date" && !value) {
+      // Handle empty date input
+      processedValue = undefined;
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "number" ? parseFloat(value) : value,
+      [name]: processedValue,
     }));
   };
 
@@ -689,6 +702,88 @@ export default function EditOrderPage({ params }: PageProps) {
               </label>
             </div>
           </div>
+        </div>
+
+        {/* Event & Delivery Information */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium">
+              Event & Delivery Information
+            </h2>
+            {contact && (
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                Auto-populated from Contact
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Delivery Date
+                <input
+                  type="date"
+                  name="deliveryDate"
+                  value={
+                    formData.deliveryDate !== undefined
+                      ? formData.deliveryDate instanceof Date
+                        ? formatDateCT(formData.deliveryDate)
+                        : formData.deliveryDate
+                      : order.deliveryDate
+                        ? formatDateCT(new Date(order.deliveryDate))
+                        : contact?.deliveryDate
+                          ? formatDateCT(new Date(contact.deliveryDate))
+                          : ""
+                  }
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Event Date
+                <input
+                  type="date"
+                  name="eventDate"
+                  value={
+                    formData.eventDate !== undefined
+                      ? formData.eventDate instanceof Date
+                        ? formatDateCT(formData.eventDate)
+                        : formData.eventDate
+                      : order.eventDate
+                        ? formatDateCT(new Date(order.eventDate))
+                        : contact?.partyDate
+                          ? formatDateCT(new Date(contact.partyDate))
+                          : ""
+                  }
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </label>
+            </div>
+          </div>
+          {contact && (!order.deliveryDate || !order.eventDate) && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Date information has been auto-populated
+                from the associated contact record.
+                {!order.deliveryDate && contact.deliveryDate && (
+                  <span>
+                    {" "}
+                    Delivery date from contact:{" "}
+                    {formatDate(contact.deliveryDate)}.
+                  </span>
+                )}
+                {!order.eventDate && contact.partyDate && (
+                  <span>
+                    {" "}
+                    Event date from contact party date:{" "}
+                    {formatDate(contact.partyDate)}.
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Order Items */}

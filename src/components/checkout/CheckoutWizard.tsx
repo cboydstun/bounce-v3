@@ -225,6 +225,18 @@ const CheckoutWizard: React.FC = () => {
         paymentStatus: "Pending",
         paymentMethod: "cash",
 
+        // Event and delivery dates - FIXED: Now properly setting these fields
+        deliveryDate: state.deliveryDate
+          ? new Date(
+              `${state.deliveryDate}T${state.deliveryTime || "12:00"}:00`,
+            )
+          : undefined,
+        eventDate: state.deliveryDate
+          ? new Date(
+              `${state.deliveryDate}T${state.deliveryTime || "12:00"}:00`,
+            )
+          : undefined,
+
         // Additional information
         tasks: state.tasks,
         notes: `Delivery: ${state.deliveryDate} ${state.deliveryTime}, Pickup: ${state.pickupDate} ${state.pickupTime}${

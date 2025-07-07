@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
 import { getSession } from "next-auth/react";
+import { ConfirmationStatus } from "@/types/contact";
 
 // Use relative URLs for API endpoints when in the browser
 // This ensures we're using the Next.js API routes
@@ -363,7 +364,7 @@ export const createContact = async (contactData: {
   partyDate: string;
   partyZipCode: string;
   message?: string;
-  confirmed?: boolean;
+  confirmed?: boolean | ConfirmationStatus;
   tablesChairs?: boolean;
   generator?: boolean;
   popcornMachine?: boolean;
@@ -384,8 +385,6 @@ export const createContact = async (contactData: {
     throw error;
   }
 };
-
-import { ConfirmationStatus } from "@/types/contact";
 
 export const updateContact = async (
   id: string,
@@ -624,6 +623,8 @@ export const getOrders = async (params?: {
   orderNumber?: string;
   customer?: string;
   taskStatus?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
 }) => {
@@ -639,6 +640,8 @@ export const getOrders = async (params?: {
     queryParams.append("orderNumber", params.orderNumber);
   if (params?.customer) queryParams.append("customer", params.customer);
   if (params?.taskStatus) queryParams.append("taskStatus", params.taskStatus);
+  if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+  if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
   if (params?.page) queryParams.append("page", params.page.toString());
   if (params?.limit) queryParams.append("limit", params.limit.toString());
 

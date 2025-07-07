@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 import { ContactFormData, ConfirmationStatus } from "@/types/contact";
+import { createContact } from "@/utils/api";
 
 export default function NewContact() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [formData, setFormData] = useState<ContactFormData>({
     bouncer: "",
     email: "",
@@ -45,39 +47,57 @@ export default function NewContact() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [status, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if authenticated
+    if (status !== "authenticated") {
+      router.push("/login");
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const token = localStorage.getItem("auth_token");
+      setError(null);
 
-      if (!token) {
-        router.push("/login");
-        return;
-      }
+      // Use the centralized API client which handles NextAuth authentication
+      // Prepare the contact data with proper formatting
+      const contactData = {
+        ...formData,
+        // Keep confirmed as string for the new enum system
+        confirmed: formData.confirmed || "Pending",
+        // Ensure partyDate is properly formatted as ISO string
+        partyDate: formData.partyDate,
+        // Set deliveryDate to partyDate if not provided (model default might not work in all cases)
+        deliveryDate: formData.deliveryDay || formData.partyDate,
+        // Ensure all required fields are present
+        bouncer: formData.bouncer.trim(),
+        email: formData.email.trim(),
+        partyZipCode: formData.partyZipCode.trim(),
+        sourcePage: formData.sourcePage || "admin",
+      };
 
-      const response = await fetch(`${API_BASE_URL}${API_ROUTES.CONTACTS}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      console.log("Sending contact data:", contactData); // Debug log
 
-      if (response.status === 401) {
-        localStorage.removeItem("auth_token");
-        router.push("/login");
-        return;
-      }
+      await createContact(contactData);
 
-      if (!response.ok) {
-        throw new Error("Failed to create contact");
-      }
-
+      // Redirect to contacts list on success
       router.push("/admin/contacts");
       router.refresh();
     } catch (error) {
+      // Handle authentication errors
+      if (error instanceof Error && error.message.includes("401")) {
+        router.push("/login");
+        return;
+      }
+
       setError(
         error instanceof Error ? error.message : "Failed to create contact",
       );
@@ -100,10 +120,20 @@ export default function NewContact() {
     }));
   };
 
-  if (isLoading) {
+  // Show loading spinner when session is loading or when submitting form
+  if (status === "loading" || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <LoadingSpinner className="w-8 h-8" />
+      </div>
+    );
+  }
+
+  // If not authenticated, don't render anything (will redirect in useEffect)
+  if (status !== "authenticated") {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Please log in to access this page...</p>
       </div>
     );
   }
@@ -194,7 +224,7 @@ export default function NewContact() {
               Status
               <select
                 name="confirmed"
-                value={formData.confirmed || "Pending"}
+                value={String(formData.confirmed || "Pending")}
                 onChange={handleInputChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >

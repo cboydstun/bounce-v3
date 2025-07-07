@@ -42,22 +42,24 @@ export async function GET(request: NextRequest) {
     const orderNumber = url.searchParams.get("orderNumber");
     const customer = url.searchParams.get("customer");
     const taskStatus = url.searchParams.get("taskStatus");
+    const sortBy = url.searchParams.get("sortBy") || "deliveryDate";
+    const sortOrder = url.searchParams.get("sortOrder") || "asc";
     const page = parseInt(url.searchParams.get("page") || "1");
     const limit = parseInt(url.searchParams.get("limit") || "10");
 
     // Build query
     const query: Record<string, unknown> = {};
 
-    // Date range filter for createdAt using Central Time
+    // Date range filter for deliveryDate using Central Time
     if (startDate && endDate) {
-      query.createdAt = {
+      query.deliveryDate = {
         $gte: parseDateCT(startDate),
         $lte: parseDateCT(endDate),
       };
     } else if (startDate) {
-      query.createdAt = { $gte: parseDateCT(startDate) };
+      query.deliveryDate = { $gte: parseDateCT(startDate) };
     } else if (endDate) {
-      query.createdAt = { $lte: parseDateCT(endDate) };
+      query.deliveryDate = { $lte: parseDateCT(endDate) };
     }
 
     // Filter by status
@@ -89,90 +91,184 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    let orders;
+    // Build sort object
+    const sortObj: Record<string, 1 | -1> = {};
+    sortObj[sortBy] = sortOrder === "asc" ? 1 : -1;
 
-    // If filtering by task status, we need to use aggregation
-    if (taskStatus) {
-      const pipeline: any[] = [
-        // Match orders based on existing filters
-        { $match: query },
-        // Lookup tasks for each order
-        {
-          $lookup: {
-            from: "tasks",
-            localField: "_id",
-            foreignField: "orderId",
-            as: "tasks",
+    // Handle delivery date sorting - clean implementation
+    if (sortBy === "deliveryDate") {
+      let orders;
+
+      // If filtering by task status, we need to use aggregation
+      if (taskStatus) {
+        const pipeline: any[] = [
+          // Match orders based on existing filters
+          { $match: query },
+          // Lookup tasks for each order
+          {
+            $lookup: {
+              from: "tasks",
+              localField: "_id",
+              foreignField: "orderId",
+              as: "tasks",
+            },
           },
-        },
-        // Filter orders that have tasks with the specified status
-        {
-          $match: {
-            "tasks.status": taskStatus,
+          // Filter orders that have tasks with the specified status
+          {
+            $match: {
+              "tasks.status": taskStatus,
+            },
           },
-        },
-        // Sort by createdAt (newest first)
-        { $sort: { createdAt: -1 } },
-        // Add pagination
-        { $skip: (page - 1) * limit },
-        { $limit: limit },
-        // Remove tasks field from final result to match original structure
-        { $unset: "tasks" },
-      ];
+          // Sort by delivery date
+          { $sort: { deliveryDate: sortOrder === "asc" ? 1 : -1 } },
+          // Add pagination
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+          // Remove tasks field from final result to match original structure
+          { $unset: "tasks" },
+        ];
 
-      orders = await Order.aggregate(pipeline);
+        orders = await Order.aggregate(pipeline);
 
-      // Get total count for pagination
-      const countPipeline: any[] = [
-        { $match: query },
-        {
-          $lookup: {
-            from: "tasks",
-            localField: "_id",
-            foreignField: "orderId",
-            as: "tasks",
+        // Get total count for pagination
+        const countPipeline: any[] = [
+          { $match: query },
+          {
+            $lookup: {
+              from: "tasks",
+              localField: "_id",
+              foreignField: "orderId",
+              as: "tasks",
+            },
           },
-        },
-        {
-          $match: {
-            "tasks.status": taskStatus,
+          {
+            $match: {
+              "tasks.status": taskStatus,
+            },
           },
-        },
-        { $count: "total" },
-      ];
+          { $count: "total" },
+        ];
 
-      const countResult = await Order.aggregate(countPipeline);
-      const totalOrders = countResult[0]?.total || 0;
-      const totalPages = Math.ceil(totalOrders / limit);
+        const countResult = await Order.aggregate(countPipeline);
+        const totalOrders = countResult[0]?.total || 0;
+        const totalPages = Math.ceil(totalOrders / limit);
 
-      return NextResponse.json({
-        orders,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalOrders,
-          limit,
-        },
-      });
+        return NextResponse.json({
+          orders,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalOrders,
+            limit,
+          },
+        });
+      } else {
+        // Use simple find with sort - no aggregation
+        const totalOrders = await Order.countDocuments(query);
+        const totalPages = Math.ceil(totalOrders / limit);
+
+        orders = await Order.find(query)
+          .sort({ deliveryDate: sortOrder === "asc" ? 1 : -1 })
+          .skip((page - 1) * limit)
+          .limit(limit);
+
+        return NextResponse.json({
+          orders,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalOrders,
+            limit,
+          },
+        });
+      }
     } else {
-      // Regular query without task status filtering
-      const totalOrders = await Order.countDocuments(query);
-      const totalPages = Math.ceil(totalOrders / limit);
+      // For non-delivery date sorting, use regular sorting
+      let orders;
 
-      orders = await Order.find(query)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit);
+      // If filtering by task status, we need to use aggregation
+      if (taskStatus) {
+        const pipeline: any[] = [
+          // Match orders based on existing filters
+          { $match: query },
+          // Lookup tasks for each order
+          {
+            $lookup: {
+              from: "tasks",
+              localField: "_id",
+              foreignField: "orderId",
+              as: "tasks",
+            },
+          },
+          // Filter orders that have tasks with the specified status
+          {
+            $match: {
+              "tasks.status": taskStatus,
+            },
+          },
+          // Sort by specified field
+          { $sort: { ...sortObj, createdAt: -1 } },
+          // Add pagination
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+          // Remove tasks field from final result to match original structure
+          { $unset: "tasks" },
+        ];
 
-      return NextResponse.json({
-        orders,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalOrders,
-          limit,
-        },
-      });
+        orders = await Order.aggregate(pipeline);
+
+        // Get total count for pagination
+        const countPipeline: any[] = [
+          { $match: query },
+          {
+            $lookup: {
+              from: "tasks",
+              localField: "_id",
+              foreignField: "orderId",
+              as: "tasks",
+            },
+          },
+          {
+            $match: {
+              "tasks.status": taskStatus,
+            },
+          },
+          { $count: "total" },
+        ];
+
+        const countResult = await Order.aggregate(countPipeline);
+        const totalOrders = countResult[0]?.total || 0;
+        const totalPages = Math.ceil(totalOrders / limit);
+
+        return NextResponse.json({
+          orders,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalOrders,
+            limit,
+          },
+        });
+      } else {
+        // Regular query without task status filtering
+        const totalOrders = await Order.countDocuments(query);
+        const totalPages = Math.ceil(totalOrders / limit);
+
+        orders = await Order.find(query)
+          .sort({ ...sortObj, createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit);
+
+        return NextResponse.json({
+          orders,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalOrders,
+            limit,
+          },
+        });
+      }
     }
   } catch (error: unknown) {
     console.error("Error fetching orders:", error);
