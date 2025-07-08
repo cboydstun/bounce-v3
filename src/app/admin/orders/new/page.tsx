@@ -25,6 +25,8 @@ interface OrderFormData {
   customerCity?: string;
   customerState?: string;
   customerZipCode?: string;
+  deliveryDate?: string;
+  eventDate?: string;
   items: OrderItem[];
   subtotal: number;
   taxAmount: number;
@@ -94,11 +96,38 @@ export default function NewOrder() {
       return;
     }
 
+    if (!formData.eventDate) {
+      setError("Event date is required");
+      return;
+    }
+
+    // Validate delivery date isn't after event date
+    if (formData.deliveryDate && formData.eventDate) {
+      const deliveryDate = new Date(formData.deliveryDate);
+      const eventDate = new Date(formData.eventDate);
+      if (deliveryDate > eventDate) {
+        setError("Delivery date cannot be after the event date");
+        return;
+      }
+    }
+
     try {
       setIsLoading(true);
 
+      // Prepare the order data with proper date formatting
+      const orderData = {
+        ...formData,
+        // Convert datetime-local strings to ISO Date strings for the API
+        deliveryDate: formData.deliveryDate
+          ? new Date(formData.deliveryDate).toISOString()
+          : undefined,
+        eventDate: formData.eventDate
+          ? new Date(formData.eventDate).toISOString()
+          : undefined,
+      };
+
       // Use the createOrder function from the API client
-      await createOrder(formData);
+      await createOrder(orderData);
 
       // Navigate back to orders list
       router.push("/admin/orders");
@@ -125,6 +154,17 @@ export default function NewOrder() {
     >,
   ) => {
     const { name, value, type } = e.target;
+
+    // If event date is being set and delivery date is empty, auto-populate delivery date
+    if (name === "eventDate" && value && !formData.deliveryDate) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        deliveryDate: value, // Auto-populate delivery date with event date
+      }));
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]:
@@ -462,6 +502,47 @@ export default function NewOrder() {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Event & Delivery Information */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-lg font-medium mb-4">
+            Event & Delivery Information
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Event Date *
+                <input
+                  type="datetime-local"
+                  name="eventDate"
+                  value={formData.eventDate || ""}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  required
+                />
+              </label>
+              <p className="mt-1 text-sm text-gray-500">
+                The date and time of the actual party/event
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Delivery Date
+                <input
+                  type="datetime-local"
+                  name="deliveryDate"
+                  value={formData.deliveryDate || ""}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </label>
+              <p className="mt-1 text-sm text-gray-500">
+                When to deliver the items (defaults to event date if not
+                specified)
+              </p>
             </div>
           </div>
         </div>

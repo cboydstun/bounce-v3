@@ -42,6 +42,12 @@ export default function EditOrderPage({ params }: PageProps) {
   // Form state
   const [formData, setFormData] = useState<Partial<Order>>({});
 
+  // Date form state (for datetime-local inputs)
+  const [dateFormData, setDateFormData] = useState<{
+    deliveryDate?: string;
+    eventDate?: string;
+  }>({});
+
   // New item state
   const [newItemType, setNewItemType] = useState<OrderItemType>("bouncer");
   const [newItemName, setNewItemName] = useState<string>("");
@@ -117,6 +123,25 @@ export default function EditOrderPage({ params }: PageProps) {
     >,
   ) => {
     const { name, value, type } = e.target;
+
+    // Handle date fields separately
+    if (name === "eventDate" || name === "deliveryDate") {
+      setDateFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+
+      // If event date is being set and delivery date is empty, auto-populate delivery date
+      if (name === "eventDate" && value && !dateFormData.deliveryDate) {
+        setDateFormData((prev) => ({
+          ...prev,
+          eventDate: value,
+          deliveryDate: value, // Auto-populate delivery date with event date
+        }));
+      }
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === "number" ? parseFloat(value) : value,
@@ -305,12 +330,22 @@ export default function EditOrderPage({ params }: PageProps) {
       setError(null);
       setSuccess(null);
 
-      // Update order
-      const updatedOrder = await updateOrder(id, {
+      // Prepare the order data with proper date formatting
+      const updateData = {
         ...formData,
         contactId:
           typeof order.contactId === "string" ? order.contactId : undefined,
-      });
+        // Convert datetime-local strings to ISO Date strings for the API
+        deliveryDate: dateFormData.deliveryDate
+          ? new Date(dateFormData.deliveryDate).toISOString()
+          : formData.deliveryDate || order.deliveryDate,
+        eventDate: dateFormData.eventDate
+          ? new Date(dateFormData.eventDate).toISOString()
+          : formData.eventDate || order.eventDate,
+      };
+
+      // Update order
+      const updatedOrder = await updateOrder(id, updateData);
 
       setSuccess("Order updated successfully");
 
@@ -341,6 +376,22 @@ export default function EditOrderPage({ params }: PageProps) {
       month: "short",
       day: "numeric",
     });
+  };
+
+  // Convert Date to datetime-local string format
+  const formatDateTimeLocal = (date: Date | string | undefined) => {
+    if (!date) return "";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "";
+
+    // Convert to local time and format for datetime-local input
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   // Show loading spinner when session is loading or when fetching order
@@ -617,6 +668,54 @@ export default function EditOrderPage({ params }: PageProps) {
               </p>
             </div>
           )}
+        </div>
+
+        {/* Event & Delivery Information */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-lg font-medium mb-4">
+            Event & Delivery Information
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Event Date
+                <input
+                  type="datetime-local"
+                  name="eventDate"
+                  value={
+                    dateFormData.eventDate !== undefined
+                      ? dateFormData.eventDate
+                      : formatDateTimeLocal(order.eventDate)
+                  }
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </label>
+              <p className="mt-1 text-sm text-gray-500">
+                The date and time of the actual party/event
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Delivery Date
+                <input
+                  type="datetime-local"
+                  name="deliveryDate"
+                  value={
+                    dateFormData.deliveryDate !== undefined
+                      ? dateFormData.deliveryDate
+                      : formatDateTimeLocal(order.deliveryDate)
+                  }
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </label>
+              <p className="mt-1 text-sm text-gray-500">
+                When to deliver the items (auto-populated from event date if not
+                specified)
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Order Information */}
