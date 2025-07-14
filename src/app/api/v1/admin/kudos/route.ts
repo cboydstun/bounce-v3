@@ -51,23 +51,15 @@ async function handler(req: NextRequest) {
       kudosEmailMap.set(`${kudos.customerId}-${kudos.customerType}`, kudos);
     });
 
-    // Fetch eligible orders - check both eventDate and createdAt since not all orders have eventDate
+    // Fetch eligible orders - only include orders with past event dates
+    const now = new Date();
     const orderQuery: any = {
-      $or: [
-        {
-          eventDate: {
-            $gte: queryStartDate,
-            $lte: queryEndDate,
-          },
-        },
-        {
-          eventDate: { $exists: false },
-          createdAt: {
-            $gte: queryStartDate,
-            $lte: queryEndDate,
-          },
-        },
-      ],
+      eventDate: {
+        $exists: true,
+        $lt: now, // Only past events
+        $gte: queryStartDate,
+        $lte: queryEndDate,
+      },
       customerEmail: { $exists: true, $ne: null },
     };
 
@@ -109,9 +101,10 @@ async function handler(req: NextRequest) {
       }
     }
 
-    // Fetch eligible contacts (for events that occurred in the date range)
+    // Fetch eligible contacts (for events that occurred in the date range and are in the past)
     const contactQuery: any = {
       partyDate: {
+        $lt: now, // Only past events
         $gte: queryStartDate,
         $lte: queryEndDate,
       },
