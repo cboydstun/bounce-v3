@@ -19,6 +19,12 @@ import { OrderProductSelector } from "@/components/admin/orders/OrderProductSele
 import { OrderItemsTable } from "@/components/admin/orders/OrderItemsTable";
 import { PricingSection } from "@/components/admin/orders/PricingSection";
 import { useOrderPricing } from "@/hooks/useOrderPricing";
+import { useProductCache } from "@/hooks/useProductCache";
+import {
+  formatDateCT,
+  parseDateCT,
+  formatDisplayDateCT,
+} from "@/utils/dateUtils";
 
 interface OrderItem {
   type: string;
@@ -45,6 +51,7 @@ interface OrderFormData {
   paymentMethod: PaymentMethod;
   notes?: string;
   tasks?: string[];
+  sourcePage: string;
 }
 
 interface PageProps {
@@ -52,6 +59,60 @@ interface PageProps {
     id: string;
   }>;
 }
+
+// Helper function to parse and format party dates consistently (same as contacts page)
+const parseAndFormatPartyDate = (dateInput: string | Date): string => {
+  try {
+    // Handle Date objects directly
+    if (dateInput instanceof Date) {
+      const parsedDate = parseDateCT(formatDateCT(dateInput));
+      return formatDisplayDateCT(parsedDate);
+    }
+
+    // Handle string inputs
+    const dateStr = dateInput.toString();
+
+    // Handle MM/DD/YYYY format (e.g., "4/13/2025")
+    if (
+      typeof dateStr === "string" &&
+      dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)
+    ) {
+      const [month, day, year] = dateStr.split("/").map(Number);
+      const isoDateStr = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+      const parsedDate = parseDateCT(isoDateStr);
+      return formatDisplayDateCT(parsedDate);
+    }
+    // Handle ISO format dates (YYYY-MM-DD)
+    else if (
+      typeof dateStr === "string" &&
+      dateStr.match(/^\d{4}-\d{2}-\d{2}$/)
+    ) {
+      const parsedDate = parseDateCT(dateStr);
+      return formatDisplayDateCT(parsedDate);
+    }
+    // Handle ISO datetime format - extract just the date part
+    else if (
+      typeof dateStr === "string" &&
+      dateStr.match(/^\d{4}-\d{2}-\d{2}T/)
+    ) {
+      const parsedDate = parseDateCT(dateStr.split("T")[0]);
+      return formatDisplayDateCT(parsedDate);
+    } else {
+      // For other formats, try to parse and extract date part
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        const parsedDate = parseDateCT(formatDateCT(date));
+        return formatDisplayDateCT(parsedDate);
+      }
+      // Fallback to original date string if parsing fails
+      return dateStr;
+    }
+  } catch (error) {
+    console.warn(`Failed to parse party date: ${dateInput}`, error);
+    // Fallback to original date string if parsing fails
+    return dateInput.toString();
+  }
+};
 
 export default function ConvertContactToOrder({ params }: PageProps) {
   const router = useRouter();
@@ -72,11 +133,46 @@ export default function ConvertContactToOrder({ params }: PageProps) {
     status: DEFAULT_ORDER_STATUS,
     paymentStatus: DEFAULT_PAYMENT_STATUS,
     paymentMethod: DEFAULT_PAYMENT_METHOD,
+    sourcePage: "admin",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+
+  // Initialize product cache hook for price lookup
+  const { products } = useProductCache();
+
+  // Function to look up product price by name
+  const lookupProductPrice = useCallback(
+    (productName: string): number => {
+      if (!products || products.length === 0) {
+        return 0; // Return 0 if products haven't loaded yet
+      }
+
+      // Try exact match first
+      const exactMatch = products.find(
+        (product) => product.name.toLowerCase() === productName.toLowerCase(),
+      );
+      if (exactMatch) {
+        return exactMatch.price.base;
+      }
+
+      // Try partial match (product name contains the search term or vice versa)
+      const partialMatch = products.find(
+        (product) =>
+          product.name.toLowerCase().includes(productName.toLowerCase()) ||
+          productName.toLowerCase().includes(product.name.toLowerCase()),
+      );
+      if (partialMatch) {
+        return partialMatch.price.base;
+      }
+
+      // No match found
+      return 0;
+    },
+    [products],
+  );
 
   // Initialize pricing hook
   const { pricing, validatePricing } = useOrderPricing(
@@ -148,12 +244,13 @@ export default function ConvertContactToOrder({ params }: PageProps) {
 
         // Add bouncer as an item if it exists
         if (contactData.bouncer) {
+          const bouncerPrice = lookupProductPrice(contactData.bouncer);
           initialItems.push({
             type: "bouncer",
             name: contactData.bouncer,
             quantity: 1,
-            unitPrice: 0, // Admin will need to set the price
-            totalPrice: 0,
+            unitPrice: bouncerPrice,
+            totalPrice: bouncerPrice * 1,
           });
         }
 
@@ -206,7 +303,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
     };
 
     fetchContact();
-  }, [resolvedParams.id, router, status]);
+  }, [resolvedParams.id, router, status, lookupProductPrice]);
 
   // Memoized handlers to prevent unnecessary re-renders
   const handleInputChange = useCallback(
@@ -401,7 +498,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
                     Party Date
                   </p>
                   <p className="text-sm text-gray-900">
-                    {new Date(contact.partyDate).toLocaleDateString()}
+                    {parseAndFormatPartyDate(contact.partyDate)}
                   </p>
                 </div>
                 <div>
@@ -663,7 +760,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
                 <div className="space-y-1 text-xs text-gray-600">
                   <div>{contact.email}</div>
                   <div>{contact.phone || "No phone"}</div>
-                  <div>{new Date(contact.partyDate).toLocaleDateString()}</div>
+                  <div>{parseAndFormatPartyDate(contact.partyDate)}</div>
                   <div>{contact.partyZipCode}</div>
                 </div>
               </div>

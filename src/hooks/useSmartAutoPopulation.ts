@@ -4,13 +4,9 @@ import { ContactFormData } from "@/types/contact";
 /**
  * Custom hook for smart auto-population of form fields
  * @param formData - Current form data
- * @param setFormData - Function to update form data
  * @returns Object with auto-population functions
  */
-export function useSmartAutoPopulation(
-  formData: ContactFormData,
-  setFormData: React.Dispatch<React.SetStateAction<ContactFormData>>,
-) {
+export function useSmartAutoPopulation(formData: ContactFormData) {
   // Helper function to add hours to a time string
   const addHoursToTime = useCallback(
     (timeString: string, hours: number): string => {
@@ -82,106 +78,102 @@ export function useSmartAutoPopulation(
   }, []);
 
   // Auto-populate delivery day when party date changes
-  const handlePartyDateChange = useCallback(
-    (newPartyDate: string) => {
-      setFormData((prev) => {
-        const updates: Partial<ContactFormData> = {
-          partyDate: newPartyDate,
-        };
+  const getPartyDateUpdates = useCallback(
+    (
+      newPartyDate: string,
+      currentFormData: ContactFormData,
+    ): Partial<ContactFormData> => {
+      const updates: Partial<ContactFormData> = {
+        partyDate: newPartyDate,
+      };
 
-        if (newPartyDate) {
-          // Set delivery day - use previous weekday if party is on weekend
-          const deliveryDay = isWeekend(newPartyDate)
-            ? getPreviousWeekday(newPartyDate)
-            : newPartyDate;
+      if (newPartyDate) {
+        // Set delivery day - use previous weekday if party is on weekend
+        const deliveryDay = isWeekend(newPartyDate)
+          ? getPreviousWeekday(newPartyDate)
+          : newPartyDate;
 
-          updates.deliveryDay = deliveryDay;
+        updates.deliveryDay = deliveryDay;
 
-          // Set pickup day - day after party date
-          updates.pickupDay = addDaysToDate(newPartyDate, 1);
+        // Set pickup day - day after party date
+        updates.pickupDay = addDaysToDate(newPartyDate, 1);
 
-          // If party start time exists, set delivery time 2 hours before
-          if (prev.partyStartTime) {
-            updates.deliveryTime = addHoursToTime(prev.partyStartTime, -2);
-          }
-
-          // If party end time exists, set pickup time 2 hours after
-          if (prev.partyEndTime) {
-            updates.pickupTime = addHoursToTime(prev.partyEndTime, 2);
-          }
+        // If party start time exists, set delivery time 2 hours before
+        if (currentFormData.partyStartTime) {
+          updates.deliveryTime = addHoursToTime(
+            currentFormData.partyStartTime,
+            -2,
+          );
         }
 
-        return { ...prev, ...updates };
-      });
+        // If party end time exists, set pickup time 2 hours after
+        if (currentFormData.partyEndTime) {
+          updates.pickupTime = addHoursToTime(currentFormData.partyEndTime, 2);
+        }
+      }
+
+      return updates;
     },
     [isWeekend, getPreviousWeekday, addDaysToDate, addHoursToTime],
   );
 
   // Auto-populate delivery time when party start time changes
-  const handlePartyStartTimeChange = useCallback(
-    (newStartTime: string) => {
-      setFormData((prev) => {
-        const updates: Partial<ContactFormData> = {
-          partyStartTime: newStartTime,
-        };
+  const getPartyStartTimeUpdates = useCallback(
+    (newStartTime: string): Partial<ContactFormData> => {
+      const updates: Partial<ContactFormData> = {
+        partyStartTime: newStartTime,
+      };
 
-        if (newStartTime) {
-          // Set delivery time 2 hours before party start
-          updates.deliveryTime = addHoursToTime(newStartTime, -2);
-        }
+      if (newStartTime) {
+        // Set delivery time 2 hours before party start
+        updates.deliveryTime = addHoursToTime(newStartTime, -2);
+      }
 
-        return { ...prev, ...updates };
-      });
+      return updates;
     },
     [addHoursToTime],
   );
 
   // Auto-populate pickup time when party end time changes
-  const handlePartyEndTimeChange = useCallback(
-    (newEndTime: string) => {
-      setFormData((prev) => {
-        const updates: Partial<ContactFormData> = {
-          partyEndTime: newEndTime,
-        };
+  const getPartyEndTimeUpdates = useCallback(
+    (newEndTime: string): Partial<ContactFormData> => {
+      const updates: Partial<ContactFormData> = {
+        partyEndTime: newEndTime,
+      };
 
-        if (newEndTime) {
-          // Set pickup time 2 hours after party end
-          updates.pickupTime = addHoursToTime(newEndTime, 2);
-        }
+      if (newEndTime) {
+        // Set pickup time 2 hours after party end
+        updates.pickupTime = addHoursToTime(newEndTime, 2);
+      }
 
-        return { ...prev, ...updates };
-      });
+      return updates;
     },
     [addHoursToTime],
   );
 
   // Smart defaults for new forms
-  const applySmartDefaults = useCallback(() => {
-    setFormData((prev) => {
+  const getSmartDefaults = useCallback(
+    (currentFormData: ContactFormData): Partial<ContactFormData> => {
       const updates: Partial<ContactFormData> = {};
 
       // Only update fields that are actually empty to prevent unnecessary re-renders
-      if (!prev.partyStartTime) {
+      if (!currentFormData.partyStartTime) {
         updates.partyStartTime = "12:00"; // Default to noon
       }
 
-      if (!prev.partyEndTime) {
+      if (!currentFormData.partyEndTime) {
         updates.partyEndTime = "16:00"; // Default to 4 PM (4 hour party)
       }
 
       // Set default state if not set
-      if (!prev.state) {
+      if (!currentFormData.state) {
         updates.state = "Texas";
       }
 
-      // Only update if there are actual changes
-      if (Object.keys(updates).length === 0) {
-        return prev;
-      }
-
-      return { ...prev, ...updates };
-    });
-  }, []); // No dependencies needed - setFormData is stable
+      return updates;
+    },
+    [],
+  );
 
   // Validate time logic and show warnings
   const validateTimeLogic = useCallback(() => {
@@ -227,10 +219,10 @@ export function useSmartAutoPopulation(
   }, [formData]);
 
   return {
-    handlePartyDateChange,
-    handlePartyStartTimeChange,
-    handlePartyEndTimeChange,
-    applySmartDefaults,
+    getPartyDateUpdates,
+    getPartyStartTimeUpdates,
+    getPartyEndTimeUpdates,
+    getSmartDefaults,
     validateTimeLogic,
     addHoursToTime,
     addDaysToDate,

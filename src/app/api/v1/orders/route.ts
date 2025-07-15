@@ -48,16 +48,16 @@ export async function GET(request: NextRequest) {
     // Build query
     const query: Record<string, unknown> = {};
 
-    // Date range filter for createdAt using Central Time
+    // Date range filter for deliveryDate using Central Time
     if (startDate && endDate) {
-      query.createdAt = {
+      query.deliveryDate = {
         $gte: parseDateCT(startDate),
         $lte: parseDateCT(endDate),
       };
     } else if (startDate) {
-      query.createdAt = { $gte: parseDateCT(startDate) };
+      query.deliveryDate = { $gte: parseDateCT(startDate) };
     } else if (endDate) {
-      query.createdAt = { $lte: parseDateCT(endDate) };
+      query.deliveryDate = { $lte: parseDateCT(endDate) };
     }
 
     // Filter by status

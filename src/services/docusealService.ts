@@ -141,10 +141,6 @@ export class DocuSealService {
 
       // DocuSeal returns an array of submitters, not a submission object
       const submitters: DocuSealSubmitter[] = await response.json();
-      console.log(
-        "DocuSeal API response:",
-        JSON.stringify(submitters, null, 2),
-      );
 
       if (!submitters || submitters.length === 0) {
         throw new Error("DocuSeal returned empty submitters array");
@@ -206,10 +202,6 @@ export class DocuSealService {
       }
 
       const rawResponse = await response.json();
-      console.log(
-        "DocuSeal GET submission response:",
-        JSON.stringify(rawResponse, null, 2),
-      );
 
       // Handle different response formats from GET vs POST
       let submission: DocuSealSubmission;
@@ -386,13 +378,7 @@ export class DocuSealService {
       existingSubmissionId.trim() !== ""
     ) {
       try {
-        console.log(
-          `Attempting to retrieve existing submission: ${existingSubmissionId}`,
-        );
         const submission = await this.getSubmissionStatus(existingSubmissionId);
-        console.log(
-          `Successfully retrieved existing submission ${existingSubmissionId}`,
-        );
         return submission;
       } catch (error) {
         if (error instanceof SubmissionNotFoundError) {
@@ -413,7 +399,6 @@ export class DocuSealService {
     }
 
     // Create new submission
-    console.log(`Creating new submission for order ${order._id}`);
     try {
       const newSubmission = await this.createSubmission(order);
 
@@ -422,7 +407,6 @@ export class DocuSealService {
         throw new Error("DocuSeal returned invalid submission - missing ID");
       }
 
-      console.log(`Successfully created new submission ${newSubmission.id}`);
       return newSubmission;
     } catch (error) {
       console.error(
@@ -558,9 +542,7 @@ export class DocuSealService {
       // Update the order if status changed
       if (Object.keys(updates).length > 0) {
         await Order.findByIdAndUpdate(orderId, updates);
-        console.log(
-          `Synced order ${order.orderNumber} status: ${order.agreementStatus} -> ${newStatus}`,
-        );
+
         return { updated: true, status: `Updated to ${newStatus}` };
       }
 

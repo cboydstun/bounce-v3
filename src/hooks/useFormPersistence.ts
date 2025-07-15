@@ -79,25 +79,6 @@ export function useFormPersistence(initialData: ContactFormData) {
     setIsDirty(true);
   }, []);
 
-  // Auto-save functionality
-  useEffect(() => {
-    let autoSaveInterval: NodeJS.Timeout;
-
-    const startAutoSave = (formData: ContactFormData) => {
-      autoSaveInterval = setInterval(() => {
-        if (isDirty) {
-          saveDraft(formData);
-        }
-      }, AUTO_SAVE_INTERVAL);
-    };
-
-    return () => {
-      if (autoSaveInterval) {
-        clearInterval(autoSaveInterval);
-      }
-    };
-  }, [isDirty, saveDraft]);
-
   // Check for existing draft on mount
   const [hasDraft, setHasDraft] = useState(false);
 

@@ -58,7 +58,7 @@ export default function NewContact() {
 
   // Initialize hooks
   const formPersistence = useFormPersistence(formData);
-  const smartAutoPopulation = useSmartAutoPopulation(formData, setFormData);
+  const smartAutoPopulation = useSmartAutoPopulation(formData);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -75,17 +75,20 @@ export default function NewContact() {
         setFormData((prev) => ({ ...prev, ...draft }));
       } else {
         // Apply smart defaults for new forms
-        smartAutoPopulation.applySmartDefaults();
+        setFormData((prev) => {
+          const defaults = smartAutoPopulation.getSmartDefaults(prev);
+          return { ...prev, ...defaults };
+        });
       }
     }
-  }, [status, formPersistence, smartAutoPopulation]);
+  }, [status, formPersistence.loadDraft, smartAutoPopulation.getSmartDefaults]);
 
   // Auto-save form data
   useEffect(() => {
     if (status === "authenticated" && formData.bouncer) {
       formPersistence.saveDraft(formData);
     }
-  }, [formData, status, formPersistence]);
+  }, [formData, status, formPersistence.saveDraft]);
 
   // Memoized handlers to prevent unnecessary re-renders
   const handleInputChange = useCallback(
@@ -98,23 +101,39 @@ export default function NewContact() {
       const newValue =
         type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
 
-      setFormData((prev) => ({
-        ...prev,
-        [name]: newValue,
-      }));
+      setFormData((prev) => {
+        const updates: Partial<ContactFormData> = {
+          [name]: newValue,
+        };
+
+        // Handle smart auto-population
+        if (name === "partyDate" && typeof newValue === "string") {
+          const smartUpdates = smartAutoPopulation.getPartyDateUpdates(
+            newValue,
+            prev,
+          );
+          Object.assign(updates, smartUpdates);
+        } else if (name === "partyStartTime" && typeof newValue === "string") {
+          const smartUpdates =
+            smartAutoPopulation.getPartyStartTimeUpdates(newValue);
+          Object.assign(updates, smartUpdates);
+        } else if (name === "partyEndTime" && typeof newValue === "string") {
+          const smartUpdates =
+            smartAutoPopulation.getPartyEndTimeUpdates(newValue);
+          Object.assign(updates, smartUpdates);
+        }
+
+        return { ...prev, ...updates };
+      });
 
       formPersistence.markDirty();
-
-      // Handle smart auto-population
-      if (name === "partyDate" && typeof newValue === "string") {
-        smartAutoPopulation.handlePartyDateChange(newValue);
-      } else if (name === "partyStartTime" && typeof newValue === "string") {
-        smartAutoPopulation.handlePartyStartTimeChange(newValue);
-      } else if (name === "partyEndTime" && typeof newValue === "string") {
-        smartAutoPopulation.handlePartyEndTimeChange(newValue);
-      }
     },
-    [formPersistence, smartAutoPopulation],
+    [
+      formPersistence.markDirty,
+      smartAutoPopulation.getPartyDateUpdates,
+      smartAutoPopulation.getPartyStartTimeUpdates,
+      smartAutoPopulation.getPartyEndTimeUpdates,
+    ],
   );
 
   const handleBouncerChange = useCallback(
@@ -122,7 +141,7 @@ export default function NewContact() {
       setFormData((prev) => ({ ...prev, bouncer: value }));
       formPersistence.markDirty();
     },
-    [formPersistence],
+    [formPersistence.markDirty],
   );
 
   const handleProductSelect = useCallback((product: ProductWithId | null) => {
@@ -134,7 +153,7 @@ export default function NewContact() {
       setFormData((prev) => ({ ...prev, [field]: value }));
       formPersistence.markDirty();
     },
-    [formPersistence],
+    [formPersistence.markDirty],
   );
 
   const handleSubmit = useCallback(
@@ -179,13 +198,13 @@ export default function NewContact() {
         setIsLoading(false);
       }
     },
-    [status, formData, router, formPersistence],
+    [status, formData, router, formPersistence.clearDraft],
   );
 
   // Get validation warnings
   const validationWarnings = useMemo(() => {
     return smartAutoPopulation.validateTimeLogic();
-  }, [smartAutoPopulation]);
+  }, [smartAutoPopulation.validateTimeLogic]);
 
   // Show loading spinner when session is loading or when creating contact
   if (status === "loading" || isLoading) {
