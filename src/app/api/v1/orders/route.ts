@@ -449,71 +449,96 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Send email to admin
-    try {
-      await sendEmail({
-        from: process.env.EMAIL as string,
-        to: [
-          process.env.OTHER_EMAIL as string,
-          process.env.SECOND_EMAIL as string,
-        ],
-        subject: `New Order: ${order.orderNumber}`,
-        text: generateNewOrderEmailAdmin(order),
-        html: generateNewOrderEmailAdmin(order),
-      });
-    } catch (emailError) {
-      console.error("Error sending admin notification email:", emailError);
-      // Continue execution even if email fails
-    }
-
-    // Send confirmation email to customer if email is provided
-    if (order.customerEmail) {
+    // Only send notifications if the order is NOT created by admin
+    if (orderData.sourcePage !== "admin") {
+      // Send email to admin
       try {
         await sendEmail({
           from: process.env.EMAIL as string,
-          to: order.customerEmail,
-          subject: `Your Order Confirmation: ${order.orderNumber}`,
-          text: generateNewOrderEmailCustomer(order),
-          html: generateNewOrderEmailCustomer(order),
+          to: [
+            process.env.OTHER_EMAIL as string,
+            process.env.SECOND_EMAIL as string,
+            process.env.ADMIN_EMAIL as string,
+          ],
+          subject: `New Order: ${order.orderNumber}`,
+          text: generateNewOrderEmailAdmin(order),
+          html: generateNewOrderEmailAdmin(order),
         });
       } catch (emailError) {
-        console.error("Error sending customer confirmation email:", emailError);
+        console.error("Error sending admin notification email:", emailError);
         // Continue execution even if email fails
       }
-    }
 
-    // Send SMS notification
-    try {
-      const accountSid = process.env.TWILIO_ACCOUNT_SID;
-      const authToken = process.env.TWILIO_AUTH_TOKEN;
-
-      if (accountSid && authToken) {
-        const client = twilio(accountSid, authToken);
-
-        // Format items for SMS
-        const itemsList = order.items
-          .map((item: any) => `${item.name} x${item.quantity}`)
-          .join(", ");
-
-        // Create SMS body with order details
-        const smsBody = `
-          New Order: ${order.orderNumber}
-          Items: ${itemsList}
-          Total: $${order.totalAmount}
-          Customer: ${order.customerName || "N/A"}
-          Email: ${order.customerEmail || "N/A"}
-          Phone: ${order.customerPhone || "N/A"}
-        `.trim();
-
-        await client.messages.create({
-          body: smsBody,
-          from: process.env.TWILIO_PHONE_NUMBER,
-          to: process.env.USER_PHONE_NUMBER || "",
-        });
+      // Send confirmation email to customer if email is provided
+      if (order.customerEmail) {
+        try {
+          await sendEmail({
+            from: process.env.EMAIL as string,
+            to: order.customerEmail,
+            subject: `Your Order Confirmation: ${order.orderNumber}`,
+            text: generateNewOrderEmailCustomer(order),
+            html: generateNewOrderEmailCustomer(order),
+          });
+        } catch (emailError) {
+          console.error(
+            "Error sending customer confirmation email:",
+            emailError,
+          );
+          // Continue execution even if email fails
+        }
       }
-    } catch (smsError) {
-      console.error("Error sending SMS notification:", smsError);
-      // Continue execution even if SMS fails
+
+      // Send SMS notification
+      try {
+        const accountSid = process.env.TWILIO_ACCOUNT_SID;
+        const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+        if (accountSid && authToken) {
+          const client = twilio(accountSid, authToken);
+
+          // Format items for SMS
+          const itemsList = order.items
+            .map((item: any) => `${item.name} x${item.quantity}`)
+            .join(", ");
+
+          // Create SMS body with order details
+          const smsBody = `
+            New Order: ${order.orderNumber}
+            Items: ${itemsList}
+            Total: $${order.totalAmount}
+            Customer: ${order.customerName || "N/A"}
+            Email: ${order.customerEmail || "N/A"}
+            Phone: ${order.customerPhone || "N/A"}
+          `.trim();
+
+          // Create array of recipient phone numbers
+          const recipients = [
+            process.env.USER_PHONE_NUMBER,
+            process.env.ADMIN_PHONE_NUMBER,
+          ].filter(Boolean); // Remove any undefined/null values
+
+          // Send SMS to each recipient
+          for (const phoneNumber of recipients) {
+            try {
+              await client.messages.create({
+                body: smsBody,
+                from: process.env.TWILIO_PHONE_NUMBER,
+                to: phoneNumber as string,
+              });
+              console.log(`SMS sent successfully to ${phoneNumber}`);
+            } catch (individualSmsError) {
+              console.error(
+                `Error sending SMS to ${phoneNumber}:`,
+                individualSmsError,
+              );
+              // Continue to next recipient even if this one fails
+            }
+          }
+        }
+      } catch (smsError) {
+        console.error("Error sending SMS notification:", smsError);
+        // Continue execution even if SMS fails
+      }
     }
 
     return NextResponse.json(order, { status: 201 });

@@ -41,6 +41,7 @@ interface OrderFormData {
   paymentMethod: PaymentMethod;
   notes?: string;
   tasks?: string[];
+  sourcePage: string;
 }
 
 export default function NewOrder() {
@@ -58,6 +59,7 @@ export default function NewOrder() {
     status: "Pending",
     paymentStatus: "Pending",
     paymentMethod: "paypal",
+    sourcePage: "admin",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

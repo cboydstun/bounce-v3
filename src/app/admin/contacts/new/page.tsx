@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
+import { createContact } from "@/utils/api";
 import { ContactFormData, ConfirmationStatus } from "@/types/contact";
 
 export default function NewContact() {
   const router = useRouter();
+  const { status } = useSession();
   const [formData, setFormData] = useState<ContactFormData>({
     bouncer: "",
     email: "",
@@ -45,39 +47,43 @@ export default function NewContact() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [status, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if authenticated
+    if (status !== "authenticated") {
+      router.push("/login");
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const token = localStorage.getItem("auth_token");
+      setError(null);
 
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}${API_ROUTES.CONTACTS}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.status === 401) {
-        localStorage.removeItem("auth_token");
-        router.push("/login");
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Failed to create contact");
-      }
+      // Use the createContact function from utils/api.ts which handles NextAuth authentication
+      // Convert ConfirmationStatus to boolean for the API if needed
+      const apiFormData = {
+        ...formData,
+        confirmed: formData.confirmed === "Confirmed" ? true : false,
+      };
+      await createContact(apiFormData);
 
       router.push("/admin/contacts");
       router.refresh();
     } catch (error) {
+      // Handle authentication errors
+      if (error instanceof Error && error.message.includes("401")) {
+        router.push("/login");
+        return;
+      }
+
       setError(
         error instanceof Error ? error.message : "Failed to create contact",
       );
@@ -100,10 +106,20 @@ export default function NewContact() {
     }));
   };
 
-  if (isLoading) {
+  // Show loading spinner when session is loading or when creating contact
+  if (status === "loading" || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <LoadingSpinner className="w-8 h-8" />
+      </div>
+    );
+  }
+
+  // If not authenticated, don't render anything (will redirect in useEffect)
+  if (status !== "authenticated") {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Please log in to access this page...</p>
       </div>
     );
   }
@@ -194,7 +210,7 @@ export default function NewContact() {
               Status
               <select
                 name="confirmed"
-                value={formData.confirmed || "Pending"}
+                value={String(formData.confirmed || "Pending")}
                 onChange={handleInputChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
