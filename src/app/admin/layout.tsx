@@ -35,6 +35,7 @@ export default function AdminLayout({
         setIsCollapsed={setIsSidebarCollapsed}
         onLogout={handleLogout}
         userRole={user?.role}
+        userEmail={user?.email}
       />
 
       {/* Main content */}

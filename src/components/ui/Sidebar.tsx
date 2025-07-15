@@ -12,6 +12,7 @@ import {
   StarIcon,
   ChartBarIcon,
   UsersIcon,
+  UserIcon,
   TagIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -25,6 +26,7 @@ interface SidebarProps {
   setIsCollapsed: (isCollapsed: boolean) => void;
   onLogout?: () => void;
   userRole?: string; // New prop for user role
+  userEmail?: string; // New prop for user email
 }
 
 interface NavItem {
@@ -35,6 +37,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { name: "Overview", href: "/admin", icon: HomeIcon },
+  { name: "Profile", href: "/admin/profile", icon: UserIcon },
   { name: "Blogs", href: "/admin/blogs", icon: NewspaperIcon },
   { name: "Products", href: "/admin/products", icon: ShoppingBagIcon },
   { name: "Contacts", href: "/admin/contacts", icon: UserGroupIcon },
@@ -71,8 +74,22 @@ const Sidebar: React.FC<SidebarProps> = ({
   setIsCollapsed,
   onLogout,
   userRole,
+  userEmail,
 }) => {
   const pathname = usePathname();
+
+  // Check if current user is the protected admin
+  const isProtectedAdmin = (email?: string) => {
+    return email?.toLowerCase() === "chrisboydstun@gmail.com";
+  };
+
+  // Filter navigation items to hide Users unless protected admin
+  const filteredNavItems = navItems.filter((item) => {
+    if (item.href === "/admin/users") {
+      return isProtectedAdmin(userEmail);
+    }
+    return true;
+  });
 
   return (
     <div
@@ -113,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       <nav className="mt-5 px-2 flex flex-col h-[calc(100vh-4rem)]">
         <ul className="space-y-2 flex-grow">
-          {navItems.map((item) => {
+          {filteredNavItems.map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(`${item.href}/`);
 
