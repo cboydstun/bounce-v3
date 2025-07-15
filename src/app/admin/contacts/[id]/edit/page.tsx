@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getContactById, updateContact } from "@/utils/api";
 import { ContactFormData, ConfirmationStatus } from "@/types/contact";
+import { useSmartAutoPopulation } from "@/hooks/useSmartAutoPopulation";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormProgressBar } from "@/components/admin/contacts/FormProgressBar";
+import { AdditionalServicesSection } from "@/components/admin/contacts/AdditionalServicesSection";
 
 interface PageProps {
   params: Promise<{
@@ -55,6 +59,24 @@ export default function EditContact({ params }: PageProps) {
 
   // Get the NextAuth session
   const { data: session, status } = useSession();
+
+  // Initialize hooks
+  const formPersistence = useFormPersistence(formData);
+  const smartAutoPopulation = useSmartAutoPopulation(formData, setFormData);
+
+  // Get validation warnings
+  const validationWarnings = useMemo(() => {
+    return smartAutoPopulation.validateTimeLogic();
+  }, [smartAutoPopulation]);
+
+  // Calculate form progress
+  const formProgress = useMemo(() => {
+    const requiredFields = ["bouncer", "email", "partyDate", "partyZipCode"];
+    const completedFields = requiredFields.filter(
+      (field) => formData[field as keyof ContactFormData],
+    );
+    return Math.round((completedFields.length / requiredFields.length) * 100);
+  }, [formData]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -200,18 +222,57 @@ export default function EditContact({ params }: PageProps) {
     }
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    }));
-  };
+  const handleInputChange = useCallback(
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) => {
+      const { name, value, type } = e.target;
+      setFormData((prev) => ({
+        ...prev,
+        [name]:
+          type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+      }));
+    },
+    [],
+  );
+
+  // Handler for AdditionalServicesSection
+  const handleServiceChange = useCallback(
+    (field: keyof ContactFormData, value: boolean) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    },
+    [],
+  );
+
+  // Smart auto-population handlers
+  const handlePartyDateChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newDate = e.target.value;
+      smartAutoPopulation.handlePartyDateChange(newDate);
+    },
+    [smartAutoPopulation],
+  );
+
+  const handlePartyStartTimeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newTime = e.target.value;
+      smartAutoPopulation.handlePartyStartTimeChange(newTime);
+    },
+    [smartAutoPopulation],
+  );
+
+  const handlePartyEndTimeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newTime = e.target.value;
+      smartAutoPopulation.handlePartyEndTimeChange(newTime);
+    },
+    [smartAutoPopulation],
+  );
 
   // Show loading spinner when session is loading or when fetching contacts
   if (status === "loading" || isLoading) {
@@ -238,6 +299,23 @@ export default function EditContact({ params }: PageProps) {
       {error && (
         <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
           {error}
+        </div>
+      )}
+
+      {/* Form Progress Bar */}
+      <FormProgressBar formData={formData} />
+
+      {/* Validation Warnings */}
+      {validationWarnings.length > 0 && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+          <h4 className="text-sm font-medium text-yellow-800 mb-2">
+            Time Logic Warnings:
+          </h4>
+          <ul className="text-sm text-yellow-700 space-y-1">
+            {validationWarnings.map((warning, index) => (
+              <li key={index}>• {warning}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -300,24 +378,10 @@ export default function EditContact({ params }: PageProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Party Zip Code
-              <input
-                type="text"
-                name="partyZipCode"
-                value={formData.partyZipCode}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </label>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
               Status
               <select
                 name="confirmed"
-                value={formData.confirmed || "Pending"}
+                value={String(formData.confirmed || "Pending")}
                 onChange={handleInputChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
@@ -381,6 +445,20 @@ export default function EditContact({ params }: PageProps) {
                   value={formData.state}
                   onChange={handleInputChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Zip Code
+                <input
+                  type="text"
+                  name="partyZipCode"
+                  value={formData.partyZipCode}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  required
                 />
               </label>
             </div>
@@ -522,98 +600,10 @@ export default function EditContact({ params }: PageProps) {
         </div>
 
         {/* Additional Services */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Additional Services</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="tablesChairs"
-                checked={formData.tablesChairs}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Tables & Chairs</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="generator"
-                checked={formData.generator}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Generator</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="popcornMachine"
-                checked={formData.popcornMachine}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Popcorn Machine</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="cottonCandyMachine"
-                checked={formData.cottonCandyMachine}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Cotton Candy Machine</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="snowConeMachine"
-                checked={formData.snowConeMachine}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Snow Cone Machine</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="basketballShoot"
-                checked={formData.basketballShoot}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Basketball Shoot</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="slushyMachine"
-                checked={formData.slushyMachine}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Slushy Machine</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="overnight"
-                checked={formData.overnight}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Overnight</span>
-            </label>
-          </div>
-        </div>
+        <AdditionalServicesSection
+          formData={formData}
+          onChange={handleServiceChange}
+        />
 
         <div className="flex justify-end space-x-4">
           <button

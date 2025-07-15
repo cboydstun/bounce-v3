@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { createContact } from "@/utils/api";
 import { ContactFormData, ConfirmationStatus } from "@/types/contact";
+import { ProductWithId } from "@/types/product";
+import { ProductSelector } from "@/components/admin/contacts/ProductSelector";
+import { FormProgressBar } from "@/components/admin/contacts/FormProgressBar";
+import { AdditionalServicesSection } from "@/components/admin/contacts/AdditionalServicesSection";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { useSmartAutoPopulation } from "@/hooks/useSmartAutoPopulation";
 
 export default function NewContact() {
   const router = useRouter();
@@ -46,6 +52,13 @@ export default function NewContact() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductWithId | null>(
+    null,
+  );
+
+  // Initialize hooks
+  const formPersistence = useFormPersistence(formData);
+  const smartAutoPopulation = useSmartAutoPopulation(formData, setFormData);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -54,57 +67,125 @@ export default function NewContact() {
     }
   }, [status, router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Check if authenticated
-    if (status !== "authenticated") {
-      router.push("/login");
-      return;
+  // Load draft on mount
+  useEffect(() => {
+    if (status === "authenticated") {
+      const draft = formPersistence.loadDraft();
+      if (draft) {
+        setFormData((prev) => ({ ...prev, ...draft }));
+      } else {
+        // Apply smart defaults for new forms
+        smartAutoPopulation.applySmartDefaults();
+      }
     }
+  }, [status, formPersistence, smartAutoPopulation]);
 
-    try {
-      setIsLoading(true);
-      setError(null);
+  // Auto-save form data
+  useEffect(() => {
+    if (status === "authenticated" && formData.bouncer) {
+      formPersistence.saveDraft(formData);
+    }
+  }, [formData, status, formPersistence]);
 
-      // Use the createContact function from utils/api.ts which handles NextAuth authentication
-      // Convert ConfirmationStatus to boolean for the API if needed
-      const apiFormData = {
-        ...formData,
-        confirmed: formData.confirmed === "Confirmed" ? true : false,
-      };
-      await createContact(apiFormData);
+  // Memoized handlers to prevent unnecessary re-renders
+  const handleInputChange = useCallback(
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) => {
+      const { name, value, type } = e.target;
+      const newValue =
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
 
-      router.push("/admin/contacts");
-      router.refresh();
-    } catch (error) {
-      // Handle authentication errors
-      if (error instanceof Error && error.message.includes("401")) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: newValue,
+      }));
+
+      formPersistence.markDirty();
+
+      // Handle smart auto-population
+      if (name === "partyDate" && typeof newValue === "string") {
+        smartAutoPopulation.handlePartyDateChange(newValue);
+      } else if (name === "partyStartTime" && typeof newValue === "string") {
+        smartAutoPopulation.handlePartyStartTimeChange(newValue);
+      } else if (name === "partyEndTime" && typeof newValue === "string") {
+        smartAutoPopulation.handlePartyEndTimeChange(newValue);
+      }
+    },
+    [formPersistence, smartAutoPopulation],
+  );
+
+  const handleBouncerChange = useCallback(
+    (value: string) => {
+      setFormData((prev) => ({ ...prev, bouncer: value }));
+      formPersistence.markDirty();
+    },
+    [formPersistence],
+  );
+
+  const handleProductSelect = useCallback((product: ProductWithId | null) => {
+    setSelectedProduct(product);
+  }, []);
+
+  const handleServiceChange = useCallback(
+    (field: keyof ContactFormData, value: boolean) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      formPersistence.markDirty();
+    },
+    [formPersistence],
+  );
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      // Check if authenticated
+      if (status !== "authenticated") {
         router.push("/login");
         return;
       }
 
-      setError(
-        error instanceof Error ? error.message : "Failed to create contact",
-      );
-      console.error("Error creating contact:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      try {
+        setIsLoading(true);
+        setError(null);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    }));
-  };
+        // Convert ConfirmationStatus to boolean for the API if needed
+        const apiFormData = {
+          ...formData,
+          confirmed: formData.confirmed === "Confirmed" ? true : false,
+        };
+
+        await createContact(apiFormData);
+
+        // Clear draft after successful submission
+        formPersistence.clearDraft();
+
+        router.push("/admin/contacts");
+        router.refresh();
+      } catch (error) {
+        // Handle authentication errors
+        if (error instanceof Error && error.message.includes("401")) {
+          router.push("/login");
+          return;
+        }
+
+        setError(
+          error instanceof Error ? error.message : "Failed to create contact",
+        );
+        console.error("Error creating contact:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [status, formData, router, formPersistence],
+  );
+
+  // Get validation warnings
+  const validationWarnings = useMemo(() => {
+    return smartAutoPopulation.validateTimeLogic();
+  }, [smartAutoPopulation]);
 
   // Show loading spinner when session is loading or when creating contact
   if (status === "loading" || isLoading) {
@@ -125,410 +206,350 @@ export default function NewContact() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-6">New Contact Request</h1>
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Main Form */}
+        <div className="lg:col-span-3">
+          <h1 className="text-2xl font-semibold mb-6">New Contact Request</h1>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
-          {error}
-        </div>
-      )}
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
+              {error}
+            </div>
+          )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Bouncer Name
-              <input
-                type="text"
-                name="bouncer"
-                value={formData.bouncer}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </label>
-          </div>
+          {/* Validation Warnings */}
+          {validationWarnings.length > 0 && (
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <h4 className="text-sm font-medium text-yellow-800 mb-2">
+                Time Logic Warnings:
+              </h4>
+              <ul className="text-sm text-yellow-700 space-y-1">
+                {validationWarnings.map((warning, index) => (
+                  <li key={index}>• {warning}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Email
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </label>
-          </div>
+          {/* Auto-save indicator */}
+          {formPersistence.lastSaved && (
+            <div className="mb-4 text-sm text-gray-500">
+              Last saved: {formPersistence.lastSaved.toLocaleTimeString()}
+              {formPersistence.isDirty && " • Unsaved changes"}
+            </div>
+          )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Phone
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </label>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Party Date
-              <input
-                type="date"
-                name="partyDate"
-                value={formData.partyDate}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </label>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Party Zip Code
-              <input
-                type="text"
-                name="partyZipCode"
-                value={formData.partyZipCode}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </label>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Status
-              <select
-                name="confirmed"
-                value={String(formData.confirmed || "Pending")}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="Pending">Pending</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Called / Texted">Called / Texted</option>
-                <option value="Declined">Declined</option>
-                <option value="Cancelled">Cancelled</option>
-              </select>
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Message
-            <textarea
-              name="message"
-              value={formData.message}
-              onChange={handleInputChange}
-              rows={4}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Product Selection */}
+            <ProductSelector
+              value={formData.bouncer}
+              onChange={handleBouncerChange}
+              onProductSelect={handleProductSelect}
             />
-          </label>
-        </div>
 
-        {/* Address Information */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Address Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Street Address
-                <input
-                  type="text"
-                  name="streetAddress"
-                  value={formData.streetAddress}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                City
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                State
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-          </div>
-        </div>
+            {/* Contact Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                </label>
+              </div>
 
-        {/* Party Timing */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Party Timing</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Party Start Time
-                <input
-                  type="time"
-                  name="partyStartTime"
-                  value={formData.partyStartTime}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Party End Time
-                <input
-                  type="time"
-                  name="partyEndTime"
-                  value={formData.partyEndTime}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-          </div>
-        </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Phone
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </label>
+              </div>
 
-        {/* Delivery Information */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Delivery Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Delivery Day
-                <input
-                  type="date"
-                  name="deliveryDay"
-                  value={formData.deliveryDay}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Delivery Time
-                <input
-                  type="time"
-                  name="deliveryTime"
-                  value={formData.deliveryTime}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Pickup Day
-                <input
-                  type="date"
-                  name="pickupDay"
-                  value={formData.pickupDay}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Pickup Time
-                <input
-                  type="time"
-                  name="pickupTime"
-                  value={formData.pickupTime}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-          </div>
-        </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Party Date
+                  <input
+                    type="date"
+                    name="partyDate"
+                    value={formData.partyDate}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                </label>
+              </div>
 
-        {/* Payment and Admin Information */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Payment and Admin Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Payment Method
-                <select
-                  name="paymentMethod"
-                  value={formData.paymentMethod || ""}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="">Select Payment Method</option>
-                  <option value="cash">Cash</option>
-                  <option value="quickbooks">QuickBooks</option>
-                  <option value="paypal">PayPal</option>
-                  <option value="free">Free</option>
-                </select>
-              </label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Status
+                  <select
+                    name="confirmed"
+                    value={String(formData.confirmed || "Pending")}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Called / Texted">Called / Texted</option>
+                    <option value="Declined">Declined</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </label>
+              </div>
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Discount Comments
+                Message
                 <textarea
-                  name="discountComments"
-                  value={formData.discountComments}
+                  name="message"
+                  value={formData.message}
                   onChange={handleInputChange}
-                  rows={2}
+                  rows={4}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </label>
             </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Admin Comments
-                <textarea
-                  name="adminComments"
-                  value={formData.adminComments}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
+
+            {/* Address Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Address Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Street Address
+                    <input
+                      type="text"
+                      name="streetAddress"
+                      value={formData.streetAddress}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    City
+                    <input
+                      type="text"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    State
+                    <input
+                      type="text"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Zip Code
+                    <input
+                      type="text"
+                      name="partyZipCode"
+                      value={formData.partyZipCode}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
-          </div>
+
+            {/* Party Timing */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Party Timing</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Party Start Time
+                    <input
+                      type="time"
+                      name="partyStartTime"
+                      value={formData.partyStartTime}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Party End Time
+                    <input
+                      type="time"
+                      name="partyEndTime"
+                      value={formData.partyEndTime}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Delivery Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Delivery Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Delivery Day
+                    <input
+                      type="date"
+                      name="deliveryDay"
+                      value={formData.deliveryDay}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Delivery Time
+                    <input
+                      type="time"
+                      name="deliveryTime"
+                      value={formData.deliveryTime}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Pickup Day
+                    <input
+                      type="date"
+                      name="pickupDay"
+                      value={formData.pickupDay}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Pickup Time
+                    <input
+                      type="time"
+                      name="pickupTime"
+                      value={formData.pickupTime}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment and Admin Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">
+                Payment and Admin Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Payment Method
+                    <select
+                      name="paymentMethod"
+                      value={formData.paymentMethod || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    >
+                      <option value="">Select Payment Method</option>
+                      <option value="cash">Cash</option>
+                      <option value="quickbooks">QuickBooks</option>
+                      <option value="paypal">PayPal</option>
+                      <option value="free">Free</option>
+                    </select>
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Discount Comments
+                    <textarea
+                      name="discountComments"
+                      value={formData.discountComments}
+                      onChange={handleInputChange}
+                      rows={2}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Admin Comments
+                    <textarea
+                      name="adminComments"
+                      value={formData.adminComments}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Services */}
+            <AdditionalServicesSection
+              formData={formData}
+              onChange={handleServiceChange}
+            />
+
+            <div className="flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {isLoading ? (
+                  <LoadingSpinner className="w-5 h-5" />
+                ) : (
+                  "Create Contact"
+                )}
+              </button>
+            </div>
+          </form>
         </div>
 
-        {/* Additional Services */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Additional Services</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="tablesChairs"
-                checked={formData.tablesChairs}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Tables & Chairs</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="generator"
-                checked={formData.generator}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Generator</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="popcornMachine"
-                checked={formData.popcornMachine}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Popcorn Machine</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="cottonCandyMachine"
-                checked={formData.cottonCandyMachine}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Cotton Candy Machine</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="snowConeMachine"
-                checked={formData.snowConeMachine}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Snow Cone Machine</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="basketballShoot"
-                checked={formData.basketballShoot}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Basketball Shoot</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="slushyMachine"
-                checked={formData.slushyMachine}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Slushy Machine</span>
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="overnight"
-                checked={formData.overnight}
-                onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Overnight</span>
-            </label>
-          </div>
+        {/* Sidebar with Progress */}
+        <div className="lg:col-span-1">
+          <FormProgressBar formData={formData} className="sticky top-6" />
         </div>
-
-        <div className="flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            {isLoading ? (
-              <LoadingSpinner className="w-5 h-5" />
-            ) : (
-              "Create Contact"
-            )}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

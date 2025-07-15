@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { createOrder, getProducts } from "@/utils/api";
-import { ProductWithId } from "@/types/product";
+import { createOrder } from "@/utils/api";
 import { OrderStatus, PaymentStatus, PaymentMethod } from "@/types/order";
 import {
   DEFAULT_DELIVERY_FEE,
@@ -14,8 +13,11 @@ import {
   DEFAULT_ORDER_STATUS,
   DEFAULT_PAYMENT_STATUS,
   DEFAULT_PAYMENT_METHOD,
-  calculateOrderPricing,
 } from "@/config/orderConstants";
+import { OrderProductSelector } from "@/components/admin/orders/OrderProductSelector";
+import { OrderItemsTable } from "@/components/admin/orders/OrderItemsTable";
+import { PricingSection } from "@/components/admin/orders/PricingSection";
+import { useOrderPricing } from "@/hooks/useOrderPricing";
 
 interface OrderItem {
   type: string;
@@ -56,6 +58,7 @@ interface OrderFormData {
 
 export default function NewOrder() {
   const router = useRouter();
+  const { status } = useSession();
   const [formData, setFormData] = useState<OrderFormData>({
     items: [],
     subtotal: 0,
@@ -70,43 +73,23 @@ export default function NewOrder() {
     paymentStatus: DEFAULT_PAYMENT_STATUS,
     paymentMethod: DEFAULT_PAYMENT_METHOD,
     sourcePage: "admin",
+    customerState: "Texas",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [newItemType, setNewItemType] = useState<string>("bouncer");
-  const [newItemName, setNewItemName] = useState<string>("");
-  const [newItemDescription, setNewItemDescription] = useState<string>("");
-  const [newItemQuantity, setNewItemQuantity] = useState<number>(1);
-  const [newItemUnitPrice, setNewItemUnitPrice] = useState<number>(0);
 
-  // Product management state
-  const [products, setProducts] = useState<ProductWithId[]>([]);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<ProductWithId | null>(
-    null,
+  // Initialize hooks
+  const { pricing, validatePricing } = useOrderPricing(
+    formData.items,
+    formData.deliveryFee,
+    formData.discountAmount,
+    formData.depositAmount,
   );
-  const [showCustomItem, setShowCustomItem] = useState(false);
-  const [productSearchTerm, setProductSearchTerm] = useState<string>("");
-  const [showDropdown, setShowDropdown] = useState(false);
 
-  // Category to type mapping for products
-  const categoryToTypeMapping: Record<string, string> = {
-    "bounce-house": "bouncer",
-    bouncer: "bouncer",
-    "water-slide": "bouncer",
-    combo: "bouncer",
-    inflatable: "bouncer",
-    table: "extra",
-    chair: "extra",
-    generator: "extra",
-    concession: "extra",
-    "add-on": "add-on",
-    addon: "add-on",
-    extra: "extra",
-  };
-
-  // Get the NextAuth session
-  const { data: session, status } = useSession();
+  // Get validation warnings
+  const validationWarnings = useMemo(() => {
+    return validatePricing();
+  }, [validatePricing]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -115,242 +98,72 @@ export default function NewOrder() {
     }
   }, [status, router]);
 
-  // Fetch products on component mount
+  // Update form data with calculated pricing
   useEffect(() => {
-    const fetchProducts = async () => {
-      setIsLoadingProducts(true);
-      try {
-        const response = await getProducts({ availability: "available" });
-        setProducts(response.products || []);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        setError("Failed to load products. You can still add custom items.");
-      } finally {
-        setIsLoadingProducts(false);
-      }
-    };
-
-    if (status === "authenticated") {
-      fetchProducts();
-    }
-  }, [status]);
-
-  // Helper function to get product type from category
-  const getProductType = (category: string): string => {
-    const normalizedCategory = category.toLowerCase().replace(/\s+/g, "-");
-    return categoryToTypeMapping[normalizedCategory] || "bouncer";
-  };
-
-  // Handle product selection
-  const handleProductSelect = (product: ProductWithId) => {
-    setSelectedProduct(product);
-    setNewItemName(product.name);
-    setNewItemUnitPrice(product.price.base);
-    setNewItemType(getProductType(product.category));
-    setNewItemDescription(""); // Keep description empty for admin to add custom notes
-    setProductSearchTerm(product.name);
-    setShowDropdown(false); // Hide dropdown after selection
-  };
-
-  // Handle custom item toggle
-  const handleCustomItemToggle = () => {
-    setShowCustomItem(!showCustomItem);
-    if (!showCustomItem) {
-      // Switching to custom item mode
-      setSelectedProduct(null);
-      setNewItemName("");
-      setNewItemUnitPrice(0);
-      setNewItemType("bouncer");
-      setNewItemDescription("");
-      setProductSearchTerm("");
-      setShowDropdown(false);
-    }
-  };
-
-  // Filter products based on search term
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(productSearchTerm.toLowerCase()),
-  );
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    // Check if authenticated
-    if (status !== "authenticated") {
-      router.push("/login");
-      return;
-    }
-    e.preventDefault();
-
-    // Validate form data
-    if (formData.items.length === 0) {
-      setError("Order must contain at least one item");
-      return;
-    }
-
-    if (!formData.contactId && !formData.customerEmail) {
-      setError("Either Contact ID or Customer Email must be provided");
-      return;
-    }
-
-    if (!formData.eventDate) {
-      setError("Event date is required");
-      return;
-    }
-
-    // Validate delivery date isn't after event date
-    if (formData.deliveryDate && formData.eventDate) {
-      const deliveryDate = new Date(formData.deliveryDate);
-      const eventDate = new Date(formData.eventDate);
-      if (deliveryDate > eventDate) {
-        setError("Delivery date cannot be after the event date");
-        return;
-      }
-    }
-
-    try {
-      setIsLoading(true);
-
-      // Prepare the order data with proper date formatting
-      const orderData = {
-        ...formData,
-        // Convert datetime-local strings to ISO Date strings for the API
-        deliveryDate: formData.deliveryDate
-          ? new Date(formData.deliveryDate).toISOString()
-          : undefined,
-        eventDate: formData.eventDate
-          ? new Date(formData.eventDate).toISOString()
-          : undefined,
-      };
-
-      // Use the createOrder function from the API client
-      await createOrder(orderData);
-
-      // Navigate back to orders list
-      router.push("/admin/orders");
-      router.refresh();
-    } catch (error) {
-      // Handle authentication errors
-      if (error instanceof Error && error.message.includes("401")) {
-        router.push("/login");
-        return;
-      }
-
-      setError(
-        error instanceof Error ? error.message : "Failed to create order",
-      );
-      console.error("Error creating order:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
-    const { name, value, type } = e.target;
-
-    // If event date is being set and delivery date is empty, auto-populate delivery date
-    if (name === "eventDate" && value && !formData.deliveryDate) {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-        deliveryDate: value, // Auto-populate delivery date with event date
-      }));
-      return;
-    }
-
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        type === "checkbox"
-          ? (e.target as HTMLInputElement).checked
-          : type === "number"
-            ? parseFloat(value)
-            : value,
+      subtotal: pricing.subtotal,
+      taxAmount: pricing.taxAmount,
+      processingFee: pricing.processingFee,
+      totalAmount: pricing.totalAmount,
+      balanceDue: pricing.balanceDue,
     }));
-  };
+  }, [pricing]);
 
-  const handleAddItem = () => {
-    if (!newItemName || newItemUnitPrice <= 0 || newItemQuantity <= 0) {
-      setError("Please fill in all item fields with valid values");
-      return;
-    }
+  // Memoized handlers to prevent unnecessary re-renders
+  const handleInputChange = useCallback(
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) => {
+      const { name, value, type } = e.target;
+      const newValue =
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
 
-    const newItem: OrderItem = {
-      type: newItemType,
-      name: newItemName,
-      description: newItemDescription || undefined,
-      quantity: newItemQuantity,
-      unitPrice: newItemUnitPrice,
-      totalPrice: newItemQuantity * newItemUnitPrice,
-    };
-
-    setFormData((prev) => {
-      const updatedItems = [...prev.items, newItem];
-      const pricing = calculateOrderPricing(
-        updatedItems,
-        prev.deliveryFee,
-        prev.discountAmount,
-        prev.depositAmount,
-      );
-
-      return {
+      setFormData((prev) => ({
         ...prev,
-        items: updatedItems,
-        ...pricing,
-      };
-    });
+        [name]: newValue,
+      }));
 
-    // Reset new item fields
-    setSelectedProduct(null);
-    setProductSearchTerm("");
-    setShowDropdown(false);
-    setNewItemType("bouncer");
-    setNewItemName("");
-    setNewItemDescription("");
-    setNewItemQuantity(1);
-    setNewItemUnitPrice(0);
-    setError(null); // Clear any previous errors
-  };
+      // Auto-populate delivery date with event date if not set
+      if (name === "eventDate" && value && !formData.deliveryDate) {
+        setFormData((prev) => ({
+          ...prev,
+          deliveryDate: value,
+        }));
+      }
+    },
+    [formData.deliveryDate],
+  );
 
-  const handleRemoveItem = (index: number) => {
-    setFormData((prev) => {
-      const updatedItems = prev.items.filter((_, i) => i !== index);
-      const pricing = calculateOrderPricing(
-        updatedItems,
-        prev.deliveryFee,
-        prev.discountAmount,
-        prev.depositAmount,
-      );
+  const handleAddItem = useCallback((item: OrderItem) => {
+    setFormData((prev) => ({
+      ...prev,
+      items: [...prev.items, item],
+    }));
+  }, []);
 
-      return {
-        ...prev,
-        items: updatedItems,
-        ...pricing,
-      };
-    });
-  };
+  const handleRemoveItem = useCallback((index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index),
+    }));
+  }, []);
 
-  const handleUpdatePricing = () => {
-    setFormData((prev) => {
-      const pricing = calculateOrderPricing(
-        prev.items,
-        prev.deliveryFee,
-        prev.discountAmount,
-        prev.depositAmount,
-      );
+  const handleDeliveryFeeChange = useCallback((value: number) => {
+    setFormData((prev) => ({ ...prev, deliveryFee: value }));
+  }, []);
 
-      return {
-        ...prev,
-        ...pricing,
-      };
-    });
-  };
+  const handleDiscountAmountChange = useCallback((value: number) => {
+    setFormData((prev) => ({ ...prev, discountAmount: value }));
+  }, []);
 
-  const handleAddTask = () => {
+  const handleDepositAmountChange = useCallback((value: number) => {
+    setFormData((prev) => ({ ...prev, depositAmount: value }));
+  }, []);
+
+  const handleAddTask = useCallback(() => {
     const taskInput = document.getElementById("new-task") as HTMLInputElement;
     const taskValue = taskInput.value.trim();
 
@@ -362,14 +175,84 @@ export default function NewOrder() {
     }));
 
     taskInput.value = "";
-  };
+  }, []);
 
-  const handleRemoveTask = (index: number) => {
+  const handleRemoveTask = useCallback((index: number) => {
     setFormData((prev) => ({
       ...prev,
       tasks: prev.tasks?.filter((_, i) => i !== index),
     }));
-  };
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      if (status !== "authenticated") {
+        router.push("/login");
+        return;
+      }
+
+      // Validate form data
+      if (formData.items.length === 0) {
+        setError("Order must contain at least one item");
+        return;
+      }
+
+      if (!formData.contactId && !formData.customerEmail) {
+        setError("Either Contact ID or Customer Email must be provided");
+        return;
+      }
+
+      if (!formData.eventDate) {
+        setError("Event date is required");
+        return;
+      }
+
+      // Validate delivery date isn't after event date
+      if (formData.deliveryDate && formData.eventDate) {
+        const deliveryDate = new Date(formData.deliveryDate);
+        const eventDate = new Date(formData.eventDate);
+        if (deliveryDate > eventDate) {
+          setError("Delivery date cannot be after the event date");
+          return;
+        }
+      }
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Prepare the order data with proper date formatting
+        const orderData = {
+          ...formData,
+          deliveryDate: formData.deliveryDate
+            ? new Date(formData.deliveryDate).toISOString()
+            : undefined,
+          eventDate: formData.eventDate
+            ? new Date(formData.eventDate).toISOString()
+            : undefined,
+        };
+
+        await createOrder(orderData);
+        router.push("/admin/orders");
+        router.refresh();
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("401")) {
+          router.push("/login");
+          return;
+        }
+
+        setError(
+          error instanceof Error ? error.message : "Failed to create order",
+        );
+        console.error("Error creating order:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [status, formData, router],
+  );
 
   // Show loading spinner when session is loading or when creating order
   if (status === "loading" || isLoading) {
@@ -390,792 +273,373 @@ export default function NewOrder() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-6">Create New Order</h1>
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Main Form */}
+        <div className="lg:col-span-3">
+          <h1 className="text-2xl font-semibold mb-6">Create New Order</h1>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Order Information */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-medium mb-4">Order Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Order Status
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Processing">Processing</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="Cancelled">Cancelled</option>
-                  <option value="Refunded">Refunded</option>
-                </select>
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Payment Status
-                <select
-                  name="paymentStatus"
-                  value={formData.paymentStatus}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Authorized">Authorized</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Failed">Failed</option>
-                  <option value="Refunded">Refunded</option>
-                  <option value="Partially Refunded">Partially Refunded</option>
-                </select>
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Payment Method
-                <select
-                  name="paymentMethod"
-                  value={formData.paymentMethod}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="paypal">PayPal</option>
-                  <option value="cash">Cash</option>
-                  <option value="quickbooks">QuickBooks</option>
-                  <option value="free">Free</option>
-                </select>
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Contact ID (Optional)
-                <input
-                  type="text"
-                  name="contactId"
-                  value={formData.contactId || ""}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Customer Information */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-medium mb-4">Customer Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Customer Name
-                <input
-                  type="text"
-                  name="customerName"
-                  value={formData.customerName || ""}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Customer Email
-                <input
-                  type="email"
-                  name="customerEmail"
-                  value={formData.customerEmail || ""}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Customer Phone
-                <input
-                  type="tel"
-                  name="customerPhone"
-                  value={formData.customerPhone || ""}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Customer Address
-                <input
-                  type="text"
-                  name="customerAddress"
-                  value={formData.customerAddress || ""}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Customer City
-                <input
-                  type="text"
-                  name="customerCity"
-                  value={formData.customerCity || ""}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Customer State
-                <input
-                  type="text"
-                  name="customerState"
-                  value={formData.customerState || ""}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Customer Zip Code
-                <input
-                  type="text"
-                  name="customerZipCode"
-                  value={formData.customerZipCode || ""}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Event & Delivery Information */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-medium mb-4">
-            Event & Delivery Information
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Event Date *
-                <input
-                  type="datetime-local"
-                  name="eventDate"
-                  value={formData.eventDate || ""}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  required
-                />
-              </label>
-              <p className="mt-1 text-sm text-gray-500">
-                The date and time of the actual party/event
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Delivery Date
-                <input
-                  type="datetime-local"
-                  name="deliveryDate"
-                  value={formData.deliveryDate || ""}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-              <p className="mt-1 text-sm text-gray-500">
-                When to deliver the items (defaults to event date if not
-                specified)
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Order Items */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-medium mb-4">Order Items</h2>
-
-          {/* Existing Items */}
-          {formData.items.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-md font-medium mb-2">Current Items</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th
-                        scope="col"
-                        className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Type
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Name
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Quantity
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Unit Price
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Total
-                      </th>
-                      <th
-                        scope="col"
-                        className="relative py-3.5 pl-3 pr-4"
-                      ></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {formData.items.map((item, index) => (
-                      <tr key={index}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500">
-                          {item.type.charAt(0).toUpperCase() +
-                            item.type.slice(1)}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {item.name}
-                          {item.description && (
-                            <div className="text-xs text-gray-400">
-                              {item.description}
-                            </div>
-                          )}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {item.quantity}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          ${item.unitPrice.toFixed(2)}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          ${item.totalPrice.toFixed(2)}
-                        </td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(index)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
+              {error}
             </div>
           )}
 
-          {/* Add New Item */}
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-md font-medium">Add New Item</h3>
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={handleCustomItemToggle}
-                  className={`px-3 py-1 text-sm rounded-md border ${
-                    showCustomItem
-                      ? "bg-blue-100 text-blue-700 border-blue-300"
-                      : "bg-gray-100 text-gray-700 border-gray-300"
-                  }`}
-                >
-                  {showCustomItem ? "Use Product Catalog" : "Use Custom Item"}
-                </button>
-              </div>
+          {/* Validation Warnings */}
+          {validationWarnings.length > 0 && (
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <h4 className="text-sm font-medium text-yellow-800 mb-2">
+                Order Warnings:
+              </h4>
+              <ul className="text-sm text-yellow-700 space-y-1">
+                {validationWarnings.map((warning, index) => (
+                  <li key={index}>• {warning}</li>
+                ))}
+              </ul>
             </div>
+          )}
 
-            {!showCustomItem ? (
-              /* Product Selection Mode */
-              <div className="space-y-4">
-                {/* Product Search and Selection */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select Product
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search products..."
-                        value={productSearchTerm}
-                        onChange={(e) => {
-                          setProductSearchTerm(e.target.value);
-                          setShowDropdown(true);
-                        }}
-                        onFocus={() => setShowDropdown(true)}
-                        onBlur={() =>
-                          setTimeout(() => setShowDropdown(false), 200)
-                        }
-                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      />
-                      {isLoadingProducts && (
-                        <div className="absolute right-3 top-3">
-                          <LoadingSpinner className="w-4 h-4" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Product Dropdown */}
-                    {productSearchTerm &&
-                      showDropdown &&
-                      filteredProducts.length > 0 && (
-                        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                          {filteredProducts.slice(0, 10).map((product) => (
-                            <button
-                              key={product._id}
-                              type="button"
-                              onClick={() => handleProductSelect(product)}
-                              className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                            >
-                              <div className="flex justify-between items-center">
-                                <div className="flex-1">
-                                  <div className="font-medium text-gray-900">
-                                    {product.name}
-                                  </div>
-                                  <div className="text-sm text-gray-500 capitalize">
-                                    {product.category}
-                                  </div>
-                                </div>
-                                <div className="ml-4 text-right">
-                                  <div className="font-semibold text-green-600">
-                                    ${product.price.base.toFixed(2)}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {product.capacity} people
-                                  </div>
-                                </div>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                    {/* Selected Product Display */}
-                    {selectedProduct && (
-                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-medium text-blue-900">
-                              {selectedProduct.name}
-                            </div>
-                            <div className="text-sm text-blue-700 capitalize">
-                              {selectedProduct.category}
-                            </div>
-                            <div className="text-xs text-blue-600 mt-1">
-                              Capacity: {selectedProduct.capacity} people |
-                              Dimensions: {selectedProduct.dimensions.length}' ×{" "}
-                              {selectedProduct.dimensions.width}' ×{" "}
-                              {selectedProduct.dimensions.height}'
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-semibold text-green-700">
-                              ${selectedProduct.price.base.toFixed(2)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* No products found */}
-                    {productSearchTerm &&
-                      filteredProducts.length === 0 &&
-                      !isLoadingProducts && (
-                        <div className="mt-2 text-sm text-gray-500">
-                          No products found. Try a different search term or use
-                          custom item.
-                        </div>
-                      )}
-                  </div>
-                </div>
-
-                {/* Quantity and Additional Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Type
-                      <select
-                        value={newItemType}
-                        onChange={(e) => setNewItemType(e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        disabled={!!selectedProduct}
-                      >
-                        <option value="bouncer">Bouncer</option>
-                        <option value="extra">Extra</option>
-                        <option value="add-on">Add-on</option>
-                      </select>
-                    </label>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Quantity
-                      <input
-                        type="number"
-                        min="1"
-                        value={newItemQuantity}
-                        onChange={(e) =>
-                          setNewItemQuantity(parseInt(e.target.value))
-                        }
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      />
-                    </label>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Unit Price
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={newItemUnitPrice}
-                        onChange={(e) =>
-                          setNewItemUnitPrice(parseFloat(e.target.value))
-                        }
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        disabled={!!selectedProduct}
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                {/* Additional Description */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Order Information */}
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-lg font-medium mb-4">Order Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Additional Description (Optional)
-                    <input
-                      type="text"
-                      value={newItemDescription}
-                      onChange={(e) => setNewItemDescription(e.target.value)}
-                      placeholder="Add any custom notes or modifications..."
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </label>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleAddItem}
-                    disabled={!selectedProduct || newItemQuantity <= 0}
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    Add Product to Order
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* Custom Item Mode */
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Type
+                    Order Status
                     <select
-                      value={newItemType}
-                      onChange={(e) => setNewItemType(e.target.value)}
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     >
-                      <option value="bouncer">Bouncer</option>
-                      <option value="extra">Extra</option>
-                      <option value="add-on">Add-on</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Processing">Processing</option>
+                      <option value="Paid">Paid</option>
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Cancelled">Cancelled</option>
+                      <option value="Refunded">Refunded</option>
                     </select>
                   </label>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Name
-                    <input
-                      type="text"
-                      value={newItemName}
-                      onChange={(e) => setNewItemName(e.target.value)}
+                    Payment Status
+                    <select
+                      name="paymentStatus"
+                      value={formData.paymentStatus}
+                      onChange={handleInputChange}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </label>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Description (Optional)
-                    <input
-                      type="text"
-                      value={newItemDescription}
-                      onChange={(e) => setNewItemDescription(e.target.value)}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </label>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Quantity
-                    <input
-                      type="number"
-                      min="1"
-                      value={newItemQuantity}
-                      onChange={(e) =>
-                        setNewItemQuantity(parseInt(e.target.value))
-                      }
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </label>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Unit Price
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={newItemUnitPrice}
-                      onChange={(e) =>
-                        setNewItemUnitPrice(parseFloat(e.target.value))
-                      }
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </label>
-                </div>
-                <div className="flex items-end">
-                  <button
-                    type="button"
-                    onClick={handleAddItem}
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Add Custom Item
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Pricing Information */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-medium mb-4">Pricing Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Subtotal
-                <input
-                  type="number"
-                  name="subtotal"
-                  value={formData.subtotal}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                  readOnly
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Tax Amount (8.25%)
-                <input
-                  type="number"
-                  name="taxAmount"
-                  value={formData.taxAmount}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                  step="0.01"
-                  min="0"
-                  readOnly
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Discount Amount
-                <input
-                  type="number"
-                  name="discountAmount"
-                  value={formData.discountAmount}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  step="0.01"
-                  min="0"
-                  onBlur={handleUpdatePricing}
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Delivery Fee
-                <input
-                  type="number"
-                  name="deliveryFee"
-                  value={formData.deliveryFee}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  step="0.01"
-                  min="0"
-                  onBlur={handleUpdatePricing}
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Processing Fee (3% of subtotal)
-                <input
-                  type="number"
-                  name="processingFee"
-                  value={formData.processingFee}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                  readOnly
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Total Amount
-                <input
-                  type="number"
-                  name="totalAmount"
-                  value={formData.totalAmount}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                  readOnly
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Deposit Amount
-                <input
-                  type="number"
-                  name="depositAmount"
-                  value={formData.depositAmount}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  step="0.01"
-                  min="0"
-                  onBlur={handleUpdatePricing}
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Balance Due
-                <input
-                  type="number"
-                  name="balanceDue"
-                  value={formData.balanceDue}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                  readOnly
-                />
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Additional Information */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-medium mb-4">Additional Information</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Notes
-                <textarea
-                  name="notes"
-                  value={formData.notes || ""}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </label>
-            </div>
-
-            {/* Tasks */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tasks
-              </label>
-
-              {/* Existing Tasks */}
-              {formData.tasks && formData.tasks.length > 0 && (
-                <ul className="mb-4 space-y-2">
-                  {formData.tasks.map((task, index) => (
-                    <li
-                      key={index}
-                      className="flex items-center justify-between bg-gray-50 p-2 rounded"
                     >
-                      <span>{task}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTask(index)}
-                        className="text-red-600 hover:text-red-900 text-sm"
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                      <option value="Pending">Pending</option>
+                      <option value="Authorized">Authorized</option>
+                      <option value="Paid">Paid</option>
+                      <option value="Failed">Failed</option>
+                      <option value="Refunded">Refunded</option>
+                      <option value="Partially Refunded">
+                        Partially Refunded
+                      </option>
+                    </select>
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Payment Method
+                    <select
+                      name="paymentMethod"
+                      value={formData.paymentMethod}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    >
+                      <option value="paypal">PayPal</option>
+                      <option value="cash">Cash</option>
+                      <option value="quickbooks">QuickBooks</option>
+                      <option value="free">Free</option>
+                    </select>
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Contact ID (Optional)
+                    <input
+                      type="text"
+                      name="contactId"
+                      value={formData.contactId || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
 
-              {/* Add New Task */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  id="new-task"
-                  placeholder="Enter a new task"
-                  className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddTask}
-                  className="px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Add Task
-                </button>
+            {/* Customer Information */}
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-lg font-medium mb-4">Customer Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Customer Name
+                    <input
+                      type="text"
+                      name="customerName"
+                      value={formData.customerName || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Customer Email
+                    <input
+                      type="email"
+                      name="customerEmail"
+                      value={formData.customerEmail || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Customer Phone
+                    <input
+                      type="tel"
+                      name="customerPhone"
+                      value={formData.customerPhone || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Customer Address
+                    <input
+                      type="text"
+                      name="customerAddress"
+                      value={formData.customerAddress || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Customer City
+                    <input
+                      type="text"
+                      name="customerCity"
+                      value={formData.customerCity || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Customer State
+                    <input
+                      type="text"
+                      name="customerState"
+                      value={formData.customerState || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Customer Zip Code
+                    <input
+                      type="text"
+                      name="customerZipCode"
+                      value={formData.customerZipCode || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Event & Delivery Information */}
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-lg font-medium mb-4">
+                Event & Delivery Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Event Date *
+                    <input
+                      type="datetime-local"
+                      name="eventDate"
+                      value={formData.eventDate || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </label>
+                  <p className="mt-1 text-sm text-gray-500">
+                    The date and time of the actual party/event
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Delivery Date
+                    <input
+                      type="datetime-local"
+                      name="deliveryDate"
+                      value={formData.deliveryDate || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                  <p className="mt-1 text-sm text-gray-500">
+                    When to deliver the items (auto-populated with event date)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Order Items */}
+            <OrderProductSelector onAddItem={handleAddItem} />
+            <OrderItemsTable
+              items={formData.items}
+              onRemoveItem={handleRemoveItem}
+            />
+
+            {/* Pricing Information */}
+            <PricingSection
+              items={formData.items}
+              deliveryFee={formData.deliveryFee}
+              discountAmount={formData.discountAmount}
+              depositAmount={formData.depositAmount}
+              onDeliveryFeeChange={handleDeliveryFeeChange}
+              onDiscountAmountChange={handleDiscountAmountChange}
+              onDepositAmountChange={handleDepositAmountChange}
+            />
+
+            {/* Additional Information */}
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-lg font-medium mb-4">
+                Additional Information
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Notes
+                    <textarea
+                      name="notes"
+                      value={formData.notes || ""}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+
+                {/* Tasks */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tasks
+                  </label>
+
+                  {/* Existing Tasks */}
+                  {formData.tasks && formData.tasks.length > 0 && (
+                    <ul className="mb-4 space-y-2">
+                      {formData.tasks.map((task, index) => (
+                        <li
+                          key={index}
+                          className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                        >
+                          <span>{task}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTask(index)}
+                            className="text-red-600 hover:text-red-900 text-sm"
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {/* Add New Task */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      id="new-task"
+                      placeholder="Enter a new task"
+                      className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddTask}
+                      className="px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Add Task
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {isLoading ? (
+                  <LoadingSpinner className="w-5 h-5" />
+                ) : (
+                  "Create Order"
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Sidebar with Progress */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-6 bg-white p-4 rounded-lg shadow-md">
+            <h3 className="text-md font-medium mb-4">Order Summary</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Items:</span>
+                <span>{formData.items.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span>${pricing.subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tax:</span>
+                <span>${pricing.taxAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-semibold border-t pt-2">
+                <span>Total:</span>
+                <span>${pricing.totalAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-blue-600">
+                <span>Balance Due:</span>
+                <span>${pricing.balanceDue.toFixed(2)}</span>
               </div>
             </div>
           </div>
         </div>
-
-        <div className="flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            {isLoading ? (
-              <LoadingSpinner className="w-5 h-5" />
-            ) : (
-              "Create Order"
-            )}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

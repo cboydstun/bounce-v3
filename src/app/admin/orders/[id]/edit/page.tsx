@@ -1,23 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { getOrderById, updateOrder, getContactById } from "@/utils/api";
-import { Order, OrderItemType } from "@/types/order";
+import { Order, OrderItemType, OrderItem } from "@/types/order";
 import { Contact } from "@/types/contact";
 import { formatDateCT, CENTRAL_TIMEZONE } from "@/utils/dateUtils";
-
-interface OrderItem {
-  type: OrderItemType;
-  name: string;
-  description?: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-}
+import { OrderProductSelector } from "@/components/admin/orders/OrderProductSelector";
+import { OrderItemsTable } from "@/components/admin/orders/OrderItemsTable";
+import { PricingSection } from "@/components/admin/orders/PricingSection";
+import { useOrderPricing } from "@/hooks/useOrderPricing";
 
 interface PageProps {
   params: {
@@ -48,18 +43,24 @@ export default function EditOrderPage({ params }: PageProps) {
     eventDate?: string;
   }>({});
 
-  // New item state
-  const [newItemType, setNewItemType] = useState<OrderItemType>("bouncer");
-  const [newItemName, setNewItemName] = useState<string>("");
-  const [newItemDescription, setNewItemDescription] = useState<string>("");
-  const [newItemQuantity, setNewItemQuantity] = useState<number>(1);
-  const [newItemUnitPrice, setNewItemUnitPrice] = useState<number>(0);
-
   // New task state
   const [newTask, setNewTask] = useState<string>("");
 
   // Get the NextAuth session
   const { data: session, status: authStatus } = useSession();
+
+  // Initialize pricing hook
+  const { pricing, validatePricing } = useOrderPricing(
+    order?.items || [],
+    formData.deliveryFee || order?.deliveryFee || 0,
+    formData.discountAmount || order?.discountAmount || 0,
+    formData.depositAmount || order?.depositAmount || 0,
+  );
+
+  // Get validation warnings
+  const validationWarnings = useMemo(() => {
+    return validatePricing();
+  }, [validatePricing]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -177,68 +178,61 @@ export default function EditOrderPage({ params }: PageProps) {
     recalculateTotals(updatedItems);
   };
 
-  // Add new item to order
-  const handleAddItem = () => {
-    if (!order || !newItemName || newItemUnitPrice <= 0) {
-      setError("Please fill in all item fields with valid values");
-      return;
-    }
+  // Memoized handlers for optimized components
+  const handleAddItem = useCallback(
+    (item: OrderItem) => {
+      if (!order) return;
 
-    const newItem: OrderItem = {
-      type: newItemType,
-      name: newItemName,
-      description: newItemDescription || undefined,
-      quantity: newItemQuantity,
-      unitPrice: newItemUnitPrice,
-      totalPrice: newItemQuantity * newItemUnitPrice,
-    };
+      const updatedItems = [...order.items, item];
 
-    const updatedItems = [...order.items, newItem];
+      // Update order with new items
+      setOrder({
+        ...order,
+        items: updatedItems,
+      });
 
-    // Update order with new items
-    setOrder({
-      ...order,
-      items: updatedItems,
-    });
+      // Update form data with new items
+      setFormData((prev) => ({
+        ...prev,
+        items: updatedItems,
+      }));
+    },
+    [order],
+  );
 
-    // Update form data with new items
-    setFormData((prev) => ({
-      ...prev,
-      items: updatedItems,
-    }));
+  const handleRemoveItem = useCallback(
+    (index: number) => {
+      if (!order) return;
 
-    // Recalculate totals
-    recalculateTotals(updatedItems);
+      const updatedItems = order.items.filter((_, i) => i !== index);
 
-    // Reset new item fields
-    setNewItemType("bouncer");
-    setNewItemName("");
-    setNewItemDescription("");
-    setNewItemQuantity(1);
-    setNewItemUnitPrice(0);
-  };
+      // Update order with new items
+      setOrder({
+        ...order,
+        items: updatedItems,
+      });
 
-  // Remove item from order
-  const handleRemoveItem = (index: number) => {
-    if (!order) return;
+      // Update form data with new items
+      setFormData((prev) => ({
+        ...prev,
+        items: updatedItems,
+      }));
+    },
+    [order],
+  );
 
-    const updatedItems = order.items.filter((_, i) => i !== index);
+  // Memoized pricing handlers
+  const handleDeliveryFeeChange = useCallback((value: number) => {
+    setFormData((prev) => ({ ...prev, deliveryFee: value }));
+  }, []);
 
-    // Update order with new items
-    setOrder({
-      ...order,
-      items: updatedItems,
-    });
+  const handleDiscountAmountChange = useCallback((value: number) => {
+    setFormData((prev) => ({ ...prev, discountAmount: value }));
+  }, []);
 
-    // Update form data with new items
-    setFormData((prev) => ({
-      ...prev,
-      items: updatedItems,
-    }));
-
-    // Recalculate totals
-    recalculateTotals(updatedItems);
-  };
+  const handleDepositAmountChange = useCallback((value: number) => {
+    setFormData((prev) => ({ ...prev, depositAmount: value }));
+  }, []);
 
   // Add new task to order
   const handleAddTask = () => {
@@ -454,6 +448,20 @@ export default function EditOrderPage({ params }: PageProps) {
       {error && (
         <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
           {error}
+        </div>
+      )}
+
+      {/* Validation Warnings */}
+      {validationWarnings.length > 0 && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+          <h4 className="text-sm font-medium text-yellow-800 mb-2">
+            Order Warnings:
+          </h4>
+          <ul className="text-sm text-yellow-700 space-y-1">
+            {validationWarnings.map((warning, index) => (
+              <li key={index}>• {warning}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -791,345 +799,19 @@ export default function EditOrderPage({ params }: PageProps) {
         </div>
 
         {/* Order Items */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-medium mb-4">Order Items</h2>
-
-          {/* Existing Items */}
-          {order.items.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-md font-medium mb-2">Items</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th
-                        scope="col"
-                        className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Type
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Name
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Quantity
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Unit Price
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Total
-                      </th>
-                      <th
-                        scope="col"
-                        className="relative py-3.5 pl-3 pr-4"
-                      ></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {order.items.map((item, index) => (
-                      <tr key={index}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500">
-                          {item.type.charAt(0).toUpperCase() +
-                            item.type.slice(1)}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {item.name}
-                          {item.description && (
-                            <div className="text-xs text-gray-400">
-                              {item.description}
-                            </div>
-                          )}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              handleItemChange(
-                                index,
-                                "quantity",
-                                parseInt(e.target.value),
-                              )
-                            }
-                            className="w-16 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.unitPrice}
-                            onChange={(e) =>
-                              handleItemChange(
-                                index,
-                                "unitPrice",
-                                parseFloat(e.target.value),
-                              )
-                            }
-                            className="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          ${item.totalPrice.toFixed(2)}
-                        </td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(index)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Add New Item */}
-          <div className="mt-4">
-            <h3 className="text-md font-medium mb-2">Add Item</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Type
-                  <select
-                    value={newItemType}
-                    onChange={(e) =>
-                      setNewItemType(e.target.value as OrderItemType)
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option value="bouncer">Bouncer</option>
-                    <option value="extra">Extra</option>
-                    <option value="add-on">Add-on</option>
-                  </select>
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Name
-                  <input
-                    type="text"
-                    value={newItemName}
-                    onChange={(e) => setNewItemName(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Description (Optional)
-                  <input
-                    type="text"
-                    value={newItemDescription}
-                    onChange={(e) => setNewItemDescription(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Quantity
-                  <input
-                    type="number"
-                    min="1"
-                    value={newItemQuantity}
-                    onChange={(e) =>
-                      setNewItemQuantity(parseInt(e.target.value))
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Unit Price
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newItemUnitPrice}
-                    onChange={(e) =>
-                      setNewItemUnitPrice(parseFloat(e.target.value))
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </label>
-              </div>
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={handleAddItem}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Add Item
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <OrderProductSelector onAddItem={handleAddItem} />
+        <OrderItemsTable items={order.items} onRemoveItem={handleRemoveItem} />
 
         {/* Pricing Information */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-medium mb-4">Pricing Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Subtotal
-                <input
-                  type="number"
-                  name="subtotal"
-                  value={
-                    formData.subtotal !== undefined
-                      ? formData.subtotal
-                      : order.subtotal
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                  readOnly
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Tax Amount
-                <input
-                  type="number"
-                  name="taxAmount"
-                  value={
-                    formData.taxAmount !== undefined
-                      ? formData.taxAmount
-                      : order.taxAmount
-                  }
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  step="0.01"
-                  min="0"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Discount Amount
-                <input
-                  type="number"
-                  name="discountAmount"
-                  value={
-                    formData.discountAmount !== undefined
-                      ? formData.discountAmount
-                      : order.discountAmount
-                  }
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  step="0.01"
-                  min="0"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Delivery Fee
-                <input
-                  type="number"
-                  name="deliveryFee"
-                  value={
-                    formData.deliveryFee !== undefined
-                      ? formData.deliveryFee
-                      : order.deliveryFee
-                  }
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  step="0.01"
-                  min="0"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Processing Fee (3% of subtotal, rounded to nearest cent)
-                <input
-                  type="number"
-                  name="processingFee"
-                  value={
-                    formData.processingFee !== undefined
-                      ? formData.processingFee
-                      : order.processingFee
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                  readOnly
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Total Amount
-                <input
-                  type="number"
-                  name="totalAmount"
-                  value={
-                    formData.totalAmount !== undefined
-                      ? formData.totalAmount
-                      : order.totalAmount
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                  readOnly
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Deposit Amount
-                <input
-                  type="number"
-                  name="depositAmount"
-                  value={
-                    formData.depositAmount !== undefined
-                      ? formData.depositAmount
-                      : order.depositAmount
-                  }
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  step="0.01"
-                  min="0"
-                />
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Balance Due
-                <input
-                  type="number"
-                  name="balanceDue"
-                  value={
-                    formData.balanceDue !== undefined
-                      ? formData.balanceDue
-                      : order.balanceDue
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                  readOnly
-                />
-              </label>
-            </div>
-          </div>
-        </div>
+        <PricingSection
+          items={order.items}
+          deliveryFee={formData.deliveryFee || order.deliveryFee || 0}
+          discountAmount={formData.discountAmount || order.discountAmount || 0}
+          depositAmount={formData.depositAmount || order.depositAmount || 0}
+          onDeliveryFeeChange={handleDeliveryFeeChange}
+          onDiscountAmountChange={handleDiscountAmountChange}
+          onDepositAmountChange={handleDepositAmountChange}
+        />
 
         {/* Additional Information */}
         <div className="bg-white p-6 rounded-lg shadow-md">
