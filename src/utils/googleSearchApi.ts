@@ -139,13 +139,6 @@ export async function checkKeywordRanking(
       .replace(/^https?:\/\//, "")
       .replace(/^www\./, "");
 
-    console.log(`🔍 Starting enhanced search for keyword: "${keyword}"`);
-    console.log(
-      `🎯 Target domain: ${targetDomain} (normalized: ${normalizedTargetDomain})`,
-    );
-    console.log(`🔧 Using CSE ID: ${cx}`);
-    console.log(`📏 Max search depth: ${maxPosition} positions`);
-
     let allResults: SearchResult[] = [];
     let ourPosition = -1;
     let ourUrl = "";
@@ -158,10 +151,6 @@ export async function checkKeywordRanking(
 
     for (let page = 0; page < maxPages; page++) {
       const startIndex = page * resultsPerPage + 1;
-
-      console.log(
-        `📄 Searching page ${page + 1} (positions ${startIndex}-${startIndex + resultsPerPage - 1})`,
-      );
 
       try {
         const response = await axios.get(
@@ -189,8 +178,6 @@ export async function checkKeywordRanking(
           };
         }
 
-        console.log(`📋 Page ${page + 1}: ${items.length} results returned`);
-
         // Process results for this page
         const pageResults: SearchResult[] = items.map(
           (item: any, index: number) => ({
@@ -217,34 +204,23 @@ export async function checkKeywordRanking(
           ) {
             ourPosition = result.position;
             ourUrl = result.url;
-            console.log(
-              `🎯 Found target domain at position ${ourPosition}: ${result.url}`,
-            );
+
             break;
           }
         }
 
         // If we found our domain, we can stop searching
         if (ourPosition > 0) {
-          console.log(
-            `✅ Target domain found! Stopping search at page ${page + 1}`,
-          );
           break;
         }
 
         // If this page returned fewer results than expected, we've reached the end
         if (items.length < resultsPerPage) {
-          console.log(
-            `📄 Reached end of results at page ${page + 1} (${items.length} results)`,
-          );
           break;
         }
 
         // Add proper rate limiting between API calls (1.5 seconds)
         if (page < maxPages - 1) {
-          console.log(
-            `⏳ Rate limiting: waiting 1.5 seconds before next API call...`,
-          );
           await new Promise((resolve) => setTimeout(resolve, 1500));
         }
       } catch (error) {
@@ -253,14 +229,10 @@ export async function checkKeywordRanking(
         // Handle rate limiting (429 errors) with exponential backoff
         if ((error as any).response?.status === 429) {
           const retryDelay = Math.min(5000 * Math.pow(2, page), 30000); // 5s, 10s, 20s, 30s max
-          console.log(
-            `🚫 Rate limit hit! Waiting ${retryDelay}ms before retrying...`,
-          );
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
 
           // Retry the same page once
           try {
-            console.log(`🔄 Retrying page ${page + 1} after rate limit...`);
             const retryResponse = await axios.get(
               `https://www.googleapis.com/customsearch/v1`,
               {
@@ -285,10 +257,6 @@ export async function checkKeywordRanking(
                 searchTime: "0",
               };
             }
-
-            console.log(
-              `📋 Page ${page + 1} (retry): ${items.length} results returned`,
-            );
 
             // Process results for this page
             const pageResults: SearchResult[] = items.map(
@@ -316,30 +284,20 @@ export async function checkKeywordRanking(
               ) {
                 ourPosition = result.position;
                 ourUrl = result.url;
-                console.log(
-                  `🎯 Found target domain at position ${ourPosition}: ${result.url}`,
-                );
                 break;
               }
             }
 
             // If we found our domain, we can stop searching
             if (ourPosition > 0) {
-              console.log(
-                `✅ Target domain found! Stopping search at page ${page + 1}`,
-              );
               break;
             }
 
             // If this page returned fewer results than expected, we've reached the end
             if (items.length < resultsPerPage) {
-              console.log(
-                `📄 Reached end of results at page ${page + 1} (${items.length} results)`,
-              );
               break;
             }
           } catch (retryError) {
-            console.error(`❌ Retry failed for page ${page + 1}:`, retryError);
             // If retry also fails, continue to next page
             continue;
           }
@@ -350,22 +308,11 @@ export async function checkKeywordRanking(
       }
     }
 
-    console.log(`📊 Enhanced search completed in ${Date.now() - startTime}ms`);
-    console.log(
-      `📈 Total results reported by Google: ${searchInfo.totalResults}`,
-    );
-    console.log(`⏱️ Google search time: ${searchInfo.searchTime}s`);
-    console.log(`🔄 API calls made: ${totalApiCalls}`);
-    console.log(`📋 Total results processed: ${allResults.length}`);
-
     // If our website is not found in the results, use a default URL
     if (ourPosition === -1 || !ourUrl) {
       ourUrl = targetDomain.startsWith("http")
         ? targetDomain
         : `https://${targetDomain}`;
-      console.log(
-        `❌ Target domain not found in top ${allResults.length} positions. Using default URL: ${ourUrl}`,
-      );
     }
 
     // Get competitors from all results (excluding our domain)
@@ -397,24 +344,6 @@ export async function checkKeywordRanking(
       keyword,
     );
 
-    if (!validation.isValid) {
-      console.log(`⚠️ Validation warnings for "${keyword}":`);
-      validation.warnings.forEach((warning) => console.log(`   - ${warning}`));
-    } else {
-      console.log(`✅ Search results validation passed for "${keyword}"`);
-    }
-
-    // Log competitor analysis
-    console.log(`🏆 Competitor analysis for "${keyword}":`);
-    if (competitors.length === 0) {
-      console.log(`   ⚠️ No competitors found - this is unusual`);
-    } else {
-      console.log(`   📊 Found ${competitors.length} competitors`);
-      competitors.slice(0, 5).forEach((comp) => {
-        console.log(`   ${comp.position}. ${comp.title} (${comp.url})`);
-      });
-    }
-
     const result: RankingResult = {
       position: ourPosition,
       url: ourUrl,
@@ -430,10 +359,6 @@ export async function checkKeywordRanking(
         maxPositionSearched: maxPosition,
       },
     };
-
-    console.log(
-      `🏁 Enhanced search result for "${keyword}": Position ${ourPosition > 0 ? ourPosition : "Not found"}, ${totalApiCalls} API calls, ${validation.warnings.length} warnings`,
-    );
 
     return result;
   } catch (error) {
@@ -498,10 +423,6 @@ export async function diagnoseCseConfiguration(
     warnings: string[];
   }> = [];
 
-  console.log(
-    `🔬 Starting CSE diagnostic test with ${testKeywords.length} keywords`,
-  );
-
   for (const keyword of testKeywords) {
     try {
       const result = await checkKeywordRanking(keyword, targetDomain);
@@ -540,11 +461,7 @@ export async function diagnoseCseConfiguration(
 
   const isHealthy = issues.length === 0;
 
-  console.log(
-    `🔬 Diagnostic complete: ${isHealthy ? "HEALTHY" : "ISSUES DETECTED"}`,
-  );
   if (!isHealthy) {
-    console.log(`⚠️ Issues found: ${issues.length}`);
     issues.forEach((issue) => console.log(`   - ${issue}`));
   }
 
