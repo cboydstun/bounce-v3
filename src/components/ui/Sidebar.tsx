@@ -38,6 +38,7 @@ const navItems: NavItem[] = [
   { name: "Blogs", href: "/admin/blogs", icon: NewspaperIcon },
   { name: "Products", href: "/admin/products", icon: ShoppingBagIcon },
   { name: "Contacts", href: "/admin/contacts", icon: UserGroupIcon },
+  { name: "Users", href: "/admin/users", icon: UsersIcon },
   { name: "Contractors", href: "/admin/contractors", icon: UsersIcon },
   {
     name: "Tasks",
