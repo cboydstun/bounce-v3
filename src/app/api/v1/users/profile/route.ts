@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/db/mongoose";
 import User from "@/models/User";
+import bcryptjs from "bcryptjs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,32 +82,36 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Prepare update data (only allow certain fields to be updated)
-    const allowedUpdates: any = {};
-
-    if (updateData.name !== undefined) {
-      allowedUpdates.name = updateData.name || undefined;
-    }
-
-    if (updateData.email) {
-      allowedUpdates.email = updateData.email;
-    }
-
-    if (updateData.password) {
-      allowedUpdates.password = updateData.password;
-    }
-
-    // Update user profile
-    const user = await User.findByIdAndUpdate(session.user.id, allowedUpdates, {
-      new: true,
-      runValidators: true,
-    }).select("-password");
+    // Find the user first
+    const user = await User.findById(session.user.id);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(user);
+    // Update allowed fields
+    if (updateData.name !== undefined) {
+      user.name = updateData.name || undefined;
+    }
+
+    if (updateData.email) {
+      user.email = updateData.email;
+    }
+
+    if (updateData.password) {
+      // Hash the password manually since we're not using the pre-save hook
+      const salt = await bcryptjs.genSalt(10);
+      user.password = await bcryptjs.hash(updateData.password, salt);
+    }
+
+    // Save the user (this will trigger validation but not the pre-save hook for password since we already hashed it)
+    await user.save();
+
+    // Return user without password
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    return NextResponse.json(userResponse);
   } catch (error) {
     console.error("Error updating profile:", error);
     return NextResponse.json(

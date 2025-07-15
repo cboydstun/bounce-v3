@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/db/mongoose";
 import User from "@/models/User";
 import mongoose from "mongoose";
+import bcryptjs from "bcryptjs";
 
 export async function GET(
   request: NextRequest,
@@ -201,17 +202,33 @@ export async function PUT(
       }
     }
 
-    // Update user
-    const user = await User.findByIdAndUpdate(params.id, updateData, {
-      new: true,
-      runValidators: true,
-    }).select("-password");
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    // Update allowed fields
+    if (updateData.name !== undefined) {
+      userToUpdate.name = updateData.name || undefined;
     }
 
-    return NextResponse.json(user);
+    if (updateData.email) {
+      userToUpdate.email = updateData.email;
+    }
+
+    if (updateData.role) {
+      userToUpdate.role = updateData.role;
+    }
+
+    if (updateData.password) {
+      // Hash the password manually since we're not using the pre-save hook
+      const salt = await bcryptjs.genSalt(10);
+      userToUpdate.password = await bcryptjs.hash(updateData.password, salt);
+    }
+
+    // Save the user (this will trigger validation but not the pre-save hook for password since we already hashed it)
+    await userToUpdate.save();
+
+    // Return user without password
+    const userResponse = userToUpdate.toObject();
+    delete userResponse.password;
+
+    return NextResponse.json(userResponse);
   } catch (error) {
     console.error("Error updating user:", error);
     return NextResponse.json(
