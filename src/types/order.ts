@@ -1,5 +1,16 @@
 import { Document, Model } from "mongoose";
 import { IContactDocument } from "./contact";
+import {
+  DEFAULT_DELIVERY_FEE,
+  DEFAULT_DISCOUNT_AMOUNT,
+  DEFAULT_DEPOSIT_AMOUNT,
+  DEFAULT_ORDER_STATUS,
+  DEFAULT_PAYMENT_STATUS,
+  DEFAULT_PAYMENT_METHOD,
+  DEFAULT_DELIVERY_TIME_PREFERENCE,
+  DEFAULT_PICKUP_TIME_PREFERENCE,
+  DEFAULT_SPECIFIC_TIME_CHARGE,
+} from "../config/orderConstants";
 
 /**
  * Defines the possible order statuses
@@ -112,7 +123,7 @@ export interface Order {
   subtotal: number; // Sum of all item prices before tax/discounts
   taxAmount: number; // Tax amount
   discountAmount: number; // Discount amount
-  deliveryFee: number; // Delivery fee (default $20)
+  deliveryFee: number; // Delivery fee (default FREE)
   processingFee: number; // Credit card processing fee (3% of subtotal)
   totalAmount: number; // Final amount (subtotal + tax + deliveryFee + processingFee - discount)
   depositAmount: number; // Initial deposit amount
@@ -172,7 +183,7 @@ export interface OrderFormData {
   subtotal?: number; // Optional: can be calculated from items
   taxAmount?: number; // Optional: can be calculated from subtotal
   discountAmount?: number; // Optional: discount amount
-  deliveryFee?: number; // Optional: defaults to 20
+  deliveryFee?: number; // Optional: defaults to 0 (FREE)
   processingFee?: number; // Optional: can be calculated (3% of subtotal)
   totalAmount?: number; // Optional: can be calculated
   depositAmount?: number; // Optional: initial deposit

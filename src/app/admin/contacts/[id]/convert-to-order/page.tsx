@@ -12,6 +12,15 @@ import {
 import { OrderStatus, PaymentStatus, PaymentMethod } from "@/types/order";
 import { Contact } from "@/types/contact";
 import { ProductWithId } from "@/types/product";
+import {
+  DEFAULT_DELIVERY_FEE,
+  DEFAULT_DISCOUNT_AMOUNT,
+  DEFAULT_DEPOSIT_AMOUNT,
+  DEFAULT_ORDER_STATUS,
+  DEFAULT_PAYMENT_STATUS,
+  DEFAULT_PAYMENT_METHOD,
+  calculateOrderPricing,
+} from "@/config/orderConstants";
 
 interface OrderItem {
   type: string;
@@ -55,15 +64,15 @@ export default function ConvertContactToOrder({ params }: PageProps) {
     items: [],
     subtotal: 0,
     taxAmount: 0,
-    discountAmount: 0,
-    deliveryFee: 20,
+    discountAmount: DEFAULT_DISCOUNT_AMOUNT,
+    deliveryFee: DEFAULT_DELIVERY_FEE,
     processingFee: 0,
     totalAmount: 0,
-    depositAmount: 0,
+    depositAmount: DEFAULT_DEPOSIT_AMOUNT,
     balanceDue: 0,
-    status: "Pending",
-    paymentStatus: "Pending",
-    paymentMethod: "paypal",
+    status: DEFAULT_ORDER_STATUS,
+    paymentStatus: DEFAULT_PAYMENT_STATUS,
+    paymentMethod: DEFAULT_PAYMENT_METHOD,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -240,32 +249,19 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         return item;
       });
 
-      // Calculate totals
-      const subtotal = updatedItems.reduce(
-        (sum, item) => sum + item.totalPrice,
-        0,
+      // Calculate totals using centralized utility
+      const pricing = calculateOrderPricing(
+        updatedItems,
+        formData.deliveryFee,
+        formData.discountAmount,
+        formData.depositAmount,
       );
-      const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount =
-        Math.round(
-          (subtotal +
-            formData.taxAmount +
-            formData.deliveryFee +
-            processingFee -
-            formData.discountAmount) *
-            100,
-        ) / 100;
-      const balanceDue =
-        Math.round((totalAmount - formData.depositAmount) * 100) / 100;
 
       // Update form data with new items and calculated values
       setFormData((prev) => ({
         ...prev,
         items: updatedItems,
-        subtotal,
-        processingFee,
-        totalAmount,
-        balanceDue,
+        ...pricing,
       }));
     } catch (error) {
       console.error("Error fetching product prices:", error);
@@ -372,30 +368,17 @@ export default function ConvertContactToOrder({ params }: PageProps) {
       updatedItems[index].totalPrice =
         updatedItems[index].unitPrice * updatedItems[index].quantity;
 
-      const subtotal = updatedItems.reduce(
-        (sum, item) => sum + item.totalPrice,
-        0,
+      const pricing = calculateOrderPricing(
+        updatedItems,
+        prev.deliveryFee,
+        prev.discountAmount,
+        prev.depositAmount,
       );
-      const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount =
-        Math.round(
-          (subtotal +
-            prev.taxAmount +
-            prev.deliveryFee +
-            processingFee -
-            prev.discountAmount) *
-            100,
-        ) / 100;
-      const balanceDue =
-        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
         items: updatedItems,
-        subtotal,
-        processingFee,
-        totalAmount,
-        balanceDue,
+        ...pricing,
       };
     });
   };
@@ -417,30 +400,17 @@ export default function ConvertContactToOrder({ params }: PageProps) {
 
     setFormData((prev) => {
       const updatedItems = [...prev.items, newItem];
-      const subtotal = updatedItems.reduce(
-        (sum, item) => sum + item.totalPrice,
-        0,
+      const pricing = calculateOrderPricing(
+        updatedItems,
+        prev.deliveryFee,
+        prev.discountAmount,
+        prev.depositAmount,
       );
-      const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount =
-        Math.round(
-          (subtotal +
-            prev.taxAmount +
-            prev.deliveryFee +
-            processingFee -
-            prev.discountAmount) *
-            100,
-        ) / 100;
-      const balanceDue =
-        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
         items: updatedItems,
-        subtotal,
-        processingFee,
-        totalAmount,
-        balanceDue,
+        ...pricing,
       };
     });
 
@@ -455,59 +425,33 @@ export default function ConvertContactToOrder({ params }: PageProps) {
   const handleRemoveItem = (index: number) => {
     setFormData((prev) => {
       const updatedItems = prev.items.filter((_, i) => i !== index);
-      const subtotal = updatedItems.reduce(
-        (sum, item) => sum + item.totalPrice,
-        0,
+      const pricing = calculateOrderPricing(
+        updatedItems,
+        prev.deliveryFee,
+        prev.discountAmount,
+        prev.depositAmount,
       );
-      const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount =
-        Math.round(
-          (subtotal +
-            prev.taxAmount +
-            prev.deliveryFee +
-            processingFee -
-            prev.discountAmount) *
-            100,
-        ) / 100;
-      const balanceDue =
-        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
         items: updatedItems,
-        subtotal,
-        processingFee,
-        totalAmount,
-        balanceDue,
+        ...pricing,
       };
     });
   };
 
   const handleUpdatePricing = () => {
     setFormData((prev) => {
-      const subtotal = prev.items.reduce(
-        (sum, item) => sum + item.totalPrice,
-        0,
+      const pricing = calculateOrderPricing(
+        prev.items,
+        prev.deliveryFee,
+        prev.discountAmount,
+        prev.depositAmount,
       );
-      const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount =
-        Math.round(
-          (subtotal +
-            prev.taxAmount +
-            prev.deliveryFee +
-            processingFee -
-            prev.discountAmount) *
-            100,
-        ) / 100;
-      const balanceDue =
-        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
-        subtotal,
-        processingFee,
-        totalAmount,
-        balanceDue,
+        ...pricing,
       };
     });
   };
@@ -900,16 +844,16 @@ export default function ConvertContactToOrder({ params }: PageProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Tax Amount
+                Tax Amount (8.25%)
                 <input
                   type="number"
                   name="taxAmount"
                   value={formData.taxAmount}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
                   step="0.01"
                   min="0"
-                  onBlur={handleUpdatePricing}
+                  readOnly
                 />
               </label>
             </div>

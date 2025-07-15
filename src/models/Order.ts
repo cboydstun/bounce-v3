@@ -1,5 +1,16 @@
 import mongoose, { Schema } from "mongoose";
 import { IOrderDocument, IOrderModel, OrderStatus } from "../types/order";
+import {
+  DEFAULT_DELIVERY_FEE,
+  DEFAULT_DISCOUNT_AMOUNT,
+  DEFAULT_DEPOSIT_AMOUNT,
+  DEFAULT_ORDER_STATUS,
+  DEFAULT_PAYMENT_STATUS,
+  DEFAULT_DELIVERY_TIME_PREFERENCE,
+  DEFAULT_PICKUP_TIME_PREFERENCE,
+  DEFAULT_SPECIFIC_TIME_CHARGE,
+  calculateProcessingFee,
+} from "../config/orderConstants";
 import Counter from "./Counter";
 
 // PayPal transaction schema
@@ -106,18 +117,18 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
     deliveryTimePreference: {
       type: String,
       enum: ["flexible", "specific"],
-      default: "flexible",
+      default: DEFAULT_DELIVERY_TIME_PREFERENCE,
       required: true,
     },
     pickupTimePreference: {
       type: String,
       enum: ["flexible", "specific"],
-      default: "flexible",
+      default: DEFAULT_PICKUP_TIME_PREFERENCE,
       required: true,
     },
     specificTimeCharge: {
       type: Number,
-      default: 0,
+      default: DEFAULT_SPECIFIC_TIME_CHARGE,
       min: 0,
     },
 
@@ -187,21 +198,20 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
       type: Number,
       required: true,
       min: 0,
-      default: 0,
+      default: DEFAULT_DISCOUNT_AMOUNT,
     },
     deliveryFee: {
       type: Number,
       required: true,
       min: 0,
-      default: 0, // FREE DELIVERY
+      default: DEFAULT_DELIVERY_FEE,
     },
     processingFee: {
       type: Number,
       required: true,
       min: 0,
       default: function (this: IOrderDocument) {
-        // Default 3% of subtotal
-        return this.subtotal ? Math.round(this.subtotal * 0.03 * 100) / 100 : 0;
+        return this.subtotal ? calculateProcessingFee(this.subtotal) : 0;
       },
     },
     totalAmount: {
@@ -213,7 +223,7 @@ const OrderSchema = new Schema<IOrderDocument, IOrderModel>(
       type: Number,
       required: true,
       min: 0,
-      default: 0,
+      default: DEFAULT_DEPOSIT_AMOUNT,
     },
     balanceDue: {
       type: Number,
@@ -353,12 +363,12 @@ OrderSchema.pre("save", function (next) {
 
   // Set default delivery fee if not provided
   if (!this.deliveryFee && this.deliveryFee !== 0) {
-    this.deliveryFee = 0; // FREE DELIVERY
+    this.deliveryFee = DEFAULT_DELIVERY_FEE;
   }
 
-  // Calculate processing fee if not provided (3% of subtotal)
+  // Calculate processing fee if not provided
   if (!this.processingFee) {
-    this.processingFee = Math.round(this.subtotal * 0.03 * 100) / 100;
+    this.processingFee = calculateProcessingFee(this.subtotal);
   }
 
   // Calculate total amount if not provided
@@ -368,7 +378,8 @@ OrderSchema.pre("save", function (next) {
         (this.subtotal +
           this.taxAmount +
           this.deliveryFee +
-          this.processingFee -
+          this.processingFee +
+          this.specificTimeCharge -
           this.discountAmount) *
           100,
       ) / 100;

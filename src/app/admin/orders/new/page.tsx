@@ -6,6 +6,15 @@ import { useSession } from "next-auth/react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { createOrder } from "@/utils/api";
 import { OrderStatus, PaymentStatus, PaymentMethod } from "@/types/order";
+import {
+  DEFAULT_DELIVERY_FEE,
+  DEFAULT_DISCOUNT_AMOUNT,
+  DEFAULT_DEPOSIT_AMOUNT,
+  DEFAULT_ORDER_STATUS,
+  DEFAULT_PAYMENT_STATUS,
+  DEFAULT_PAYMENT_METHOD,
+  calculateOrderPricing,
+} from "@/config/orderConstants";
 
 interface OrderItem {
   type: string;
@@ -50,15 +59,15 @@ export default function NewOrder() {
     items: [],
     subtotal: 0,
     taxAmount: 0,
-    discountAmount: 0,
-    deliveryFee: 0,
+    discountAmount: DEFAULT_DISCOUNT_AMOUNT,
+    deliveryFee: DEFAULT_DELIVERY_FEE,
     processingFee: 0,
     totalAmount: 0,
-    depositAmount: 0,
+    depositAmount: DEFAULT_DEPOSIT_AMOUNT,
     balanceDue: 0,
-    status: "Pending",
-    paymentStatus: "Pending",
-    paymentMethod: "paypal",
+    status: DEFAULT_ORDER_STATUS,
+    paymentStatus: DEFAULT_PAYMENT_STATUS,
+    paymentMethod: DEFAULT_PAYMENT_METHOD,
     sourcePage: "admin",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -195,32 +204,17 @@ export default function NewOrder() {
 
     setFormData((prev) => {
       const updatedItems = [...prev.items, newItem];
-      const subtotal = updatedItems.reduce(
-        (sum, item) => sum + item.totalPrice,
-        0,
+      const pricing = calculateOrderPricing(
+        updatedItems,
+        prev.deliveryFee,
+        prev.discountAmount,
+        prev.depositAmount,
       );
-      const taxAmount = Math.round(subtotal * 0.0825 * 100) / 100;
-      const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount =
-        Math.round(
-          (subtotal +
-            taxAmount +
-            prev.deliveryFee +
-            processingFee -
-            prev.discountAmount) *
-            100,
-        ) / 100;
-      const balanceDue =
-        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
         items: updatedItems,
-        subtotal,
-        taxAmount,
-        processingFee,
-        totalAmount,
-        balanceDue,
+        ...pricing,
       };
     });
 
@@ -235,63 +229,33 @@ export default function NewOrder() {
   const handleRemoveItem = (index: number) => {
     setFormData((prev) => {
       const updatedItems = prev.items.filter((_, i) => i !== index);
-      const subtotal = updatedItems.reduce(
-        (sum, item) => sum + item.totalPrice,
-        0,
+      const pricing = calculateOrderPricing(
+        updatedItems,
+        prev.deliveryFee,
+        prev.discountAmount,
+        prev.depositAmount,
       );
-      const taxAmount = Math.round(subtotal * 0.0825 * 100) / 100;
-      const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount =
-        Math.round(
-          (subtotal +
-            taxAmount +
-            prev.deliveryFee +
-            processingFee -
-            prev.discountAmount) *
-            100,
-        ) / 100;
-      const balanceDue =
-        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
         items: updatedItems,
-        subtotal,
-        taxAmount,
-        processingFee,
-        totalAmount,
-        balanceDue,
+        ...pricing,
       };
     });
   };
 
   const handleUpdatePricing = () => {
     setFormData((prev) => {
-      const subtotal = prev.items.reduce(
-        (sum, item) => sum + item.totalPrice,
-        0,
+      const pricing = calculateOrderPricing(
+        prev.items,
+        prev.deliveryFee,
+        prev.discountAmount,
+        prev.depositAmount,
       );
-      const taxAmount = Math.round(subtotal * 0.0825 * 100) / 100;
-      const processingFee = Math.round(subtotal * 0.03 * 100) / 100;
-      const totalAmount =
-        Math.round(
-          (subtotal +
-            taxAmount +
-            prev.deliveryFee +
-            processingFee -
-            prev.discountAmount) *
-            100,
-        ) / 100;
-      const balanceDue =
-        Math.round((totalAmount - prev.depositAmount) * 100) / 100;
 
       return {
         ...prev,
-        subtotal,
-        taxAmount,
-        processingFee,
-        totalAmount,
-        balanceDue,
+        ...pricing,
       };
     });
   };
