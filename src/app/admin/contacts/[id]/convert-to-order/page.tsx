@@ -85,6 +85,31 @@ export default function ConvertContactToOrder({ params }: PageProps) {
   const [newItemUnitPrice, setNewItemUnitPrice] = useState<number>(0);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
+  // Product management state
+  const [products, setProducts] = useState<ProductWithId[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<ProductWithId | null>(
+    null,
+  );
+  const [showCustomItem, setShowCustomItem] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState<string>("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  // Category to type mapping for products
+  const categoryToTypeMapping: Record<string, string> = {
+    "bounce-house": "bouncer",
+    bouncer: "bouncer",
+    "water-slide": "bouncer",
+    combo: "bouncer",
+    inflatable: "bouncer",
+    table: "extra",
+    chair: "extra",
+    generator: "extra",
+    concession: "extra",
+    "add-on": "add-on",
+    addon: "add-on",
+    extra: "extra",
+  };
+
   // Get the NextAuth session
   const { status } = useSession();
 
@@ -94,6 +119,45 @@ export default function ConvertContactToOrder({ params }: PageProps) {
       router.push("/login");
     }
   }, [status, router]);
+
+  // Helper function to get product type from category
+  const getProductType = (category: string): string => {
+    const normalizedCategory = category.toLowerCase().replace(/\s+/g, "-");
+    return categoryToTypeMapping[normalizedCategory] || "bouncer";
+  };
+
+  // Handle product selection
+  const handleProductSelect = (product: ProductWithId) => {
+    setSelectedProduct(product);
+    setNewItemName(product.name);
+    setNewItemUnitPrice(product.price.base);
+    setNewItemType(getProductType(product.category));
+    setNewItemDescription(""); // Keep description empty for admin to add custom notes
+    setProductSearchTerm(product.name);
+    setShowDropdown(false); // Hide dropdown after selection
+  };
+
+  // Handle custom item toggle
+  const handleCustomItemToggle = () => {
+    setShowCustomItem(!showCustomItem);
+    if (!showCustomItem) {
+      // Switching to custom item mode
+      setSelectedProduct(null);
+      setNewItemName("");
+      setNewItemUnitPrice(0);
+      setNewItemType("bouncer");
+      setNewItemDescription("");
+      setProductSearchTerm("");
+      setShowDropdown(false);
+    }
+  };
+
+  // Filter products based on search term
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+      product.category.toLowerCase().includes(productSearchTerm.toLowerCase()),
+  );
 
   // Check for missing required fields
   const validateRequiredFields = useCallback(() => {
@@ -108,6 +172,26 @@ export default function ConvertContactToOrder({ params }: PageProps) {
     setMissingFields(missing);
     return missing.length === 0;
   }, [contact]);
+
+  // Fetch products on component mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoadingProducts(true);
+      try {
+        const response = await getProducts({ availability: "available" });
+        setProducts(response.products || []);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        setError("Failed to load products. You can still add custom items.");
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
+
+    if (status === "authenticated") {
+      fetchProducts();
+    }
+  }, [status]);
 
   useEffect(() => {
     // Only fetch contact if authenticated
@@ -415,11 +499,15 @@ export default function ConvertContactToOrder({ params }: PageProps) {
     });
 
     // Reset new item fields
+    setSelectedProduct(null);
+    setProductSearchTerm("");
+    setShowDropdown(false);
     setNewItemType("bouncer");
     setNewItemName("");
     setNewItemDescription("");
     setNewItemQuantity(1);
     setNewItemUnitPrice(0);
+    setError(null); // Clear any previous errors
   };
 
   const handleRemoveItem = (index: number) => {
@@ -745,83 +833,281 @@ export default function ConvertContactToOrder({ params }: PageProps) {
 
           {/* Add New Item */}
           <div className="mt-4">
-            <h3 className="text-md font-medium mb-2">Add Additional Item</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Type
-                  <select
-                    value={newItemType}
-                    onChange={(e) => setNewItemType(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option value="bouncer">Bouncer</option>
-                    <option value="extra">Extra</option>
-                    <option value="add-on">Add-on</option>
-                  </select>
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Name
-                  <input
-                    type="text"
-                    value={newItemName}
-                    onChange={(e) => setNewItemName(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Description (Optional)
-                  <input
-                    type="text"
-                    value={newItemDescription}
-                    onChange={(e) => setNewItemDescription(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Quantity
-                  <input
-                    type="number"
-                    min="1"
-                    value={newItemQuantity}
-                    onChange={(e) =>
-                      setNewItemQuantity(parseInt(e.target.value))
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </label>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Unit Price
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newItemUnitPrice}
-                    onChange={(e) =>
-                      setNewItemUnitPrice(parseFloat(e.target.value))
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </label>
-              </div>
-              <div className="flex items-end">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-md font-medium">Add Additional Item</h3>
+              <div className="flex items-center space-x-2">
                 <button
                   type="button"
-                  onClick={handleAddItem}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  onClick={handleCustomItemToggle}
+                  className={`px-3 py-1 text-sm rounded-md border ${
+                    showCustomItem
+                      ? "bg-blue-100 text-blue-700 border-blue-300"
+                      : "bg-gray-100 text-gray-700 border-gray-300"
+                  }`}
                 >
-                  Add Item
+                  {showCustomItem ? "Use Product Catalog" : "Use Custom Item"}
                 </button>
               </div>
             </div>
+
+            {!showCustomItem ? (
+              /* Product Selection Mode */
+              <div className="space-y-4">
+                {/* Product Search and Selection */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Product
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search products..."
+                        value={productSearchTerm}
+                        onChange={(e) => {
+                          setProductSearchTerm(e.target.value);
+                          setShowDropdown(true);
+                        }}
+                        onFocus={() => setShowDropdown(true)}
+                        onBlur={() =>
+                          setTimeout(() => setShowDropdown(false), 200)
+                        }
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      />
+                      {isLoadingProducts && (
+                        <div className="absolute right-3 top-3">
+                          <LoadingSpinner className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Dropdown */}
+                    {productSearchTerm &&
+                      showDropdown &&
+                      filteredProducts.length > 0 && (
+                        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                          {filteredProducts.slice(0, 10).map((product) => (
+                            <button
+                              key={product._id}
+                              type="button"
+                              onClick={() => handleProductSelect(product)}
+                              className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                            >
+                              <div className="flex justify-between items-center">
+                                <div className="flex-1">
+                                  <div className="font-medium text-gray-900">
+                                    {product.name}
+                                  </div>
+                                  <div className="text-sm text-gray-500 capitalize">
+                                    {product.category}
+                                  </div>
+                                </div>
+                                <div className="ml-4 text-right">
+                                  <div className="font-semibold text-green-600">
+                                    ${product.price.base.toFixed(2)}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {product.capacity} people
+                                  </div>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                    {/* Selected Product Display */}
+                    {selectedProduct && (
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-medium text-blue-900">
+                              {selectedProduct.name}
+                            </div>
+                            <div className="text-sm text-blue-700 capitalize">
+                              {selectedProduct.category}
+                            </div>
+                            <div className="text-xs text-blue-600 mt-1">
+                              Capacity: {selectedProduct.capacity} people |
+                              Dimensions: {selectedProduct.dimensions.length}' ×{" "}
+                              {selectedProduct.dimensions.width}' ×{" "}
+                              {selectedProduct.dimensions.height}'
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold text-green-700">
+                              ${selectedProduct.price.base.toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No products found */}
+                    {productSearchTerm &&
+                      filteredProducts.length === 0 &&
+                      !isLoadingProducts && (
+                        <div className="mt-2 text-sm text-gray-500">
+                          No products found. Try a different search term or use
+                          custom item.
+                        </div>
+                      )}
+                  </div>
+                </div>
+
+                {/* Quantity and Additional Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Type
+                      <select
+                        value={newItemType}
+                        onChange={(e) => setNewItemType(e.target.value)}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        disabled={!!selectedProduct}
+                      >
+                        <option value="bouncer">Bouncer</option>
+                        <option value="extra">Extra</option>
+                        <option value="add-on">Add-on</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Quantity
+                      <input
+                        type="number"
+                        min="1"
+                        value={newItemQuantity}
+                        onChange={(e) =>
+                          setNewItemQuantity(parseInt(e.target.value))
+                        }
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Unit Price
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={newItemUnitPrice}
+                        onChange={(e) =>
+                          setNewItemUnitPrice(parseFloat(e.target.value))
+                        }
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        disabled={!!selectedProduct}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Additional Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Additional Description (Optional)
+                    <input
+                      type="text"
+                      value={newItemDescription}
+                      onChange={(e) => setNewItemDescription(e.target.value)}
+                      placeholder="Add any custom notes or modifications..."
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleAddItem}
+                    disabled={!selectedProduct || newItemQuantity <= 0}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    Add Product to Order
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Custom Item Mode */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Type
+                    <select
+                      value={newItemType}
+                      onChange={(e) => setNewItemType(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    >
+                      <option value="bouncer">Bouncer</option>
+                      <option value="extra">Extra</option>
+                      <option value="add-on">Add-on</option>
+                    </select>
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Name
+                    <input
+                      type="text"
+                      value={newItemName}
+                      onChange={(e) => setNewItemName(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Description (Optional)
+                    <input
+                      type="text"
+                      value={newItemDescription}
+                      onChange={(e) => setNewItemDescription(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Quantity
+                    <input
+                      type="number"
+                      min="1"
+                      value={newItemQuantity}
+                      onChange={(e) =>
+                        setNewItemQuantity(parseInt(e.target.value))
+                      }
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Unit Price
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={newItemUnitPrice}
+                      onChange={(e) =>
+                        setNewItemUnitPrice(parseFloat(e.target.value))
+                      }
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={handleAddItem}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Add Custom Item
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
