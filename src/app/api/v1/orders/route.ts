@@ -5,7 +5,13 @@ import Contact from "@/models/Contact";
 import Task from "@/models/Task";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { parseDateCT, formatDateCT } from "@/utils/dateUtils";
+import {
+  parseDateCT,
+  formatDateCT,
+  parseDateStartOfDayUTC,
+  parseDateEndOfDayUTC,
+  parseDateFromNotes,
+} from "@/utils/dateUtils";
 import { sendEmail } from "@/utils/emailService";
 import twilio from "twilio";
 import {
@@ -48,16 +54,55 @@ export async function GET(request: NextRequest) {
     // Build query
     const query: Record<string, unknown> = {};
 
-    // Date range filter for deliveryDate using Central Time
+    // Date range filter using UTC to match database storage
+    // Use $or to check eventDate first, then deliveryDate as fallback
     if (startDate && endDate) {
-      query.deliveryDate = {
-        $gte: parseDateCT(startDate),
-        $lte: parseDateCT(endDate),
-      };
+      const parsedStartDate = parseDateStartOfDayUTC(startDate);
+      const parsedEndDate = parseDateEndOfDayUTC(endDate);
+
+      query.$or = [
+        {
+          eventDate: {
+            $gte: parsedStartDate,
+            $lte: parsedEndDate,
+          },
+        },
+        {
+          $and: [
+            { eventDate: { $exists: false } },
+            {
+              deliveryDate: {
+                $gte: parsedStartDate,
+                $lte: parsedEndDate,
+              },
+            },
+          ],
+        },
+      ];
     } else if (startDate) {
-      query.deliveryDate = { $gte: parseDateCT(startDate) };
+      const parsedStartDate = parseDateStartOfDayUTC(startDate);
+
+      query.$or = [
+        { eventDate: { $gte: parsedStartDate } },
+        {
+          $and: [
+            { eventDate: { $exists: false } },
+            { deliveryDate: { $gte: parsedStartDate } },
+          ],
+        },
+      ];
     } else if (endDate) {
-      query.deliveryDate = { $lte: parseDateCT(endDate) };
+      const parsedEndDate = parseDateEndOfDayUTC(endDate);
+
+      query.$or = [
+        { eventDate: { $lte: parsedEndDate } },
+        {
+          $and: [
+            { eventDate: { $exists: false } },
+            { deliveryDate: { $lte: parsedEndDate } },
+          ],
+        },
+      ];
     }
 
     // Filter by status
@@ -82,11 +127,28 @@ export async function GET(request: NextRequest) {
 
     // Filter by customer (name, email, or phone)
     if (customer) {
-      query.$or = [
-        { customerName: { $regex: customer, $options: "i" } },
-        { customerEmail: { $regex: customer, $options: "i" } },
-        { customerPhone: { $regex: customer, $options: "i" } },
-      ];
+      // If we already have a date-based $or query, we need to combine them using $and
+      if (query.$or) {
+        const dateOrQuery = query.$or;
+        delete query.$or;
+
+        query.$and = [
+          { $or: dateOrQuery },
+          {
+            $or: [
+              { customerName: { $regex: customer, $options: "i" } },
+              { customerEmail: { $regex: customer, $options: "i" } },
+              { customerPhone: { $regex: customer, $options: "i" } },
+            ],
+          },
+        ];
+      } else {
+        query.$or = [
+          { customerName: { $regex: customer, $options: "i" } },
+          { customerEmail: { $regex: customer, $options: "i" } },
+          { customerPhone: { $regex: customer, $options: "i" } },
+        ];
+      }
     }
 
     let orders;
@@ -155,14 +217,62 @@ export async function GET(request: NextRequest) {
         },
       });
     } else {
-      // Regular query without task status filtering
-      const totalOrders = await Order.countDocuments(query);
-      const totalPages = Math.ceil(totalOrders / limit);
+      // Alternative approach: Fetch all orders and filter in JavaScript
+      // This is more reliable than complex MongoDB aggregation
 
-      orders = await Order.find(query)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit);
+      // Remove date filters from MongoDB query - we'll handle them in JavaScript
+      const mongoQuery = { ...query };
+      delete mongoQuery.$or; // Remove any date-based $or queries
+
+      // Fetch all orders that match non-date criteria
+      const allOrders = await Order.find(mongoQuery).sort({ createdAt: -1 });
+
+      // Apply date filtering in JavaScript
+      let filteredOrders = allOrders;
+
+      if (startDate || endDate) {
+        const parsedStartDate = startDate
+          ? parseDateStartOfDayUTC(startDate)
+          : null;
+        const parsedEndDate = endDate ? parseDateEndOfDayUTC(endDate) : null;
+
+        filteredOrders = allOrders.filter((order) => {
+          // Try to get a date from the order using multiple sources
+          let orderDate: Date | null = null;
+
+          // 1. Try eventDate first
+          if (order.eventDate) {
+            orderDate = new Date(order.eventDate);
+          }
+          // 2. Try deliveryDate as fallback
+          else if (order.deliveryDate) {
+            orderDate = new Date(order.deliveryDate);
+          }
+          // 3. Try parsing from notes as last resort
+          else if (order.notes) {
+            orderDate = parseDateFromNotes(order.notes);
+          }
+
+          if (!orderDate) {
+            return false; // Exclude orders without any date
+          }
+
+          // Check if order date falls within the filter range
+          const isInRange =
+            (!parsedStartDate || orderDate >= parsedStartDate) &&
+            (!parsedEndDate || orderDate <= parsedEndDate);
+
+          return isInRange;
+        });
+      }
+
+      // Apply pagination to filtered results
+      const totalOrders = filteredOrders.length;
+      const totalPages = Math.ceil(totalOrders / limit);
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+
+      orders = filteredOrders.slice(startIndex, endIndex);
 
       return NextResponse.json({
         orders,
@@ -277,14 +387,6 @@ export async function POST(request: NextRequest) {
       if (!orderData.eventDate && contact.partyDate) {
         orderData.eventDate = contact.partyDate;
       }
-
-      console.log("Populated customer information from contact:", {
-        contactId: orderData.contactId,
-        customerName: orderData.customerName,
-        customerEmail: orderData.customerEmail,
-        customerPhone: orderData.customerPhone,
-        customerAddress: orderData.customerAddress,
-      });
     }
 
     // Enhanced items validation with detailed error messages
@@ -525,7 +627,6 @@ export async function POST(request: NextRequest) {
                 from: process.env.TWILIO_PHONE_NUMBER,
                 to: phoneNumber as string,
               });
-              console.log(`SMS sent successfully to ${phoneNumber}`);
             } catch (individualSmsError) {
               console.error(
                 `Error sending SMS to ${phoneNumber}:`,

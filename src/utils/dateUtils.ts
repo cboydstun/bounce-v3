@@ -115,6 +115,53 @@ export function getLastDayOfMonthCT(year: number, month: number): Date {
 }
 
 /**
+ * Parse a YYYY-MM-DD string into a Date object representing the start of the day in UTC
+ * This is used for date range filtering to match how dates are stored in the database
+ * @param dateStr A string in YYYY-MM-DD format
+ * @returns A Date object representing the start of the day (00:00:00) in UTC
+ */
+export function parseDateStartOfDayUTC(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+}
+
+/**
+ * Parse a YYYY-MM-DD string into a Date object representing the end of the day in UTC
+ * This is used for date range filtering to match how dates are stored in the database
+ * @param dateStr A string in YYYY-MM-DD format
+ * @returns A Date object representing the end of the day (23:59:59.999) in UTC
+ */
+export function parseDateEndOfDayUTC(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+}
+
+/**
+ * Parse delivery date from notes field
+ * Looks for patterns like "Delivery: 2025-07-19 14:00" in the notes
+ * @param notes The notes string to parse
+ * @returns A Date object if found, null otherwise
+ */
+export function parseDateFromNotes(notes: string): Date | null {
+  if (!notes) return null;
+
+  // Look for patterns like "Delivery: 2025-07-19" or "Delivery: 2025-07-19 14:00"
+  const deliveryMatch = notes.match(/Delivery:\s*(\d{4}-\d{2}-\d{2})/i);
+
+  if (deliveryMatch) {
+    const dateStr = deliveryMatch[1];
+    try {
+      return parseDateStartOfDayUTC(dateStr);
+    } catch (error) {
+      console.warn("Failed to parse date from notes:", dateStr, error);
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Debug function to log date information in multiple formats
  * @param label A label for the log
  * @param date The date to log

@@ -627,6 +627,8 @@ export const getOrders = async (params?: {
   page?: number;
   limit?: number;
 }) => {
+  console.log("📡 getOrders API call with params:", params);
+
   const queryParams = new URLSearchParams();
 
   if (params?.startDate) queryParams.append("startDate", params.startDate);
@@ -645,7 +647,15 @@ export const getOrders = async (params?: {
   const queryString = queryParams.toString();
   const url = queryString ? `/api/v1/orders?${queryString}` : "/api/v1/orders";
 
+  console.log("🌐 Making API request to:", url);
+
   const response = await api.get(url);
+
+  console.log("📥 API response:", {
+    ordersCount: response.data.orders?.length || 0,
+    pagination: response.data.pagination,
+  });
+
   return response.data;
 };
 

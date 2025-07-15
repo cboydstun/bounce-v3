@@ -63,6 +63,15 @@ export const useOrderFilters = () => {
       const endDate =
         overrideDates?.endDate ?? dateRangeFilters.dateRange.endDate;
 
+      console.log("🔧 Building API filters:", {
+        page,
+        pageSize,
+        overrideDates,
+        currentDateRange: dateRangeFilters.dateRange,
+        finalStartDate: startDate,
+        finalEndDate: endDate,
+      });
+
       if (startDate) {
         apiFilters.startDate = startDate;
       }
@@ -77,6 +86,8 @@ export const useOrderFilters = () => {
       if (filters.orderNumber) apiFilters.orderNumber = filters.orderNumber;
       if (filters.customerSearch) apiFilters.customer = filters.customerSearch;
       if (filters.taskStatus) apiFilters.taskStatus = filters.taskStatus;
+
+      console.log("🚀 Final API filters:", apiFilters);
 
       return apiFilters;
     },

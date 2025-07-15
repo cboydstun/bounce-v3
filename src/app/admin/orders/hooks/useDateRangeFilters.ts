@@ -46,11 +46,14 @@ export const useDateRangeFilters = () => {
     const startDateStr = formatDateCT(start);
     const endDateStr = formatDateCT(end);
 
-    console.log("This Week calculation:", {
+    console.log("🗓️ This Week calculation:", {
       today: now.toDateString(),
+      todayISO: now.toISOString(),
       currentDay: now.getDay(),
       start: start.toDateString(),
+      startISO: start.toISOString(),
       end: end.toDateString(),
+      endISO: end.toISOString(),
       startDateStr,
       endDateStr,
     });
