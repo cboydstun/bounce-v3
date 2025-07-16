@@ -14,6 +14,7 @@ import {
   formatDateCT,
   parseDateCT,
   formatDisplayDateCT,
+  getCurrentDateCT,
 } from "@/utils/dateUtils";
 
 interface ReviewStats {
@@ -56,7 +57,14 @@ export default function AdminDashboard() {
         const formattedDates = settingsRes.data.blackoutDates.map(
           (date: string) => formatDateCT(new Date(date)),
         );
-        setBlackoutDates(formattedDates);
+
+        // Filter to only show future blackout dates (including today)
+        const today = formatDateCT(getCurrentDateCT());
+        const futureDates = formattedDates.filter(
+          (date: string) => date >= today,
+        );
+
+        setBlackoutDates(futureDates);
       } catch (error) {
         console.error("Failed to fetch settings:", error);
       }
@@ -322,9 +330,17 @@ export default function AdminDashboard() {
                         addBlackoutDate: newBlackoutDate,
                       });
 
-                      // Add to local state
+                      // Add to local state and filter to only show future dates
                       if (!blackoutDates.includes(newBlackoutDate)) {
-                        setBlackoutDates([...blackoutDates, newBlackoutDate]);
+                        const updatedDates = [
+                          ...blackoutDates,
+                          newBlackoutDate,
+                        ];
+                        const today = formatDateCT(getCurrentDateCT());
+                        const futureDates = updatedDates.filter(
+                          (date: string) => date >= today,
+                        );
+                        setBlackoutDates(futureDates);
                       }
 
                       // Clear input
@@ -374,7 +390,7 @@ export default function AdminDashboard() {
             {/* List of blackout dates */}
             <div className="mt-4">
               <h5 className="text-sm font-medium text-gray-700 mb-2">
-                Current Blackout Dates
+                Upcoming Blackout Dates
               </h5>
               {blackoutDates.length === 0 ? (
                 <p className="text-sm text-gray-500">No blackout dates set</p>
