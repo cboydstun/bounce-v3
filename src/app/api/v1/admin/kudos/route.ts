@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAdminAuth } from "@/middleware/roleAuth";
 import Order from "@/models/Order";
-import Contact from "@/models/Contact";
 import KudosEmail from "@/models/KudosEmail";
 import dbConnect from "@/lib/db/mongoose";
 import { getValidatedCustomerName } from "@/utils/nameUtils";
 
 interface EligibleCustomer {
   id: string;
-  type: "order" | "contact";
+  type: "order";
   customerName: string;
   customerEmail: string;
   eventDate: string;
@@ -61,6 +60,7 @@ async function handler(req: NextRequest) {
         $lte: queryEndDate,
       },
       customerEmail: { $exists: true, $ne: null },
+      status: { $ne: "Cancelled" }, // Exclude cancelled orders
     };
 
     const orders = await Order.find(orderQuery).sort({ eventDate: -1 }).lean();
@@ -97,64 +97,6 @@ async function handler(req: NextRequest) {
               ? new Date(kudosEmail.sentAt).toISOString()
               : undefined),
           createdAt: order.createdAt.toISOString(),
-        });
-      }
-    }
-
-    // Fetch eligible contacts (for events that occurred in the date range and are in the past)
-    const contactQuery: any = {
-      partyDate: {
-        $lt: now, // Only past events
-        $gte: queryStartDate,
-        $lte: queryEndDate,
-      },
-      email: { $exists: true, $ne: null },
-    };
-
-    const contacts = await Contact.find(contactQuery)
-      .sort({ partyDate: -1 })
-      .lean();
-
-    // Process contacts - use "Valued Customer" since contacts don't have name fields
-    for (const contact of contacts) {
-      // Check if this contact already has an order (to avoid duplicates)
-      const hasOrder = eligibleCustomers.some(
-        (customer) => customer.customerEmail === contact.email,
-      );
-
-      if (!hasOrder) {
-        const contactId = contact._id.toString();
-        const kudosEmail = kudosEmailMap.get(`${contactId}-contact`);
-        const hasKudosEmailSent = !!kudosEmail;
-
-        // Apply kudos email status filter
-        if (kudosEmailSent === "true" && !hasKudosEmailSent) continue;
-        if (kudosEmailSent === "false" && hasKudosEmailSent) continue;
-
-        const rentalItems = [];
-        if (contact.bouncer) rentalItems.push(contact.bouncer);
-        if (contact.tablesChairs) rentalItems.push("Tables & Chairs");
-        if (contact.generator) rentalItems.push("Generator");
-        if (contact.popcornMachine) rentalItems.push("Popcorn Machine");
-        if (contact.cottonCandyMachine)
-          rentalItems.push("Cotton Candy Machine");
-        if (contact.snowConeMachine) rentalItems.push("Snow Cone Machine");
-        if (contact.basketballShoot) rentalItems.push("Basketball Shoot");
-        if (contact.slushyMachine) rentalItems.push("Slushy Machine");
-
-        eligibleCustomers.push({
-          id: contactId,
-          type: "contact",
-          customerName: "Valued Customer",
-          customerEmail: contact.email,
-          eventDate: contact.partyDate.toISOString(),
-          rentalItems,
-          kudosEmailSent: hasKudosEmailSent,
-          kudosEmailSentAt: kudosEmail?.sentAt
-            ? new Date(kudosEmail.sentAt).toISOString()
-            : undefined,
-          createdAt:
-            contact.createdAt?.toISOString() || contact.partyDate.toISOString(),
         });
       }
     }
