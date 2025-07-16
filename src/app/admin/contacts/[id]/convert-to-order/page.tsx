@@ -482,9 +482,13 @@ export default function ConvertContactToOrder({ params }: PageProps) {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">
-                    Name/Email
+                  <p className="text-sm font-medium text-gray-500">Name</p>
+                  <p className="text-sm text-gray-900">
+                    {contact.customerName || "N/A"}
                   </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Email</p>
                   <p className="text-sm text-gray-900">{contact.email}</p>
                 </div>
                 <div>
