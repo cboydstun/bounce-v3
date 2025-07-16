@@ -181,6 +181,115 @@ export function parseDateFromNotes(notes: string): Date | null {
 }
 
 /**
+ * Parse and format a party date consistently across the application
+ * Handles various date formats and returns a user-friendly display format
+ * @param dateInput The date input (can be Date object, ISO string, MM/DD/YYYY, etc.)
+ * @returns A formatted display string in Central Time (e.g., "Saturday, July 19, 2025")
+ */
+export function parseAndFormatPartyDateCT(dateInput: string | Date): string {
+  try {
+    // Handle Date objects directly
+    if (dateInput instanceof Date) {
+      return formatDisplayDateCT(dateInput);
+    }
+
+    // Handle string inputs
+    const dateStr = dateInput.toString();
+
+    // Handle MM/DD/YYYY format (e.g., "4/13/2025")
+    if (
+      typeof dateStr === "string" &&
+      dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)
+    ) {
+      const [month, day, year] = dateStr.split("/").map(Number);
+      const isoDateStr = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+      const parsedDate = parseDateCT(isoDateStr);
+      return formatDisplayDateCT(parsedDate);
+    }
+    // Handle ISO format dates (YYYY-MM-DD)
+    else if (
+      typeof dateStr === "string" &&
+      dateStr.match(/^\d{4}-\d{2}-\d{2}$/)
+    ) {
+      const parsedDate = parseDateCT(dateStr);
+      return formatDisplayDateCT(parsedDate);
+    }
+    // Handle ISO datetime format - extract just the date part
+    else if (
+      typeof dateStr === "string" &&
+      dateStr.match(/^\d{4}-\d{2}-\d{2}T/)
+    ) {
+      const parsedDate = parseDateCT(dateStr.split("T")[0]);
+      return formatDisplayDateCT(parsedDate);
+    } else {
+      // For other formats, try to parse and extract date part
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return formatDisplayDateCT(date);
+      }
+      // Fallback to original date string if parsing fails
+      return dateStr;
+    }
+  } catch (error) {
+    console.warn(`Failed to parse party date: ${dateInput}`, error);
+    // Fallback to original date string if parsing fails
+    return dateInput.toString();
+  }
+}
+
+/**
+ * Parse a party date consistently and return a Date object
+ * Handles various date formats and returns a Date object in Central Time
+ * @param dateInput The date input (can be Date object, ISO string, MM/DD/YYYY, etc.)
+ * @returns A Date object in Central Time, or null if parsing fails
+ */
+export function parsePartyDateCT(dateInput: string | Date): Date | null {
+  try {
+    // Handle Date objects directly
+    if (dateInput instanceof Date) {
+      return dateInput;
+    }
+
+    // Handle string inputs
+    const dateStr = dateInput.toString();
+
+    // Handle MM/DD/YYYY format (e.g., "4/13/2025")
+    if (
+      typeof dateStr === "string" &&
+      dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)
+    ) {
+      const [month, day, year] = dateStr.split("/").map(Number);
+      const isoDateStr = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+      return parseDateCT(isoDateStr);
+    }
+    // Handle ISO format dates (YYYY-MM-DD)
+    else if (
+      typeof dateStr === "string" &&
+      dateStr.match(/^\d{4}-\d{2}-\d{2}$/)
+    ) {
+      return parseDateCT(dateStr);
+    }
+    // Handle ISO datetime format - extract just the date part
+    else if (
+      typeof dateStr === "string" &&
+      dateStr.match(/^\d{4}-\d{2}-\d{2}T/)
+    ) {
+      return parseDateCT(dateStr.split("T")[0]);
+    } else {
+      // For other formats, try to parse and extract date part
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return parseDateCT(formatDateCT(date));
+      }
+      return null;
+    }
+  } catch (error) {
+    console.warn(`Failed to parse party date: ${dateInput}`, error);
+    return null;
+  }
+}
+
+/**
  * Debug function to log date information in multiple formats
  * @param label A label for the log
  * @param date The date to log

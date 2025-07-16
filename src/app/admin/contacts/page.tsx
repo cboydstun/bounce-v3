@@ -14,6 +14,8 @@ import {
   getFirstDayOfMonthCT,
   getLastDayOfMonthCT,
   getCurrentDateCT,
+  parseAndFormatPartyDateCT,
+  parsePartyDateCT,
 } from "@/utils/dateUtils";
 
 interface Contact {
@@ -372,49 +374,10 @@ export default function AdminContacts() {
     setCurrentPage(1);
   };
 
-  // Helper function to parse party dates consistently
-  const parsePartyDate = (dateStr: string): Date | null => {
-    try {
-      // Handle MM/DD/YYYY format (e.g., "4/13/2025")
-      if (
-        typeof dateStr === "string" &&
-        dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)
-      ) {
-        const [month, day, year] = dateStr.split("/").map(Number);
-        const isoDateStr = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
-        return parseDateCT(isoDateStr);
-      }
-      // Handle ISO format dates (YYYY-MM-DD)
-      else if (
-        typeof dateStr === "string" &&
-        dateStr.match(/^\d{4}-\d{2}-\d{2}$/)
-      ) {
-        return parseDateCT(dateStr);
-      }
-      // Handle ISO datetime format - extract just the date part
-      else if (
-        typeof dateStr === "string" &&
-        dateStr.match(/^\d{4}-\d{2}-\d{2}T/)
-      ) {
-        return parseDateCT(dateStr.split("T")[0]);
-      } else {
-        // For other formats, try to parse and extract date part
-        const date = new Date(dateStr);
-        if (!isNaN(date.getTime())) {
-          return parseDateCT(formatDateCT(date));
-        }
-        return null;
-      }
-    } catch (error) {
-      console.warn(`Failed to parse party date: ${dateStr}`, error);
-      return null;
-    }
-  };
-
   // Filter contacts by date range and confirmation status using dateUtils
   const filteredContacts = contacts.filter((contact) => {
     // Date filter - Use centralized date parsing for consistency
-    const partyDate = parsePartyDate(contact.partyDate);
+    const partyDate = parsePartyDateCT(contact.partyDate);
 
     if (!partyDate) {
       // If parsing fails, skip this contact
@@ -486,8 +449,8 @@ export default function AdminContacts() {
   const sortedContacts = [...filteredContacts].sort((a, b) => {
     if (sortColumn === "partyDate") {
       // Use the helper function for consistent date parsing
-      const dateA = parsePartyDate(a.partyDate);
-      const dateB = parsePartyDate(b.partyDate);
+      const dateA = parsePartyDateCT(a.partyDate);
+      const dateB = parsePartyDateCT(b.partyDate);
 
       // Handle null dates (put them at the end)
       if (!dateA && !dateB) return 0;
@@ -832,16 +795,7 @@ export default function AdminContacts() {
                   {currentContacts.map((contact) => (
                     <tr key={contact.id}>
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6">
-                        {(() => {
-                          // Use the helper function for consistent date display
-                          const partyDate = parsePartyDate(contact.partyDate);
-                          if (partyDate) {
-                            return formatDisplayDateCT(partyDate);
-                          } else {
-                            // Fallback to original date string if parsing fails
-                            return contact.partyDate;
-                          }
-                        })()}
+                        {parseAndFormatPartyDateCT(contact.partyDate)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm">
                         <div className="font-medium text-gray-900">

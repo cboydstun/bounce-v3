@@ -24,6 +24,8 @@ import {
   formatDateCT,
   parseDateCT,
   formatDisplayDateCT,
+  parseAndFormatPartyDateCT,
+  parsePartyDateCT,
 } from "@/utils/dateUtils";
 
 interface OrderItem {
@@ -64,60 +66,6 @@ interface PageProps {
     id: string;
   }>;
 }
-
-// Helper function to parse and format party dates consistently (same as contacts page)
-const parseAndFormatPartyDate = (dateInput: string | Date): string => {
-  try {
-    // Handle Date objects directly
-    if (dateInput instanceof Date) {
-      const parsedDate = parseDateCT(formatDateCT(dateInput));
-      return formatDisplayDateCT(parsedDate);
-    }
-
-    // Handle string inputs
-    const dateStr = dateInput.toString();
-
-    // Handle MM/DD/YYYY format (e.g., "4/13/2025")
-    if (
-      typeof dateStr === "string" &&
-      dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)
-    ) {
-      const [month, day, year] = dateStr.split("/").map(Number);
-      const isoDateStr = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
-      const parsedDate = parseDateCT(isoDateStr);
-      return formatDisplayDateCT(parsedDate);
-    }
-    // Handle ISO format dates (YYYY-MM-DD)
-    else if (
-      typeof dateStr === "string" &&
-      dateStr.match(/^\d{4}-\d{2}-\d{2}$/)
-    ) {
-      const parsedDate = parseDateCT(dateStr);
-      return formatDisplayDateCT(parsedDate);
-    }
-    // Handle ISO datetime format - extract just the date part
-    else if (
-      typeof dateStr === "string" &&
-      dateStr.match(/^\d{4}-\d{2}-\d{2}T/)
-    ) {
-      const parsedDate = parseDateCT(dateStr.split("T")[0]);
-      return formatDisplayDateCT(parsedDate);
-    } else {
-      // For other formats, try to parse and extract date part
-      const date = new Date(dateStr);
-      if (!isNaN(date.getTime())) {
-        const parsedDate = parseDateCT(formatDateCT(date));
-        return formatDisplayDateCT(parsedDate);
-      }
-      // Fallback to original date string if parsing fails
-      return dateStr;
-    }
-  } catch (error) {
-    console.warn(`Failed to parse party date: ${dateInput}`, error);
-    // Fallback to original date string if parsing fails
-    return dateInput.toString();
-  }
-};
 
 export default function ConvertContactToOrder({ params }: PageProps) {
   const router = useRouter();
@@ -289,7 +237,10 @@ export default function ConvertContactToOrder({ params }: PageProps) {
           customerName: contactData.customerName || "",
           customerEmail: contactData.email || "",
           customerPhone: contactData.phone || "",
-          partyDate: formatDateCT(contactData.partyDate),
+          partyDate: (() => {
+            const parsedDate = parsePartyDateCT(contactData.partyDate);
+            return parsedDate ? formatDateCT(parsedDate) : "";
+          })(),
           partyZipCode: contactData.partyZipCode || "",
           items: initialItems,
           notes: contactData.message || "",
@@ -794,7 +745,7 @@ export default function ConvertContactToOrder({ params }: PageProps) {
                 <div className="space-y-1 text-xs text-gray-600">
                   <div>{contact.email}</div>
                   <div>{contact.phone || "No phone"}</div>
-                  <div>{parseAndFormatPartyDate(contact.partyDate)}</div>
+                  <div>{parseAndFormatPartyDateCT(contact.partyDate)}</div>
                   <div>{contact.partyZipCode}</div>
                 </div>
               </div>
