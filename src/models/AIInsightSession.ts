@@ -130,7 +130,6 @@ const AIInsightSessionSchema = new Schema<
     generatedAt: {
       type: Date,
       required: true,
-      index: true,
     },
     archivedAt: {
       type: Date,

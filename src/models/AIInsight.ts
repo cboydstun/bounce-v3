@@ -118,7 +118,6 @@ const AIInsightSchema = new Schema<IAIInsightDocument, IAIInsightModel>(
     },
     dismissedAt: {
       type: Date,
-      index: true,
     },
     completedBy: {
       type: Schema.Types.ObjectId,
@@ -144,7 +143,6 @@ const AIInsightSchema = new Schema<IAIInsightDocument, IAIInsightModel>(
       sourceDataHash: {
         type: String,
         required: true,
-        index: true,
       },
       claudeModel: {
         type: String,
