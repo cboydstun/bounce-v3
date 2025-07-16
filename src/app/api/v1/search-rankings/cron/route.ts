@@ -4,6 +4,9 @@ import dbConnect from "@/lib/db/mongoose";
 import { getCurrentDateCT } from "@/utils/dateUtils";
 import { getToken } from "next-auth/jwt";
 
+// Allow up to 60 seconds for Google API calls to prevent Vercel timeout
+export const maxDuration = 60;
+
 /**
  * GET /api/v1/search-rankings/cron
  * Cron job endpoint to check all keyword rankings

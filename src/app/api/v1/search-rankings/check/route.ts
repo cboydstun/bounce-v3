@@ -5,6 +5,9 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { checkKeywordRanking } from "@/utils/googleSearchApi";
 
+// Allow up to 60 seconds for Google API calls to prevent Vercel timeout
+export const maxDuration = 60;
+
 /**
  * POST /api/v1/search-rankings/check
  * Manually check ranking for a keyword

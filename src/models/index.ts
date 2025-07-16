@@ -20,6 +20,8 @@ import PromoOptin from "./PromoOptin";
 import Counter from "./Counter";
 import Settings from "./Settings";
 import TaskPaymentHistory from "./TaskPaymentHistory";
+import AIInsight from "./AIInsight";
+import AIInsightSession from "./AIInsightSession";
 
 // Export models for convenience
 export {
@@ -43,6 +45,8 @@ export {
   Counter,
   Settings,
   TaskPaymentHistory,
+  AIInsight,
+  AIInsightSession,
 };
 
 // This file ensures all models are registered together

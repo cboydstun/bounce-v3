@@ -9,6 +9,7 @@ import RankingHistory from "@/components/search-rankings/RankingHistory";
 import RankingMetrics from "@/components/search-rankings/RankingMetrics";
 import CompetitorAnalysis from "@/components/search-rankings/CompetitorAnalysis";
 import ValidationPanel from "@/components/search-rankings/ValidationPanel";
+import ReportCardSummary from "@/components/search-rankings/ReportCardSummary";
 import {
   getCurrentDateCT,
   formatDateCT,
@@ -484,7 +485,14 @@ export default function SearchRankingsPage() {
           <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
             Search Rankings
           </h2>
-          <div className="mt-1">
+          <div className="mt-1 flex items-center space-x-4">
+            <a
+              href="/admin/search-rankings/report-card"
+              className="text-sm text-indigo-600 hover:text-indigo-800"
+            >
+              📊 View Report Card
+            </a>
+            <span className="text-gray-300">|</span>
             <a
               href="/admin/competitors"
               className="text-sm text-indigo-600 hover:text-indigo-800"
@@ -641,6 +649,9 @@ export default function SearchRankingsPage() {
 
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-6">
+          {/* Report Card Summary - Always show */}
+          <ReportCardSummary period={period} />
+
           {selectedKeyword ? (
             <>
               {/* Validation Panel - Show at top if there are validation issues */}
