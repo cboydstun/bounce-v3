@@ -57,7 +57,7 @@ Instructions:
 - Keep the tone friendly, personal, and authentic
 - Make it feel like it's coming from a real person, not a template
 - Include a clear call-to-action to leave a 5-star Google review
-- Include the Google review link as a button: ${googleReviewLink}
+- Example button HTML: <a href="${googleReviewLink}" style="color: blue; text-decoration: underline;">Leave a 5-star review</a>
 - The email should be 200-300 words
 - End with a warm closing and invitation to book again
 - IMPORTANT: End the email with exactly this signature (do not modify it):
