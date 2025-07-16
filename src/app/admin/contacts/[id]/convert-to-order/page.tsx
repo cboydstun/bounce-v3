@@ -37,6 +37,11 @@ interface OrderItem {
 
 interface OrderFormData {
   contactId: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  partyDate?: string;
+  partyZipCode?: string;
   items: OrderItem[];
   subtotal: number;
   taxAmount: number;
@@ -281,6 +286,11 @@ export default function ConvertContactToOrder({ params }: PageProps) {
         setFormData((prev) => ({
           ...prev,
           contactId: resolvedParams.id,
+          customerName: contactData.customerName || "",
+          customerEmail: contactData.email || "",
+          customerPhone: contactData.phone || "",
+          partyDate: formatDateCT(contactData.partyDate),
+          partyZipCode: contactData.partyZipCode || "",
           items: initialItems,
           notes: contactData.message || "",
         }));
@@ -475,52 +485,6 @@ export default function ConvertContactToOrder({ params }: PageProps) {
             Convert Contact to Order
           </h1>
 
-          {contact && (
-            <div className="bg-blue-50 p-4 rounded-lg mb-6">
-              <h2 className="text-lg font-medium text-blue-800 mb-2">
-                Contact Information
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Name</p>
-                  <p className="text-sm text-gray-900">
-                    {contact.customerName || "N/A"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Email</p>
-                  <p className="text-sm text-gray-900">{contact.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Phone</p>
-                  <p className="text-sm text-gray-900">
-                    {contact.phone || "N/A"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">
-                    Party Date
-                  </p>
-                  <p className="text-sm text-gray-900">
-                    {parseAndFormatPartyDate(contact.partyDate)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Zip Code</p>
-                  <p className="text-sm text-gray-900">
-                    {contact.partyZipCode}
-                  </p>
-                </div>
-                <div className="md:col-span-2">
-                  <p className="text-sm font-medium text-gray-500">Message</p>
-                  <p className="text-sm text-gray-900">
-                    {contact.message || "N/A"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {error && (
             <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
               {error}
@@ -563,6 +527,72 @@ export default function ConvertContactToOrder({ params }: PageProps) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Contact Information */}
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-lg font-medium mb-4">Contact Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Customer Name
+                    <input
+                      type="text"
+                      name="customerName"
+                      value={formData.customerName || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Customer Email
+                    <input
+                      type="email"
+                      name="customerEmail"
+                      value={formData.customerEmail || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Customer Phone
+                    <input
+                      type="tel"
+                      name="customerPhone"
+                      value={formData.customerPhone || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Party Date
+                    <input
+                      type="date"
+                      name="partyDate"
+                      value={formData.partyDate || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Party Zip Code
+                    <input
+                      type="text"
+                      name="partyZipCode"
+                      value={formData.partyZipCode || ""}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
             {/* Order Information */}
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-lg font-medium mb-4">Order Information</h2>

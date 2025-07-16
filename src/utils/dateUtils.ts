@@ -10,11 +10,19 @@ export const CENTRAL_TIMEZONE = "America/Chicago";
 
 /**
  * Format a date as YYYY-MM-DD in Central Time
- * @param date The date to format
+ * @param date The date to format (can be a Date object or date string)
  * @returns A string in YYYY-MM-DD format representing the date in Central Time
  */
-export function formatDateCT(date: Date): string {
-  return date.toLocaleDateString("en-CA", {
+export function formatDateCT(date: Date | string): string {
+  // Convert string to Date object if necessary
+  const dateObj = date instanceof Date ? date : new Date(date);
+
+  // Validate that we have a valid Date object
+  if (isNaN(dateObj.getTime())) {
+    throw new Error(`Invalid date provided to formatDateCT: ${date}`);
+  }
+
+  return dateObj.toLocaleDateString("en-CA", {
     timeZone: CENTRAL_TIMEZONE,
     year: "numeric",
     month: "2-digit",
@@ -38,11 +46,19 @@ export function parseDateCT(dateStr: string): Date {
 
 /**
  * Format a date for display in a user-friendly format in Central Time
- * @param date The date to format
+ * @param date The date to format (can be a Date object or date string)
  * @returns A string with the date in a user-friendly format (e.g., "Monday, June 1, 2025")
  */
-export function formatDisplayDateCT(date: Date): string {
-  return date.toLocaleDateString("en-US", {
+export function formatDisplayDateCT(date: Date | string): string {
+  // Convert string to Date object if necessary
+  const dateObj = date instanceof Date ? date : new Date(date);
+
+  // Validate that we have a valid Date object
+  if (isNaN(dateObj.getTime())) {
+    throw new Error(`Invalid date provided to formatDisplayDateCT: ${date}`);
+  }
+
+  return dateObj.toLocaleDateString("en-US", {
     timeZone: CENTRAL_TIMEZONE,
     weekday: "long",
     year: "numeric",
@@ -53,11 +69,14 @@ export function formatDisplayDateCT(date: Date): string {
 
 /**
  * Compare two dates in Central Time (ignoring time component)
- * @param date1 The first date
- * @param date2 The second date
+ * @param date1 The first date (can be a Date object or date string)
+ * @param date2 The second date (can be a Date object or date string)
  * @returns true if the dates are the same day in Central Time, false otherwise
  */
-export function isSameDayCT(date1: Date, date2: Date): boolean {
+export function isSameDayCT(
+  date1: Date | string,
+  date2: Date | string,
+): boolean {
   const date1Str = formatDateCT(date1);
   const date2Str = formatDateCT(date2);
   return date1Str === date2Str;
