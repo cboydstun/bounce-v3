@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getContacts } from "@/utils/api";
-import ContactCalendar from "@/components/ContactCalendar";
-import { Contact } from "@/types/contact";
+import { getOrders } from "@/utils/api";
+import OrderCalendar from "@/components/OrderCalendar";
+import { Order } from "@/types/order";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import Link from "next/link";
 
 export default function CalendarPage() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -62,7 +63,7 @@ export default function CalendarPage() {
   }, []);
 
   useEffect(() => {
-    const fetchContacts = async () => {
+    const fetchOrders = async () => {
       try {
         setIsLoading(true);
         setError(null);
@@ -73,7 +74,7 @@ export default function CalendarPage() {
           endDate?: string;
           limit?: number;
         } = {
-          limit: 100, // Fetch more contacts for the calendar view
+          limit: 100, // Fetch more orders for the calendar view
         };
 
         // Add date filters if set
@@ -81,41 +82,20 @@ export default function CalendarPage() {
         if (endDate) params.endDate = endDate;
 
         // Call the API with filters
-        const data = await getContacts(params);
+        const data = await getOrders(params);
 
-        // Map the contacts from the API response
-        const mappedContacts = data.contacts.map((contact: any) => ({
-          _id: contact._id,
-          bouncer: contact.bouncer,
-          email: contact.email,
-          phone: contact.phone,
-          partyDate: contact.partyDate,
-          partyZipCode: contact.partyZipCode,
-          message: contact.message,
-          confirmed: contact.confirmed,
-          createdAt: contact.createdAt,
-          tablesChairs: contact.tablesChairs,
-          generator: contact.generator,
-          popcornMachine: contact.popcornMachine,
-          cottonCandyMachine: contact.cottonCandyMachine,
-          snowConeMachine: contact.snowConeMachine,
-          basketballShoot: contact.basketballShoot,
-          slushyMachine: contact.slushyMachine,
-          overnight: contact.overnight,
-          sourcePage: contact.sourcePage,
-        }));
-
-        setContacts(mappedContacts);
+        // The orders API returns orders directly in the orders array
+        setOrders(data.orders || []);
       } catch (error) {
         setError(error instanceof Error ? error.message : "An error occurred");
-        console.error("Error fetching contacts:", error);
+        console.error("Error fetching orders:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
     if (startDate && endDate) {
-      fetchContacts();
+      fetchOrders();
     }
   }, [startDate, endDate]);
 
@@ -124,11 +104,11 @@ export default function CalendarPage() {
       <div className="sm:flex sm:items-center mb-6">
         <div className="sm:flex-auto">
           <h1 className="text-2xl font-semibold leading-6 text-gray-900">
-            Contact Calendar
+            Order Calendar
           </h1>
           <p className="mt-2 text-sm text-gray-700">
-            Calendar view of all contact requests. Yellow events are pending,
-            green events are confirmed.
+            Calendar view of all orders. Yellow events are pending, green events
+            are confirmed, dark green events are paid.
           </p>
         </div>
       </div>
@@ -172,6 +152,13 @@ export default function CalendarPage() {
             >
               Full Year
             </button>
+
+            <Link
+              href="/admin/orders/new"
+              className="rounded-md px-3 py-2 text-sm font-semibold bg-blue-600 text-white shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-blue-700"
+            >
+              New Order
+            </Link>
           </div>
         </div>
 
@@ -214,7 +201,7 @@ export default function CalendarPage() {
           <LoadingSpinner className="w-8 h-8" />
         </div>
       ) : (
-        <ContactCalendar contacts={contacts} initialDate={currentDate} />
+        <OrderCalendar orders={orders} initialDate={currentDate} />
       )}
     </div>
   );
