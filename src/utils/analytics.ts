@@ -146,6 +146,10 @@ export function groupContactsByPeriod(contacts: Contact[], period: string) {
       (contact) => contact.confirmed === "Cancelled",
     ).length;
 
+    const converted = dateContacts.filter(
+      (contact) => contact.confirmed === "Converted",
+    ).length;
+
     return {
       total: dateContacts.length,
       confirmed,
@@ -153,6 +157,7 @@ export function groupContactsByPeriod(contacts: Contact[], period: string) {
       calledTexted,
       declined,
       cancelled,
+      converted,
     };
   });
 
@@ -184,6 +189,11 @@ export function groupContactsByPeriod(contacts: Contact[], period: string) {
           label: "Cancelled",
           data: statusCounts.map((counts) => counts.cancelled),
           backgroundColor: "#6B7280", // Gray
+        },
+        {
+          label: "Converted",
+          data: statusCounts.map((counts) => counts.converted),
+          backgroundColor: "#8B5CF6", // Purple
         },
       ],
     },

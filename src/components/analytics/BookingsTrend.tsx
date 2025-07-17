@@ -41,6 +41,7 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
   const [calledTextedBookings, setCalledTextedBookings] = useState<number>(0);
   const [declinedBookings, setDeclinedBookings] = useState<number>(0);
   const [cancelledBookings, setCancelledBookings] = useState<number>(0);
+  const [convertedBookings, setConvertedBookings] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,6 +111,10 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
           (contact: Contact) => contact.confirmed === "Cancelled",
         ).length;
 
+        const converted = allContacts.filter(
+          (contact: Contact) => contact.confirmed === "Converted",
+        ).length;
+
         setChartData(bookingsData.chartData);
         setTotalBookings(allContacts.length);
         setConfirmedBookings(confirmed);
@@ -117,6 +122,7 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
         setCalledTextedBookings(calledTexted);
         setDeclinedBookings(declined);
         setCancelledBookings(cancelled);
+        setConvertedBookings(converted);
       } catch (error) {
         console.error("Error fetching bookings data:", error);
         setError("Failed to load bookings data");
@@ -157,7 +163,13 @@ export default function BookingsTrend({ period }: BookingsTrendProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-6 gap-2">
+          <div className="text-center p-2 bg-purple-50 rounded-md">
+            <div className="text-xl font-bold text-purple-600">
+              {convertedBookings}
+            </div>
+            <div className="text-xs text-gray-500">Converted</div>
+          </div>
           <div className="text-center p-2 bg-green-50 rounded-md">
             <div className="text-xl font-bold text-green-600">
               {confirmedBookings}
