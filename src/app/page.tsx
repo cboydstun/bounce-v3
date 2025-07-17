@@ -135,6 +135,30 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {/* Moonbounce Cross-Reference Section */}
+      <div className="flex justify-center items-center py-4 my-4">
+        <div className="w-full max-w-[80%] bg-white/10 backdrop-blur-sm rounded-xl px-8 py-6 text-center border border-white/20">
+          <h2 className="text-2xl font-bold mb-4 text-white">
+            Also Known as Moonbounce Rentals
+          </h2>
+          <p className="text-lg mb-6 text-white/90">
+            Our bounce houses are also called moonbounces! If you're searching
+            for
+            <strong className="text-blue-300">
+              {" "}
+              moonbounce rentals in San Antonio
+            </strong>
+            , you've come to the right place.
+          </p>
+          <a
+            href="/moonbounce"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Explore Moonbounce Rentals →
+          </a>
+        </div>
+      </div>
+
       {/* Info Sections */}
       <InfoSections />
 

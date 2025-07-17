@@ -17,6 +17,7 @@ const Navigation = () => {
   const navLinks = [
     { path: "/", label: "Home" },
     { path: "/products", label: "Products" },
+    { path: "/moonbounce", label: "Moonbounce" },
     { path: "/about", label: "About" },
     { path: "/blogs", label: "Blog" },
     { path: "/faq", label: "FAQ" },

@@ -131,6 +131,7 @@ const Footer = () => {
                   label: "Cotton Candy",
                 },
                 { href: "/products/tables-chairs", label: "Tables & Chairs" },
+                { href: "/moonbounce", label: "Moonbounces" },
               ].map((product) => (
                 <li key={product.href}>
                   <Link

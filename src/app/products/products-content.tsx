@@ -99,6 +99,22 @@ export function ProductsContent() {
               Browse San Antonio Bounce House Rentals
             </h1>
           </div>
+
+          {/* Moonbounce Cross-Reference */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+            <p className="text-white/90 text-lg">
+              Looking for{" "}
+              <strong className="text-blue-300">moonbounce rentals</strong> in
+              San Antonio? Our bounce houses are also known as moonbounces!
+              <a
+                href="/moonbounce"
+                className="text-blue-300 hover:text-blue-200 underline ml-2 font-semibold"
+              >
+                Visit our dedicated moonbounce page →
+              </a>
+            </p>
+          </div>
+
           <ProductFilters
             products={initialProducts}
             onFilteredProducts={setFilteredProducts}
