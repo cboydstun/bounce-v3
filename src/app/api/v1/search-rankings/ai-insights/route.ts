@@ -36,8 +36,8 @@ function transformInsight(insight: any) {
   };
 }
 
-// Allow up to 30 seconds for Claude API calls to prevent Vercel timeout
-export const maxDuration = 30;
+// Allow up to 90 seconds for Claude API calls to prevent Vercel timeout
+export const maxDuration = 90;
 
 /**
  * POST /api/v1/search-rankings/ai-insights
