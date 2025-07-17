@@ -22,7 +22,6 @@ import ReferrerSourceChart from "@/components/analytics/ReferrerSourceChart";
 import PopularPagesChart from "@/components/analytics/PopularPagesChart";
 import VisitorEngagementMetrics from "@/components/analytics/VisitorEngagementMetrics";
 import HighIntentVisitors from "@/components/analytics/HighIntentVisitors";
-import SuspiciousActivityAlert from "@/components/analytics/SuspiciousActivityAlert";
 import VisitorTimePatterns from "@/components/analytics/VisitorTimePatterns";
 import ConversionFunnelAnalytics from "@/components/analytics/ConversionFunnelAnalytics";
 import MarketingAttributionAnalytics from "@/components/analytics/MarketingAttributionAnalytics";
@@ -232,7 +231,6 @@ export default function VisitorsPage() {
           {/* Business Insights Tab */}
           {activeTab === "insights" && (
             <div className="space-y-6">
-              <SuspiciousActivityAlert visitors={suspiciousVisitors} />
               <HighIntentVisitors visitors={highIntentVisitors} />
 
               <div className="bg-white p-4 rounded-lg shadow">

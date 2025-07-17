@@ -11,7 +11,6 @@ import {
   analyzeSeasonalTrends,
   calculateYoYGrowth,
 } from "@/utils/analytics";
-import KpiCards from "@/components/analytics/KpiCards";
 import ConversionAnalysis from "@/components/analytics/ConversionAnalysis";
 import ForecastChart from "@/components/analytics/ForecastChart";
 import SeasonalTrends from "@/components/analytics/SeasonalTrends";
@@ -226,7 +225,7 @@ export default function PerformanceDashboard() {
         // Calculate status counts for current period
         const statusCountsMap: Record<string, number> = {};
         currentContacts.forEach((contact) => {
-          const status = contact.confirmed;
+          const status = String(contact.confirmed);
           statusCountsMap[status] = (statusCountsMap[status] || 0) + 1;
         });
         setStatusCounts(statusCountsMap);
@@ -252,7 +251,7 @@ export default function PerformanceDashboard() {
           conversionMonthly[monthKey].total++;
 
           // Count by status
-          const status = contact.confirmed;
+          const status = String(contact.confirmed);
           conversionMonthly[monthKey].statuses[status] =
             (conversionMonthly[monthKey].statuses[status] || 0) + 1;
         });
@@ -440,9 +439,6 @@ export default function PerformanceDashboard() {
       </div>
 
       <div className="space-y-6">
-        {/* KPI Cards */}
-        <KpiCards metrics={metrics} />
-
         {/* Conversion Analysis */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ConversionAnalysis
