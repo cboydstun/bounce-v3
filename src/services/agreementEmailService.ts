@@ -112,7 +112,6 @@ Thank you for choosing ${this.companyName} for your upcoming event!
 ORDER DETAILS:
 Order Number: ${order.orderNumber}
 Event Date: ${eventDate}
-Total Amount: $${order.totalAmount.toFixed(2)}
 
 RENTAL ITEMS:
 ${itemsList}
@@ -156,7 +155,6 @@ ${this.companyPhone}
             <h3 style="margin-top: 0; color: #667eea;">Order Details</h3>
             <p><strong>Order Number:</strong> ${order.orderNumber}</p>
             <p><strong>Event Date:</strong> ${eventDate}</p>
-            <p><strong>Total Amount:</strong> $${order.totalAmount.toFixed(2)}</p>
         </div>
         
         <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
