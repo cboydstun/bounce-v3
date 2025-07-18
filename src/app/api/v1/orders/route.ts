@@ -220,11 +220,78 @@ export async function GET(request: NextRequest) {
       // Alternative approach: Fetch all orders and filter in JavaScript
       // This is more reliable than complex MongoDB aggregation
 
-      // Remove date filters from MongoDB query - we'll handle them in JavaScript
+      // Build MongoDB query without date filters - we'll handle dates in JavaScript
       const mongoQuery = { ...query };
-      delete mongoQuery.$or; // Remove any date-based $or queries
 
-      // Fetch all orders that match non-date criteria
+      // Remove date-based $or queries but preserve customer search $or queries
+      if (mongoQuery.$or && Array.isArray(mongoQuery.$or)) {
+        // Check if this is a date-based $or query by looking for eventDate/deliveryDate
+        const isDateQuery = (mongoQuery.$or as any[]).some(
+          (condition: any) =>
+            condition.eventDate ||
+            condition.deliveryDate ||
+            (condition.$and &&
+              Array.isArray(condition.$and) &&
+              condition.$and.some(
+                (subCondition: any) =>
+                  subCondition.eventDate || subCondition.deliveryDate,
+              )),
+        );
+
+        if (isDateQuery) {
+          delete mongoQuery.$or;
+        }
+      }
+
+      // Remove date-based $and queries but preserve customer search $and queries
+      if (mongoQuery.$and && Array.isArray(mongoQuery.$and)) {
+        // Check if this contains date queries
+        const hasDateQuery = (mongoQuery.$and as any[]).some(
+          (condition: any) =>
+            condition.$or &&
+            Array.isArray(condition.$or) &&
+            condition.$or.some(
+              (subCondition: any) =>
+                subCondition.eventDate ||
+                subCondition.deliveryDate ||
+                (subCondition.$and &&
+                  Array.isArray(subCondition.$and) &&
+                  subCondition.$and.some(
+                    (deepCondition: any) =>
+                      deepCondition.eventDate || deepCondition.deliveryDate,
+                  )),
+            ),
+        );
+
+        if (hasDateQuery) {
+          // Keep only non-date $and conditions (like customer search)
+          mongoQuery.$and = (mongoQuery.$and as any[]).filter(
+            (condition: any) =>
+              !(
+                condition.$or &&
+                Array.isArray(condition.$or) &&
+                condition.$or.some(
+                  (subCondition: any) =>
+                    subCondition.eventDate ||
+                    subCondition.deliveryDate ||
+                    (subCondition.$and &&
+                      Array.isArray(subCondition.$and) &&
+                      subCondition.$and.some(
+                        (deepCondition: any) =>
+                          deepCondition.eventDate || deepCondition.deliveryDate,
+                      )),
+                )
+              ),
+          );
+
+          // If no $and conditions remain, remove the $and
+          if ((mongoQuery.$and as any[]).length === 0) {
+            delete mongoQuery.$and;
+          }
+        }
+      }
+
+      // Fetch all orders that match non-date criteria (including customer search)
       const allOrders = await Order.find(mongoQuery).sort({ createdAt: -1 });
 
       // Apply date filtering in JavaScript
@@ -263,6 +330,40 @@ export async function GET(request: NextRequest) {
             (!parsedEndDate || orderDate <= parsedEndDate);
 
           return isInRange;
+        });
+      }
+
+      // Apply customer filtering in JavaScript if customer search was removed from MongoDB query
+      // This happens when we have both date and customer filters
+      if (customer && (startDate || endDate)) {
+        filteredOrders = filteredOrders.filter((order) => {
+          const customerLower = customer.toLowerCase();
+
+          // Search in customer name
+          if (
+            order.customerName &&
+            order.customerName.toLowerCase().includes(customerLower)
+          ) {
+            return true;
+          }
+
+          // Search in customer email
+          if (
+            order.customerEmail &&
+            order.customerEmail.toLowerCase().includes(customerLower)
+          ) {
+            return true;
+          }
+
+          // Search in customer phone
+          if (
+            order.customerPhone &&
+            order.customerPhone.toLowerCase().includes(customerLower)
+          ) {
+            return true;
+          }
+
+          return false;
         });
       }
 
