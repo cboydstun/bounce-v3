@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Modal from "./ui/Modal";
@@ -8,6 +8,12 @@ import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { getCurrentPromotion } from "../utils/promoUtils";
 import { usePackageDeals } from "../contexts/PackageDealsContext";
 import { Holiday } from "../types/promo";
+import {
+  trackPromoModalDisplayed,
+  trackPromoModalClosed,
+  trackPromoModalConversion,
+  trackPromoModalMetrics,
+} from "../utils/promoTracking";
 
 interface PromoModalProps {
   holidays: Holiday[];
@@ -15,6 +21,34 @@ interface PromoModalProps {
   // How long (in days) before showing the modal again after it's been closed
   persistenceDays?: number;
 }
+
+// Helper function to determine promo type
+const determinePromoType = (promoName: string): string => {
+  const name = promoName.toLowerCase();
+  if (
+    name.includes("holiday") ||
+    name.includes("christmas") ||
+    name.includes("halloween")
+  )
+    return "holiday";
+  if (
+    name.includes("summer") ||
+    name.includes("spring") ||
+    name.includes("fall") ||
+    name.includes("winter")
+  )
+    return "seasonal";
+  if (name.includes("discount") || name.includes("off") || name.includes("%"))
+    return "discount";
+  if (
+    name.includes("package") ||
+    name.includes("deal") ||
+    name.includes("bundle")
+  )
+    return "package_deal";
+  if (name.includes("first") || name.includes("new")) return "first_time";
+  return "general";
+};
 
 const PromoModal: React.FC<PromoModalProps> = ({
   holidays,
@@ -25,6 +59,8 @@ const PromoModal: React.FC<PromoModalProps> = ({
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [currentPromo, setCurrentPromo] = useState<Holiday | null>(null);
   const [isClient, setIsClient] = useState<boolean>(false);
+  const modalDisplayTime = useRef<number>(0);
+  const modalStartTime = useRef<number>(0);
 
   // Handle client-side only code
   useEffect(() => {
@@ -72,6 +108,19 @@ const PromoModal: React.FC<PromoModalProps> = ({
     if (shouldShowModal()) {
       const timer = setTimeout(() => {
         setIsOpen(true);
+        modalStartTime.current = Date.now();
+
+        // Track modal display
+        trackPromoModalDisplayed({
+          promoName: promo.name,
+          promoType: determinePromoType(promo.name),
+          promoTitle: promo.promoTitle,
+          promoDescription: promo.promoDescription,
+          promoImage: promo.promoImage,
+          displayDelay: delayInSeconds,
+          persistenceDays: persistenceDays,
+          currentPage: window.location.pathname,
+        });
       }, delayInSeconds * 1000);
 
       return () => clearTimeout(timer);
@@ -79,7 +128,22 @@ const PromoModal: React.FC<PromoModalProps> = ({
   }, [holidays, delayInSeconds, persistenceDays, isClient]);
 
   const handleClose = () => {
-    if (isClient && currentPromo) {
+    if (isClient && currentPromo && modalStartTime.current > 0) {
+      const viewDuration = (Date.now() - modalStartTime.current) / 1000;
+
+      // Track modal close
+      trackPromoModalClosed({
+        promoName: currentPromo.name,
+        promoType: determinePromoType(currentPromo.name),
+        promoTitle: currentPromo.promoTitle,
+        promoDescription: currentPromo.promoDescription,
+        displayDelay: delayInSeconds,
+        persistenceDays: persistenceDays,
+        currentPage: window.location.pathname,
+        closeMethod: "x_button",
+        viewDuration: viewDuration,
+      });
+
       // Store the current timestamp when the modal is closed
       const storageKey = `promo_modal_${currentPromo.name
         .replace(/\s+/g, "_")
@@ -90,16 +154,33 @@ const PromoModal: React.FC<PromoModalProps> = ({
   };
 
   const handleGetCoupon = () => {
-    // Close the modal
-    setIsOpen(false);
+    if (isClient && currentPromo && modalStartTime.current > 0) {
+      const viewDuration = (Date.now() - modalStartTime.current) / 1000;
 
-    // Store the timestamp as we do in handleClose
-    if (isClient && currentPromo) {
+      // Track conversion
+      trackPromoModalConversion({
+        promoName: currentPromo.name,
+        promoType: determinePromoType(currentPromo.name),
+        promoTitle: currentPromo.promoTitle,
+        promoDescription: currentPromo.promoDescription,
+        displayDelay: delayInSeconds,
+        persistenceDays: persistenceDays,
+        currentPage: window.location.pathname,
+        conversionType: "coupon_form",
+        nextPage: "/coupon-form",
+        viewDuration: viewDuration,
+        conversionValue: 75, // Estimated value for promo conversion
+      });
+
+      // Store the timestamp as we do in handleClose
       const storageKey = `promo_modal_${currentPromo.name
         .replace(/\s+/g, "_")
         .toLowerCase()}`;
       localStorage.setItem(storageKey, Date.now().toString());
     }
+
+    // Close the modal
+    setIsOpen(false);
 
     // Navigate to the coupon form page with the promo name as a query parameter
     router.push(

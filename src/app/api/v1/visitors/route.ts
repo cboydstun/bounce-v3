@@ -6,6 +6,11 @@ import { detectDevice } from "@/utils/device";
 import { getLocationFromIp } from "@/utils/geolocation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import {
+  categorizePage,
+  extractGeographicInterest,
+  extractEventTypeInterest,
+} from "@/utils/pageCategorizationService";
 
 /**
  * POST /api/v1/visitors
@@ -273,20 +278,34 @@ export async function POST(req: NextRequest) {
 
       visitor.intentScore = productScore + conversionIntentScore;
 
-      // Extract interest categories from product pages
+      // Enhanced interest category extraction using the new categorization service
       if (!visitor.interestCategories) {
         visitor.interestCategories = [];
       }
 
-      // Extract product categories from URLs
-      if (currentPage && currentPage.includes("/products/")) {
-        const parts = currentPage.split("/");
-        if (parts.length >= 3) {
-          const productSlug = parts[2];
-          // Add to interest categories if not already present
-          if (!visitor.interestCategories.includes(productSlug)) {
-            visitor.interestCategories.push(productSlug);
+      if (currentPage) {
+        // Get page category and interest tags
+        const pageCategory = categorizePage(currentPage);
+        const geoInterests = extractGeographicInterest(currentPage);
+        const eventInterests = extractEventTypeInterest(currentPage);
+
+        // Combine all interest tags
+        const allInterests = [
+          ...pageCategory.interestTags,
+          ...geoInterests,
+          ...eventInterests,
+        ];
+
+        // Add new interests that aren't already tracked
+        allInterests.forEach((interest) => {
+          if (!visitor.interestCategories.includes(interest)) {
+            visitor.interestCategories.push(interest);
           }
+        });
+
+        // Limit interest categories to prevent document bloat (keep most recent 20)
+        if (visitor.interestCategories.length > 20) {
+          visitor.interestCategories = visitor.interestCategories.slice(-20);
         }
       }
 
@@ -403,13 +422,18 @@ export async function POST(req: NextRequest) {
         ];
       }
 
-      // Extract interest categories from product pages
-      if (currentPage && currentPage.includes("/products/")) {
-        const parts = currentPage.split("/");
-        if (parts.length >= 3) {
-          const productSlug = parts[2];
-          newVisitor.interestCategories = [productSlug];
-        }
+      // Enhanced interest category extraction for new visitors
+      if (currentPage) {
+        const pageCategory = categorizePage(currentPage);
+        const geoInterests = extractGeographicInterest(currentPage);
+        const eventInterests = extractEventTypeInterest(currentPage);
+
+        // Combine all interest tags for new visitor
+        newVisitor.interestCategories = [
+          ...pageCategory.interestTags,
+          ...geoInterests,
+          ...eventInterests,
+        ];
       }
 
       // Initial engagement and intent scores

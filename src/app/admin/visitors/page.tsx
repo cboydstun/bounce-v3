@@ -27,6 +27,8 @@ import ConversionFunnelAnalytics from "@/components/analytics/ConversionFunnelAn
 import MarketingAttributionAnalytics from "@/components/analytics/MarketingAttributionAnalytics";
 import FormEngagementAnalytics from "@/components/analytics/FormEngagementAnalytics";
 import CheckoutAnalytics from "@/components/analytics/CheckoutAnalytics";
+import PromoAnalytics from "@/components/analytics/PromoAnalytics";
+import LandingPageAnalytics from "@/components/analytics/LandingPageAnalytics";
 
 interface PaginationData {
   total: number;
@@ -46,7 +48,13 @@ export default function VisitorsPage() {
     pages: 0,
   });
   const [activeTab, setActiveTab] = useState<
-    "overview" | "visitors" | "insights" | "formEngagement" | "checkout"
+    | "overview"
+    | "visitors"
+    | "insights"
+    | "formEngagement"
+    | "checkout"
+    | "landingPages"
+    | "promoAnalytics"
   >("overview");
   const router = useRouter();
 
@@ -180,6 +188,26 @@ export default function VisitorsPage() {
         </button>
         <button
           className={`py-2 px-4 font-medium text-sm focus:outline-none ${
+            activeTab === "landingPages"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("landingPages")}
+        >
+          Landing Pages
+        </button>
+        <button
+          className={`py-2 px-4 font-medium text-sm focus:outline-none ${
+            activeTab === "promoAnalytics"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("promoAnalytics")}
+        >
+          Promo Analytics
+        </button>
+        <button
+          className={`py-2 px-4 font-medium text-sm focus:outline-none ${
             activeTab === "visitors"
               ? "text-blue-600 border-b-2 border-blue-600"
               : "text-gray-500 hover:text-gray-700"
@@ -306,6 +334,14 @@ export default function VisitorsPage() {
           {/* Checkout Analytics Tab */}
           {activeTab === "checkout" && (
             <CheckoutAnalytics visitors={visitors} />
+          )}
+
+          {/* Landing Page Analytics Tab */}
+          {activeTab === "landingPages" && <LandingPageAnalytics />}
+
+          {/* Promo Analytics Tab */}
+          {activeTab === "promoAnalytics" && (
+            <PromoAnalytics visitors={visitors} />
           )}
 
           {/* Visitor List Tab */}

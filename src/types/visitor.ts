@@ -171,7 +171,13 @@ export type InteractionType =
   | "form_step_error"
   | "booking_abandoned"
   | "booking_submitted"
-  | "form_field_interaction";
+  | "form_field_interaction"
+  | "promo_modal_displayed"
+  | "promo_modal_closed"
+  | "promo_modal_converted"
+  | "promo_modal_metrics"
+  | "promo_impression"
+  | "promo_conversion";
 
 // Conversion event types
 export type ConversionEventType =
