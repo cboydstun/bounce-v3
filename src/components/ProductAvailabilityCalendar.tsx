@@ -6,6 +6,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import {
   checkProductAvailability,
   checkBatchProductAvailability,
+  checkBatchProductAvailabilityMultipleDates,
 } from "@/utils/api";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
 import {
@@ -137,9 +138,8 @@ export default function ProductAvailabilityCalendar({
       return;
     }
 
-    // Check each unchecked date one at a time using the batch endpoint
-    // This is still checking one date at a time, but using the batch endpoint
-    // which provides more metadata about the date
+    // Check all unchecked dates in a single optimized API call
+    // This provides the best performance by making only one request per month
     const checkDates = async () => {
       const newCheckedDates: Record<
         string,
@@ -150,43 +150,50 @@ export default function ProductAvailabilityCalendar({
         }
       > = {};
 
-      for (const date of uncheckedDates) {
-        const dateStr = formatDateCT(date);
+      try {
+        // Convert unchecked dates to date strings
+        const uncheckedDateStrings = uncheckedDates.map((date) =>
+          formatDateCT(date),
+        );
 
-        try {
-          // Check availability for this date using the batch endpoint
-          const result = await checkBatchProductAvailability(
-            productSlug,
-            dateStr,
-          );
+        // Make a single API call for all unchecked dates
+        const result = await checkBatchProductAvailabilityMultipleDates(
+          productSlug,
+          uncheckedDateStrings,
+        );
 
-          // The result contains data for our product ID and metadata about the date
-          // We need to find the product result by looking for an entry with our slug
-          // The response keys are MongoDB ObjectIDs, so we need to find the right entry
-          const productEntries = Object.entries(result).filter(
-            ([key, value]) =>
-              key !== "_meta" &&
-              "product" in value &&
-              value.product.slug === productSlug,
-          );
+        // Process the results from the optimized batch endpoint
+        Object.entries(result).forEach(([key, value]) => {
+          // Skip metadata entries
+          if (key.startsWith("_meta_")) return;
 
-          const productResult =
-            productEntries.length > 0 ? productEntries[0][1] : null;
-          const meta = result["_meta"];
+          // Extract date from the key (format: productId_date)
+          const parts = key.split("_");
+          const dateStr = parts.length > 1 ? parts.slice(1).join("_") : null;
 
-          if (productResult && "available" in productResult) {
-            // Store the result with additional metadata
+          if (dateStr && "available" in value && "product" in value) {
+            // Find the corresponding metadata for this date
+            const metaKey = `_meta_${dateStr}`;
+            const meta = result[metaKey];
+
             newCheckedDates[dateStr] = {
-              available: productResult.available,
-              reason: productResult.reason,
+              available: value.available,
+              reason: value.reason,
               isBlackoutDate:
                 meta && "isBlackoutDate" in meta ? meta.isBlackoutDate : false,
             };
           }
-        } catch (err) {
-          console.error(`Error checking availability for ${dateStr}:`, err);
-          hasError = true;
-        }
+        });
+
+        console.log(
+          `✅ Optimized batch check: 1 API call for ${uncheckedDateStrings.length} dates`,
+        );
+      } catch (err) {
+        console.error(
+          "Error checking batch availability for multiple dates:",
+          err,
+        );
+        hasError = true;
       }
 
       // Update checkedDates state once with all new data

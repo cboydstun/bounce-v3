@@ -7,42 +7,52 @@ import { formatDateCT, parseDateCT } from "@/utils/dateUtils";
 
 /**
  * POST /api/v1/products/batch-availability
- * Check availability for multiple products on a specific date
+ * Check availability for multiple products on a specific date OR multiple dates for specific products
  * Request body:
  * - productIds: Array of product IDs to check
  * - productSlugs: Array of product slugs to check (alternative to productIds)
- * - date: The date to check availability for (YYYY-MM-DD)
+ * - date: The date to check availability for (YYYY-MM-DD) - for single date
+ * - dates: Array of dates to check availability for (YYYY-MM-DD) - for multiple dates
  */
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
 
     // Parse request body
-    const { productIds, productSlugs, date: dateStr } = await request.json();
+    const {
+      productIds,
+      productSlugs,
+      date: dateStr,
+      dates: datesArray,
+    } = await request.json();
 
     // Validate that either productIds or productSlugs is provided
     if (
       ((!productIds || !Array.isArray(productIds)) &&
         (!productSlugs || !Array.isArray(productSlugs))) ||
-      !dateStr
+      (!dateStr && (!datesArray || !Array.isArray(datesArray)))
     ) {
       return NextResponse.json(
         {
           error:
-            "Either product IDs or product slugs array and date are required",
+            "Either product IDs or product slugs array and date/dates are required",
         },
         { status: 400 },
       );
     }
 
-    // Parse and validate date
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) {
-      return NextResponse.json(
-        { error: "Invalid date format" },
-        { status: 400 },
-      );
-    }
+    // Determine if we're checking single date or multiple dates
+    const datesToCheck =
+      datesArray && Array.isArray(datesArray) ? datesArray : [dateStr];
+
+    // Validate all dates
+    const validDates = datesToCheck.map((dateStr) => {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        throw new Error(`Invalid date format: ${dateStr}`);
+      }
+      return { dateStr, date };
+    });
 
     // Find all products in a single query based on either IDs or slugs
     let products;
@@ -65,127 +75,168 @@ export async function POST(request: NextRequest) {
       availability: string;
     }
 
-    // Set up date range for booking check
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    // Find all bookings for these products on the date in a single query
-    const bookings = await Contact.find({
-      bouncer: { $in: products.map((p) => p.name) },
-      partyDate: {
-        $gte: startOfDay,
-        $lte: endOfDay,
-      },
-      confirmed: "Confirmed",
-    });
-
-    // Create a map of product name to booking status
-    const bookedProducts = new Set(bookings.map((booking) => booking.bouncer));
-
-    // Get the total number of confirmed bookings for this date
-    const totalBookingsForDate = await Contact.countDocuments({
-      partyDate: {
-        $gte: startOfDay,
-        $lte: endOfDay,
-      },
-      confirmed: "Confirmed",
-    });
-
-    // Get the settings including blackout dates
+    // Get the settings including blackout dates (only need to fetch once)
     const settings = await Settings.getSettings();
     const maxDailyBookings = settings.maxDailyBookings;
-
-    // Check if the selected date is a blackout date using our centralized date utility
-    // Parse the input date string to a Date object in Central Time
-    const selectedDateCT = parseDateCT(dateStr);
-
-    // Format the selected date in Central Time as YYYY-MM-DD for comparison
-    const selectedDateString = formatDateCT(selectedDateCT);
-    // Convert all blackout dates to Central Time strings for comparison using our utility
     const blackoutDatesCT = settings.blackoutDates.map((d: Date) =>
       formatDateCT(new Date(d)),
     );
 
-    // Use string comparison in Central Time
-    const isBlackoutDate = blackoutDatesCT.includes(selectedDateString);
-
-    // If it's a blackout date, mark all products as unavailable
-    if (isBlackoutDate) {
-      const results: Record<string, any> = {};
-
-      (products as ProductDocument[]).forEach((product) => {
-        results[product._id.toString()] = {
-          available: false,
-          product: {
-            name: product.name,
-            slug: product.slug,
-            status: product.availability,
-          },
-          reason: "This date is unavailable for booking (blackout date)",
-        };
-      });
-
-      return NextResponse.json({
-        ...results,
-        _meta: {
-          isBlackoutDate: true,
-          dateAtCapacity: true, // Treat blackout dates as at capacity
-          totalBookings: totalBookingsForDate,
-          maxBookings: maxDailyBookings,
-        },
-      });
-    }
-
-    // Check if the date has reached its booking limit
-    const dateAtCapacity = totalBookingsForDate >= maxDailyBookings;
-
-    // Prepare response with availability for each product
-    const results: Record<string, any> = {};
-    (products as ProductDocument[]).forEach((product) => {
-      const isProductAvailable =
-        product.availability === "available" &&
-        !bookedProducts.has(product.name);
-
-      // Product is unavailable if either the product is booked/unavailable
-      // OR the date has reached its booking limit
-      const isAvailable = isProductAvailable && !dateAtCapacity;
-
-      results[product._id.toString()] = {
-        available: isAvailable,
-        product: {
-          name: product.name,
-          slug: product.slug,
-          status: product.availability,
-        },
-      };
-
-      // Add reason if not available
-      if (!isAvailable) {
-        if (dateAtCapacity && isProductAvailable) {
-          results[product._id.toString()].reason =
-            `Maximum bookings reached for this date (${totalBookingsForDate}/${maxDailyBookings})`;
-        } else {
-          results[product._id.toString()].reason =
-            product.availability !== "available"
-              ? `Product is currently ${product.availability}`
-              : "Product is already booked for this date";
-        }
-      }
+    // Create date ranges for all dates to check
+    const dateRanges = validDates.map(({ dateStr, date }) => {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      return { dateStr, startOfDay, endOfDay };
     });
 
-    // Add date capacity information to the response
-    return NextResponse.json({
-      ...results,
-      _meta: {
-        isBlackoutDate: false,
+    // Find the overall date range for efficient querying
+    const allStartDates = dateRanges.map((r) => r.startOfDay);
+    const allEndDates = dateRanges.map((r) => r.endOfDay);
+    const overallStartDate = new Date(
+      Math.min(...allStartDates.map((d) => d.getTime())),
+    );
+    const overallEndDate = new Date(
+      Math.max(...allEndDates.map((d) => d.getTime())),
+    );
+
+    // Find all bookings for these products across all dates in a single query
+    const allBookings = await Contact.find({
+      bouncer: { $in: products.map((p) => p.name) },
+      partyDate: {
+        $gte: overallStartDate,
+        $lte: overallEndDate,
+      },
+      confirmed: { $in: ["Confirmed", "Converted"] },
+    });
+
+    // Get total bookings per date across all products
+    const totalBookingsPerDate = await Contact.aggregate([
+      {
+        $match: {
+          partyDate: {
+            $gte: overallStartDate,
+            $lte: overallEndDate,
+          },
+          confirmed: { $in: ["Confirmed", "Converted"] },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$partyDate",
+              timezone: "America/Chicago",
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Create a map of date to total bookings
+    const bookingsCountByDate = totalBookingsPerDate.reduce(
+      (acc, item) => {
+        acc[item._id] = item.count;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    // Process results for each date
+    const results: Record<string, any> = {};
+
+    for (const { dateStr } of validDates) {
+      // Check if this date is a blackout date
+      const selectedDateCT = parseDateCT(dateStr);
+      const selectedDateString = formatDateCT(selectedDateCT);
+      const isBlackoutDate = blackoutDatesCT.includes(selectedDateString);
+
+      // Get bookings for this specific date
+      const dateStart = new Date(dateStr);
+      dateStart.setHours(0, 0, 0, 0);
+      const dateEnd = new Date(dateStr);
+      dateEnd.setHours(23, 59, 59, 999);
+
+      const bookingsForDate = allBookings.filter((booking) => {
+        const bookingDate = new Date(booking.partyDate);
+        return bookingDate >= dateStart && bookingDate <= dateEnd;
+      });
+
+      const bookedProducts = new Set(
+        bookingsForDate.map((booking) => booking.bouncer),
+      );
+      const totalBookingsForDate = bookingsCountByDate[selectedDateString] || 0;
+      const dateAtCapacity = totalBookingsForDate >= maxDailyBookings;
+
+      // If it's a blackout date, mark all products as unavailable
+      if (isBlackoutDate) {
+        (products as ProductDocument[]).forEach((product) => {
+          const key = datesArray
+            ? `${product._id.toString()}_${dateStr}`
+            : product._id.toString();
+          results[key] = {
+            available: false,
+            product: {
+              name: product.name,
+              slug: product.slug,
+              status: product.availability,
+            },
+            reason: "This date is unavailable for booking (blackout date)",
+            date: dateStr,
+          };
+        });
+      } else {
+        // Process each product for this date
+        (products as ProductDocument[]).forEach((product) => {
+          const isProductAvailable =
+            product.availability === "available" &&
+            !bookedProducts.has(product.name);
+
+          const isAvailable = isProductAvailable && !dateAtCapacity;
+          const key = datesArray
+            ? `${product._id.toString()}_${dateStr}`
+            : product._id.toString();
+
+          results[key] = {
+            available: isAvailable,
+            product: {
+              name: product.name,
+              slug: product.slug,
+              status: product.availability,
+            },
+            date: dateStr,
+          };
+
+          // Add reason if not available
+          if (!isAvailable) {
+            if (dateAtCapacity && isProductAvailable) {
+              results[key].reason =
+                `Maximum bookings reached for this date (${totalBookingsForDate}/${maxDailyBookings})`;
+            } else {
+              results[key].reason =
+                product.availability !== "available"
+                  ? `Product is currently ${product.availability}`
+                  : "Product is already booked for this date";
+            }
+          }
+        });
+      }
+
+      // Add metadata for each date
+      const metaKey = datesArray ? `_meta_${dateStr}` : "_meta";
+      results[metaKey] = {
+        isBlackoutDate,
         dateAtCapacity,
         totalBookings: totalBookingsForDate,
         maxBookings: maxDailyBookings,
-      },
-    });
+        date: dateStr,
+      };
+    }
+
+    return NextResponse.json(results);
   } catch (error) {
     console.error("Error checking batch availability:", error);
     return NextResponse.json(

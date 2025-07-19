@@ -31,7 +31,7 @@ async function checkProductAvailability(
       $gte: startOfDay,
       $lte: endOfDay,
     },
-    confirmed: "Confirmed",
+    confirmed: { $in: ["Confirmed", "Converted"] },
   });
 
   return bookings.length === 0;
