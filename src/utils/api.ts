@@ -112,9 +112,26 @@ api.interceptors.response.use(
       );
     }
 
+    // Preserve more detailed error information for debugging
     const errorMessage =
-      error.response?.data?.message || "An unexpected error occurred";
-    return Promise.reject(new Error(errorMessage));
+      error.response?.data?.message ||
+      error.message ||
+      "An unexpected error occurred";
+    const errorDetails = error.response?.data || {};
+
+    // Create a more informative error
+    const detailedError = new Error(errorMessage);
+    (detailedError as any).details = errorDetails;
+    (detailedError as any).status = error.response?.status;
+
+    console.error("API Error Details:", {
+      message: errorMessage,
+      status: error.response?.status,
+      details: errorDetails,
+      url: error.config?.url,
+    });
+
+    return Promise.reject(detailedError);
   },
 );
 

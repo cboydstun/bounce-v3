@@ -1,6 +1,5 @@
 import { IVisitor } from "@/types/visitor";
 import Visitor from "@/models/Visitor";
-import PageAnalytics from "@/models/PageAnalytics";
 import {
   categorizePage,
   extractGeographicInterest,
@@ -9,7 +8,7 @@ import {
 
 /**
  * Optimized visitor analytics using MongoDB aggregation pipelines
- * Designed to handle large datasets efficiently
+ * Designed to handle large datasets efficiently and legacy data structures
  */
 
 export interface OptimizedEngagementMetrics {
@@ -64,12 +63,16 @@ export interface GeographicInsights {
 
 /**
  * Get optimized engagement metrics using aggregation
+ * Handles both legacy and new visitor document structures
  */
 export async function getOptimizedEngagementMetrics(dateRange?: {
   start: Date;
   end: Date;
 }): Promise<OptimizedEngagementMetrics> {
-  const matchStage: any = {};
+  const matchStage: any = {
+    // Basic filtering - only include documents with minimum required fields
+    visitorId: { $exists: true, $nin: [null, ""] },
+  };
 
   if (dateRange) {
     matchStage.lastVisit = {
@@ -78,30 +81,44 @@ export async function getOptimizedEngagementMetrics(dateRange?: {
     };
   }
 
-  // Exclude admin visitors
-  matchStage.visitedPages = {
-    $not: {
-      $elemMatch: {
-        url: /^\/admin/,
-      },
-    },
-  };
+  // Exclude admin visitors - handle both array and non-array cases
+  matchStage.$or = [
+    { visitedPages: { $exists: false } },
+    { visitedPages: null },
+    { visitedPages: { $not: { $elemMatch: { url: /^\/admin/ } } } },
+  ];
 
   const pipeline = [
     { $match: matchStage },
+    {
+      $addFields: {
+        // Normalize fields to ensure consistent data types
+        normalizedVisitedPages: {
+          $cond: [{ $isArray: "$visitedPages" }, "$visitedPages", []],
+        },
+        normalizedSessions: {
+          $cond: [{ $isArray: "$sessions" }, "$sessions", []],
+        },
+        normalizedConversionEvents: {
+          $cond: [{ $isArray: "$conversionEvents" }, "$conversionEvents", []],
+        },
+      },
+    },
     {
       $group: {
         _id: null,
         totalVisitors: { $sum: 1 },
         returningVisitors: {
-          $sum: { $cond: [{ $gt: ["$visitCount", 1] }, 1, 0] },
+          $sum: {
+            $cond: [{ $gt: [{ $ifNull: ["$visitCount", 1] }, 1] }, 1, 0],
+          },
         },
-        totalVisits: { $sum: "$visitCount" },
-        totalPageViews: { $sum: { $size: "$visitedPages" } },
+        totalVisits: { $sum: { $ifNull: ["$visitCount", 1] } },
+        totalPageViews: { $sum: { $size: "$normalizedVisitedPages" } },
         totalSessionDuration: {
           $sum: {
             $reduce: {
-              input: "$sessions",
+              input: "$normalizedSessions",
               initialValue: 0,
               in: { $add: ["$$value", { $ifNull: ["$$this.duration", 0] }] },
             },
@@ -111,14 +128,14 @@ export async function getOptimizedEngagementMetrics(dateRange?: {
           $sum: {
             $size: {
               $filter: {
-                input: "$sessions",
-                cond: { $eq: ["$$this.bounced", true] },
+                input: "$normalizedSessions",
+                cond: { $eq: [{ $ifNull: ["$$this.bounced", false] }, true] },
               },
             },
           },
         },
         totalSessions: {
-          $sum: { $size: "$sessions" },
+          $sum: { $size: "$normalizedSessions" },
         },
       },
     },
@@ -126,13 +143,26 @@ export async function getOptimizedEngagementMetrics(dateRange?: {
 
   const [metrics] = await Visitor.aggregate(pipeline);
 
-  // Get top landing pages
+  // Get top landing pages with defensive programming
   const landingPagesPipeline: any[] = [
     { $match: matchStage },
-    { $unwind: "$visitedPages" },
+    {
+      $addFields: {
+        normalizedVisitedPages: {
+          $cond: [{ $isArray: "$visitedPages" }, "$visitedPages", []],
+        },
+        safeLandingPage: { $ifNull: ["$landingPage", "/"] },
+      },
+    },
+    {
+      $unwind: {
+        path: "$normalizedVisitedPages",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
     {
       $group: {
-        _id: "$landingPage",
+        _id: "$safeLandingPage",
         visitors: { $addToSet: "$visitorId" },
         visits: { $sum: 1 },
       },
@@ -155,20 +185,32 @@ export async function getOptimizedEngagementMetrics(dateRange?: {
     const category = categorizePage(page.page || "/");
     return {
       page: page.page || "/",
-      visitors: page.visitors,
+      visitors: page.visitors || 0,
       category: category.category,
       subcategory: category.subcategory,
     };
   });
 
-  // Get top exit pages
+  // Get top exit pages with defensive programming
   const exitPagesPipeline: any[] = [
     { $match: matchStage },
-    { $unwind: "$sessions" },
-    { $match: { "sessions.exitPage": { $exists: true } } },
+    {
+      $addFields: {
+        normalizedSessions: {
+          $cond: [{ $isArray: "$sessions" }, "$sessions", []],
+        },
+      },
+    },
+    {
+      $unwind: {
+        path: "$normalizedSessions",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    { $match: { "normalizedSessions.exitPage": { $exists: true, $ne: null } } },
     {
       $group: {
-        _id: "$sessions.exitPage",
+        _id: "$normalizedSessions.exitPage",
         exits: { $sum: 1 },
       },
     },
@@ -206,146 +248,196 @@ export async function getOptimizedEngagementMetrics(dateRange?: {
     topLandingPages: categorizedLandingPages,
     topExitPages: topExitPages.map((page) => ({
       page: page.page || "Unknown",
-      exits: page.exits,
+      exits: page.exits || 0,
     })),
   };
 }
 
 /**
  * Get landing page performance metrics
+ * Handles both legacy and new visitor document structures
  */
 export async function getLandingPagePerformance(
   limit: number = 20,
   dateRange?: { start: Date; end: Date },
 ): Promise<LandingPagePerformance[]> {
-  const matchStage: any = {};
-
-  if (dateRange) {
-    matchStage.lastVisit = {
-      $gte: dateRange.start,
-      $lte: dateRange.end,
+  try {
+    const baseMatchStage: any = {
+      // Only include documents with minimum required fields
+      visitorId: { $exists: true, $nin: [null, ""] },
     };
-  }
 
-  // Exclude admin visitors
-  matchStage.visitedPages = {
-    $not: {
-      $elemMatch: {
-        url: /^\/admin/,
+    if (dateRange) {
+      baseMatchStage.lastVisit = {
+        $gte: dateRange.start,
+        $lte: dateRange.end,
+      };
+    }
+
+    // First, get visitor-level data with page counts for bounce rate calculation
+    const visitorDataPipeline: any[] = [
+      { $match: baseMatchStage },
+      {
+        $addFields: {
+          normalizedVisitedPages: {
+            $cond: [{ $isArray: "$visitedPages" }, "$visitedPages", []],
+          },
+          normalizedConversionEvents: {
+            $cond: [{ $isArray: "$conversionEvents" }, "$conversionEvents", []],
+          },
+        },
       },
-    },
-  };
-
-  const pipeline: any[] = [
-    { $match: matchStage },
-    { $unwind: "$visitedPages" },
-    {
-      $group: {
-        _id: "$visitedPages.url",
-        visits: { $sum: 1 },
-        uniqueVisitors: { $addToSet: "$visitorId" },
-        totalDuration: { $sum: { $ifNull: ["$visitedPages.duration", 0] } },
-        devices: { $push: "$device" },
-        conversions: {
-          $sum: {
+      // Filter out admin visitors and empty page arrays
+      {
+        $match: {
+          normalizedVisitedPages: { $not: { $size: 0 } },
+          $nor: [
+            { normalizedVisitedPages: { $elemMatch: { url: /^\/admin/ } } },
+          ],
+        },
+      },
+      {
+        $project: {
+          visitorId: 1,
+          normalizedVisitedPages: 1,
+          normalizedConversionEvents: 1,
+          device: {
             $cond: [
-              { $gt: [{ $size: { $ifNull: ["$conversionEvents", []] } }, 0] },
-              1,
-              0,
+              { $in: ["$device", ["Mobile", "Tablet", "Desktop"]] },
+              "$device",
+              "Desktop",
             ],
           },
-        },
-        bounces: {
-          $sum: {
-            $cond: [{ $eq: [{ $size: "$visitedPages" }, 1] }, 1, 0],
-          },
+          totalPagesViewed: { $size: "$normalizedVisitedPages" },
+          hasConversion: { $gt: [{ $size: "$normalizedConversionEvents" }, 0] },
         },
       },
-    },
-    {
-      $project: {
-        url: "$_id",
-        visits: 1,
-        uniqueVisitors: { $size: "$uniqueVisitors" },
-        averageTimeOnPage: {
-          $cond: [
-            { $gt: ["$visits", 0] },
-            { $divide: ["$totalDuration", "$visits"] },
-            0,
-          ],
-        },
-        conversionRate: {
-          $cond: [
-            { $gt: ["$visits", 0] },
-            { $multiply: [{ $divide: ["$conversions", "$visits"] }, 100] },
-            0,
-          ],
-        },
-        bounceRate: {
-          $cond: [
-            { $gt: ["$visits", 0] },
-            { $multiply: [{ $divide: ["$bounces", "$visits"] }, 100] },
-            0,
-          ],
-        },
-        deviceBreakdown: {
-          Mobile: {
-            $size: {
-              $filter: {
-                input: "$devices",
-                cond: { $eq: ["$$this", "Mobile"] },
-              },
-            },
-          },
-          Desktop: {
-            $size: {
-              $filter: {
-                input: "$devices",
-                cond: { $eq: ["$$this", "Desktop"] },
-              },
-            },
-          },
-          Tablet: {
-            $size: {
-              $filter: {
-                input: "$devices",
-                cond: { $eq: ["$$this", "Tablet"] },
-              },
-            },
-          },
-        },
-      },
-    },
-    { $sort: { visits: -1 } },
-    { $limit: limit },
-  ];
+    ];
 
-  const results = await Visitor.aggregate(pipeline);
+    const visitorData = await Visitor.aggregate(visitorDataPipeline);
 
-  return results.map((result) => {
-    const category = categorizePage(result.url);
-    return {
-      url: result.url,
-      category: category.category,
-      subcategory: category.subcategory,
-      visits: result.visits,
-      uniqueVisitors: result.uniqueVisitors,
-      bounceRate: result.bounceRate,
-      averageTimeOnPage: result.averageTimeOnPage,
-      conversionRate: result.conversionRate,
-      deviceBreakdown: result.deviceBreakdown,
-    };
-  });
+    // Process the data to calculate page-level metrics
+    const pageMetrics: {
+      [url: string]: {
+        visits: number;
+        uniqueVisitors: Set<string>;
+        totalDuration: number;
+        devices: string[];
+        conversions: number;
+        bounces: number;
+      };
+    } = {};
+
+    visitorData.forEach((visitor) => {
+      if (
+        !visitor.normalizedVisitedPages ||
+        !Array.isArray(visitor.normalizedVisitedPages)
+      ) {
+        return;
+      }
+
+      const isBounced = visitor.totalPagesViewed === 1;
+
+      visitor.normalizedVisitedPages.forEach((page: any) => {
+        if (!page.url || typeof page.url !== "string") {
+          return;
+        }
+
+        if (!pageMetrics[page.url]) {
+          pageMetrics[page.url] = {
+            visits: 0,
+            uniqueVisitors: new Set(),
+            totalDuration: 0,
+            devices: [],
+            conversions: 0,
+            bounces: 0,
+          };
+        }
+
+        const metrics = pageMetrics[page.url];
+        metrics.visits += 1;
+        metrics.uniqueVisitors.add(visitor.visitorId);
+        metrics.totalDuration += page.duration || 0;
+        metrics.devices.push(visitor.device || "Desktop");
+
+        if (visitor.hasConversion) {
+          metrics.conversions += 1;
+        }
+
+        if (isBounced) {
+          metrics.bounces += 1;
+        }
+      });
+    });
+
+    // Convert to final format and sort
+    const results = Object.entries(pageMetrics)
+      .map(([url, metrics]) => {
+        const uniqueVisitorCount = metrics.uniqueVisitors.size;
+        const deviceBreakdown = {
+          Mobile: metrics.devices.filter((d) => d === "Mobile").length,
+          Desktop: metrics.devices.filter((d) => d === "Desktop").length,
+          Tablet: metrics.devices.filter((d) => d === "Tablet").length,
+        };
+
+        return {
+          url,
+          visits: metrics.visits,
+          uniqueVisitors: uniqueVisitorCount,
+          averageTimeOnPage:
+            metrics.visits > 0 ? metrics.totalDuration / metrics.visits : 0,
+          conversionRate:
+            metrics.visits > 0
+              ? (metrics.conversions / metrics.visits) * 100
+              : 0,
+          bounceRate:
+            metrics.visits > 0 ? (metrics.bounces / metrics.visits) * 100 : 0,
+          deviceBreakdown,
+        };
+      })
+      .sort((a, b) => b.visits - a.visits)
+      .slice(0, limit);
+
+    console.log("Executing landing page performance aggregation pipeline...");
+    console.log(
+      `Landing page performance aggregation completed. Found ${results.length} results.`,
+    );
+
+    return results.map((result) => {
+      const category = categorizePage(result.url || "/");
+      return {
+        url: result.url || "/",
+        category: category.category,
+        subcategory: category.subcategory,
+        visits: result.visits || 0,
+        uniqueVisitors: result.uniqueVisitors || 0,
+        bounceRate: result.bounceRate || 0,
+        averageTimeOnPage: result.averageTimeOnPage || 0,
+        conversionRate: result.conversionRate || 0,
+        deviceBreakdown: result.deviceBreakdown || {
+          Mobile: 0,
+          Desktop: 0,
+          Tablet: 0,
+        },
+      };
+    });
+  } catch (error) {
+    console.error("Error in getLandingPagePerformance:", error);
+    throw error;
+  }
 }
 
 /**
  * Get geographic and event type insights
+ * Handles both legacy and new visitor document structures
  */
 export async function getGeographicInsights(dateRange?: {
   start: Date;
   end: Date;
 }): Promise<GeographicInsights> {
-  const matchStage: any = {};
+  const matchStage: any = {
+    visitorId: { $exists: true, $nin: [null, ""] },
+  };
 
   if (dateRange) {
     matchStage.lastVisit = {
@@ -354,24 +446,36 @@ export async function getGeographicInsights(dateRange?: {
     };
   }
 
-  // Exclude admin visitors
-  matchStage.visitedPages = {
-    $not: {
-      $elemMatch: {
-        url: /^\/admin/,
-      },
-    },
-  };
-
   const pipeline: any[] = [
     { $match: matchStage },
-    { $unwind: "$visitedPages" },
+    {
+      $addFields: {
+        normalizedVisitedPages: {
+          $cond: [{ $isArray: "$visitedPages" }, "$visitedPages", []],
+        },
+        normalizedConversionEvents: {
+          $cond: [{ $isArray: "$conversionEvents" }, "$conversionEvents", []],
+        },
+      },
+    },
+    // Filter out admin visitors
+    {
+      $match: {
+        $nor: [{ normalizedVisitedPages: { $elemMatch: { url: /^\/admin/ } } }],
+      },
+    },
+    {
+      $unwind: {
+        path: "$normalizedVisitedPages",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
     {
       $project: {
         visitorId: 1,
-        url: "$visitedPages.url",
+        url: { $ifNull: ["$normalizedVisitedPages.url", "/"] },
         hasConversion: {
-          $gt: [{ $size: { $ifNull: ["$conversionEvents", []] } }, 0],
+          $gt: [{ $size: "$normalizedConversionEvents" }, 0],
         },
       },
     },
@@ -396,6 +500,8 @@ export async function getGeographicInsights(dateRange?: {
   } = {};
 
   pageVisits.forEach((visit) => {
+    if (!visit.url || !visit.visitorId) return; // Skip invalid entries
+
     const geoInterests = extractGeographicInterest(visit.url);
     const eventInterests = extractEventTypeInterest(visit.url);
 
@@ -462,6 +568,7 @@ export async function getGeographicInsights(dateRange?: {
 
 /**
  * Get page category performance summary
+ * Handles both legacy and new visitor document structures
  */
 export async function getPageCategoryPerformance(dateRange?: {
   start: Date;
@@ -476,51 +583,56 @@ export async function getPageCategoryPerformance(dateRange?: {
     topPages: string[];
   }>
 > {
-  const landingPages = await getLandingPagePerformance(100, dateRange);
+  try {
+    const landingPages = await getLandingPagePerformance(100, dateRange);
 
-  const categoryMap: {
-    [key: string]: {
-      visits: number;
-      uniqueVisitors: number;
-      conversions: number;
-      bounces: number;
-      pages: Array<{ url: string; visits: number }>;
-    };
-  } = {};
-
-  landingPages.forEach((page) => {
-    if (!categoryMap[page.category]) {
-      categoryMap[page.category] = {
-        visits: 0,
-        uniqueVisitors: 0,
-        conversions: 0,
-        bounces: 0,
-        pages: [],
+    const categoryMap: {
+      [key: string]: {
+        visits: number;
+        uniqueVisitors: number;
+        conversions: number;
+        bounces: number;
+        pages: Array<{ url: string; visits: number }>;
       };
-    }
+    } = {};
 
-    const category = categoryMap[page.category];
-    category.visits += page.visits;
-    category.uniqueVisitors += page.uniqueVisitors;
-    category.conversions += Math.round(
-      (page.conversionRate / 100) * page.visits,
-    );
-    category.bounces += Math.round((page.bounceRate / 100) * page.visits);
-    category.pages.push({ url: page.url, visits: page.visits });
-  });
+    landingPages.forEach((page) => {
+      if (!categoryMap[page.category]) {
+        categoryMap[page.category] = {
+          visits: 0,
+          uniqueVisitors: 0,
+          conversions: 0,
+          bounces: 0,
+          pages: [],
+        };
+      }
 
-  return Object.entries(categoryMap)
-    .map(([category, data]) => ({
-      category,
-      visits: data.visits,
-      uniqueVisitors: data.uniqueVisitors,
-      conversionRate:
-        data.visits > 0 ? (data.conversions / data.visits) * 100 : 0,
-      bounceRate: data.visits > 0 ? (data.bounces / data.visits) * 100 : 0,
-      topPages: data.pages
-        .sort((a, b) => b.visits - a.visits)
-        .slice(0, 5)
-        .map((p) => p.url),
-    }))
-    .sort((a, b) => b.visits - a.visits);
+      const category = categoryMap[page.category];
+      category.visits += page.visits;
+      category.uniqueVisitors += page.uniqueVisitors;
+      category.conversions += Math.round(
+        (page.conversionRate / 100) * page.visits,
+      );
+      category.bounces += Math.round((page.bounceRate / 100) * page.visits);
+      category.pages.push({ url: page.url, visits: page.visits });
+    });
+
+    return Object.entries(categoryMap)
+      .map(([category, data]) => ({
+        category,
+        visits: data.visits,
+        uniqueVisitors: data.uniqueVisitors,
+        conversionRate:
+          data.visits > 0 ? (data.conversions / data.visits) * 100 : 0,
+        bounceRate: data.visits > 0 ? (data.bounces / data.visits) * 100 : 0,
+        topPages: data.pages
+          .sort((a, b) => b.visits - a.visits)
+          .slice(0, 5)
+          .map((p) => p.url),
+      }))
+      .sort((a, b) => b.visits - a.visits);
+  } catch (error) {
+    console.error("Error in getPageCategoryPerformance:", error);
+    throw error;
+  }
 }

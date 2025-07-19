@@ -1,15 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import api from "@/utils/api";
 import {
-  getOptimizedEngagementMetrics,
-  getLandingPagePerformance,
-  getGeographicInsights,
-  getPageCategoryPerformance,
   type OptimizedEngagementMetrics,
   type LandingPagePerformance,
   type GeographicInsights,
-} from "@/utils/optimizedVisitorAnalytics";
+} from "@/types/analytics";
 
 interface LandingPageAnalyticsProps {
   dateRange?: { start: Date; end: Date };
@@ -37,18 +34,30 @@ export default function LandingPageAnalytics({
         setLoading(true);
         setError(null);
 
-        const [metricsData, pageData, geoData, categoryData] =
+        // Build query parameters for date range
+        const params = new URLSearchParams();
+        if (dateRange?.start) {
+          params.append("startDate", dateRange.start.toISOString());
+        }
+        if (dateRange?.end) {
+          params.append("endDate", dateRange.end.toISOString());
+        }
+        params.append("limit", "20");
+
+        const queryString = params.toString();
+
+        const [metricsResponse, pageResponse, geoResponse, categoryResponse] =
           await Promise.all([
-            getOptimizedEngagementMetrics(dateRange),
-            getLandingPagePerformance(20, dateRange),
-            getGeographicInsights(dateRange),
-            getPageCategoryPerformance(dateRange),
+            api.get(`/api/v1/visitors/analytics/engagement?${queryString}`),
+            api.get(`/api/v1/visitors/analytics/landing-pages?${queryString}`),
+            api.get(`/api/v1/visitors/analytics/geographic?${queryString}`),
+            api.get(`/api/v1/visitors/analytics/categories?${queryString}`),
           ]);
 
-        setMetrics(metricsData);
-        setPagePerformance(pageData);
-        setGeoInsights(geoData);
-        setCategoryPerformance(categoryData);
+        setMetrics(metricsResponse.data.data);
+        setPagePerformance(pageResponse.data.data);
+        setGeoInsights(geoResponse.data.data);
+        setCategoryPerformance(categoryResponse.data.data);
       } catch (err) {
         console.error("Error fetching landing page analytics:", err);
         setError(
