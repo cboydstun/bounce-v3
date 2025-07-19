@@ -3,7 +3,12 @@ import dbConnect from "@/lib/db/mongoose";
 import Product from "@/models/Product";
 import Contact from "@/models/Contact";
 import Settings from "@/models/Settings";
-import { formatDateCT, parseDateCT } from "@/utils/dateUtils";
+import {
+  formatDateCT,
+  parseDateCT,
+  parseDateStartOfDayUTC,
+  parseDateEndOfDayUTC,
+} from "@/utils/dateUtils";
 
 /**
  * POST /api/v1/products/batch-availability
@@ -82,12 +87,10 @@ export async function POST(request: NextRequest) {
       formatDateCT(new Date(d)),
     );
 
-    // Create date ranges for all dates to check
-    const dateRanges = validDates.map(({ dateStr, date }) => {
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
+    // Create date ranges for all dates to check using proper UTC utilities
+    const dateRanges = validDates.map(({ dateStr }) => {
+      const startOfDay = parseDateStartOfDayUTC(dateStr);
+      const endOfDay = parseDateEndOfDayUTC(dateStr);
       return { dateStr, startOfDay, endOfDay };
     });
 
@@ -154,11 +157,9 @@ export async function POST(request: NextRequest) {
       const selectedDateString = formatDateCT(selectedDateCT);
       const isBlackoutDate = blackoutDatesCT.includes(selectedDateString);
 
-      // Get bookings for this specific date
-      const dateStart = new Date(dateStr);
-      dateStart.setHours(0, 0, 0, 0);
-      const dateEnd = new Date(dateStr);
-      dateEnd.setHours(23, 59, 59, 999);
+      // Get bookings for this specific date using proper UTC utilities
+      const dateStart = parseDateStartOfDayUTC(dateStr);
+      const dateEnd = parseDateEndOfDayUTC(dateStr);
 
       const bookingsForDate = allBookings.filter((booking) => {
         const bookingDate = new Date(booking.partyDate);

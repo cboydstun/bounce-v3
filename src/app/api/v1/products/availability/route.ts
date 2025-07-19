@@ -2,28 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import Product from "@/models/Product";
 import Contact from "@/models/Contact";
+import {
+  parseDateStartOfDayUTC,
+  parseDateEndOfDayUTC,
+} from "@/utils/dateUtils";
 
 /**
  * Checks if a product is available on a specific date
  * @param product The product document
- * @param date The date to check availability for
+ * @param dateStr The date string to check availability for (YYYY-MM-DD)
  * @returns A promise that resolves to true if the product is available, false otherwise
  */
 async function checkProductAvailability(
   product: any,
-  date: Date,
+  dateStr: string,
 ): Promise<boolean> {
   // 1. Check if product's general status is "available"
   if (product.availability !== "available") {
     return false;
   }
 
-  // 2. Check for confirmed bookings on the date
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
+  // 2. Check for confirmed bookings on the date using proper UTC utilities
+  const startOfDay = parseDateStartOfDayUTC(dateStr);
+  const endOfDay = parseDateEndOfDayUTC(dateStr);
 
   const bookings = await Contact.find({
     bouncer: product.name,
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check availability
-    const isAvailable = await checkProductAvailability(product, date);
+    const isAvailable = await checkProductAvailability(product, dateStr);
 
     // Prepare response
     const response = {
