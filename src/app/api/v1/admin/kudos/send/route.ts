@@ -106,7 +106,7 @@ async function handler(req: NextRequest) {
     }
 
     // Get admin email for "from" field
-    const adminEmail = process.env.EMAIL;
+    const adminEmail = process.env.OTHER_EMAIL;
     if (!adminEmail) {
       return NextResponse.json(
         { error: "Admin email not configured" },

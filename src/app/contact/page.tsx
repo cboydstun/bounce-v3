@@ -113,9 +113,7 @@ export default function ContactPage() {
                   </div>
 
                   <div className="bg-gradient-to-r from-blue-400 to-purple-600 text-white p-6 rounded-lg">
-                    <h3 className="text-xl font-bold mb-2">
-                      🎉 Affordable Delivery
-                    </h3>
+                    <h3 className="text-xl font-bold mb-2">🎉 FREE Delivery</h3>
                     <p>Within Loop 1604 for all rentals!</p>
                   </div>
 

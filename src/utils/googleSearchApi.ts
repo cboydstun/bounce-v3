@@ -124,6 +124,8 @@ export async function checkKeywordRanking(
   maxPosition: number = 50,
 ): Promise<RankingResult> {
   const startTime = Date.now();
+  let consecutive429Errors = 0;
+  const max429Errors = 3; // Stop after 3 consecutive 429 errors
 
   try {
     const apiKey = process.env.GOOGLE_API_KEY;
@@ -167,6 +169,7 @@ export async function checkKeywordRanking(
         );
 
         totalApiCalls++;
+        consecutive429Errors = 0; // Reset counter on successful API call
         const apiData: GoogleSearchApiResponse = response.data;
         const items = apiData.items || [];
 
@@ -219,16 +222,37 @@ export async function checkKeywordRanking(
           break;
         }
 
-        // Add proper rate limiting between API calls (1.5 seconds)
+        // Add proper rate limiting between API calls (4 seconds)
         if (page < maxPages - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+          await new Promise((resolve) => setTimeout(resolve, 4000));
         }
       } catch (error) {
         console.error(`❌ Error searching page ${page + 1}:`, error);
 
-        // Handle rate limiting (429 errors) with exponential backoff
+        // Handle rate limiting (429 errors) with enhanced exponential backoff
         if ((error as any).response?.status === 429) {
-          const retryDelay = Math.min(5000 * Math.pow(2, page), 30000); // 5s, 10s, 20s, 30s max
+          consecutive429Errors++;
+          console.log(
+            `⚠️ Rate limit error ${consecutive429Errors}/${max429Errors} for keyword "${keyword}"`,
+          );
+
+          // Circuit breaker: Stop if too many consecutive 429 errors
+          if (consecutive429Errors >= max429Errors) {
+            console.log(
+              `🚨 Circuit breaker activated: Too many consecutive rate limit errors (${consecutive429Errors}). Stopping search for "${keyword}".`,
+            );
+            break;
+          }
+
+          const baseDelay = 10000; // Start with 10 seconds
+          const jitter = Math.random() * 2000; // Add 0-2s jitter to prevent thundering herd
+          const retryDelay = Math.min(
+            baseDelay * Math.pow(2, page) + jitter,
+            60000,
+          ); // 10s, 20s, 40s, 60s max
+          console.log(
+            `⏳ Rate limited on page ${page + 1}, waiting ${Math.round(retryDelay / 1000)}s before retry...`,
+          );
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
 
           // Retry the same page once

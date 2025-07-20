@@ -52,7 +52,7 @@ export async function checkAllKeywordRankings() {
         const result = await checkKeywordRanking(
           keyword.keyword,
           targetDomain,
-          30, // Reduced from 50 to 30 for bulk operations to save API calls
+          20, // Reduced from 30 to 20 for bulk operations to save API calls
         );
 
         // Ensure we have a valid URL even if the site wasn't found in search results
@@ -129,7 +129,7 @@ export async function checkAllKeywordRankings() {
 
         // Add delay between keywords to prevent rate limiting (except for the last keyword)
         if (i < keywords.length - 1) {
-          const delaySeconds = 3; // 3 second delay between keywords
+          const delaySeconds = 8; // 8 second delay between keywords
           console.log(
             `⏳ Waiting ${delaySeconds} seconds before next keyword...`,
           );
@@ -146,7 +146,7 @@ export async function checkAllKeywordRankings() {
 
         // Add delay even after errors to prevent rapid retries
         if (i < keywords.length - 1) {
-          const errorDelaySeconds = 5; // Longer delay after errors
+          const errorDelaySeconds = 15; // Much longer delay after errors
           console.log(
             `⏳ Error delay: waiting ${errorDelaySeconds} seconds before next keyword...`,
           );

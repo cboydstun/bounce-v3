@@ -124,7 +124,7 @@ export async function sendRankingChangeNotification(
   changes: RankingChangeNotification[],
 ): Promise<void> {
   try {
-    const adminEmail = process.env.EMAIL;
+    const adminEmail = process.env.OTHER_EMAIL;
 
     if (!adminEmail) {
       throw new Error("Admin email is not configured");
