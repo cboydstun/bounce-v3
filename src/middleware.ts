@@ -9,10 +9,19 @@ import { isPackageDealsVisible } from "./utils/cookieUtils";
 export async function middleware(request: NextRequest) {
   // Check if the request is for the party-packages page
   if (request.nextUrl.pathname === "/party-packages") {
-    // Check if the user has completed the form
-    if (!isPackageDealsVisible(request.cookies)) {
-      // Redirect to the coupon form
-      return NextResponse.redirect(new URL("/coupon-form", request.url));
+    // Allow search engine crawlers to access the page directly
+    const userAgent = request.headers.get("user-agent") || "";
+    const isSearchBot =
+      /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|rogerbot|linkedinbot|embedly|quora link preview|showyoubot|outbrain|pinterest|slackbot|vkShare|W3C_Validator/i.test(
+        userAgent,
+      );
+
+    if (!isSearchBot) {
+      // Check if the user has completed the form
+      if (!isPackageDealsVisible(request.cookies)) {
+        // Redirect to the coupon form
+        return NextResponse.redirect(new URL("/coupon-form", request.url));
+      }
     }
   }
 

@@ -24,7 +24,6 @@ const EXCLUDED_ROUTES = [
   "/login",
   "/admin",
   "/contact-form-success",
-  "/party-packages",
 ];
 
 // Format date to ISO 8601 (YYYY-MM-DD) format

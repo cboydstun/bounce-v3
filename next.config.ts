@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enforce no trailing slashes for consistent URLs
+  trailingSlash: false,
+
   // Redirect configuration for canonical URLs
   async redirects() {
     return [
@@ -30,6 +33,12 @@ const nextConfig = {
           },
         ],
         destination: "https://www.satxbounce.com/:path*",
+        permanent: true,
+      },
+      // Redirect trailing slash URLs to non-trailing slash versions
+      {
+        source: "/:path+/",
+        destination: "/:path+",
         permanent: true,
       },
     ];
