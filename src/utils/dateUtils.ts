@@ -170,7 +170,8 @@ export function parseDateFromNotes(notes: string): Date | null {
   if (deliveryMatch) {
     const dateStr = deliveryMatch[1];
     try {
-      return parseDateStartOfDayUTC(dateStr);
+      // Use parseDateCT to maintain timezone consistency instead of parseDateStartOfDayUTC
+      return parseDateCT(dateStr);
     } catch (error) {
       console.warn("Failed to parse date from notes:", dateStr, error);
       return null;
@@ -287,6 +288,52 @@ export function parsePartyDateCT(dateInput: string | Date): Date | null {
     console.warn(`Failed to parse party date: ${dateInput}`, error);
     return null;
   }
+}
+
+/**
+ * Get the event date from an order with intelligent fallback logic
+ * Tries eventDate first, then deliveryDate, then parses from notes
+ * @param order The order object with potential date fields
+ * @returns Formatted display date string or "TBD" if no date found
+ */
+export function getEventDateDisplay(order: {
+  eventDate?: Date | string;
+  deliveryDate?: Date | string;
+  notes?: string;
+}): string {
+  // Try eventDate first (preferred)
+  if (order.eventDate) {
+    // If it's a string in YYYY-MM-DD format, use parseDateCT to maintain timezone consistency
+    if (
+      typeof order.eventDate === "string" &&
+      order.eventDate.match(/^\d{4}-\d{2}-\d{2}$/)
+    ) {
+      return formatDisplayDateCT(parseDateCT(order.eventDate));
+    }
+    return formatDisplayDateCT(order.eventDate);
+  }
+
+  // Try deliveryDate as fallback
+  if (order.deliveryDate) {
+    // If it's a string in YYYY-MM-DD format, use parseDateCT to maintain timezone consistency
+    if (
+      typeof order.deliveryDate === "string" &&
+      order.deliveryDate.match(/^\d{4}-\d{2}-\d{2}$/)
+    ) {
+      return formatDisplayDateCT(parseDateCT(order.deliveryDate));
+    }
+    return formatDisplayDateCT(order.deliveryDate);
+  }
+
+  // Try parsing from notes as last resort
+  if (order.notes) {
+    const parsedDate = parseDateFromNotes(order.notes);
+    if (parsedDate) {
+      return formatDisplayDateCT(parsedDate);
+    }
+  }
+
+  return "TBD";
 }
 
 /**

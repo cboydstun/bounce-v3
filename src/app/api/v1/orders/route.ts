@@ -11,6 +11,7 @@ import {
   parseDateStartOfDayUTC,
   parseDateEndOfDayUTC,
   parseDateFromNotes,
+  getEventDateDisplay,
 } from "@/utils/dateUtils";
 import { sendEmail } from "@/utils/emailService";
 import twilio from "twilio";
@@ -712,6 +713,7 @@ export async function POST(request: NextRequest) {
             Customer: ${order.customerName || "N/A"}
             Email: ${order.customerEmail || "N/A"}
             Phone: ${order.customerPhone || "N/A"}
+            Event Date: ${getEventDateDisplay(order)}
           `.trim();
 
           // Create array of recipient phone numbers

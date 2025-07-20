@@ -1,5 +1,5 @@
 import { IOrderDocument } from "@/types/order";
-import { formatDateCT } from "@/utils/dateUtils";
+import { formatDateCT, getEventDateDisplay } from "@/utils/dateUtils";
 
 /**
  * Generate email content for admin notification of a new order
@@ -75,6 +75,9 @@ export function generateNewOrderEmailAdmin(order: IOrderDocument): string {
                 <tr>
                   <td style="background-color: rgba(66, 153, 225, 0.05); padding: 15px; border-radius: 0 0 8px 8px; border: 1px solid rgba(66, 153, 225, 0.2); border-top: none;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="padding: 4px 0; font-size: 16px; font-weight: 600; color: #805ad5;"><strong>🎉 Event Date:</strong> ${getEventDateDisplay(order)}</td>
+                      </tr>
                       ${itemsList}
                     </table>
                   </td>
@@ -226,7 +229,10 @@ export function generateNewOrderEmailCustomer(order: IOrderDocument): string {
                         <td style="padding: 8px 0;"><strong>Order #:</strong> ${order.orderNumber}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0;"><strong>📅 Date:</strong> ${formatDateCT(order.createdAt)}</td>
+                        <td style="padding: 8px 0;"><strong>📅 Order Date:</strong> ${formatDateCT(order.createdAt)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #805ad5;"><strong>🎉 Event Date:</strong> ${getEventDateDisplay(order)}</td>
                       </tr>
                     </table>
                   </td>
@@ -459,6 +465,9 @@ export function generateOrderStatusUpdateEmail(order: IOrderDocument): string {
                       <tr>
                         <td style="padding: 8px 0;"><strong>Order #:</strong> ${order.orderNumber}</td>
                       </tr>
+                      <tr>
+                        <td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #805ad5;"><strong>🎉 Event Date:</strong> ${getEventDateDisplay(order)}</td>
+                      </tr>
                     </table>
                   </td>
                 </tr>
@@ -672,7 +681,10 @@ export function generatePaymentConfirmationEmail(
                         <td style="padding: 8px 0;"><strong>Order #:</strong> ${order.orderNumber}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0;"><strong>📅 Date:</strong> ${formatDateCT(order.createdAt)}</td>
+                        <td style="padding: 8px 0;"><strong>📅 Order Date:</strong> ${formatDateCT(order.createdAt)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #805ad5;"><strong>🎉 Event Date:</strong> ${getEventDateDisplay(order)}</td>
                       </tr>
                       <tr>
                         <td style="padding: 8px 0;"><strong>Items Subtotal:</strong> $${order.subtotal.toFixed(2)}</td>
