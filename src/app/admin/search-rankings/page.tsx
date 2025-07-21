@@ -38,6 +38,9 @@ export default function SearchRankingsPage() {
   const [keywords, setKeywords] = useState<SearchKeyword[]>([]);
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const [rankings, setRankings] = useState<SearchRanking[]>([]);
+  const [lastRankingDates, setLastRankingDates] = useState<
+    Record<string, Date>
+  >({});
   const [period, setPeriod] = useState("last30Days");
   const [isCheckingRanking, setIsCheckingRanking] = useState(false);
   const [competitors, setCompetitors] = useState<ManagedCompetitor[]>([]);
@@ -93,6 +96,36 @@ export default function SearchRankingsPage() {
 
     fetchData();
   }, [router]);
+
+  // Fetch last ranking dates when keywords change
+  useEffect(() => {
+    const fetchLastRankingDates = async () => {
+      if (keywords.length === 0) return;
+
+      try {
+        // Fetch latest rankings for all keywords
+        const response = await api.get("/api/v1/search-rankings/latest");
+
+        // Convert ISO strings back to Date objects
+        const dateMap: Record<string, Date> = {};
+        Object.entries(response.data.lastRankingDates || {}).forEach(
+          ([keywordId, dateStr]) => {
+            dateMap[keywordId] = new Date(dateStr as string);
+          },
+        );
+
+        setLastRankingDates(dateMap);
+        console.log(
+          `📅 Fetched last ranking dates for ${Object.keys(dateMap).length} keywords`,
+        );
+      } catch (error) {
+        console.error("Failed to fetch last ranking dates:", error);
+        // Don't set error state for this, as it's not critical
+      }
+    };
+
+    fetchLastRankingDates();
+  }, [keywords]);
 
   // Fetch rankings when selected keyword changes
   useEffect(() => {
@@ -363,6 +396,12 @@ export default function SearchRankingsPage() {
 
       console.log(`💾 Updated cache with ${updatedRankings.length} rankings`);
 
+      // Update the last ranking dates with the new ranking
+      setLastRankingDates((prevDates) => ({
+        ...prevDates,
+        [keywordId]: newRanking.date,
+      }));
+
       return { success: true };
     } catch (error: any) {
       console.error("Error checking ranking:", error);
@@ -437,6 +476,25 @@ export default function SearchRankingsPage() {
               refreshError,
             );
           }
+        }
+
+        // Refresh last ranking dates after bulk operation
+        try {
+          const latestResponse = await api.get(
+            "/api/v1/search-rankings/latest",
+          );
+          const dateMap: Record<string, Date> = {};
+          Object.entries(latestResponse.data.lastRankingDates || {}).forEach(
+            ([keywordId, dateStr]) => {
+              dateMap[keywordId] = new Date(dateStr as string);
+            },
+          );
+          setLastRankingDates(dateMap);
+          console.log(
+            `📅 Refreshed last ranking dates for ${Object.keys(dateMap).length} keywords after bulk operation`,
+          );
+        } catch (refreshError) {
+          console.error("Error refreshing last ranking dates:", refreshError);
         }
       } else {
         setBulkProgress("❌ Bulk check completed but no results returned");
@@ -644,6 +702,7 @@ export default function SearchRankingsPage() {
             onToggleKeyword={handleToggleKeyword}
             onCheckRanking={handleCheckRanking}
             isCheckingRanking={isCheckingRanking}
+            lastRankingDates={lastRankingDates}
           />
         </div>
 

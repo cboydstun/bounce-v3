@@ -4,8 +4,8 @@ import dbConnect from "@/lib/db/mongoose";
 import { getCurrentDateCT } from "@/utils/dateUtils";
 import { getToken } from "next-auth/jwt";
 
-// Allow up to 300 seconds (5 minutes) for Google API calls with enhanced rate limiting
-export const maxDuration = 300;
+// Allow up to 60 seconds for Google API calls with enhanced rate limiting
+export const maxDuration = 60;
 
 /**
  * GET /api/v1/search-rankings/cron
