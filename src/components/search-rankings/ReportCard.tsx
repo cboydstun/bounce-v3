@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import api from "@/utils/api";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import Tooltip from "@/components/ui/Tooltip";
 import {
   ReportCard as ReportCardType,
   GRADE_COLORS,
@@ -10,6 +11,7 @@ import {
   SCORE_THRESHOLDS,
 } from "@/types/reportCard";
 import AIInsightsPanel from "./AIInsightsPanel";
+import { TOOLTIP_CONTENT } from "./tooltipContent";
 
 interface ReportCardProps {
   period?: string;
@@ -128,87 +130,148 @@ export default function ReportCard({
 
         {/* Overall Grade Display */}
         <div className="flex items-center justify-center mb-8">
-          <div
-            className={`${gradeColors.bg} ${gradeColors.border} border-2 rounded-full w-32 h-32 flex items-center justify-center`}
-          >
-            <div className="text-center">
-              <div className={`text-4xl font-bold ${gradeColors.text}`}>
-                {reportCard.overallGrade}
-              </div>
-              <div className={`text-sm font-medium ${gradeColors.text}`}>
-                {reportCard.overallScore}/100
+          <Tooltip content={TOOLTIP_CONTENT.overallGrade}>
+            <div
+              className={`${gradeColors.bg} ${gradeColors.border} border-2 rounded-full w-32 h-32 flex items-center justify-center cursor-help`}
+            >
+              <div className="text-center">
+                <div className={`text-4xl font-bold ${gradeColors.text}`}>
+                  {reportCard.overallGrade}
+                </div>
+                <div className={`text-sm font-medium ${gradeColors.text}`}>
+                  {reportCard.overallScore}/100
+                </div>
               </div>
             </div>
-          </div>
+          </Tooltip>
         </div>
 
         {/* Key Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-gray-900">
-              {reportCard.totalKeywords}
+          <Tooltip content={TOOLTIP_CONTENT.totalKeywords}>
+            <div className="cursor-help">
+              <div className="text-2xl font-bold text-gray-900">
+                {reportCard.totalKeywords}
+              </div>
+              <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
+                Total Keywords
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="text-sm text-gray-500">Total Keywords</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-900">
-              {reportCard.metrics.averagePosition}
+          </Tooltip>
+          <Tooltip content={TOOLTIP_CONTENT.averagePosition}>
+            <div className="cursor-help">
+              <div className="text-2xl font-bold text-gray-900">
+                {reportCard.metrics.averagePosition}
+              </div>
+              <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
+                Avg Position
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="text-sm text-gray-500">Avg Position</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-900">
-              {reportCard.metrics.visibilityScore}%
+          </Tooltip>
+          <Tooltip content={TOOLTIP_CONTENT.visibilityScore}>
+            <div className="cursor-help">
+              <div className="text-2xl font-bold text-gray-900">
+                {reportCard.metrics.visibilityScore}%
+              </div>
+              <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
+                Visibility
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="text-sm text-gray-500">Visibility</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-900">
-              {reportCard.competitorAnalysis.outrankedPercentage}%
+          </Tooltip>
+          <Tooltip content={TOOLTIP_CONTENT.outrankedPercentage}>
+            <div className="cursor-help">
+              <div className="text-2xl font-bold text-gray-900">
+                {reportCard.competitorAnalysis.outrankedPercentage}%
+              </div>
+              <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
+                Outranked
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="text-sm text-gray-500">Outranked</div>
-          </div>
+          </Tooltip>
         </div>
       </div>
 
       {/* Detailed Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Visibility Score */}
-        <div
-          className={`${getScoreBg(reportCard.metrics.visibilityScore)} rounded-lg p-4`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">
-              Visibility
-            </span>
-            <span className="text-lg">👁️</span>
-          </div>
+        <Tooltip content={TOOLTIP_CONTENT.visibility}>
           <div
-            className={`text-2xl font-bold ${getScoreColor(reportCard.metrics.visibilityScore)}`}
+            className={`${getScoreBg(reportCard.metrics.visibilityScore)} rounded-lg p-4 cursor-help`}
           >
-            {reportCard.metrics.visibilityScore}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                Visibility
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+              <span className="text-lg">👁️</span>
+            </div>
+            <div
+              className={`text-2xl font-bold ${getScoreColor(reportCard.metrics.visibilityScore)}`}
+            >
+              {reportCard.metrics.visibilityScore}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">Keywords ranking</div>
           </div>
-          <div className="text-xs text-gray-500 mt-1">Keywords ranking</div>
-        </div>
+        </Tooltip>
 
         {/* Position Quality */}
-        <div
-          className={`${getScoreBg(
-            typeof reportCard.metrics.averagePosition === "number"
-              ? reportCard.metrics.averagePosition <= 3
-                ? 100
-                : reportCard.metrics.averagePosition <= 10
-                  ? 75
-                  : 50
-              : 0,
-          )} rounded-lg p-4`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Position</span>
-            <span className="text-lg">📍</span>
-          </div>
+        <Tooltip content={TOOLTIP_CONTENT.position}>
           <div
-            className={`text-2xl font-bold ${getScoreColor(
+            className={`${getScoreBg(
               typeof reportCard.metrics.averagePosition === "number"
                 ? reportCard.metrics.averagePosition <= 3
                   ? 100
@@ -216,64 +279,134 @@ export default function ReportCard({
                     ? 75
                     : 50
                 : 0,
-            )}`}
+            )} rounded-lg p-4 cursor-help`}
           >
-            {reportCard.metrics.averagePosition}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                Position
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+              <span className="text-lg">📍</span>
+            </div>
+            <div
+              className={`text-2xl font-bold ${getScoreColor(
+                typeof reportCard.metrics.averagePosition === "number"
+                  ? reportCard.metrics.averagePosition <= 3
+                    ? 100
+                    : reportCard.metrics.averagePosition <= 10
+                      ? 75
+                      : 50
+                  : 0,
+              )}`}
+            >
+              {reportCard.metrics.averagePosition}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">Average ranking</div>
           </div>
-          <div className="text-xs text-gray-500 mt-1">Average ranking</div>
-        </div>
+        </Tooltip>
 
         {/* Consistency Score */}
-        <div
-          className={`${getScoreBg(reportCard.metrics.consistencyScore)} rounded-lg p-4`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">
-              Consistency
-            </span>
-            <span className="text-lg">🎯</span>
-          </div>
+        <Tooltip content={TOOLTIP_CONTENT.consistency}>
           <div
-            className={`text-2xl font-bold ${getScoreColor(reportCard.metrics.consistencyScore)}`}
+            className={`${getScoreBg(reportCard.metrics.consistencyScore)} rounded-lg p-4 cursor-help`}
           >
-            {reportCard.metrics.consistencyScore}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                Consistency
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+              <span className="text-lg">🎯</span>
+            </div>
+            <div
+              className={`text-2xl font-bold ${getScoreColor(reportCard.metrics.consistencyScore)}`}
+            >
+              {reportCard.metrics.consistencyScore}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">Ranking stability</div>
           </div>
-          <div className="text-xs text-gray-500 mt-1">Ranking stability</div>
-        </div>
+        </Tooltip>
 
         {/* Growth Score */}
-        <div
-          className={`${getScoreBg(reportCard.metrics.growthScore)} rounded-lg p-4`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Growth</span>
-            <span className="text-lg">📈</span>
-          </div>
+        <Tooltip content={TOOLTIP_CONTENT.growth}>
           <div
-            className={`text-2xl font-bold ${getScoreColor(reportCard.metrics.growthScore)}`}
+            className={`${getScoreBg(reportCard.metrics.growthScore)} rounded-lg p-4 cursor-help`}
           >
-            {reportCard.metrics.growthScore}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                Growth
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+              <span className="text-lg">📈</span>
+            </div>
+            <div
+              className={`text-2xl font-bold ${getScoreColor(reportCard.metrics.growthScore)}`}
+            >
+              {reportCard.metrics.growthScore}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">Improvement trend</div>
           </div>
-          <div className="text-xs text-gray-500 mt-1">Improvement trend</div>
-        </div>
+        </Tooltip>
 
         {/* Competitive Score */}
-        <div
-          className={`${getScoreBg(reportCard.metrics.competitiveScore)} rounded-lg p-4`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">
-              Competitive
-            </span>
-            <span className="text-lg">⚔️</span>
-          </div>
+        <Tooltip content={TOOLTIP_CONTENT.competitive}>
           <div
-            className={`text-2xl font-bold ${getScoreColor(reportCard.metrics.competitiveScore)}`}
+            className={`${getScoreBg(reportCard.metrics.competitiveScore)} rounded-lg p-4 cursor-help`}
           >
-            {reportCard.metrics.competitiveScore}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                Competitive
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+              <span className="text-lg">⚔️</span>
+            </div>
+            <div
+              className={`text-2xl font-bold ${getScoreColor(reportCard.metrics.competitiveScore)}`}
+            >
+              {reportCard.metrics.competitiveScore}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">vs competitors</div>
           </div>
-          <div className="text-xs text-gray-500 mt-1">vs competitors</div>
-        </div>
+        </Tooltip>
       </div>
 
       {/* Keyword Breakdown */}
@@ -282,30 +415,90 @@ export default function ReportCard({
           Keyword Performance Breakdown
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-green-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {reportCard.keywordBreakdown.top3}
+          <Tooltip content={TOOLTIP_CONTENT.top3Positions}>
+            <div className="bg-green-50 rounded-lg p-4 text-center cursor-help">
+              <div className="text-2xl font-bold text-green-600">
+                {reportCard.keywordBreakdown.top3}
+              </div>
+              <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
+                Top 3 Positions
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Top 3 Positions</div>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {reportCard.keywordBreakdown.top10}
+          </Tooltip>
+          <Tooltip content={TOOLTIP_CONTENT.top10Positions}>
+            <div className="bg-blue-50 rounded-lg p-4 text-center cursor-help">
+              <div className="text-2xl font-bold text-blue-600">
+                {reportCard.keywordBreakdown.top10}
+              </div>
+              <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
+                Top 10 Positions
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Top 10 Positions</div>
-          </div>
-          <div className="bg-yellow-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">
-              {reportCard.keywordBreakdown.top20}
+          </Tooltip>
+          <Tooltip content={TOOLTIP_CONTENT.top20Positions}>
+            <div className="bg-yellow-50 rounded-lg p-4 text-center cursor-help">
+              <div className="text-2xl font-bold text-yellow-600">
+                {reportCard.keywordBreakdown.top20}
+              </div>
+              <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
+                Top 20 Positions
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Top 20 Positions</div>
-          </div>
-          <div className="bg-red-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {reportCard.keywordBreakdown.notFound}
+          </Tooltip>
+          <Tooltip content={TOOLTIP_CONTENT.notRanking}>
+            <div className="bg-red-50 rounded-lg p-4 text-center cursor-help">
+              <div className="text-2xl font-bold text-red-600">
+                {reportCard.keywordBreakdown.notFound}
+              </div>
+              <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
+                Not Ranking
+                <svg
+                  className="w-3 h-3 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Not Ranking</div>
-          </div>
+          </Tooltip>
         </div>
       </div>
 
@@ -313,9 +506,24 @@ export default function ReportCard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Performers */}
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            🏆 Top Performers
-          </h3>
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-lg font-medium text-gray-900">
+              🏆 Top Performers
+            </h3>
+            <Tooltip content={TOOLTIP_CONTENT.topPerformers}>
+              <svg
+                className="w-4 h-4 text-gray-400 cursor-help"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </Tooltip>
+          </div>
           {reportCard.topPerformers.length === 0 ? (
             <p className="text-gray-500 text-center py-4">
               No ranking keywords found
@@ -351,9 +559,24 @@ export default function ReportCard({
 
         {/* Needs Attention */}
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            ⚠️ Needs Attention
-          </h3>
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-lg font-medium text-gray-900">
+              ⚠️ Needs Attention
+            </h3>
+            <Tooltip content={TOOLTIP_CONTENT.needsAttention}>
+              <svg
+                className="w-4 h-4 text-gray-400 cursor-help"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </Tooltip>
+          </div>
           {reportCard.needsAttention.length === 0 ? (
             <p className="text-gray-500 text-center py-4">
               All keywords performing well!
@@ -391,9 +614,24 @@ export default function ReportCard({
       {/* Competitor Opportunities */}
       {reportCard.competitorAnalysis.opportunities.length > 0 && (
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            🎯 Competitive Opportunities
-          </h3>
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-lg font-medium text-gray-900">
+              🎯 Competitive Opportunities
+            </h3>
+            <Tooltip content={TOOLTIP_CONTENT.competitiveOpportunities}>
+              <svg
+                className="w-4 h-4 text-gray-400 cursor-help"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </Tooltip>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -459,63 +697,102 @@ export default function ReportCard({
           📊 Trend Analysis
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center">
-            <div
-              className={`${TREND_COLORS[reportCard.trends.positionTrend].bg} rounded-lg p-4`}
-            >
+          <Tooltip content={TOOLTIP_CONTENT.positionTrend}>
+            <div className="text-center cursor-help">
               <div
-                className={`text-2xl ${TREND_COLORS[reportCard.trends.positionTrend].text}`}
+                className={`${TREND_COLORS[reportCard.trends.positionTrend].bg} rounded-lg p-4`}
               >
-                {TREND_COLORS[reportCard.trends.positionTrend].icon}
-              </div>
-              <div className="text-sm font-medium text-gray-900 mt-2">
-                Position Trend
-              </div>
-              <div
-                className={`text-sm ${TREND_COLORS[reportCard.trends.positionTrend].text} capitalize`}
-              >
-                {reportCard.trends.positionTrend}
+                <div
+                  className={`text-2xl ${TREND_COLORS[reportCard.trends.positionTrend].text}`}
+                >
+                  {TREND_COLORS[reportCard.trends.positionTrend].icon}
+                </div>
+                <div className="text-sm font-medium text-gray-900 mt-2 flex items-center justify-center gap-1">
+                  Position Trend
+                  <svg
+                    className="w-3 h-3 text-gray-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div
+                  className={`text-sm ${TREND_COLORS[reportCard.trends.positionTrend].text} capitalize`}
+                >
+                  {reportCard.trends.positionTrend}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="text-center">
-            <div
-              className={`${TREND_COLORS[reportCard.trends.visibilityTrend].bg} rounded-lg p-4`}
-            >
+          </Tooltip>
+          <Tooltip content={TOOLTIP_CONTENT.visibilityTrend}>
+            <div className="text-center cursor-help">
               <div
-                className={`text-2xl ${TREND_COLORS[reportCard.trends.visibilityTrend].text}`}
+                className={`${TREND_COLORS[reportCard.trends.visibilityTrend].bg} rounded-lg p-4`}
               >
-                {TREND_COLORS[reportCard.trends.visibilityTrend].icon}
-              </div>
-              <div className="text-sm font-medium text-gray-900 mt-2">
-                Visibility Trend
-              </div>
-              <div
-                className={`text-sm ${TREND_COLORS[reportCard.trends.visibilityTrend].text} capitalize`}
-              >
-                {reportCard.trends.visibilityTrend}
+                <div
+                  className={`text-2xl ${TREND_COLORS[reportCard.trends.visibilityTrend].text}`}
+                >
+                  {TREND_COLORS[reportCard.trends.visibilityTrend].icon}
+                </div>
+                <div className="text-sm font-medium text-gray-900 mt-2 flex items-center justify-center gap-1">
+                  Visibility Trend
+                  <svg
+                    className="w-3 h-3 text-gray-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div
+                  className={`text-sm ${TREND_COLORS[reportCard.trends.visibilityTrend].text} capitalize`}
+                >
+                  {reportCard.trends.visibilityTrend}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="text-center">
-            <div
-              className={`${TREND_COLORS[reportCard.trends.competitiveTrend].bg} rounded-lg p-4`}
-            >
+          </Tooltip>
+          <Tooltip content={TOOLTIP_CONTENT.competitiveTrend}>
+            <div className="text-center cursor-help">
               <div
-                className={`text-2xl ${TREND_COLORS[reportCard.trends.competitiveTrend].text}`}
+                className={`${TREND_COLORS[reportCard.trends.competitiveTrend].bg} rounded-lg p-4`}
               >
-                {TREND_COLORS[reportCard.trends.competitiveTrend].icon}
-              </div>
-              <div className="text-sm font-medium text-gray-900 mt-2">
-                Competitive Trend
-              </div>
-              <div
-                className={`text-sm ${TREND_COLORS[reportCard.trends.competitiveTrend].text} capitalize`}
-              >
-                {reportCard.trends.competitiveTrend}
+                <div
+                  className={`text-2xl ${TREND_COLORS[reportCard.trends.competitiveTrend].text}`}
+                >
+                  {TREND_COLORS[reportCard.trends.competitiveTrend].icon}
+                </div>
+                <div className="text-sm font-medium text-gray-900 mt-2 flex items-center justify-center gap-1">
+                  Competitive Trend
+                  <svg
+                    className="w-3 h-3 text-gray-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div
+                  className={`text-sm ${TREND_COLORS[reportCard.trends.competitiveTrend].text} capitalize`}
+                >
+                  {reportCard.trends.competitiveTrend}
+                </div>
               </div>
             </div>
-          </div>
+          </Tooltip>
         </div>
       </div>
 

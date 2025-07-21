@@ -50,13 +50,6 @@
   </url>
 
   <url>
-    <loc>https://www.satxbounce.com/backyard-parties</loc>
-    <lastmod>2025-07-21</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
     <loc>https://www.satxbounce.com/birthday-parties</loc>
     <lastmod>2025-07-21</lastmod>
     <changefreq>weekly</changefreq>
@@ -64,14 +57,21 @@
   </url>
 
   <url>
-    <loc>https://www.satxbounce.com/bulverde</loc>
+    <loc>https://www.satxbounce.com/boerne</loc>
     <lastmod>2025-07-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://www.satxbounce.com/boerne</loc>
+    <loc>https://www.satxbounce.com/backyard-parties</loc>
+    <lastmod>2025-07-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.satxbounce.com/bulverde</loc>
     <lastmod>2025-07-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -113,14 +113,14 @@
   </url>
 
   <url>
-    <loc>https://www.satxbounce.com/fundraisers</loc>
+    <loc>https://www.satxbounce.com/graduation-parties</loc>
     <lastmod>2025-07-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://www.satxbounce.com/graduation-parties</loc>
+    <loc>https://www.satxbounce.com/fundraisers</loc>
     <lastmod>2025-07-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
