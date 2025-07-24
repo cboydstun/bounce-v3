@@ -1,30 +1,11 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
-import { isPackageDealsVisible } from "./utils/cookieUtils";
 
 /**
  * This middleware enforces authentication and role-based access control
  */
 export async function middleware(request: NextRequest) {
-  // Check if the request is for the party-packages page
-  if (request.nextUrl.pathname === "/party-packages") {
-    // Allow search engine crawlers to access the page directly
-    const userAgent = request.headers.get("user-agent") || "";
-    const isSearchBot =
-      /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|rogerbot|linkedinbot|embedly|quora link preview|showyoubot|outbrain|pinterest|slackbot|vkShare|W3C_Validator/i.test(
-        userAgent,
-      );
-
-    if (!isSearchBot) {
-      // Check if the user has completed the form
-      if (!isPackageDealsVisible(request.cookies)) {
-        // Redirect to the coupon form
-        return NextResponse.redirect(new URL("/coupon-form", request.url));
-      }
-    }
-  }
-
   try {
     const token = await getToken({
       req: request,
@@ -67,8 +48,5 @@ export const config = {
   matcher: [
     // Admin routes
     "/admin/:path*",
-    // Party packages route
-    "/party-packages",
-    "/party-packages/:path*",
   ],
 };

@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { PartyPackageWithId } from "../../types/partypackage";
 import { ProductWithId } from "../../types/product";
 import { getPartyPackages, getProducts } from "../../utils/api";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
+import { isPackageDealsVisible } from "../../utils/cookieUtils";
 
 // Create a type for the product ID to image mapping
 type ProductImageMap = {
@@ -96,6 +98,12 @@ export function PartyPackagesContent() {
   const [packages, setPackages] = useState<PartyPackageWithId[]>([]);
   const [productImages, setProductImages] = useState<ProductImageMap>({});
   const [loading, setLoading] = useState(true);
+  const [hasCompletedForm, setHasCompletedForm] = useState(false);
+
+  // Check if user has completed the coupon form
+  useEffect(() => {
+    setHasCompletedForm(isPackageDealsVisible());
+  }, []);
 
   // Fetch party packages and products on mount
   useEffect(() => {
@@ -161,6 +169,31 @@ export function PartyPackagesContent() {
             </p>
           </div>
         </div>
+
+        {/* Special Offer Banner for users who haven't completed the form */}
+        {!hasCompletedForm && (
+          <div className="mb-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl p-6 text-white shadow-lg">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex-1">
+                <h3 className="text-xl font-bold mb-2">
+                  🎉 Unlock Exclusive Package Deals!
+                </h3>
+                <p className="text-white/90">
+                  Get access to special discounts and exclusive party package
+                  offers by completing our quick form.
+                </p>
+              </div>
+              <div className="flex-shrink-0">
+                <Link
+                  href="/coupon-form"
+                  className="bg-white text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors duration-200 inline-block"
+                >
+                  Get Special Offers
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Packages Grid */}
         <PackageGrid packages={packages} productImages={productImages} />
