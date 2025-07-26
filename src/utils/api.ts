@@ -847,4 +847,70 @@ export const syncAllAgreementStatuses = async () => {
   return response.data;
 };
 
+// Blogs API calls
+export const getBlogs = async (params?: {
+  category?: string;
+  tag?: string;
+  search?: string;
+  status?: string;
+  limit?: number;
+  page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.category) queryParams.append("category", params.category);
+  if (params?.tag) queryParams.append("tag", params.tag);
+  if (params?.search) queryParams.append("search", params.search);
+  if (params?.status) queryParams.append("status", params.status);
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
+  if (params?.page) queryParams.append("page", params.page.toString());
+
+  const queryString = queryParams.toString();
+  const url = queryString ? `/api/v1/blogs?${queryString}` : "/api/v1/blogs";
+
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getBlogBySlug = async (slug: string) => {
+  const response = await api.get(`/api/v1/blogs/${slug}`);
+  return response.data;
+};
+
+export const createBlog = async (blogData: {
+  title: string;
+  introduction: string;
+  body: string;
+  conclusion: string;
+  excerpt?: string;
+  featuredImage?: string;
+  categories: string[];
+  tags: string[];
+  status: "draft" | "published" | "archived";
+  publishDate?: string;
+  seo?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    focusKeyword?: string;
+  };
+  isFeature?: boolean;
+  relatedPosts?: string[];
+}) => {
+  const response = await api.post("/api/v1/blogs", blogData);
+  return response.data;
+};
+
+export const updateBlog = async (
+  slug: string,
+  blogData: Partial<Parameters<typeof createBlog>[0]>,
+) => {
+  const response = await api.put(`/api/v1/blogs/${slug}`, blogData);
+  return response.data;
+};
+
+export const deleteBlog = async (slug: string) => {
+  const response = await api.delete(`/api/v1/blogs/${slug}`);
+  return response.data;
+};
+
 export default api;

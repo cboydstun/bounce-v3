@@ -159,6 +159,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Create blog
     const blog = await Blog.create(blogData);
 
+    // Populate the author field for the response
+    await blog.populate("author", "name");
+
     return NextResponse.json(blog, { status: 201 });
   } catch (error) {
     console.error("Error creating blog:", error);

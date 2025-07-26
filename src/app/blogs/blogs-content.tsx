@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { getBlogs } from "@/utils/api";
 import { Blog } from "@/types/blog";
 
 export function BlogsContent() {
@@ -40,48 +40,19 @@ export function BlogsContent() {
       try {
         setLoading(true);
 
-        // Build query parameters
-        const params = new URLSearchParams();
-        if (category) params.append("category", category);
-        if (tag) params.append("tag", tag);
-        if (search) params.append("search", search);
+        // Use the new getBlogs function with proper parameters
+        const response = await getBlogs({
+          status: "published", // Only fetch published blogs
+          category: category || undefined,
+          tag: tag || undefined,
+          search: search || undefined,
+          limit: 1000, // Request a high number to get all published blogs
+        });
 
-        const queryString = params.toString() ? `?${params.toString()}` : "";
-
-        // Construct the URL properly
-        const baseUrl =
-          typeof window === "undefined"
-            ? "http://localhost:3000"
-            : window.location.origin;
-
-        // Create a proper URL object
-        const url = new URL(`${API_ROUTES.BLOGS}${queryString}`, baseUrl);
-
-        const response = await fetch(url.toString());
-
-        if (!response.ok) throw new Error("Failed to fetch blogs");
-
-        const data = await response.json();
-
-        // Handle different response formats
-        let blogsList: Blog[] = [];
-        if (Array.isArray(data)) {
-          // If the API returns an array directly
-          blogsList = data;
-        } else if (data.blogs && Array.isArray(data.blogs)) {
-          // If the API returns an object with a blogs property
-          blogsList = data.blogs;
-        } else if (typeof data === "object" && data !== null) {
-          // If the API returns some other object, try to extract blogs
-          const possibleBlogs = Object.values(data).find((val) =>
-            Array.isArray(val),
-          );
-          if (possibleBlogs) {
-            blogsList = possibleBlogs as Blog[];
-          }
-        }
-
+        // Extract blogs from the response
+        const blogsList = response.blogs || [];
         setBlogs(blogsList);
+        setError(null); // Clear any previous errors
       } catch (err) {
         console.error("Error fetching blogs:", err);
         setError(err instanceof Error ? err.message : "An error occurred");

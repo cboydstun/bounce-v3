@@ -77,12 +77,12 @@ export default function EditBlog({ params }: PageProps) {
       const response = await fetch(`${API_BASE_URL}${API_ROUTES.BLOGS}/${id}`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...data,
-          // Send the complete images array without double stringifying
+          // Merge existing images with new images for update
           images: [...(data.images || []), ...(data.newImages || [])],
           // Include featuredImage
           featuredImage: data.featuredImage || "",

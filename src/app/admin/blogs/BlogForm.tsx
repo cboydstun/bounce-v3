@@ -134,7 +134,7 @@ export default function BlogForm({
         {
           method: "DELETE",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
             "Content-Type": "application/json",
           },
         },
@@ -385,6 +385,74 @@ export default function BlogForm({
           ))}
         </div>
       </div>
+
+      {formData.newImages && formData.newImages.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium leading-6 text-gray-900">
+            New Images (will be saved when you submit)
+          </label>
+          <div className="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            {formData.newImages.map((image, index) => (
+              <div key={`new-${index}`} className="relative group">
+                <div className="relative">
+                  <Image
+                    src={image.url}
+                    alt={image.filename}
+                    width={300}
+                    height={128}
+                    className="w-full h-32 object-cover rounded-lg border-2 border-green-200"
+                  />
+                  {formData.featuredImage !== image.url && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, featuredImage: image.url })
+                      }
+                      className="absolute bottom-2 left-2 bg-indigo-600 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      Set as Featured
+                    </button>
+                  )}
+                  <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs">
+                    New
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      newImages:
+                        prev.newImages?.filter((_, i) => i !== index) || [],
+                      // If this was the featured image, clear it
+                      featuredImage:
+                        prev.featuredImage === image.url
+                          ? ""
+                          : prev.featuredImage,
+                    }));
+                  }}
+                  className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium leading-6 text-gray-900">

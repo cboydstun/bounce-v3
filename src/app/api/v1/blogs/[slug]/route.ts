@@ -100,6 +100,12 @@ export async function PUT(
       blogData.publishDate = new Date().toISOString();
     }
 
+    // Handle images properly - merge existing images with new ones
+    if (blogData.images) {
+      // If images array is provided, use it as is (frontend should send complete array)
+      blogData.images = blogData.images;
+    }
+
     // Update blog
     const updatedBlog = await Blog.findByIdAndUpdate(
       blog._id,

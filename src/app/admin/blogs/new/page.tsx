@@ -18,8 +18,8 @@ export default function NewBlog() {
         },
         body: JSON.stringify({
           ...data,
-          // Ensure we're sending the complete images array
-          images: [...(data.images || [])],
+          // Merge existing images with new images for creation
+          images: [...(data.images || []), ...(data.newImages || [])],
           // Include featuredImage
           featuredImage: data.featuredImage || "",
           // Don't send newImages to the API
