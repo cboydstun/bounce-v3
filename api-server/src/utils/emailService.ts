@@ -55,7 +55,7 @@ export async function sendVerificationEmail(
   name: string,
   verificationToken: string,
 ): Promise<void> {
-  const verificationUrl = `http://localhost:4000/api/auth/contractor/verify-email/${verificationToken}`;
+  const verificationUrl = `${process.env.API_BASE_URL}/api/auth/contractor/verify-email/${verificationToken}`;
 
   const emailData: EmailData = {
     to: email,
