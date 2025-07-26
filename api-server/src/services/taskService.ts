@@ -589,27 +589,26 @@ export class TaskService {
         };
       }
 
+      // Verify contractor exists and is active
+      const contractor = await ContractorAuth.findById(contractorId);
+      if (!contractor || !contractor.isActive || !contractor.isVerified) {
+        console.log(`🚫 [TaskService.getTaskById] Contractor not authorized:`, {
+          contractorExists: !!contractor,
+          isActive: contractor?.isActive,
+          isVerified: contractor?.isVerified,
+        });
+        return {
+          task: null,
+          hasAccess: false,
+          exists: true,
+        };
+      }
+
       // Check if contractor has access to this task
       const isPending = task.status === "Pending";
       const inAssignedContractors =
         task.assignedContractors.includes(contractorId);
       const matchesAssignedTo = task.assignedTo === contractorId;
-
-      // Additional debugging for contractor ID comparison
-      console.log(`🔐 [TaskService.getTaskById] Access control check:`, {
-        contractorId,
-        contractorIdType: typeof contractorId,
-        taskStatus: task.status,
-        isPending,
-        assignedContractors: task.assignedContractors,
-        assignedContractorsTypes: task.assignedContractors.map(
-          (id) => typeof id,
-        ),
-        inAssignedContractors,
-        assignedTo: task.assignedTo,
-        assignedToType: typeof task.assignedTo,
-        matchesAssignedTo,
-      });
 
       // Try string comparison for assignedTo field
       const assignedToString = task.assignedTo
@@ -624,15 +623,20 @@ export class TaskService {
       const inAssignedContractorsString =
         assignedContractorsStrings.includes(contractorId);
 
-      console.log(`🔍 [TaskService.getTaskById] String comparison check:`, {
-        assignedToString,
-        matchesAssignedToString,
-        assignedContractorsStrings,
+      console.log(`🔐 [TaskService.getTaskById] Access control check:`, {
+        contractorId,
+        taskStatus: task.status,
+        isPending,
+        inAssignedContractors,
+        matchesAssignedTo,
         inAssignedContractorsString,
+        matchesAssignedToString,
       });
 
+      // FIXED: For available (Pending) tasks, any authenticated contractor should have access
+      // For assigned tasks, only the assigned contractor should have access
       const hasAccess =
-        isPending ||
+        isPending || // Any authenticated contractor can view available tasks
         inAssignedContractors ||
         matchesAssignedTo ||
         inAssignedContractorsString ||
@@ -642,10 +646,10 @@ export class TaskService {
         hasAccess,
         reason: hasAccess
           ? isPending
-            ? "Task is Pending"
-            : inAssignedContractors
-              ? "In assignedContractors array"
-              : "Matches assignedTo field"
+            ? "Task is available (Pending) - accessible to all contractors"
+            : inAssignedContractors || inAssignedContractorsString
+              ? "Contractor is in assignedContractors array"
+              : "Contractor matches assignedTo field"
           : "No access criteria met",
       });
 

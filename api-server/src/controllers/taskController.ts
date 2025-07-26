@@ -591,7 +591,11 @@ export class TaskController {
   static async getTaskById(req: AuthenticatedRequest, res: Response) {
     try {
       if (!req.contractor) {
-        return res.status(401).json({ error: "Authentication required" });
+        console.log(`❌ [getTaskById] No contractor in request`);
+        return res.status(401).json({
+          success: false,
+          error: "Authentication required",
+        });
       }
       const { id: taskId } = req.params;
       const contractorId = req.contractor.contractorId;
@@ -601,7 +605,9 @@ export class TaskController {
         typeof taskId !== "string" ||
         !mongoose.Types.ObjectId.isValid(taskId)
       ) {
+        console.log(`❌ [getTaskById] Invalid task ID format: ${taskId}`);
         return res.status(400).json({
+          success: false,
           error: "Invalid task ID format",
         });
       }
@@ -610,6 +616,12 @@ export class TaskController {
         taskId,
         contractorId,
         requestHeaders: req.headers.authorization ? "Present" : "Missing",
+        contractorData: {
+          id: req.contractor.contractorId,
+          email: req.contractor.email,
+          name: req.contractor.name,
+          isVerified: req.contractor.isVerified,
+        },
       });
 
       const result = await TaskService.getTaskById(taskId, contractorId);
@@ -627,6 +639,7 @@ export class TaskController {
         return res.status(404).json({
           success: false,
           error: "Task not found",
+          message: "The requested task does not exist in the database",
         });
       }
 
@@ -636,7 +649,8 @@ export class TaskController {
         );
         return res.status(403).json({
           success: false,
-          error: "You do not have access to this task",
+          error: "Access denied",
+          message: "You do not have permission to view this task",
         });
       }
 
@@ -647,11 +661,19 @@ export class TaskController {
         return res.status(500).json({
           success: false,
           error: "Task data unavailable",
+          message: "Task exists but data could not be retrieved",
         });
       }
 
       // Transform the task to match mobile app format
       const taskObj = result.task.toObject();
+
+      console.log(`✅ [getTaskById] Successfully retrieved task:`, {
+        taskId: taskObj._id.toString(),
+        status: taskObj.status,
+        type: taskObj.type,
+        title: taskObj.title,
+      });
 
       // Map CRM status to mobile app status
       const statusMap: Record<string, string> = {
@@ -750,8 +772,11 @@ export class TaskController {
       });
     } catch (error) {
       logger.error("Error in getTaskById:", error);
+      console.log(`💥 [getTaskById] Unexpected error:`, error);
       return res.status(500).json({
-        error: "Failed to retrieve task details",
+        success: false,
+        error: "Internal server error",
+        message: "Failed to retrieve task details",
       });
     }
   }
