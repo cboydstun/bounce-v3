@@ -65,6 +65,7 @@ class AuthController {
       if (existingContractor) {
         logger.warn("Registration failed - email already exists", { email });
         res.status(409).json({
+          success: false,
           error: "An account with this email already exists",
           code: "EMAIL_ALREADY_EXISTS",
         });
@@ -106,21 +107,25 @@ class AuthController {
 
       // Return success response (without sensitive data)
       res.status(201).json({
+        success: true,
         message:
           "Registration successful. Please check your email to verify your account.",
-        contractor: {
-          id: contractor._id,
-          name: contractor.name,
-          email: contractor.email,
-          phone: contractor.phone,
-          skills: contractor.skills,
-          isVerified: contractor.isVerified,
-          createdAt: contractor.createdAt,
+        data: {
+          contractor: {
+            id: contractor._id,
+            name: contractor.name,
+            email: contractor.email,
+            phone: contractor.phone,
+            skills: contractor.skills,
+            isVerified: contractor.isVerified,
+            createdAt: contractor.createdAt,
+          },
         },
       });
     } catch (error) {
       logger.error("Registration error:", error);
       res.status(500).json({
+        success: false,
         error: "Registration failed",
         code: "REGISTRATION_FAILED",
       });

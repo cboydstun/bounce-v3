@@ -13,7 +13,12 @@
     "next": "Siguiente",
     "done": "Hecho",
     "close": "Cerrar",
-    "ok": "OK"
+    "ok": "OK",
+    "continue": "Continuar",
+    "optional": "Opcional",
+    "skip": "Omitir por ahora",
+    "add": "Agregar",
+    "processing": "Procesando..."
   },
   "navigation": {
     "availableTasks": "Tareas Disponibles",
@@ -68,6 +73,82 @@
       "submitted": "Enviado",
       "approved": "Aprobado",
       "rejected": "Rechazado"
+    }
+  },
+  "registration": {
+    "title": "Únete a Nuestro Equipo",
+    "stepIndicator": "Paso {{current}} de {{total}}",
+    "success": "¡Registro exitoso! Por favor revisa tu correo electrónico para verificar tu cuenta.",
+    "error": "El registro falló. Por favor intenta de nuevo.",
+    "steps": {
+      "account": "Crear Cuenta",
+      "profile": "Información Profesional",
+      "tax": "Información Fiscal"
+    },
+    "account": {
+      "title": "Crea Tu Cuenta",
+      "subtitle": "Ingresa tu información básica para comenzar",
+      "name": "Nombre Completo",
+      "namePlaceholder": "Ingresa tu nombre completo",
+      "email": "Correo Electrónico",
+      "emailPlaceholder": "Ingresa tu correo electrónico",
+      "phone": "Número de Teléfono",
+      "phonePlaceholder": "Ingresa tu número de teléfono",
+      "password": "Contraseña",
+      "passwordPlaceholder": "Crea una contraseña",
+      "confirmPassword": "Confirmar Contraseña",
+      "confirmPasswordPlaceholder": "Confirma tu contraseña",
+      "agreeTerms": "Acepto los",
+      "termsOfService": "Términos de Servicio",
+      "agreePrivacy": "Acepto la",
+      "privacyPolicy": "Política de Privacidad",
+      "helpText": "¿Ya tienes una cuenta?",
+      "signIn": "Iniciar Sesión"
+    },
+    "profile": {
+      "title": "Perfil Profesional",
+      "subtitle": "Cuéntanos sobre tus habilidades y experiencia",
+      "businessName": "Nombre del Negocio",
+      "businessNamePlaceholder": "El nombre de tu negocio o empresa (opcional)",
+      "skills": "Habilidades y Experiencia",
+      "customSkillPlaceholder": "Agregar habilidad personalizada",
+      "selectedSkills": "Habilidades Seleccionadas",
+      "profileImage": "URL de Imagen de Perfil",
+      "profileImagePlaceholder": "https://ejemplo.com/tu-foto.jpg (opcional)",
+      "emergencyContact": "Contacto de Emergencia",
+      "emergencyName": "Nombre del Contacto",
+      "emergencyNamePlaceholder": "Nombre del contacto de emergencia",
+      "emergencyPhone": "Teléfono del Contacto",
+      "emergencyPhonePlaceholder": "Teléfono del contacto de emergencia",
+      "emergencyRelationship": "Relación",
+      "emergencyRelationshipPlaceholder": "Seleccionar relación",
+      "emergencyEmail": "Correo del Contacto",
+      "emergencyEmailPlaceholder": "Correo del contacto de emergencia (opcional)"
+    },
+    "tax": {
+      "title": "Información Fiscal",
+      "subtitle": "Completa tu formulario W-9 para cumplimiento fiscal",
+      "whyNeeded": "¿Por qué se necesita esto?",
+      "explanation1": "El formulario W-9 es requerido para propósitos de reporte fiscal cuando ganes $600 o más en un año calendario.",
+      "explanation2": "Completar esto ahora asegurará un procesamiento de pagos más rápido y cumplimiento con las regulaciones fiscales.",
+      "optional": "Este paso es opcional durante el registro - puedes completarlo en cualquier momento antes de tu primer pago.",
+      "completed": "Formulario W-9 Completado",
+      "completedMessage": "Tu información fiscal está lista para procesamiento",
+      "inProgress": "Formulario W-9 en Progreso",
+      "inProgressMessage": "Has comenzado pero no completado tu formulario W-9",
+      "review": "Revisar Formulario W-9",
+      "continue": "Continuar Formulario W-9",
+      "start": "Completar Formulario W-9 Ahora",
+      "completeLater": "Completar Más Tarde",
+      "benefits": "Beneficios de completar ahora:",
+      "benefit1": "Procesamiento de pagos más rápido",
+      "benefit2": "Acceso a tareas mejor pagadas",
+      "benefit3": "Cumplimiento fiscal listo",
+      "benefit4": "Completar perfil profesional",
+      "complete": "Completar Registro",
+      "skipTitle": "¿Omitir Información Fiscal?",
+      "skipMessage": "Puedes completar tu formulario W-9 más tarde desde tu perfil. Necesitarás completarlo antes de recibir pagos superiores a $600.",
+      "skipConfirm": "Omitir por Ahora"
     }
   }
 }

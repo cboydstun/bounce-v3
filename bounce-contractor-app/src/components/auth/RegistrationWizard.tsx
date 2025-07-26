@@ -250,13 +250,14 @@ export const RegistrationWizard: React.FC = () => {
                 {stepTitle}
               </h2>
               <p className="text-sm text-gray-600">
-                {t(
-                  "registration.stepIndicator",
-                  `Step ${currentStep + 1} of ${REGISTRATION_STEPS.length}`,
-                )}
+                {t("registration.stepIndicator", {
+                  current: currentStep + 1,
+                  total: REGISTRATION_STEPS.length,
+                  defaultValue: `Step ${currentStep + 1} of ${REGISTRATION_STEPS.length}`,
+                })}
                 {stepConfig.optional && (
                   <span className="ml-2 text-blue-600">
-                    ({t("common.optional", "Optional")})
+                    ({t("common.optional")})
                   </span>
                 )}
               </p>

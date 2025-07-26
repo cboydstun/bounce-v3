@@ -13,7 +13,12 @@
     "next": "Next",
     "done": "Done",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "continue": "Continue",
+    "optional": "Optional",
+    "skip": "Skip for now",
+    "add": "Add",
+    "processing": "Processing..."
   },
   "navigation": {
     "availableTasks": "Available Tasks",
@@ -68,6 +73,82 @@
       "submitted": "Submitted",
       "approved": "Approved",
       "rejected": "Rejected"
+    }
+  },
+  "registration": {
+    "title": "Join Our Team",
+    "stepIndicator": "Step {{current}} of {{total}}",
+    "success": "Registration successful! Please check your email to verify your account.",
+    "error": "Registration failed. Please try again.",
+    "steps": {
+      "account": "Create Account",
+      "profile": "Professional Info",
+      "tax": "Tax Information"
+    },
+    "account": {
+      "title": "Create Your Account",
+      "subtitle": "Enter your basic information to get started",
+      "name": "Full Name",
+      "namePlaceholder": "Enter your full name",
+      "email": "Email Address",
+      "emailPlaceholder": "Enter your email",
+      "phone": "Phone Number",
+      "phonePlaceholder": "Enter your phone number",
+      "password": "Password",
+      "passwordPlaceholder": "Create a password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "agreeTerms": "I agree to the",
+      "termsOfService": "Terms of Service",
+      "agreePrivacy": "I agree to the",
+      "privacyPolicy": "Privacy Policy",
+      "helpText": "Already have an account?",
+      "signIn": "Sign In"
+    },
+    "profile": {
+      "title": "Professional Profile",
+      "subtitle": "Tell us about your skills and experience",
+      "businessName": "Business Name",
+      "businessNamePlaceholder": "Your business or company name (optional)",
+      "skills": "Skills & Expertise",
+      "customSkillPlaceholder": "Add custom skill",
+      "selectedSkills": "Selected Skills",
+      "profileImage": "Profile Image URL",
+      "profileImagePlaceholder": "https://example.com/your-photo.jpg (optional)",
+      "emergencyContact": "Emergency Contact",
+      "emergencyName": "Contact Name",
+      "emergencyNamePlaceholder": "Emergency contact name",
+      "emergencyPhone": "Contact Phone",
+      "emergencyPhonePlaceholder": "Emergency contact phone",
+      "emergencyRelationship": "Relationship",
+      "emergencyRelationshipPlaceholder": "Select relationship",
+      "emergencyEmail": "Contact Email",
+      "emergencyEmailPlaceholder": "Emergency contact email (optional)"
+    },
+    "tax": {
+      "title": "Tax Information",
+      "subtitle": "Complete your W-9 form for tax compliance",
+      "whyNeeded": "Why is this needed?",
+      "explanation1": "The W-9 form is required for tax reporting purposes when you earn $600 or more in a calendar year.",
+      "explanation2": "Completing this now will ensure faster payment processing and compliance with tax regulations.",
+      "optional": "This step is optional during registration - you can complete it anytime before your first payment.",
+      "completed": "W-9 Form Completed",
+      "completedMessage": "Your tax information is ready for processing",
+      "inProgress": "W-9 Form In Progress",
+      "inProgressMessage": "You have started but not completed your W-9 form",
+      "review": "Review W-9 Form",
+      "continue": "Continue W-9 Form",
+      "start": "Complete W-9 Form Now",
+      "completeLater": "Complete Later",
+      "benefits": "Benefits of completing now:",
+      "benefit1": "Faster payment processing",
+      "benefit2": "Access to higher-paying tasks",
+      "benefit3": "Tax compliance ready",
+      "benefit4": "Professional profile completion",
+      "complete": "Complete Registration",
+      "skipTitle": "Skip Tax Information?",
+      "skipMessage": "You can complete your W-9 form later from your profile. You'll need to complete it before receiving payments over $600.",
+      "skipConfirm": "Skip for Now"
     }
   }
 }
