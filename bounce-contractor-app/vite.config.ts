@@ -11,7 +11,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Vendor chunks
+          // Vendor chunks - keep these as they're safe
           if (id.includes("node_modules")) {
             if (id.includes("react") || id.includes("react-dom")) {
               return "vendor-react";
@@ -39,31 +39,23 @@ export default defineConfig({
             return "vendor";
           }
 
-          // Feature-based chunks for our code
-          if (id.includes("/pages/auth/") || id.includes("/services/auth/")) {
-            return "auth";
-          }
-          if (id.includes("/pages/tasks/") || id.includes("/hooks/tasks/")) {
-            return "tasks";
+          // Simplified app chunks - avoid splitting tightly coupled modules
+          // Only split by major page sections to avoid circular dependencies
+          if (id.includes("/pages/tasks/")) {
+            return "pages-tasks";
           }
           if (id.includes("/pages/profile/")) {
-            return "profile";
+            return "pages-profile";
           }
-          if (
-            id.includes("/pages/notifications/") ||
-            id.includes("/services/notifications/")
-          ) {
-            return "notifications";
+          if (id.includes("/pages/notifications/")) {
+            return "pages-notifications";
           }
           if (id.includes("/pages/quickbooks/")) {
-            return "quickbooks";
+            return "pages-quickbooks";
           }
-          if (
-            id.includes("/services/realtime/") ||
-            id.includes("/store/realtimeStore")
-          ) {
-            return "realtime";
-          }
+
+          // Keep auth, services, store, and hooks together in main chunk
+          // to avoid circular dependency issues
         },
       },
     },

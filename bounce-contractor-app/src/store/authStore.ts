@@ -11,6 +11,7 @@ import {
 import { ApiError } from "../types/api.types";
 import { APP_CONFIG } from "../config/app.config";
 import { apiClient } from "../services/api/apiClient";
+import { biometricService } from "../services/auth/biometricService";
 
 interface AuthActions {
   // Authentication actions
@@ -352,9 +353,6 @@ export const useAuthStore = create<AuthStore>()(
         password: string;
       }) => {
         try {
-          const { biometricService } = await import(
-            "../services/auth/biometricService"
-          );
           const { user } = get();
 
           if (!user) {
@@ -390,9 +388,6 @@ export const useAuthStore = create<AuthStore>()(
 
       disableBiometric: async () => {
         try {
-          const { biometricService } = await import(
-            "../services/auth/biometricService"
-          );
           await biometricService.disableBiometric();
           set({ biometricEnabled: false });
         } catch (error) {
@@ -403,10 +398,6 @@ export const useAuthStore = create<AuthStore>()(
 
       authenticateWithBiometric: async () => {
         try {
-          const { biometricService } = await import(
-            "../services/auth/biometricService"
-          );
-
           const result = await biometricService.authenticateAndGetCredentials({
             reason: "Authenticate to access your account",
             title: "Biometric Login",
@@ -446,10 +437,6 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
 
         try {
-          const { biometricService } = await import(
-            "../services/auth/biometricService"
-          );
-
           const result = await biometricService.authenticateAndGetCredentials({
             reason: "Sign in to your account",
             title: "Biometric Login",
