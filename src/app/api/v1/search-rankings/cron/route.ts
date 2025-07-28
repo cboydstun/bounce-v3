@@ -8,6 +8,7 @@ import {
 import dbConnect from "@/lib/db/mongoose";
 import { getCurrentDateCT } from "@/utils/dateUtils";
 import { getToken } from "next-auth/jwt";
+import { DetailedBatchStatus } from "@/types/searchRanking";
 
 // Keep 60 seconds limit - batch processing will work within this constraint
 export const maxDuration = 60;

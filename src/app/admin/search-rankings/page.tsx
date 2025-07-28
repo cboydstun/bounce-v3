@@ -10,6 +10,7 @@ import RankingMetrics from "@/components/search-rankings/RankingMetrics";
 import CompetitorAnalysis from "@/components/search-rankings/CompetitorAnalysis";
 import ValidationPanel from "@/components/search-rankings/ValidationPanel";
 import ReportCardSummary from "@/components/search-rankings/ReportCardSummary";
+import BatchProgressTracker from "@/components/search-rankings/BatchProgressTracker";
 import {
   getCurrentDateCT,
   formatDateCT,
@@ -702,8 +703,71 @@ export default function SearchRankingsPage() {
         </div>
       </div>
 
-      {/* Bulk Progress Display */}
-      {(bulkProgress || bulkResults) && (
+      {/* Enhanced Batch Progress Tracker */}
+      <BatchProgressTracker
+        isActive={isBulkChecking}
+        onComplete={() => {
+          console.log("✅ Batch processing completed");
+          setIsBulkChecking(false);
+
+          // Clear all caches to force fresh data
+          setRankingsCache({});
+
+          // Refresh current keyword data if one is selected
+          if (selectedKeyword) {
+            const { startDate, endDate } = getDateRangeForPeriod(period);
+            api
+              .get("/api/v1/search-rankings/history", {
+                params: {
+                  keywordId: selectedKeyword,
+                  startDate,
+                  endDate,
+                },
+              })
+              .then((response) => {
+                const newRankings = response.data.rankings;
+                setRankings(newRankings);
+
+                // Update validation status from the latest ranking
+                if (newRankings.length > 0) {
+                  const latestRanking = newRankings[0];
+                  if (latestRanking.metadata) {
+                    setValidationStatus({
+                      isValid: latestRanking.metadata.isValidationPassed,
+                      warnings: latestRanking.metadata.validationWarnings,
+                    });
+                  }
+                }
+              })
+              .catch((error) => {
+                console.error("Error refreshing current keyword data:", error);
+              });
+          }
+
+          // Refresh last ranking dates
+          api
+            .get("/api/v1/search-rankings/latest")
+            .then((response) => {
+              const dateMap: Record<string, Date> = {};
+              Object.entries(response.data.lastRankingDates || {}).forEach(
+                ([keywordId, dateStr]) => {
+                  dateMap[keywordId] = new Date(dateStr as string);
+                },
+              );
+              setLastRankingDates(dateMap);
+            })
+            .catch((error) => {
+              console.error("Error refreshing last ranking dates:", error);
+            });
+        }}
+        onError={(error) => {
+          console.error("❌ Batch processing error:", error);
+          setIsBulkChecking(false);
+        }}
+      />
+
+      {/* Legacy Progress Display (fallback) */}
+      {(bulkProgress || bulkResults) && !isBulkChecking && (
         <div className="mb-6">
           {bulkProgress && (
             <div
@@ -716,7 +780,6 @@ export default function SearchRankingsPage() {
               }`}
             >
               <div className="flex items-center">
-                {isBulkChecking && <LoadingSpinner className="w-5 h-5 mr-3" />}
                 <p
                   className={`text-sm font-medium ${
                     bulkProgress.includes("❌")
@@ -732,10 +795,10 @@ export default function SearchRankingsPage() {
             </div>
           )}
 
-          {bulkResults && !isBulkChecking && (
+          {bulkResults && (
             <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
               <h3 className="text-sm font-medium text-gray-900 mb-2">
-                Bulk Check Results:
+                Final Results:
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>

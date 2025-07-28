@@ -57,6 +57,13 @@
   </url>
 
   <url>
+    <loc>https://www.satxbounce.com/boerne</loc>
+    <lastmod>2025-07-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
     <loc>https://www.satxbounce.com/birthday-parties</loc>
     <lastmod>2025-07-28</lastmod>
     <changefreq>weekly</changefreq>
@@ -71,7 +78,7 @@
   </url>
 
   <url>
-    <loc>https://www.satxbounce.com/boerne</loc>
+    <loc>https://www.satxbounce.com/church-events</loc>
     <lastmod>2025-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -85,13 +92,6 @@
   </url>
 
   <url>
-    <loc>https://www.satxbounce.com/church-events</loc>
-    <lastmod>2025-07-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
     <loc>https://www.satxbounce.com/converse</loc>
     <lastmod>2025-07-28</lastmod>
     <changefreq>weekly</changefreq>
@@ -99,14 +99,14 @@
   </url>
 
   <url>
-    <loc>https://www.satxbounce.com/corporate-events</loc>
+    <loc>https://www.satxbounce.com/coupon-form</loc>
     <lastmod>2025-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://www.satxbounce.com/coupon-form</loc>
+    <loc>https://www.satxbounce.com/corporate-events</loc>
     <lastmod>2025-07-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

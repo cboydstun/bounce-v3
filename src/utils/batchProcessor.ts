@@ -2,7 +2,12 @@ import { SearchKeyword, SearchRanking, RankingBatch } from "@/models";
 import { checkKeywordRanking } from "./googleSearchApi";
 import dbConnect from "@/lib/db/mongoose";
 import { sendRankingChangeNotification } from "./emailService";
-import { RankingChangeNotification } from "@/types/searchRanking";
+import {
+  RankingChangeNotification,
+  DetailedBatchStatus,
+  BatchProgress,
+  BatchKeywordProgress,
+} from "@/types/searchRanking";
 import { getCurrentDateCT } from "./dateUtils";
 import mongoose from "mongoose";
 
@@ -308,37 +313,44 @@ export async function processNextBatch(): Promise<BatchProcessResult> {
 }
 
 /**
- * Gets the status of all ranking batches
+ * Gets detailed status of all ranking batches with enhanced progress information
  */
-export async function getBatchStatus(): Promise<{
-  totalBatches: number;
-  pendingBatches: number;
-  processingBatches: number;
-  completedBatches: number;
-  failedBatches: number;
-  totalKeywords: number;
-  processedKeywords: number;
-  progress: number;
-}> {
+export async function getBatchStatus(): Promise<DetailedBatchStatus> {
   try {
     await dbConnect();
 
+    // Only count batches from current session (created in last 2 hours) or active batches
+    // This prevents counting old completed batches from previous operations
+    const cutoffTime = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago
+    const batchQuery = {
+      $or: [
+        { status: { $in: ["pending", "processing"] } }, // Always include active batches
+        {
+          status: "completed",
+          completedAt: { $gte: cutoffTime }, // Only recent completed batches
+        },
+      ],
+    };
+
     const [
-      totalBatches,
       pendingBatches,
       processingBatches,
       completedBatches,
       failedBatches,
+      batches,
     ] = await Promise.all([
-      RankingBatch.countDocuments({}),
       RankingBatch.countDocuments({ status: "pending" }),
       RankingBatch.countDocuments({ status: "processing" }),
-      RankingBatch.countDocuments({ status: "completed" }),
+      RankingBatch.countDocuments({
+        status: "completed",
+        completedAt: { $gte: cutoffTime },
+      }),
       RankingBatch.countDocuments({ status: "failed" }),
+      RankingBatch.find(batchQuery).sort({ createdAt: 1 }),
     ]);
 
-    // Calculate total keywords and processed keywords
-    const batches = await RankingBatch.find({});
+    const totalBatches = batches.length;
+
     const totalKeywords = batches.reduce(
       (sum, batch) => sum + batch.totalCount,
       0,
@@ -352,6 +364,83 @@ export async function getBatchStatus(): Promise<{
         ? Math.round((processedKeywords / totalKeywords) * 100)
         : 0;
 
+    // Find the current processing batch
+    const currentBatchDoc = await (RankingBatch as any).findActiveBatch();
+    let currentBatch: BatchProgress | undefined;
+    let estimatedTimeRemaining: number | undefined;
+    let processingStartTime: Date | undefined;
+    let averageKeywordTime: number | undefined;
+
+    if (currentBatchDoc) {
+      // Get keywords for the current batch
+      const keywords = await SearchKeyword.find({
+        _id: { $in: currentBatchDoc.keywordIds },
+      });
+
+      // Create keyword progress array
+      const keywordProgress: BatchKeywordProgress[] = keywords.map(
+        (keyword, index) => {
+          const isProcessed = index < currentBatchDoc.processedCount;
+          const isCurrentlyProcessing =
+            index === currentBatchDoc.processedCount &&
+            currentBatchDoc.status === "processing";
+
+          return {
+            keywordId: (keyword._id as mongoose.Types.ObjectId).toString(),
+            keyword: keyword.keyword,
+            status: isProcessed
+              ? "completed"
+              : isCurrentlyProcessing
+                ? "processing"
+                : "pending",
+          };
+        },
+      );
+
+      currentBatch = {
+        batchId: currentBatchDoc.batchId,
+        status: currentBatchDoc.status,
+        keywordProgress,
+        processedCount: currentBatchDoc.processedCount,
+        totalCount: currentBatchDoc.totalCount,
+        errorCount: currentBatchDoc.errorCount,
+        startedAt: currentBatchDoc.startedAt,
+        completedAt: currentBatchDoc.completedAt,
+      };
+
+      // Calculate time estimates if batch is processing
+      if (
+        currentBatchDoc.status === "processing" &&
+        currentBatchDoc.startedAt
+      ) {
+        processingStartTime = currentBatchDoc.startedAt;
+        const elapsedTime = Date.now() - currentBatchDoc.startedAt.getTime();
+
+        if (currentBatchDoc.processedCount > 0) {
+          averageKeywordTime = elapsedTime / currentBatchDoc.processedCount;
+          const remainingKeywords =
+            currentBatchDoc.totalCount - currentBatchDoc.processedCount;
+          estimatedTimeRemaining = remainingKeywords * averageKeywordTime;
+
+          // Add estimated completion time to current batch
+          currentBatch.estimatedCompletion = new Date(
+            Date.now() + estimatedTimeRemaining,
+          );
+        }
+      }
+    }
+
+    // Calculate total estimated time remaining for all batches
+    if (!estimatedTimeRemaining && processingBatches > 0) {
+      // If we don't have current batch timing, use average estimates
+      const remainingKeywords = totalKeywords - processedKeywords;
+      const avgTimePerKeyword = 12000; // 12 seconds average (8s processing + 4s overhead)
+      estimatedTimeRemaining = remainingKeywords * avgTimePerKeyword;
+    }
+
+    // Calculate API calls used (estimate based on processed keywords)
+    const apiCallsUsed = processedKeywords * 2; // Rough estimate: 2 API calls per keyword
+
     return {
       totalBatches,
       pendingBatches,
@@ -361,9 +450,14 @@ export async function getBatchStatus(): Promise<{
       totalKeywords,
       processedKeywords,
       progress,
+      currentBatch,
+      estimatedTimeRemaining,
+      apiCallsUsed,
+      processingStartTime,
+      averageKeywordTime,
     };
   } catch (error) {
-    console.error("❌ Error getting batch status:", error);
+    console.error("❌ Error getting detailed batch status:", error);
     throw error;
   }
 }

@@ -100,3 +100,48 @@ export interface RankingValidationStatus {
   isValid: boolean;
   warnings: string[];
 }
+
+// Enhanced batch progress tracking interfaces
+export interface BatchKeywordProgress {
+  keywordId: string;
+  keyword: string;
+  status: "pending" | "processing" | "completed" | "error";
+  position?: number;
+  error?: string;
+  processedAt?: Date;
+  processingTime?: number; // in milliseconds
+}
+
+export interface BatchProgress {
+  batchId: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  keywordProgress: BatchKeywordProgress[];
+  processedCount: number;
+  totalCount: number;
+  errorCount: number;
+  startedAt?: Date;
+  completedAt?: Date;
+  estimatedCompletion?: Date;
+}
+
+export interface DetailedBatchStatus {
+  totalBatches: number;
+  pendingBatches: number;
+  processingBatches: number;
+  completedBatches: number;
+  failedBatches: number;
+  totalKeywords: number;
+  processedKeywords: number;
+  progress: number;
+  currentBatch?: BatchProgress;
+  estimatedTimeRemaining?: number; // in milliseconds
+  apiCallsUsed?: number;
+  processingStartTime?: Date;
+  averageKeywordTime?: number; // in milliseconds
+}
+
+export interface BulkProgressUpdate {
+  status: DetailedBatchStatus;
+  message: string;
+  timestamp: Date;
+}
