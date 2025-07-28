@@ -124,11 +124,38 @@ export async function sendRankingChangeNotification(
   changes: RankingChangeNotification[],
 ): Promise<void> {
   try {
-    const adminEmail = process.env.OTHER_EMAIL;
+    // Validate required environment variables
+    const senderEmail = process.env.EMAIL; // orders@satxbounce.com
+    const primaryRecipient = process.env.OTHER_EMAIL; // chrisboydstun@gmail.com
+    const secondaryRecipient = process.env.SECOND_EMAIL; // satxbounce@gmail.com
 
-    if (!adminEmail) {
-      throw new Error("Admin email is not configured");
+    if (!senderEmail) {
+      throw new Error(
+        "EMAIL environment variable is not configured (sender email)",
+      );
     }
+
+    if (!primaryRecipient) {
+      throw new Error(
+        "OTHER_EMAIL environment variable is not configured (primary recipient)",
+      );
+    }
+
+    if (!secondaryRecipient) {
+      throw new Error(
+        "SECOND_EMAIL environment variable is not configured (secondary recipient)",
+      );
+    }
+
+    // Create recipient list
+    const recipients = [primaryRecipient, secondaryRecipient];
+
+    console.log("📧 Preparing ranking change notification:", {
+      timestamp: new Date().toISOString(),
+      senderEmail,
+      recipients,
+      changesCount: changes.length,
+    });
 
     // Format the email content
     let text = "Significant changes in search rankings:\n\n";
@@ -156,10 +183,17 @@ export async function sendRankingChangeNotification(
 
     html += "</ul>";
 
-    // Create email data
+    // Add footer with timestamp
+    const footerText = `\n\nThis alert was generated on ${formatDisplayDateCT(new Date())}.`;
+    const footerHtml = `<p style="margin-top: 20px; font-size: 12px; color: #666;">This alert was generated on ${formatDisplayDateCT(new Date())}.</p>`;
+
+    text += footerText;
+    html += footerHtml;
+
+    // Create email data with correct sender and multiple recipients
     const emailData = {
-      to: adminEmail,
-      from: adminEmail,
+      to: recipients,
+      from: senderEmail, // orders@satxbounce.com
       subject: "Search Ranking Changes Alert",
       text,
       html,
@@ -167,6 +201,13 @@ export async function sendRankingChangeNotification(
 
     // Send the email
     await sendEmail(emailData);
+
+    console.log("✅ Ranking change notification sent successfully:", {
+      timestamp: new Date().toISOString(),
+      senderEmail,
+      recipients,
+      changesCount: changes.length,
+    });
   } catch (error) {
     console.error("Error sending ranking change notification:", error);
     throw error;

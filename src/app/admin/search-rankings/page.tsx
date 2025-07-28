@@ -414,106 +414,190 @@ export default function SearchRankingsPage() {
     }
   };
 
-  // Handle bulk ranking check for all keywords
+  // Handle bulk ranking check for all keywords using batch processing
   const handleCheckAllKeywords = async () => {
     try {
       setIsBulkChecking(true);
-      setBulkProgress("Initializing bulk ranking check...");
+      setBulkProgress("Creating batches for all keywords...");
       setBulkResults(null);
 
-      console.log(`🚀 Starting bulk ranking check for all keywords`);
+      console.log(
+        `🚀 Starting batch-based bulk ranking check for all keywords`,
+      );
 
-      // Call the cron endpoint to trigger bulk checking
-      const response = await api.get("/api/v1/search-rankings/cron");
+      // Step 1: Create batches for all active keywords
+      const createResponse = await api.get(
+        "/api/v1/search-rankings/cron?action=create",
+      );
 
-      if (response.data.result) {
-        setBulkResults(response.data.result);
+      if (!createResponse.data.result.success) {
+        throw new Error("Failed to create ranking batches");
+      }
+
+      const { batchesCreated, totalKeywords } = createResponse.data.result;
+      console.log(
+        `📦 Created ${batchesCreated} batches for ${totalKeywords} keywords`,
+      );
+
+      if (batchesCreated === 0) {
+        setBulkProgress("✅ No active keywords to process");
+        setTimeout(() => setBulkProgress(""), 3000);
+        return;
+      }
+
+      setBulkProgress(
+        `Created ${batchesCreated} batches for ${totalKeywords} keywords. Processing...`,
+      );
+
+      // Step 2: Process batches with progress tracking
+      let totalProcessed = 0;
+      let totalErrors = 0;
+      let significantChangesTotal = 0;
+      let batchesCompleted = 0;
+
+      // Poll and process batches until all are complete
+      while (true) {
+        // Get current batch status
+        const statusResponse = await api.get(
+          "/api/v1/search-rankings/cron?action=status",
+        );
+        const status = statusResponse.data.result;
+
+        console.log(`📊 Batch status:`, status);
+
+        // Update progress display
+        const progressPercent =
+          status.totalKeywords > 0
+            ? Math.round(
+                (status.processedKeywords / status.totalKeywords) * 100,
+              )
+            : 0;
+
         setBulkProgress(
-          `✅ Completed! Checked ${response.data.result.checkedCount} keywords`,
+          `Processing batches... ${progressPercent}% complete (${status.processedKeywords}/${status.totalKeywords} keywords)`,
         );
 
-        // Clear all caches to force fresh data
-        setRankingsCache({});
-        console.log(`🗑️ Cleared all ranking caches`);
+        // Check if all batches are complete
+        if (status.pendingBatches === 0 && status.processingBatches === 0) {
+          console.log(`✅ All batches completed`);
 
-        // Refresh current keyword data if one is selected
-        if (selectedKeyword) {
-          // Trigger a refresh of the current keyword's data
-          const { startDate, endDate } = getDateRangeForPeriod(period);
+          setBulkResults({
+            checkedCount: status.processedKeywords,
+            errorCount: totalErrors,
+            significantChanges: significantChangesTotal,
+            notificationsSent: 0, // Will be handled by individual batch processing
+          });
 
-          try {
-            const historyResponse = await api.get(
-              "/api/v1/search-rankings/history",
-              {
-                params: {
-                  keywordId: selectedKeyword,
-                  startDate,
-                  endDate,
-                },
-              },
-            );
+          setBulkProgress(
+            `✅ Completed! Processed ${status.processedKeywords} keywords across ${status.completedBatches} batches`,
+          );
+          break;
+        }
 
-            const newRankings = historyResponse.data.rankings;
-            setRankings(newRankings);
+        // Process the next batch
+        try {
+          const processResponse = await api.get(
+            "/api/v1/search-rankings/cron?action=process",
+          );
+          const processResult = processResponse.data.result;
 
-            // Update validation status from the latest ranking
-            if (newRankings.length > 0) {
-              const latestRanking = newRankings[0];
-              if (latestRanking.metadata) {
-                setValidationStatus({
-                  isValid: latestRanking.metadata.isValidationPassed,
-                  warnings: latestRanking.metadata.validationWarnings,
-                });
-              }
+          if (processResult.success) {
+            totalProcessed += processResult.processedCount;
+            totalErrors += processResult.errorCount;
+            significantChangesTotal += processResult.significantChanges;
+
+            if (processResult.isComplete) {
+              batchesCompleted++;
+              console.log(
+                `✅ Completed batch ${processResult.batchId} (${batchesCompleted}/${batchesCreated})`,
+              );
             }
 
             console.log(
-              `🔄 Refreshed current keyword data with ${newRankings.length} rankings`,
-            );
-          } catch (refreshError) {
-            console.error(
-              "Error refreshing current keyword data:",
-              refreshError,
+              `🔄 Processed batch: ${processResult.processedCount} keywords, ${processResult.errorCount} errors`,
             );
           }
+        } catch (processError) {
+          console.error("Error processing batch:", processError);
+          totalErrors++;
         }
 
-        // Refresh last ranking dates after bulk operation
-        try {
-          const latestResponse = await api.get(
-            "/api/v1/search-rankings/latest",
-          );
-          const dateMap: Record<string, Date> = {};
-          Object.entries(latestResponse.data.lastRankingDates || {}).forEach(
-            ([keywordId, dateStr]) => {
-              dateMap[keywordId] = new Date(dateStr as string);
-            },
-          );
-          setLastRankingDates(dateMap);
-          console.log(
-            `📅 Refreshed last ranking dates for ${Object.keys(dateMap).length} keywords after bulk operation`,
-          );
-        } catch (refreshError) {
-          console.error("Error refreshing last ranking dates:", refreshError);
-        }
-      } else {
-        setBulkProgress("❌ Bulk check completed but no results returned");
+        // Wait 2 seconds before next iteration to avoid overwhelming the API
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
 
-      // Auto-hide progress after 5 seconds
+      // Clear all caches to force fresh data
+      setRankingsCache({});
+      console.log(`🗑️ Cleared all ranking caches`);
+
+      // Refresh current keyword data if one is selected
+      if (selectedKeyword) {
+        try {
+          const { startDate, endDate } = getDateRangeForPeriod(period);
+          const historyResponse = await api.get(
+            "/api/v1/search-rankings/history",
+            {
+              params: {
+                keywordId: selectedKeyword,
+                startDate,
+                endDate,
+              },
+            },
+          );
+
+          const newRankings = historyResponse.data.rankings;
+          setRankings(newRankings);
+
+          // Update validation status from the latest ranking
+          if (newRankings.length > 0) {
+            const latestRanking = newRankings[0];
+            if (latestRanking.metadata) {
+              setValidationStatus({
+                isValid: latestRanking.metadata.isValidationPassed,
+                warnings: latestRanking.metadata.validationWarnings,
+              });
+            }
+          }
+
+          console.log(
+            `🔄 Refreshed current keyword data with ${newRankings.length} rankings`,
+          );
+        } catch (refreshError) {
+          console.error("Error refreshing current keyword data:", refreshError);
+        }
+      }
+
+      // Refresh last ranking dates after bulk operation
+      try {
+        const latestResponse = await api.get("/api/v1/search-rankings/latest");
+        const dateMap: Record<string, Date> = {};
+        Object.entries(latestResponse.data.lastRankingDates || {}).forEach(
+          ([keywordId, dateStr]) => {
+            dateMap[keywordId] = new Date(dateStr as string);
+          },
+        );
+        setLastRankingDates(dateMap);
+        console.log(
+          `📅 Refreshed last ranking dates for ${Object.keys(dateMap).length} keywords after bulk operation`,
+        );
+      } catch (refreshError) {
+        console.error("Error refreshing last ranking dates:", refreshError);
+      }
+
+      // Auto-hide progress after 10 seconds
       setTimeout(() => {
         setBulkProgress("");
-      }, 5000);
+      }, 10000);
     } catch (error: any) {
-      console.error("Error in bulk ranking check:", error);
+      console.error("Error in batch-based bulk ranking check:", error);
       setBulkProgress(
         `❌ Error: ${error.response?.data?.message || error.message}`,
       );
 
-      // Auto-hide error after 10 seconds
+      // Auto-hide error after 15 seconds
       setTimeout(() => {
         setBulkProgress("");
-      }, 10000);
+      }, 15000);
     } finally {
       setIsBulkChecking(false);
     }

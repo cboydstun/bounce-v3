@@ -1,16 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkAllKeywordRankings } from "@/utils/scheduledTasks";
+import {
+  createRankingBatches,
+  processNextBatch,
+  getBatchStatus,
+  cleanupOldBatches,
+} from "@/utils/batchProcessor";
 import dbConnect from "@/lib/db/mongoose";
 import { getCurrentDateCT } from "@/utils/dateUtils";
 import { getToken } from "next-auth/jwt";
 
-// Allow up to 60 seconds for Google API calls with enhanced rate limiting
+// Keep 60 seconds limit - batch processing will work within this constraint
 export const maxDuration = 60;
 
 /**
  * GET /api/v1/search-rankings/cron
- * Cron job endpoint to check all keyword rankings
- * This endpoint is called by Vercel's cron job scheduler at 8 AM Central Time (13:00 UTC) every day
+ * Batch processing cron job endpoint for keyword rankings
+ *
+ * This endpoint handles two types of operations:
+ * 1. Daily batch creation (triggered at 8 AM Central Time)
+ * 2. Batch processing (triggered every 10 minutes to process batches)
+ *
+ * Query parameters:
+ * - action: 'create' to create new batches, 'process' to process next batch, 'status' to get status
  */
 export async function GET(req: NextRequest) {
   const startTime = Date.now();
@@ -74,13 +85,55 @@ export async function GET(req: NextRequest) {
     // Connect to the database
     await dbConnect();
 
-    // Run the enhanced ranking check
-    const result = await checkAllKeywordRankings();
+    // Get action from query parameters
+    const { searchParams } = new URL(req.url);
+    const action = searchParams.get("action") || "process"; // Default to 'process'
+
+    let result;
+
+    switch (action) {
+      case "create":
+        console.log(
+          `🚀 Creating new ranking batches at ${currentTime.toISOString()}`,
+        );
+
+        // Clean up old batches first
+        await cleanupOldBatches();
+
+        // Create new batches for all active keywords
+        result = await createRankingBatches();
+        console.log(`📦 Batch creation result:`, result);
+        break;
+
+      case "process":
+        console.log(
+          `⚡ Processing next ranking batch at ${currentTime.toISOString()}`,
+        );
+
+        // Process the next available batch
+        result = await processNextBatch();
+        console.log(`🔄 Batch processing result:`, result);
+        break;
+
+      case "status":
+        console.log(`📊 Getting batch status at ${currentTime.toISOString()}`);
+
+        // Get current batch status
+        result = await getBatchStatus();
+        console.log(`📈 Batch status:`, result);
+        break;
+
+      default:
+        throw new Error(
+          `Invalid action: ${action}. Use 'create', 'process', or 'status'`,
+        );
+    }
 
     const duration = Date.now() - startTime;
 
     return NextResponse.json({
-      message: "Ranking check completed successfully",
+      message: `Batch ${action} completed successfully`,
+      action,
       timestamp: currentTime.toISOString(),
       duration: `${duration}ms`,
       authMethod,
@@ -88,11 +141,11 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`❌ Error in cron job after ${duration}ms:`, error);
+    console.error(`❌ Error in batch cron job after ${duration}ms:`, error);
 
     return NextResponse.json(
       {
-        message: "Failed to run ranking check",
+        message: "Failed to run batch operation",
         error: error instanceof Error ? error.message : "Unknown error",
         timestamp: currentTime.toISOString(),
         duration: `${duration}ms`,

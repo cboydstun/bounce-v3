@@ -7,8 +7,12 @@
   "outputDirectory": ".next",
   "crons": [
     {
-      "path": "/api/v1/search-rankings/cron",
+      "path": "/api/v1/search-rankings/cron?action=create",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/v1/search-rankings/cron?action=process",
+      "schedule": "*/10 * * * *"
     }
   ]
 }
