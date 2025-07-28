@@ -57,29 +57,19 @@ function ProductGrid({ products }: { products: ProductWithId[] }) {
   );
 }
 
-export function ProductsContent() {
-  const [filteredProducts, setFilteredProducts] = useState<ProductWithId[]>([]);
-  const [initialProducts, setInitialProducts] = useState<ProductWithId[]>([]);
-  const [loading, setLoading] = useState(true);
+interface ProductsContentProps {
+  initialProducts: ProductWithId[];
+}
 
-  // Fetch products on mount
+export function ProductsContent({ initialProducts }: ProductsContentProps) {
+  const [filteredProducts, setFilteredProducts] =
+    useState<ProductWithId[]>(initialProducts);
+  const [loading, setLoading] = useState(false);
+
+  // Set initial products when prop changes
   useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const data = await getProducts();
-        // Extract products array from the response
-        const products = data.products || [];
-        setInitialProducts(products);
-        setFilteredProducts(products);
-      } catch (error) {
-        console.error("Failed to fetch products:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchProducts();
-  }, []);
+    setFilteredProducts(initialProducts);
+  }, [initialProducts]);
 
   if (loading) {
     return (
@@ -122,7 +112,46 @@ export function ProductsContent() {
         </div>
 
         {/* Products Grid */}
-        <ProductGrid products={filteredProducts} />
+        {filteredProducts.length > 0 ? (
+          <ProductGrid products={filteredProducts} />
+        ) : (
+          <div className="text-center py-12">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                No Products Found
+              </h2>
+              <p className="text-white/80 mb-6">
+                We're currently updating our inventory. Please check back soon
+                or contact us directly for availability.
+              </p>
+              <div className="space-y-4">
+                <p className="text-white/90">
+                  <strong>Popular Categories:</strong>
+                </p>
+                <div className="flex flex-wrap justify-center gap-4">
+                  <a
+                    href="/moonbounce"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Moonbounces
+                  </a>
+                  <a
+                    href="/water-slides"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Water Slides
+                  </a>
+                  <a
+                    href="/contact"
+                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Contact Us
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
