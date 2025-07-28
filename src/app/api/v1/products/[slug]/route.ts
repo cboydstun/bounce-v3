@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db/mongoose";
 import Product from "@/models/Product";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { serializeProduct } from "@/utils/serialization";
 
 /**
  * GET /api/v1/products/[slug]
@@ -23,7 +24,11 @@ export async function GET(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    return NextResponse.json(product);
+    // Convert to plain object and serialize to ensure it's safe for JSON response
+    const productObj = product.toObject();
+    const serializedProduct = serializeProduct(productObj);
+
+    return NextResponse.json(serializedProduct);
   } catch (error) {
     console.error("Error fetching product:", error);
     return NextResponse.json(
@@ -74,7 +79,17 @@ export async function PUT(
       { new: true, runValidators: true },
     );
 
-    return NextResponse.json(updatedProduct);
+    if (!updatedProduct) {
+      return NextResponse.json(
+        { error: "Failed to update product" },
+        { status: 500 },
+      );
+    }
+
+    // Serialize the updated product for consistent response format
+    const serializedProduct = serializeProduct(updatedProduct.toObject());
+
+    return NextResponse.json(serializedProduct);
   } catch (error) {
     console.error("Error updating product:", error);
     return NextResponse.json(
