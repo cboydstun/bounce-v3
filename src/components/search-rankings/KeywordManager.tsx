@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { SearchKeyword } from "@/types/searchRanking";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { getCurrentDateCT } from "@/utils/dateUtils";
 
 interface KeywordManagerProps {
   keywords: SearchKeyword[];
@@ -31,10 +32,16 @@ interface KeywordManagerProps {
     estimatedTime: number;
   };
   lastRankingDates?: Record<string, Date>; // keywordId -> most recent ranking date
+  currentPositions?: Record<string, number>; // keywordId -> current ranking position
 }
 
 type TabType = "all" | "active" | "inactive";
-type SortField = "keyword" | "status" | "lastChecked" | "updatedAt";
+type SortField =
+  | "keyword"
+  | "status"
+  | "currentPosition"
+  | "lastChecked"
+  | "updatedAt";
 type SortDirection = "asc" | "desc";
 
 export default function KeywordManager({
@@ -49,6 +56,7 @@ export default function KeywordManager({
   isCheckingRanking,
   queueStatus,
   lastRankingDates,
+  currentPositions,
 }: KeywordManagerProps) {
   // State management
   const [activeTab, setActiveTab] = useState<TabType>("all");
@@ -95,6 +103,10 @@ export default function KeywordManager({
         // Use the actual last ranking dates for sorting
         aValue = lastRankingDates?.[a._id] || new Date(0); // Use epoch if never checked
         bValue = lastRankingDates?.[b._id] || new Date(0);
+      } else if (sortField === "currentPosition") {
+        // Use current positions for sorting (lower position = better ranking)
+        aValue = currentPositions?.[a._id] || 999; // Use high number if not ranked
+        bValue = currentPositions?.[b._id] || 999;
       } else {
         aValue = a[sortField as keyof SearchKeyword];
         bValue = b[sortField as keyof SearchKeyword];
@@ -250,13 +262,48 @@ export default function KeywordManager({
     }
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const getDaysAgo = (date: Date) => {
+    const now = getCurrentDateCT();
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "1 day ago";
+    if (diffDays < 0) return "Today"; // Handle future dates as today
+    return `${diffDays} days ago`;
+  };
+
+  const getPositionDisplay = (keywordId: string) => {
+    const position = currentPositions?.[keywordId];
+
+    if (!position || position === -1 || position === 0) {
+      return {
+        text: "Not ranked",
+        className: "text-gray-500 text-sm",
+      };
+    }
+
+    if (position <= 10) {
+      return {
+        text: `#${position}`,
+        className:
+          "inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800",
+      };
+    }
+
+    if (position <= 20) {
+      return {
+        text: `#${position}`,
+        className:
+          "inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800",
+      };
+    }
+
+    return {
+      text: `#${position}`,
+      className:
+        "inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800",
+    };
   };
 
   return (
@@ -433,7 +480,7 @@ export default function KeywordManager({
           <thead className="bg-gray-50">
             <tr>
               {showBulkActions && (
-                <th className="px-4 py-3 text-left">
+                <th className="w-12 px-3 py-4 text-left">
                   <input
                     type="checkbox"
                     checked={
@@ -446,30 +493,58 @@ export default function KeywordManager({
                 </th>
               )}
               <th
-                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-4 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort("keyword")}
               >
-                Keyword{" "}
-                {sortField === "keyword" &&
-                  (sortDirection === "asc" ? "↑" : "↓")}
+                <div className="flex items-center space-x-1">
+                  <span>Keyword</span>
+                  {sortField === "keyword" && (
+                    <span className="text-indigo-500">
+                      {sortDirection === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </div>
               </th>
               <th
-                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="w-24 px-4 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort("status")}
               >
-                Status{" "}
-                {sortField === "status" &&
-                  (sortDirection === "asc" ? "↑" : "↓")}
+                <div className="flex items-center space-x-1">
+                  <span>Status</span>
+                  {sortField === "status" && (
+                    <span className="text-indigo-500">
+                      {sortDirection === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </div>
               </th>
               <th
-                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="w-32 px-4 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort("currentPosition")}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <span>Position</span>
+                  {sortField === "currentPosition" && (
+                    <span className="text-indigo-500">
+                      {sortDirection === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </div>
+              </th>
+              <th
+                className="w-32 px-4 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort("lastChecked")}
               >
-                Last Checked{" "}
-                {sortField === "lastChecked" &&
-                  (sortDirection === "asc" ? "↑" : "↓")}
+                <div className="flex items-center space-x-1">
+                  <span>Last Checked</span>
+                  {sortField === "lastChecked" && (
+                    <span className="text-indigo-500">
+                      {sortDirection === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </div>
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-28 px-4 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -478,7 +553,7 @@ export default function KeywordManager({
             {filteredKeywords.length === 0 ? (
               <tr>
                 <td
-                  colSpan={showBulkActions ? 5 : 4}
+                  colSpan={showBulkActions ? 6 : 5}
                   className="px-4 py-8 text-center text-gray-500"
                 >
                   {searchQuery
@@ -490,13 +565,15 @@ export default function KeywordManager({
               filteredKeywords.map((keyword) => (
                 <tr
                   key={keyword._id}
-                  className={`hover:bg-gray-50 cursor-pointer ${
-                    selectedKeywordId === keyword._id ? "bg-indigo-50" : ""
+                  className={`hover:bg-gray-50 cursor-pointer transition-colors ${
+                    selectedKeywordId === keyword._id
+                      ? "bg-indigo-50 border-l-4 border-indigo-500"
+                      : ""
                   }`}
                   onClick={() => onSelectKeyword(keyword._id)}
                 >
                   {showBulkActions && (
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-4 align-middle">
                       <input
                         type="checkbox"
                         checked={selectedKeywords.has(keyword._id)}
@@ -508,14 +585,14 @@ export default function KeywordManager({
                       />
                     </td>
                   )}
-                  <td className="px-4 py-4">
-                    <div className="text-sm font-medium text-gray-900">
+                  <td className="px-4 py-4 align-middle">
+                    <div className="text-sm font-medium text-gray-900 leading-5">
                       {keyword.keyword}
                     </div>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4 align-middle">
                     <span
-                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${
                         keyword.isActive
                           ? "bg-green-100 text-green-800"
                           : "bg-gray-100 text-gray-800"
@@ -524,21 +601,68 @@ export default function KeywordManager({
                       {keyword.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-sm text-gray-500">
-                    {lastRankingDates && lastRankingDates[keyword._id]
-                      ? formatDate(lastRankingDates[keyword._id])
-                      : "Never checked"}
+                  <td className="px-4 py-4 align-middle text-center">
+                    <div className="flex justify-center">
+                      {(() => {
+                        const positionDisplay = getPositionDisplay(keyword._id);
+                        return (
+                          <span className={positionDisplay.className}>
+                            {positionDisplay.text}
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="flex space-x-2">
+                  <td className="px-4 py-4 align-middle">
+                    <div className="text-sm text-gray-600 font-medium">
+                      {lastRankingDates && lastRankingDates[keyword._id]
+                        ? getDaysAgo(lastRankingDates[keyword._id])
+                        : "Never checked"}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 align-middle">
+                    <div className="flex justify-center space-x-1">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           onToggleKeyword(keyword._id, !keyword.isActive);
                         }}
-                        className="text-indigo-600 hover:text-indigo-900 text-sm"
+                        className="p-1.5 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md transition-colors"
+                        title={
+                          keyword.isActive
+                            ? "Disable keyword"
+                            : "Enable keyword"
+                        }
                       >
-                        {keyword.isActive ? "Disable" : "Enable"}
+                        {keyword.isActive ? (
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        )}
                       </button>
                       <button
                         onClick={(e) => {
@@ -546,9 +670,22 @@ export default function KeywordManager({
                           onCheckRanking(keyword._id, 20);
                         }}
                         disabled={isCheckingRanking}
-                        className="text-blue-600 hover:text-blue-900 text-sm disabled:text-gray-400"
+                        className="p-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md disabled:text-gray-400 disabled:hover:bg-transparent transition-colors"
+                        title="Check ranking"
                       >
-                        Check
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                          />
+                        </svg>
                       </button>
                       <button
                         onClick={(e) => {
@@ -557,9 +694,22 @@ export default function KeywordManager({
                             onDeleteKeyword(keyword._id);
                           }
                         }}
-                        className="text-red-600 hover:text-red-900 text-sm"
+                        className="p-1.5 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-colors"
+                        title="Delete keyword"
                       >
-                        Delete
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
                       </button>
                     </div>
                   </td>

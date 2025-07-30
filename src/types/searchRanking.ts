@@ -134,10 +134,39 @@ export interface DetailedBatchStatus {
   processedKeywords: number;
   progress: number;
   currentBatch?: BatchProgress;
-  estimatedTimeRemaining?: number; // in milliseconds
-  apiCallsUsed?: number;
+  estimatedTimeRemaining?: number;
+  apiCallsUsed: number;
   processingStartTime?: Date;
-  averageKeywordTime?: number; // in milliseconds
+  averageKeywordTime?: number;
+}
+
+// New job queue types
+export interface JobQueueStatus {
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  total: number;
+  oldestPendingJob?: Date;
+  newestCompletedJob?: Date;
+  estimatedTimeRemaining?: number;
+}
+
+export interface JobProcessResult {
+  success: boolean;
+  jobId?: string;
+  keyword?: string;
+  position?: number;
+  significantChange?: boolean;
+  message: string;
+  nextJobAvailable: boolean;
+}
+
+export interface JobCreationResult {
+  success: boolean;
+  jobsCreated: number;
+  totalKeywords: number;
+  message: string;
 }
 
 export interface BulkProgressUpdate {

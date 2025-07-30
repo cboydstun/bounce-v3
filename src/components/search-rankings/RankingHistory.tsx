@@ -198,7 +198,11 @@ export default function RankingHistory({ rankings }: RankingHistoryProps) {
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">
-        Ranking History
+        {/* Keyword and "Ranking History" */}
+        Ranking History for{" "}
+        <span className="text-indigo-600">
+          {rankings.length > 0 ? rankings[0].keyword : "N/A"}
+        </span>
       </h3>
 
       {rankings.length === 0 ? (

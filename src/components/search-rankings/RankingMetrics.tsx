@@ -276,7 +276,12 @@ export default function RankingMetrics({ rankings }: RankingMetricsProps) {
   return (
     <div className="bg-white shadow rounded-lg p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-gray-900">Ranking Metrics</h3>
+        <h3 className="text-lg font-medium text-gray-900">
+          Ranking Metrics for{" "}
+          <span className="text-indigo-600">
+            {rankings.length > 0 ? rankings[0].keyword : "N/A"}
+          </span>
+        </h3>
         {metrics.trend !== "stable" && (
           <div
             className={`text-sm font-medium px-2 py-1 rounded-full ${

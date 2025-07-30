@@ -21,6 +21,9 @@ import {
   SearchRanking,
   ManagedCompetitor,
   RankingValidationStatus,
+  JobQueueStatus,
+  JobProcessResult,
+  JobCreationResult,
 } from "@/types/searchRanking";
 
 // Type for the rankings cache
@@ -53,6 +56,15 @@ export default function SearchRankingsPage() {
   const [isBulkChecking, setIsBulkChecking] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<string>("");
   const [bulkResults, setBulkResults] = useState<any>(null);
+
+  // Job queue status
+  const [queueStatus, setQueueStatus] = useState<JobQueueStatus | null>(null);
+  const [showQueueStatus, setShowQueueStatus] = useState(false);
+
+  // Current positions for all keywords
+  const [currentPositions, setCurrentPositions] = useState<
+    Record<string, number>
+  >({});
 
   // Cache to store rankings by keyword ID and period
   const [rankingsCache, setRankingsCache] = useState<RankingsCache>({});
@@ -98,7 +110,7 @@ export default function SearchRankingsPage() {
     fetchData();
   }, [router]);
 
-  // Fetch last ranking dates when keywords change
+  // Fetch last ranking dates and current positions when keywords change
   useEffect(() => {
     const fetchLastRankingDates = async () => {
       if (keywords.length === 0) return;
@@ -125,7 +137,11 @@ export default function SearchRankingsPage() {
       }
     };
 
-    fetchLastRankingDates();
+    const fetchData = async () => {
+      await Promise.all([fetchLastRankingDates(), fetchCurrentPositions()]);
+    };
+
+    fetchData();
   }, [keywords]);
 
   // Fetch rankings when selected keyword changes
@@ -403,6 +419,12 @@ export default function SearchRankingsPage() {
         [keywordId]: newRanking.date,
       }));
 
+      // Update current positions with the new ranking
+      setCurrentPositions((prevPositions) => ({
+        ...prevPositions,
+        [keywordId]: newRanking.position,
+      }));
+
       return { success: true };
     } catch (error: any) {
       console.error("Error checking ranking:", error);
@@ -415,116 +437,137 @@ export default function SearchRankingsPage() {
     }
   };
 
-  // Handle bulk ranking check for all keywords using batch processing
+  // Fetch current positions for all keywords
+  const fetchCurrentPositions = async () => {
+    try {
+      const response = await api.get(
+        "/api/v1/search-rankings/current-positions",
+      );
+      setCurrentPositions(response.data.positions || {});
+      console.log(
+        `📊 Fetched current positions for ${Object.keys(response.data.positions || {}).length} keywords`,
+      );
+    } catch (error) {
+      console.error("Error fetching current positions:", error);
+      // Don't set error state for this, as it's not critical
+    }
+  };
+
+  // Fetch job queue status
+  const fetchQueueStatus = async () => {
+    try {
+      const response = await api.get(
+        "/api/v1/search-rankings/cron?action=status",
+      );
+      setQueueStatus(response.data.result);
+    } catch (error) {
+      console.error("Error fetching queue status:", error);
+    }
+  };
+
+  // Handle bulk ranking check for all keywords using job queue processing
   const handleCheckAllKeywords = async () => {
     try {
       setIsBulkChecking(true);
-      setBulkProgress("Creating batches for all keywords...");
+      setBulkProgress("Creating jobs for all keywords...");
       setBulkResults(null);
 
       console.log(
-        `🚀 Starting batch-based bulk ranking check for all keywords`,
+        `🚀 Starting job queue-based bulk ranking check for all keywords`,
       );
 
-      // Step 1: Create batches for all active keywords
+      // Step 1: Create jobs for all active keywords
       const createResponse = await api.get(
         "/api/v1/search-rankings/cron?action=create",
       );
 
       if (!createResponse.data.result.success) {
-        throw new Error("Failed to create ranking batches");
+        throw new Error("Failed to create ranking jobs");
       }
 
-      const { batchesCreated, totalKeywords } = createResponse.data.result;
+      const { jobsCreated, totalKeywords } = createResponse.data.result;
       console.log(
-        `📦 Created ${batchesCreated} batches for ${totalKeywords} keywords`,
+        `📦 Created ${jobsCreated} jobs for ${totalKeywords} keywords`,
       );
 
-      if (batchesCreated === 0) {
+      if (jobsCreated === 0) {
         setBulkProgress("✅ No active keywords to process");
         setTimeout(() => setBulkProgress(""), 3000);
         return;
       }
 
       setBulkProgress(
-        `Created ${batchesCreated} batches for ${totalKeywords} keywords. Processing...`,
+        `Created ${jobsCreated} jobs for ${totalKeywords} keywords. Processing...`,
       );
 
-      // Step 2: Process batches with progress tracking
-      let totalProcessed = 0;
-      let totalErrors = 0;
+      // Step 2: Process jobs with progress tracking
       let significantChangesTotal = 0;
-      let batchesCompleted = 0;
+      let processedJobs = 0;
 
-      // Poll and process batches until all are complete
+      // Poll and process jobs until all are complete
       while (true) {
-        // Get current batch status
+        // Get current queue status
         const statusResponse = await api.get(
           "/api/v1/search-rankings/cron?action=status",
         );
-        const status = statusResponse.data.result;
+        const queueStatus: JobQueueStatus = statusResponse.data.result;
 
-        console.log(`📊 Batch status:`, status);
+        console.log(`📊 Job queue status:`, queueStatus);
 
         // Update progress display
+        const completedJobs = queueStatus.completed + queueStatus.failed;
         const progressPercent =
-          status.totalKeywords > 0
-            ? Math.round(
-                (status.processedKeywords / status.totalKeywords) * 100,
-              )
+          queueStatus.total > 0
+            ? Math.round((completedJobs / queueStatus.total) * 100)
             : 0;
 
         setBulkProgress(
-          `Processing batches... ${progressPercent}% complete (${status.processedKeywords}/${status.totalKeywords} keywords)`,
+          `Processing jobs... ${progressPercent}% complete (${completedJobs}/${queueStatus.total} jobs)`,
         );
 
-        // Check if all batches are complete
-        if (status.pendingBatches === 0 && status.processingBatches === 0) {
-          console.log(`✅ All batches completed`);
+        // Check if all jobs are complete
+        if (queueStatus.pending === 0 && queueStatus.processing === 0) {
+          console.log(`✅ All jobs completed`);
 
           setBulkResults({
-            checkedCount: status.processedKeywords,
-            errorCount: totalErrors,
+            checkedCount: queueStatus.completed,
+            errorCount: queueStatus.failed,
             significantChanges: significantChangesTotal,
-            notificationsSent: 0, // Will be handled by individual batch processing
+            notificationsSent: 0, // Will be handled by individual job processing
           });
 
           setBulkProgress(
-            `✅ Completed! Processed ${status.processedKeywords} keywords across ${status.completedBatches} batches`,
+            `✅ Completed! Processed ${queueStatus.completed} keywords, ${queueStatus.failed} failed`,
           );
           break;
         }
 
-        // Process the next batch
+        // Process the next job
         try {
           const processResponse = await api.get(
             "/api/v1/search-rankings/cron?action=process",
           );
-          const processResult = processResponse.data.result;
+          const processResult: JobProcessResult = processResponse.data.result;
 
           if (processResult.success) {
-            totalProcessed += processResult.processedCount;
-            totalErrors += processResult.errorCount;
-            significantChangesTotal += processResult.significantChanges;
+            processedJobs++;
 
-            if (processResult.isComplete) {
-              batchesCompleted++;
-              console.log(
-                `✅ Completed batch ${processResult.batchId} (${batchesCompleted}/${batchesCreated})`,
-              );
+            if (processResult.significantChange) {
+              significantChangesTotal++;
             }
 
             console.log(
-              `🔄 Processed batch: ${processResult.processedCount} keywords, ${processResult.errorCount} errors`,
+              `🔄 Processed job for "${processResult.keyword}": Position ${processResult.position}`,
             );
+          } else {
+            console.log(`❌ Failed to process job: ${processResult.message}`);
           }
         } catch (processError) {
-          console.error("Error processing batch:", processError);
-          totalErrors++;
+          console.error("Error processing job:", processError);
         }
 
-        // Wait 2 seconds before next iteration to avoid overwhelming the API
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        // Wait 3 seconds before next iteration (jobs process every 2 minutes, so we don't need to poll too frequently)
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       }
 
       // Clear all caches to force fresh data
@@ -568,7 +611,7 @@ export default function SearchRankingsPage() {
         }
       }
 
-      // Refresh last ranking dates after bulk operation
+      // Refresh last ranking dates and current positions after bulk operation
       try {
         const latestResponse = await api.get("/api/v1/search-rankings/latest");
         const dateMap: Record<string, Date> = {};
@@ -585,12 +628,19 @@ export default function SearchRankingsPage() {
         console.error("Error refreshing last ranking dates:", refreshError);
       }
 
+      // Refresh current positions after bulk operation
+      try {
+        await fetchCurrentPositions();
+      } catch (refreshError) {
+        console.error("Error refreshing current positions:", refreshError);
+      }
+
       // Auto-hide progress after 10 seconds
       setTimeout(() => {
         setBulkProgress("");
       }, 10000);
     } catch (error: any) {
-      console.error("Error in batch-based bulk ranking check:", error);
+      console.error("Error in job queue-based bulk ranking check:", error);
       setBulkProgress(
         `❌ Error: ${error.response?.data?.message || error.message}`,
       );
@@ -645,6 +695,32 @@ export default function SearchRankingsPage() {
           </div>
         </div>
         <div className="flex items-center space-x-4">
+          {/* Job Queue Status Button */}
+          <button
+            onClick={() => {
+              setShowQueueStatus(!showQueueStatus);
+              if (!showQueueStatus) {
+                fetchQueueStatus();
+              }
+            }}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            Queue Status
+          </button>
+
           {/* Check All Keywords Button */}
           <button
             onClick={handleCheckAllKeywords}
@@ -702,6 +778,186 @@ export default function SearchRankingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Job Queue Status Dashboard */}
+      {showQueueStatus && (
+        <div className="mb-6">
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Job Queue Status
+              </h3>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={fetchQueueStatus}
+                  className="inline-flex items-center px-3 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <svg
+                    className="w-3 h-3 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Refresh
+                </button>
+                <button
+                  onClick={() => setShowQueueStatus(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {queueStatus ? (
+              <div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {queueStatus.pending}
+                    </div>
+                    <div className="text-sm text-gray-600">Pending</div>
+                  </div>
+                  <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {queueStatus.processing}
+                    </div>
+                    <div className="text-sm text-gray-600">Processing</div>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      {queueStatus.completed}
+                    </div>
+                    <div className="text-sm text-gray-600">Completed</div>
+                  </div>
+                  <div className="text-center p-3 bg-red-50 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600">
+                      {queueStatus.failed}
+                    </div>
+                    <div className="text-sm text-gray-600">Failed</div>
+                  </div>
+                </div>
+
+                {queueStatus.total > 0 && (
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm text-gray-600 mb-1">
+                      <span>Progress</span>
+                      <span>
+                        {Math.round(
+                          ((queueStatus.completed + queueStatus.failed) /
+                            queueStatus.total) *
+                            100,
+                        )}
+                        %
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${Math.round(((queueStatus.completed + queueStatus.failed) / queueStatus.total) * 100)}%`,
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">
+                      Total Jobs:
+                    </span>
+                    <span className="ml-2">{queueStatus.total}</span>
+                  </div>
+                  {queueStatus.estimatedTimeRemaining && (
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Est. Time Remaining:
+                      </span>
+                      <span className="ml-2">
+                        {Math.round(queueStatus.estimatedTimeRemaining / 60000)}{" "}
+                        minutes
+                      </span>
+                    </div>
+                  )}
+                  {queueStatus.oldestPendingJob && (
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Oldest Pending:
+                      </span>
+                      <span className="ml-2">
+                        {new Date(
+                          queueStatus.oldestPendingJob,
+                        ).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {queueStatus.newestCompletedJob && (
+                    <div>
+                      <span className="font-medium text-gray-700">
+                        Last Completed:
+                      </span>
+                      <span className="ml-2">
+                        {new Date(
+                          queueStatus.newestCompletedJob,
+                        ).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {(queueStatus.pending > 0 || queueStatus.processing > 0) && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <div className="flex items-center">
+                      <svg
+                        className="w-5 h-5 text-blue-500 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="text-sm text-blue-800">
+                        Jobs are processed automatically every 2 minutes by the
+                        cron system.
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <LoadingSpinner className="w-6 h-6 mx-auto mb-2" />
+                <p className="text-gray-500">Loading queue status...</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Enhanced Batch Progress Tracker */}
       <BatchProgressTracker
@@ -850,6 +1106,7 @@ export default function SearchRankingsPage() {
             onCheckRanking={handleCheckRanking}
             isCheckingRanking={isCheckingRanking}
             lastRankingDates={lastRankingDates}
+            currentPositions={currentPositions}
           />
         </div>
 
