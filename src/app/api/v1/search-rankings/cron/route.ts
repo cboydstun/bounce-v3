@@ -1,28 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  createRankingBatches,
-  processNextBatch,
-  getBatchStatus,
-  cleanupOldBatches,
-} from "@/utils/batchProcessor";
+  createRankingJobs,
+  processNextJob,
+  getQueueStatus,
+  cleanupOldJobs,
+  resetStuckJobs,
+} from "@/utils/jobQueueProcessor";
 import dbConnect from "@/lib/db/mongoose";
 import { getCurrentDateCT } from "@/utils/dateUtils";
 import { getToken } from "next-auth/jwt";
-import { DetailedBatchStatus } from "@/types/searchRanking";
 
 // Keep 60 seconds limit - batch processing will work within this constraint
 export const maxDuration = 60;
 
 /**
  * GET /api/v1/search-rankings/cron
- * Batch processing cron job endpoint for keyword rankings
+ * Job queue processing cron job endpoint for keyword rankings
  *
- * This endpoint handles two types of operations:
- * 1. Daily batch creation (triggered at 8 AM Central Time)
- * 2. Batch processing (triggered every 10 minutes to process batches)
+ * This endpoint handles multiple types of operations:
+ * 1. Daily job creation (triggered at 8 AM Central Time)
+ * 2. Job processing (triggered every 2 minutes to process individual jobs)
+ * 3. Queue status checking and maintenance
  *
  * Query parameters:
- * - action: 'create' to create new batches, 'process' to process next batch, 'status' to get status
+ * - action: 'create' to create new jobs, 'process' to process next job, 'status' to get status, 'reset' to reset stuck jobs
  */
 export async function GET(req: NextRequest) {
   const startTime = Date.now();
@@ -95,45 +96,53 @@ export async function GET(req: NextRequest) {
     switch (action) {
       case "create":
         console.log(
-          `🚀 Creating new ranking batches at ${currentTime.toISOString()}`,
+          `🚀 Creating new ranking jobs at ${currentTime.toISOString()}`,
         );
 
-        // Clean up old batches first
-        await cleanupOldBatches();
+        // Clean up old jobs first
+        await cleanupOldJobs();
 
-        // Create new batches for all active keywords
-        result = await createRankingBatches();
-        console.log(`📦 Batch creation result:`, result);
+        // Create new jobs for all active keywords
+        result = await createRankingJobs();
+        console.log(`📦 Job creation result:`, result);
         break;
 
       case "process":
         console.log(
-          `⚡ Processing next ranking batch at ${currentTime.toISOString()}`,
+          `⚡ Processing next ranking job at ${currentTime.toISOString()}`,
         );
 
-        // Process the next available batch
-        result = await processNextBatch();
-        console.log(`🔄 Batch processing result:`, result);
+        // Process the next available job
+        result = await processNextJob();
+        console.log(`🔄 Job processing result:`, result);
         break;
 
       case "status":
-        console.log(`📊 Getting batch status at ${currentTime.toISOString()}`);
+        console.log(`📊 Getting queue status at ${currentTime.toISOString()}`);
 
-        // Get current batch status
-        result = await getBatchStatus();
-        console.log(`📈 Batch status:`, result);
+        // Get current queue status
+        result = await getQueueStatus();
+        console.log(`📈 Queue status:`, result);
+        break;
+
+      case "reset":
+        console.log(`🔄 Resetting stuck jobs at ${currentTime.toISOString()}`);
+
+        // Reset stuck processing jobs
+        result = await resetStuckJobs();
+        console.log(`🔄 Reset result:`, result);
         break;
 
       default:
         throw new Error(
-          `Invalid action: ${action}. Use 'create', 'process', or 'status'`,
+          `Invalid action: ${action}. Use 'create', 'process', 'status', or 'reset'`,
         );
     }
 
     const duration = Date.now() - startTime;
 
     return NextResponse.json({
-      message: `Batch ${action} completed successfully`,
+      message: `Job queue ${action} completed successfully`,
       action,
       timestamp: currentTime.toISOString(),
       duration: `${duration}ms`,
@@ -142,11 +151,14 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`❌ Error in batch cron job after ${duration}ms:`, error);
+    console.error(
+      `❌ Error in job queue operation after ${duration}ms:`,
+      error,
+    );
 
     return NextResponse.json(
       {
-        message: "Failed to run batch operation",
+        message: "Failed to run job queue operation",
         error: error instanceof Error ? error.message : "Unknown error",
         timestamp: currentTime.toISOString(),
         duration: `${duration}ms`,

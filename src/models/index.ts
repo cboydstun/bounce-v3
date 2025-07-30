@@ -23,6 +23,7 @@ import TaskPaymentHistory from "./TaskPaymentHistory";
 import AIInsight from "./AIInsight";
 import AIInsightSession from "./AIInsightSession";
 import { RankingBatch } from "./RankingBatch";
+import RankingJob from "./RankingJob";
 
 // Export models for convenience
 export {
@@ -49,6 +50,7 @@ export {
   AIInsight,
   AIInsightSession,
   RankingBatch,
+  RankingJob,
 };
 
 // This file ensures all models are registered together
