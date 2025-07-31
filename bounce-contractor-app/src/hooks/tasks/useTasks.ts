@@ -3,6 +3,7 @@ import { apiClient } from "../../services/api/apiClient";
 import { Task, TaskFilters, TaskSearchParams } from "../../types/task.types";
 import { ApiResponse, PaginatedResponse } from "../../types/api.types";
 import { useGeolocation } from "../location/useGeolocation";
+import { useAuthStore } from "../../store/authStore";
 import { APP_CONFIG } from "../../config/app.config";
 
 // Helper function to convert TypeScript status values to API format
@@ -38,8 +39,12 @@ interface TasksResponse {
 export const useTasks = (options: UseTasksOptions = {}) => {
   const { filters, enabled = true, refetchInterval } = options;
   const { location } = useGeolocation();
+  const { isAuthenticated, tokens } = useAuthStore();
 
-  const queryKey = ["tasks", "available", filters, location];
+  // Check if auth is ready
+  const isAuthReady = isAuthenticated && !!tokens?.accessToken;
+
+  const queryKey = ["tasks", "available", filters, location, isAuthReady];
 
   return useQuery({
     queryKey,
@@ -100,7 +105,7 @@ export const useTasks = (options: UseTasksOptions = {}) => {
 
       return response.data!;
     },
-    enabled,
+    enabled: enabled && isAuthReady,
     refetchInterval: refetchInterval || APP_CONFIG.TASK_REFRESH_INTERVAL,
     staleTime: 30000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
@@ -110,8 +115,19 @@ export const useTasks = (options: UseTasksOptions = {}) => {
 export const useInfiniteTasks = (options: UseTasksOptions = {}) => {
   const { filters, enabled = true } = options;
   const { location } = useGeolocation();
+  const { isAuthenticated, tokens } = useAuthStore();
 
-  const queryKey = ["tasks", "available", "infinite", filters, location];
+  // Check if auth is ready
+  const isAuthReady = isAuthenticated && !!tokens?.accessToken;
+
+  const queryKey = [
+    "tasks",
+    "available",
+    "infinite",
+    filters,
+    location,
+    isAuthReady,
+  ];
 
   return useInfiniteQuery({
     queryKey,
@@ -172,7 +188,7 @@ export const useInfiniteTasks = (options: UseTasksOptions = {}) => {
 
       return response.data!;
     },
-    enabled,
+    enabled: enabled && isAuthReady,
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       const { page, pages } = lastPage.pagination;
@@ -185,8 +201,12 @@ export const useInfiniteTasks = (options: UseTasksOptions = {}) => {
 
 export const useMyTasks = (options: UseTasksOptions = {}) => {
   const { filters, enabled = true, refetchInterval } = options;
+  const { isAuthenticated, tokens } = useAuthStore();
 
-  const queryKey = ["tasks", "my-tasks", filters];
+  // Check if auth is ready
+  const isAuthReady = isAuthenticated && !!tokens?.accessToken;
+
+  const queryKey = ["tasks", "my-tasks", filters, isAuthReady];
 
   return useQuery({
     queryKey,
@@ -219,7 +239,7 @@ export const useMyTasks = (options: UseTasksOptions = {}) => {
 
       return response.data!;
     },
-    enabled,
+    enabled: enabled && isAuthReady,
     refetchInterval: refetchInterval || APP_CONFIG.TASK_REFRESH_INTERVAL,
     staleTime: 15000, // 15 seconds for active tasks
     gcTime: 5 * 60 * 1000,
@@ -227,10 +247,22 @@ export const useMyTasks = (options: UseTasksOptions = {}) => {
 };
 
 export const useTaskById = (taskId: string, enabled = true) => {
+  const { isAuthenticated, tokens } = useAuthStore();
+
+  // Check if auth is ready - we need both authentication status and valid tokens
+  const isAuthReady = isAuthenticated && !!tokens?.accessToken;
+
   return useQuery({
-    queryKey: ["tasks", "detail", taskId],
+    queryKey: ["tasks", "detail", taskId, isAuthReady],
     queryFn: async (): Promise<Task> => {
       try {
+        console.log(`🔍 [useTaskById] Fetching task:`, {
+          taskId,
+          isAuthenticated,
+          hasAccessToken: !!tokens?.accessToken,
+          isAuthReady,
+        });
+
         const response: ApiResponse<Task> = await apiClient.get(
           `/tasks/${taskId}`,
         );
@@ -238,24 +270,58 @@ export const useTaskById = (taskId: string, enabled = true) => {
         if (!response.success) {
           const errorMessage =
             response.error || response.message || "Failed to fetch task";
-          console.error(`❌ Task fetch failed:`, errorMessage);
+          console.error(`❌ Task fetch failed:`, {
+            taskId,
+            errorMessage,
+            statusCode: (response as any)?.statusCode,
+            isAuthReady,
+            fullResponse: response,
+          });
+
+          // Distinguish between auth errors and actual task not found
+          if (
+            (response as any)?.statusCode === 401 ||
+            (response as any)?.statusCode === 403
+          ) {
+            throw new Error("Authentication required. Please log in again.");
+          }
+
           throw new Error(errorMessage);
         }
 
         if (!response.data) {
-          console.error(`❌ Task data is null/undefined`);
+          console.error(`❌ Task data is null/undefined for taskId: ${taskId}`);
           throw new Error("Task data not found");
         }
 
+        console.log(`✅ [useTaskById] Successfully fetched task:`, {
+          taskId,
+          taskTitle: response.data.title,
+          taskStatus: response.data.status,
+        });
+
         return response.data;
       } catch (error) {
-        console.error(`💥 Task fetch error:`, error);
+        console.error(`💥 Task fetch error:`, {
+          taskId,
+          error: (error as Error).message,
+          isAuthReady,
+        });
         throw error;
       }
     },
-    enabled: enabled && !!taskId,
+    enabled: enabled && !!taskId && isAuthReady,
     staleTime: 30000,
     gcTime: 5 * 60 * 1000,
+    retry: (failureCount, error) => {
+      // Don't retry auth errors
+      if ((error as Error).message.includes("Authentication required")) {
+        return false;
+      }
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 

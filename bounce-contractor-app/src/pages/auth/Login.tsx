@@ -22,6 +22,7 @@ import { LanguageToggle } from "../../components/common/LanguageSwitcher";
 import { useBiometric } from "../../hooks/auth/useBiometric";
 import { BiometryType } from "../../types/biometric.types";
 import BiometricPrompt from "../../components/auth/BiometricPrompt";
+import { useLoginNotifications } from "../../hooks/auth/useLoginNotifications";
 
 const Login: React.FC = () => {
   const history = useHistory();
@@ -47,6 +48,9 @@ const Login: React.FC = () => {
   const [shouldShowBiometricSetup, setShouldShowBiometricSetup] =
     useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
+
+  // Notification permission hook
+  const { requestNotificationPermission } = useLoginNotifications();
 
   // Check if biometric setup should be offered on mount
   useEffect(() => {
@@ -98,6 +102,20 @@ const Login: React.FC = () => {
     try {
       await loginWithBiometric();
 
+      // Request notification permission after successful biometric login (non-blocking)
+      requestNotificationPermission()
+        .then((result) => {
+          if (result.success) {
+            setToastMessage(result.message);
+            setShowToast(true);
+          }
+          // Don't show error messages for notification failures - just log them
+        })
+        .catch((error) => {
+          console.log("Notification permission request failed:", error);
+          // Silently fail - don't interrupt the login flow
+        });
+
       // Redirect to intended page or default
       const from = location.state?.from?.pathname || "/tasks/available";
       history.replace(from);
@@ -136,6 +154,20 @@ const Login: React.FC = () => {
 
     try {
       await login(credentials);
+
+      // Request notification permission after successful login (non-blocking)
+      requestNotificationPermission()
+        .then((result) => {
+          if (result.success) {
+            setToastMessage(result.message);
+            setShowToast(true);
+          }
+          // Don't show error messages for notification failures - just log them
+        })
+        .catch((error) => {
+          console.log("Notification permission request failed:", error);
+          // Silently fail - don't interrupt the login flow
+        });
 
       // Redirect to intended page or default
       const from = location.state?.from?.pathname || "/tasks/available";

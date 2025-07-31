@@ -60,11 +60,19 @@ const TaskDetails: React.FC = () => {
   const claimTaskMutation = useClaimTask();
   const updateStatusMutation = useUpdateTaskStatus();
 
-  // Get authentication state for debugging
-  const { user, isAuthenticated } = useAuthStore();
+  // Get authentication state
+  const { user, isAuthenticated, tokens } = useAuthStore();
 
-  // Fetch task data from API
-  const { data: task, isLoading, isError, error } = useTaskById(id!);
+  // Check if auth is ready - we need both authentication status and valid tokens
+  const isAuthReady = isAuthenticated && !!tokens?.accessToken;
+
+  // Fetch task data from API - only when auth is ready
+  const {
+    data: task,
+    isLoading,
+    isError,
+    error,
+  } = useTaskById(id!, isAuthReady);
 
   const handleClaimTask = async () => {
     try {
@@ -165,7 +173,8 @@ const TaskDetails: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  // Show loading while auth is initializing or task is loading
+  if (!isAuthReady || isLoading) {
     return (
       <IonPage>
         <IonHeader>
@@ -177,15 +186,23 @@ const TaskDetails: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <IonContent>
-          <div className="flex justify-center items-center h-full">
+          <div className="flex flex-col justify-center items-center h-full p-8">
             <IonSpinner name="crescent" />
+            <IonText className="text-sm text-gray-500 mt-4 text-center">
+              {!isAuthReady ? "Authenticating..." : "Loading task details..."}
+            </IonText>
           </div>
         </IonContent>
       </IonPage>
     );
   }
 
+  // Handle errors with more specific messaging
   if (isError || !task) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    const isAuthError = errorMessage.includes("Authentication required");
+
     return (
       <IonPage>
         <IonHeader>
@@ -198,13 +215,31 @@ const TaskDetails: React.FC = () => {
         </IonHeader>
         <IonContent>
           <div className="flex flex-col items-center justify-center h-full p-8">
-            <div className="text-4xl mb-4">⚠️</div>
+            <div className="text-4xl mb-4">{isAuthError ? "🔐" : "⚠️"}</div>
             <IonText className="text-lg font-medium text-gray-900">
-              Task not found
+              {isAuthError ? "Authentication Required" : "Task not found"}
             </IonText>
             <IonText className="text-sm text-gray-500 text-center mt-2">
-              The task you're looking for doesn't exist or has been removed.
+              {isAuthError
+                ? "Please log in again to view this task."
+                : "The task you're looking for doesn't exist or has been removed."}
             </IonText>
+            {isAuthError && (
+              <IonButton
+                fill="outline"
+                className="mt-4"
+                onClick={() => history.push("/login")}
+              >
+                Go to Login
+              </IonButton>
+            )}
+            <IonButton
+              fill="clear"
+              className="mt-2"
+              onClick={() => history.push("/available-tasks")}
+            >
+              Back to Tasks
+            </IonButton>
           </div>
         </IonContent>
       </IonPage>

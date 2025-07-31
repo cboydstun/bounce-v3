@@ -206,10 +206,10 @@ The app configuration is located in `src/config/app.config.ts`. You can modify:
 ### 🚧 In Progress / Planned
 
 - [ ] Task discovery and management
-- [ ] Real-time WebSocket integration
+- [x] Real-time WebSocket integration
 - [ ] Location services and geolocation
 - [ ] Photo upload and camera integration
-- [ ] Push notifications
+- [x] Push notifications with audio alerts
 - [ ] Biometric authentication
 - [ ] QuickBooks integration
 - [ ] Offline support and sync

@@ -27,25 +27,99 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-XXXXXXXXXX",
 };
 
-// Initialize Firebase
-export const firebaseApp = initializeApp(firebaseConfig);
+// Validation helper
+export const validateFirebaseConfig = (): boolean => {
+  const requiredFields = [
+    "apiKey",
+    "authDomain",
+    "projectId",
+    "storageBucket",
+    "messagingSenderId",
+    "appId",
+  ];
+
+  const missingFields = requiredFields.filter(
+    (field) =>
+      !firebaseConfig[field as keyof typeof firebaseConfig] ||
+      firebaseConfig[field as keyof typeof firebaseConfig] ===
+        `demo-${field.toLowerCase().replace(/([A-Z])/g, "-$1")}` ||
+      (firebaseConfig[field as keyof typeof firebaseConfig] as string).includes(
+        "demo",
+      ),
+  );
+
+  if (missingFields.length > 0) {
+    console.warn(
+      "Firebase configuration incomplete. Missing or demo values for:",
+      missingFields,
+    );
+    return false;
+  }
+
+  return true;
+};
+
+// Check if Firebase config is valid before initializing
+const isFirebaseConfigValid = validateFirebaseConfig();
+
+// Initialize Firebase only if config is valid
+export const firebaseApp = isFirebaseConfigValid
+  ? initializeApp(firebaseConfig)
+  : null;
 
 // Initialize Firebase Cloud Messaging
+// Initialize services synchronously to avoid timing issues
 let messaging: any = null;
 let analytics: any = null;
 
-// Initialize services only in browser environment
-if (typeof window !== "undefined") {
+// Only initialize if we have a valid config and we're in a browser environment
+if (typeof window !== "undefined" && firebaseApp && isFirebaseConfigValid) {
   try {
-    messaging = getMessaging(firebaseApp);
+    // Try to import Capacitor synchronously if available
+    let isNativePlatform = false;
+    try {
+      // Check if we're in a Capacitor environment
+      isNativePlatform =
+        (window as any).Capacitor?.isNativePlatform?.() || false;
+    } catch {
+      // If Capacitor is not available, assume web platform
+      isNativePlatform = false;
+    }
 
-    // Initialize Analytics only in production
-    if (APP_CONFIG.IS_PRODUCTION) {
-      analytics = getAnalytics(firebaseApp);
+    // Only initialize Firebase messaging on web platforms
+    if (!isNativePlatform) {
+      try {
+        messaging = getMessaging(firebaseApp);
+        console.log("Firebase web messaging initialized successfully");
+      } catch (error) {
+        console.warn("Firebase messaging initialization failed:", error);
+        messaging = null;
+      }
+
+      // Initialize Analytics only in production and only on web
+      if (APP_CONFIG.IS_PRODUCTION) {
+        try {
+          analytics = getAnalytics(firebaseApp);
+          console.log("Firebase analytics initialized successfully");
+        } catch (error) {
+          console.warn("Firebase analytics initialization failed:", error);
+          analytics = null;
+        }
+      }
+    } else {
+      console.info(
+        "Native platform detected - skipping Firebase web messaging initialization",
+      );
     }
   } catch (error) {
     console.warn("Firebase services initialization failed:", error);
+    messaging = null;
+    analytics = null;
   }
+} else if (!isFirebaseConfigValid) {
+  console.info(
+    "Firebase not initialized - using demo/invalid configuration. Push notifications will be disabled.",
+  );
 }
 
 export { messaging, analytics };
@@ -198,35 +272,6 @@ export const getFirebaseConfig = () => ({
   // Don't expose sensitive keys in logs
   apiKey: firebaseConfig.apiKey ? "[CONFIGURED]" : "[NOT SET]",
 });
-
-// Validation helper
-export const validateFirebaseConfig = (): boolean => {
-  const requiredFields = [
-    "apiKey",
-    "authDomain",
-    "projectId",
-    "storageBucket",
-    "messagingSenderId",
-    "appId",
-  ];
-
-  const missingFields = requiredFields.filter(
-    (field) =>
-      !firebaseConfig[field as keyof typeof firebaseConfig] ||
-      firebaseConfig[field as keyof typeof firebaseConfig] ===
-        `demo-${field.toLowerCase().replace(/([A-Z])/g, "-$1")}`,
-  );
-
-  if (missingFields.length > 0) {
-    console.warn(
-      "Firebase configuration incomplete. Missing or demo values for:",
-      missingFields,
-    );
-    return false;
-  }
-
-  return true;
-};
 
 // Initialize validation check
 if (APP_CONFIG.IS_DEVELOPMENT) {

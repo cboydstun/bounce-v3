@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { Capacitor } from "@capacitor/core";
 import {
   pushNotificationService,
@@ -6,6 +6,7 @@ import {
 } from "../../services/notifications/pushNotifications";
 import { firebaseMessaging } from "../../config/firebase.config";
 import { useRealtimeStore } from "../../store/realtimeStore";
+import { errorLogger } from "../../services/debug/errorLogger";
 
 export interface UsePushNotificationsOptions {
   autoInitialize?: boolean;
@@ -30,130 +31,237 @@ export interface UsePushNotificationsReturn {
 }
 
 /**
- * Hook for managing push notifications
+ * Hook for managing push notifications that consumes global singleton state
  */
 export const usePushNotifications = (
   options: UsePushNotificationsOptions = {},
 ): UsePushNotificationsReturn => {
   const { autoInitialize = true, autoRequestPermission = false } = options;
 
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Global state from service
+  const [globalState, setGlobalState] = useState(() =>
+    pushNotificationService.getGlobalState(),
+  );
+
+  // Local state for UI-specific data
   const [permissionStatus, setPermissionStatus] = useState<
     NotificationPermission | "unknown"
   >("unknown");
   const [fcmToken, setFcmToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Refs for cleanup and preventing race conditions
+  const isMountedRef = useRef(true);
+  const cleanupFunctionsRef = useRef<Array<() => void>>([]);
 
   const { addNotification } = useRealtimeStore();
 
-  // Check if push notifications are supported
-  const isSupported = pushNotificationService.isSupported();
-  const isEnabled = pushNotificationService.isEnabled();
+  // Memoized values to prevent unnecessary re-renders
+  const isSupported = useMemo(() => pushNotificationService.isSupported(), []);
+  const isEnabled = useMemo(() => pushNotificationService.isEnabled(), []);
 
   /**
-   * Initialize push notifications
+   * Safe state update that checks if component is still mounted
+   */
+  const safeSetState = useCallback((updater: () => void) => {
+    if (isMountedRef.current) {
+      updater();
+    }
+  }, []);
+
+  /**
+   * Initialize push notifications (delegates to global service)
    */
   const initialize = useCallback(async (): Promise<void> => {
-    if (!isSupported) {
-      setError("Push notifications are not supported on this device");
+    if (!isMountedRef.current) return;
+
+    errorLogger.logInfo("usePushNotifications", "Hook initialize called", {
+      isSupported,
+      globalInitialized: globalState.isInitialized,
+      globalInitializing: globalState.isInitializing,
+    });
+
+    // If already initialized globally, just sync local state
+    if (globalState.isInitialized) {
+      errorLogger.logInfo(
+        "usePushNotifications",
+        "Already initialized globally - syncing local state",
+      );
+      safeSetState(() => {
+        const token = pushNotificationService.getToken();
+        const permission = pushNotificationService.getPermissionStatus();
+        setFcmToken(token);
+        setPermissionStatus(permission);
+      });
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
+    // If currently initializing globally, don't start another
+    if (globalState.isInitializing) {
+      errorLogger.logInfo(
+        "usePushNotifications",
+        "Global initialization in progress - waiting",
+      );
+      return;
+    }
+
+    if (!isSupported) {
+      const errorMessage =
+        "Push notifications are not supported on this device";
+      errorLogger.logWarn("usePushNotifications", errorMessage);
+      return;
+    }
+
+    safeSetState(() => setIsLoading(true));
 
     try {
+      // Delegate to global service
       await pushNotificationService.initialize();
-      setIsInitialized(true);
 
-      // Get FCM token
-      const token = pushNotificationService.getToken();
-      setFcmToken(token);
+      if (!isMountedRef.current) return;
 
-      // Update permission status
-      const permission = pushNotificationService.getPermissionStatus();
-      setPermissionStatus(permission);
+      // Sync local state after successful initialization
+      safeSetState(() => {
+        const token = pushNotificationService.getToken();
+        const permission = pushNotificationService.getPermissionStatus();
+        setFcmToken(token);
+        setPermissionStatus(permission);
+      });
 
-      console.log("Push notifications initialized successfully");
+      errorLogger.logInfo(
+        "usePushNotifications",
+        "Hook initialization completed successfully",
+      );
     } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Failed to initialize push notifications";
-      setError(errorMessage);
-      console.error("Push notification initialization failed:", err);
+      if (!isMountedRef.current) return;
+
+      errorLogger.logError(
+        "usePushNotifications",
+        "Hook initialization failed",
+        err,
+      );
+      // Error is already handled by global state
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        safeSetState(() => setIsLoading(false));
+      }
     }
-  }, [isSupported]);
+  }, [
+    isSupported,
+    globalState.isInitialized,
+    globalState.isInitializing,
+    safeSetState,
+  ]);
 
   /**
-   * Request notification permission and get FCM token
+   * Request notification permission
    */
   const requestPermission = useCallback(async (): Promise<boolean> => {
-    setIsLoading(true);
-    setError(null);
+    if (!isMountedRef.current) return false;
+
+    safeSetState(() => setIsLoading(true));
 
     try {
       const granted = await pushNotificationService.requestPermission();
-      if (granted) {
-        // Update permission status
-        const permission = pushNotificationService.getPermissionStatus();
-        setPermissionStatus(permission);
 
-        // Get FCM token now that permission is granted
-        if (Capacitor.isNativePlatform()) {
-          // For native platforms, token will be obtained automatically
-          const token = pushNotificationService.getToken();
-          setFcmToken(token);
-        } else {
-          // For web, request token with permission
-          const token = await firebaseMessaging.requestPermissionAndGetToken();
-          if (token) {
-            setFcmToken(token);
-            // Update the service's token
-            (pushNotificationService as any).fcmToken = token;
-            // Register with server
-            await (pushNotificationService as any).registerTokenWithServer(
-              token,
+      if (!isMountedRef.current) return granted;
+
+      if (granted) {
+        // Update local state
+        const permission = pushNotificationService.getPermissionStatus();
+        safeSetState(() => setPermissionStatus(permission));
+
+        // Get FCM token for web platforms
+        if (!Capacitor.isNativePlatform()) {
+          try {
+            const token =
+              await firebaseMessaging.requestPermissionAndGetToken();
+            if (token && isMountedRef.current) {
+              safeSetState(() => setFcmToken(token));
+              // Update the service's token
+              (pushNotificationService as any).fcmToken = token;
+              // Register with server
+              await (pushNotificationService as any).registerTokenWithServer(
+                token,
+              );
+            }
+          } catch (tokenError) {
+            errorLogger.logError(
+              "usePushNotifications",
+              "Failed to get FCM token after permission granted",
+              tokenError,
             );
+          }
+        } else {
+          // For native platforms, token should be available from the service
+          const token = pushNotificationService.getToken();
+          if (token && isMountedRef.current) {
+            safeSetState(() => setFcmToken(token));
           }
         }
       }
 
       return granted;
     } catch (err) {
+      if (!isMountedRef.current) return false;
+
       const errorMessage =
         err instanceof Error
           ? err.message
           : "Failed to request notification permission";
-      setError(errorMessage);
-      console.error("Permission request failed:", err);
+      errorLogger.logError(
+        "usePushNotifications",
+        "Permission request failed",
+        err,
+      );
       return false;
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        safeSetState(() => setIsLoading(false));
+      }
     }
-  }, []);
+  }, [safeSetState]);
 
   /**
    * Enable/disable notifications
    */
   const setEnabled = useCallback((enabled: boolean): void => {
-    pushNotificationService.setEnabled(enabled);
+    try {
+      pushNotificationService.setEnabled(enabled);
+      errorLogger.logInfo(
+        "usePushNotifications",
+        `Notifications ${enabled ? "enabled" : "disabled"}`,
+      );
+    } catch (err) {
+      errorLogger.logError(
+        "usePushNotifications",
+        "Failed to set notification enabled state",
+        err,
+      );
+    }
   }, []);
 
   /**
    * Test notification
    */
   const testNotification = useCallback(async (): Promise<void> => {
+    if (!isMountedRef.current) return;
+
     try {
       await pushNotificationService.testNotification();
+      errorLogger.logInfo(
+        "usePushNotifications",
+        "Test notification sent successfully",
+      );
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to send test notification";
-      setError(errorMessage);
-      console.error("Test notification failed:", err);
+      errorLogger.logError(
+        "usePushNotifications",
+        "Test notification failed",
+        err,
+      );
+      throw err;
     }
   }, []);
 
@@ -162,124 +270,228 @@ export const usePushNotifications = (
    */
   const updateConfig = useCallback(
     (config: Partial<PushNotificationConfig>): void => {
-      pushNotificationService.updateConfig(config);
+      try {
+        pushNotificationService.updateConfig(config);
+        errorLogger.logInfo(
+          "usePushNotifications",
+          "Configuration updated",
+          config,
+        );
+      } catch (err) {
+        errorLogger.logError(
+          "usePushNotifications",
+          "Failed to update configuration",
+          err,
+        );
+      }
     },
     [],
   );
 
-  // Auto-initialize on mount
+  // Subscribe to global state changes
   useEffect(() => {
-    if (autoInitialize && isSupported && !isInitialized) {
-      initialize().catch(console.error);
+    const unsubscribe = pushNotificationService.onGlobalStateChange(
+      (newState) => {
+        if (isMountedRef.current) {
+          setGlobalState(newState);
+
+          // Sync local state when global state changes
+          if (newState.isInitialized) {
+            const token = pushNotificationService.getToken();
+            const permission = pushNotificationService.getPermissionStatus();
+            setFcmToken(token);
+            setPermissionStatus(permission);
+          }
+        }
+      },
+    );
+
+    cleanupFunctionsRef.current.push(unsubscribe);
+    return unsubscribe;
+  }, []);
+
+  // DISABLED: Auto-initialization to prevent cascading failures and render loops
+  // Auto-initialization is now manual only to prevent crashes
+  useEffect(() => {
+    // Only log that auto-initialization is disabled
+    if (
+      autoInitialize &&
+      isSupported &&
+      !globalState.isInitialized &&
+      !globalState.isInitializing
+    ) {
+      errorLogger.logInfo(
+        "usePushNotifications",
+        "Auto-initialization disabled to prevent crashes - use manual initialization",
+      );
     }
-  }, [autoInitialize, isSupported, isInitialized, initialize]);
+  }, [
+    autoInitialize,
+    isSupported,
+    globalState.isInitialized,
+    globalState.isInitializing,
+  ]);
 
   // Auto-request permission
   useEffect(() => {
     if (
       autoRequestPermission &&
       isSupported &&
+      globalState.isInitialized &&
       permissionStatus === "default"
     ) {
-      requestPermission().catch(console.error);
+      requestPermission().catch((error) => {
+        errorLogger.logError(
+          "usePushNotifications",
+          "Auto-permission request failed",
+          error,
+        );
+      });
     }
-  }, [autoRequestPermission, isSupported, permissionStatus, requestPermission]);
+  }, [
+    autoRequestPermission,
+    isSupported,
+    globalState.isInitialized,
+    permissionStatus,
+    requestPermission,
+  ]);
 
-  // Set up notification event listeners
+  // Set up notification event listeners (only once when initialized)
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!globalState.isInitialized || !isMountedRef.current) return;
 
-    // Listen for notification received
-    const unsubscribeReceived = pushNotificationService.on(
-      "notificationReceived",
-      (notification) => {
-        console.log("Push notification received:", notification);
+    try {
+      // Listen for notification received
+      const unsubscribeReceived = pushNotificationService.on(
+        "notificationReceived",
+        (notification) => {
+          if (!isMountedRef.current) return;
 
-        // Add to realtime store
-        addNotification({
-          type: "notification:personal",
-          title: notification.title || "New Notification",
-          message: notification.body || "",
-          data: notification.data,
-          priority: "medium",
+          errorLogger.logInfo(
+            "usePushNotifications",
+            "Push notification received",
+            {
+              title: notification.title,
+              hasData: !!notification.data,
+            },
+          );
+
+          // Add to realtime store
+          addNotification({
+            type: "notification:personal",
+            title: notification.title || "New Notification",
+            message: notification.body || "",
+            data: notification.data,
+            priority: "medium",
+          });
+        },
+      );
+
+      // Listen for notification tapped
+      const unsubscribeTapped = pushNotificationService.on(
+        "notificationTapped",
+        (notification) => {
+          if (!isMountedRef.current) return;
+
+          errorLogger.logInfo(
+            "usePushNotifications",
+            "Push notification tapped",
+            {
+              hasData: !!notification.data,
+            },
+          );
+
+          // Handle notification tap - could navigate to specific screen
+          if (notification.data?.taskId) {
+            errorLogger.logInfo("usePushNotifications", "Navigate to task", {
+              taskId: notification.data.taskId,
+            });
+          }
+        },
+      );
+
+      // Store cleanup functions
+      cleanupFunctionsRef.current.push(unsubscribeReceived, unsubscribeTapped);
+
+      errorLogger.logInfo(
+        "usePushNotifications",
+        "Event listeners setup completed",
+      );
+    } catch (err) {
+      errorLogger.logError(
+        "usePushNotifications",
+        "Failed to setup event listeners",
+        err,
+      );
+    }
+  }, [globalState.isInitialized, addNotification]);
+
+  // Periodic status updates (reduced frequency)
+  useEffect(() => {
+    if (!isSupported || !globalState.isInitialized) return;
+
+    const updateStatus = () => {
+      if (!isMountedRef.current) return;
+
+      try {
+        const permission = pushNotificationService.getPermissionStatus();
+        const token = pushNotificationService.getToken();
+
+        safeSetState(() => {
+          setPermissionStatus(permission);
+          setFcmToken(token);
         });
-      },
-    );
+      } catch (err) {
+        errorLogger.logError(
+          "usePushNotifications",
+          "Failed to update status",
+          err,
+        );
+      }
+    };
 
-    // Listen for notification tapped
-    const unsubscribeTapped = pushNotificationService.on(
-      "notificationTapped",
-      (notification) => {
-        console.log("Push notification tapped:", notification);
+    // Update immediately
+    updateStatus();
 
-        // Handle notification tap - could navigate to specific screen
-        if (notification.data?.taskId) {
-          // Navigate to task details
-          console.log("Navigate to task:", notification.data.taskId);
-        }
-      },
-    );
+    // Update every 5 minutes (reduced frequency)
+    const interval = setInterval(updateStatus, 300000);
+    cleanupFunctionsRef.current.push(() => clearInterval(interval));
 
-    // Listen for notification dismissed
-    const unsubscribeDismissed = pushNotificationService.on(
-      "notificationDismissed",
-      (notification) => {
-        console.log("Push notification dismissed:", notification);
-      },
-    );
+    return () => clearInterval(interval);
+  }, [isSupported, globalState.isInitialized, safeSetState]);
 
-    // Cleanup listeners
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      unsubscribeReceived();
-      unsubscribeTapped();
-      unsubscribeDismissed();
+      isMountedRef.current = false;
+
+      // Run all cleanup functions
+      cleanupFunctionsRef.current.forEach((cleanup) => {
+        try {
+          cleanup();
+        } catch (err) {
+          errorLogger.logError(
+            "usePushNotifications",
+            "Error during cleanup",
+            err,
+          );
+        }
+      });
+
+      cleanupFunctionsRef.current = [];
+
+      errorLogger.logInfo("usePushNotifications", "Hook cleanup completed");
     };
-  }, [isInitialized, addNotification]);
-
-  // Update permission status periodically
-  useEffect(() => {
-    if (!isSupported) return;
-
-    const updatePermissionStatus = () => {
-      const permission = pushNotificationService.getPermissionStatus();
-      setPermissionStatus(permission);
-    };
-
-    // Update immediately
-    updatePermissionStatus();
-
-    // Update every 5 seconds
-    const interval = setInterval(updatePermissionStatus, 5000);
-
-    return () => clearInterval(interval);
-  }, [isSupported]);
-
-  // Update FCM token periodically
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    const updateFcmToken = () => {
-      const token = pushNotificationService.getToken();
-      setFcmToken(token);
-    };
-
-    // Update immediately
-    updateFcmToken();
-
-    // Update every 30 seconds
-    const interval = setInterval(updateFcmToken, 30000);
-
-    return () => clearInterval(interval);
-  }, [isInitialized]);
+  }, []);
 
   return {
     isSupported,
-    isInitialized,
+    isInitialized: globalState.isInitialized,
     isEnabled,
     permissionStatus,
     fcmToken,
-    isLoading,
-    error,
+    isLoading: isLoading || globalState.isInitializing,
+    error: globalState.error,
     // Actions
     initialize,
     requestPermission,

@@ -1,6 +1,12 @@
 import { io, Socket } from "socket.io-client";
 import { APP_CONFIG } from "../../config/app.config";
 import { AuthTokens } from "../../types/auth.types";
+import { audioService } from "../audio/audioService";
+import { TaskPriority } from "../../types/task.types";
+import {
+  getSoundTypeFromPriority,
+  getVibrationPatternFromPriority,
+} from "../../hooks/audio/useAudioAlerts";
 
 export interface WebSocketConfig {
   url: string;
@@ -307,6 +313,9 @@ class WebSocketService {
       id: this.generateEventId(),
     };
 
+    // Handle audio alerts for specific events
+    this.handleAudioAlerts(eventType, data);
+
     // Notify all handlers for this event type
     const handlers = this.eventHandlers.get(eventType);
     if (handlers) {
@@ -333,6 +342,109 @@ class WebSocketService {
         }
       });
     }
+  }
+
+  /**
+   * Handle audio alerts for WebSocket events
+   */
+  private async handleAudioAlerts(eventType: string, data: any): Promise<void> {
+    try {
+      switch (eventType) {
+        case "task:new":
+          await this.playNewTaskAlert(data);
+          break;
+        case "task:assigned":
+          await this.playTaskAssignedAlert(data);
+          break;
+        case "task:completed":
+          await this.playTaskCompletedAlert(data);
+          break;
+        case "notification:system":
+        case "notification:personal":
+          await this.playNotificationAlert(data);
+          break;
+        default:
+          // No audio alert for this event type
+          break;
+      }
+    } catch (error) {
+      console.error(`Failed to play audio alert for ${eventType}:`, error);
+    }
+  }
+
+  /**
+   * Play audio alert for new task
+   */
+  private async playNewTaskAlert(taskData: any): Promise<void> {
+    if (!audioService.getStatus().isInitialized) {
+      console.warn("Audio service not initialized, skipping new task alert");
+      return;
+    }
+
+    const priority: TaskPriority = taskData.priority || "medium";
+    const soundType = getSoundTypeFromPriority(priority);
+    const vibrationPattern = getVibrationPatternFromPriority(priority);
+
+    await audioService.playAlert({
+      soundType,
+      vibrationPattern,
+      fadeIn: priority === "urgent",
+      repeat: priority === "urgent" ? 2 : 1,
+    });
+
+    console.log(`Played new task alert for priority: ${priority}`);
+  }
+
+  /**
+   * Play audio alert for task assigned
+   */
+  private async playTaskAssignedAlert(taskData: any): Promise<void> {
+    if (!audioService.getStatus().isInitialized) {
+      return;
+    }
+
+    await audioService.playAlert({
+      soundType: "task_assigned",
+      vibrationPattern: [300, 100, 300],
+    });
+
+    console.log("Played task assigned alert");
+  }
+
+  /**
+   * Play audio alert for task completed
+   */
+  private async playTaskCompletedAlert(taskData: any): Promise<void> {
+    if (!audioService.getStatus().isInitialized) {
+      return;
+    }
+
+    await audioService.playAlert({
+      soundType: "task_completed",
+      vibrationPattern: [200],
+    });
+
+    console.log("Played task completed alert");
+  }
+
+  /**
+   * Play audio alert for general notifications
+   */
+  private async playNotificationAlert(notificationData: any): Promise<void> {
+    if (!audioService.getStatus().isInitialized) {
+      return;
+    }
+
+    const isUrgent =
+      notificationData.priority === "high" ||
+      notificationData.priority === "urgent";
+
+    await audioService.playAlert({
+      soundType: isUrgent ? "alert_critical" : "notification_general",
+      vibrationPattern: isUrgent ? [400, 100, 400, 100, 400] : [200],
+    });
+
+    console.log(`Played notification alert (urgent: ${isUrgent})`);
   }
 
   /**

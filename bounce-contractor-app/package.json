@@ -21,7 +21,8 @@
     "cap:run:android": "npx cap run android",
     "cap:run:ios": "npx cap run ios",
     "cap:build:android": "npm run build:prod && npx cap sync android && npx cap build android",
-    "cap:build:ios": "npm run build:prod && npx cap sync ios && npx cap build ios"
+    "cap:build:ios": "npm run build:prod && npx cap sync ios && npx cap build ios",
+    "cap:clean:android": "rm -rf dist/ && rm -rf android/app/src/main/assets/public/ && npm run build:prod && npx cap sync android && npx cap run android"
   },
   "dependencies": {
     "@capacitor/android": "^7.3.0",

@@ -146,7 +146,11 @@ class ApiClient {
         statusText: error.response.statusText,
         data: error.response.data,
         headers: error.response.headers,
-        config: error.response.config,
+        config: {
+          url: error.response.config?.url,
+          method: error.response.config?.method,
+          params: error.response.config?.params,
+        },
       });
     } else if (error.request) {
       console.log("🌐 Network Request Details:", {
@@ -198,8 +202,9 @@ class ApiClient {
         apiError.message = `Request failed with status ${error.response.status}`;
         apiError.code = this.getErrorCodeFromStatus(error.response.status);
       } else {
-        // Fallback for other response formats
+        // Fallback for other response formats - check for direct error field
         apiError.message =
+          serverResponse.error ||
           error.message ||
           `Request failed with status ${error.response.status}`;
         apiError.code = this.getErrorCodeFromStatus(error.response.status);
@@ -215,7 +220,7 @@ class ApiClient {
       apiError.statusCode = 0;
     }
 
-    console.log("Processed API Error:", apiError);
+    console.log("🔧 Processed API Error:", apiError);
     return apiError;
   }
 

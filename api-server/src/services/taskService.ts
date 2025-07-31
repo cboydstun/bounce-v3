@@ -552,7 +552,21 @@ export class TaskService {
       console.log(`🔍 [TaskService.getTaskById] Starting lookup:`, {
         taskId,
         contractorId,
+        taskIdType: typeof taskId,
+        contractorIdType: typeof contractorId,
       });
+
+      // Validate taskId format
+      if (!mongoose.Types.ObjectId.isValid(taskId)) {
+        console.log(
+          `❌ [TaskService.getTaskById] Invalid taskId format: ${taskId}`,
+        );
+        return {
+          task: null,
+          hasAccess: false,
+          exists: false,
+        };
+      }
 
       // First, check if the task exists at all
       const task = await Task.findById(taskId);
@@ -561,6 +575,16 @@ export class TaskService {
         console.log(
           `❌ [TaskService.getTaskById] Task not found in database: ${taskId}`,
         );
+
+        // Additional debugging - check if task exists with different query
+        const taskCount = await Task.countDocuments({ _id: taskId });
+        const allTasksCount = await Task.countDocuments({});
+        console.log(`🔍 [TaskService.getTaskById] Database debug:`, {
+          taskCount,
+          allTasksCount,
+          searchedId: taskId,
+        });
+
         return {
           task: null,
           hasAccess: false,
@@ -575,6 +599,10 @@ export class TaskService {
         assignedTo: task.assignedTo,
         type: task.type,
         title: task.title,
+        address: task.address,
+        paymentAmount: task.paymentAmount,
+        hasLocation: !!task.location,
+        locationCoords: task.location?.coordinates,
       });
 
       // If no contractor ID provided, return the task (admin access)
@@ -591,18 +619,46 @@ export class TaskService {
 
       // Verify contractor exists and is active
       const contractor = await ContractorAuth.findById(contractorId);
-      if (!contractor || !contractor.isActive || !contractor.isVerified) {
-        console.log(`🚫 [TaskService.getTaskById] Contractor not authorized:`, {
-          contractorExists: !!contractor,
-          isActive: contractor?.isActive,
-          isVerified: contractor?.isVerified,
-        });
+      if (!contractor) {
+        console.log(
+          `🚫 [TaskService.getTaskById] Contractor not found: ${contractorId}`,
+        );
         return {
           task: null,
           hasAccess: false,
           exists: true,
         };
       }
+
+      if (!contractor.isActive) {
+        console.log(
+          `🚫 [TaskService.getTaskById] Contractor not active: ${contractorId}`,
+        );
+        return {
+          task: null,
+          hasAccess: false,
+          exists: true,
+        };
+      }
+
+      if (!contractor.isVerified) {
+        console.log(
+          `🚫 [TaskService.getTaskById] Contractor not verified: ${contractorId}`,
+        );
+        return {
+          task: null,
+          hasAccess: false,
+          exists: true,
+        };
+      }
+
+      console.log(`✅ [TaskService.getTaskById] Contractor verified:`, {
+        contractorId,
+        email: contractor.email,
+        name: contractor.name,
+        isActive: contractor.isActive,
+        isVerified: contractor.isVerified,
+      });
 
       // Check if contractor has access to this task
       const isPending = task.status === "Pending";
@@ -631,9 +687,13 @@ export class TaskService {
         matchesAssignedTo,
         inAssignedContractorsString,
         matchesAssignedToString,
+        assignedContractorsArray: task.assignedContractors,
+        assignedContractorsStrings,
+        assignedTo: task.assignedTo,
+        assignedToString,
       });
 
-      // FIXED: For available (Pending) tasks, any authenticated contractor should have access
+      // CRITICAL FIX: For available (Pending) tasks, any authenticated contractor should have access
       // For assigned tasks, only the assigned contractor should have access
       const hasAccess =
         isPending || // Any authenticated contractor can view available tasks
@@ -650,8 +710,24 @@ export class TaskService {
             : inAssignedContractors || inAssignedContractorsString
               ? "Contractor is in assignedContractors array"
               : "Contractor matches assignedTo field"
-          : "No access criteria met",
+          : "No access criteria met - this should not happen for Pending tasks!",
       });
+
+      // ADDITIONAL DEBUG: If this is a Pending task but access is denied, something is wrong
+      if (isPending && !hasAccess) {
+        console.error(
+          `🚨 [TaskService.getTaskById] CRITICAL ERROR: Pending task denied access!`,
+          {
+            taskId,
+            contractorId,
+            taskStatus: task.status,
+            isPending,
+            contractorExists: !!contractor,
+            contractorActive: contractor.isActive,
+            contractorVerified: contractor.isVerified,
+          },
+        );
+      }
 
       return {
         task: hasAccess ? task : null,

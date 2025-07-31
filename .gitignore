@@ -27,6 +27,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
 .env.development.local
 .env.test.local
@@ -74,3 +75,5 @@ next-env.d.ts
 /bounce-contractor-app/dist
 /bounce-contractor-app/ios
 /bounce-contractor-app/android
+/bounce-contractor-app/.env
+/bounce-contractor-app/.env.production

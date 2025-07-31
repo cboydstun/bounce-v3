@@ -32,7 +32,7 @@ export type NotificationCategory =
   | "reminder"
   | "emergency";
 
-export type NotificationPriority = "low" | "medium" | "high" | "critical";
+export type NotificationPriority = "low" | "medium" | "high" | "urgent";
 
 export interface NotificationAction {
   id: string;
