@@ -549,26 +549,60 @@ if (typeof window !== "undefined") {
     useAuthStore.getState().clearAuth();
   });
 
-  // Auto-refresh token before expiry
-  setInterval(() => {
-    const { tokens, sessionExpiry, isAuthenticated } = useAuthStore.getState();
+  // Auto-refresh token before expiry - much less aggressive interval
+  let tokenRefreshInterval: NodeJS.Timeout | null = null;
+  let lastRefreshCheck = 0;
 
-    if (isAuthenticated && tokens && sessionExpiry) {
-      const expiryTime = new Date(sessionExpiry).getTime();
-      const currentTime = Date.now();
-      const timeUntilExpiry = expiryTime - currentTime;
-
-      // Refresh token 5 minutes before expiry
-      if (timeUntilExpiry <= 5 * 60 * 1000 && timeUntilExpiry > 0) {
-        useAuthStore
-          .getState()
-          .refreshToken()
-          .catch(() => {
-            // Refresh failed, will be handled by the refresh method
-          });
-      }
+  const startTokenRefreshInterval = () => {
+    if (tokenRefreshInterval) {
+      clearInterval(tokenRefreshInterval);
     }
-  }, 60000); // Check every minute
+
+    tokenRefreshInterval = setInterval(
+      () => {
+        const now = Date.now();
+
+        // Prevent too frequent checks (minimum 10 minutes between checks)
+        if (now - lastRefreshCheck < 10 * 60 * 1000) {
+          return;
+        }
+
+        lastRefreshCheck = now;
+        const { tokens, sessionExpiry, isAuthenticated } =
+          useAuthStore.getState();
+
+        if (isAuthenticated && tokens && sessionExpiry) {
+          const expiryTime = new Date(sessionExpiry).getTime();
+          const currentTime = Date.now();
+          const timeUntilExpiry = expiryTime - currentTime;
+
+          // Refresh token 10 minutes before expiry (increased from 5 minutes)
+          if (timeUntilExpiry <= 10 * 60 * 1000 && timeUntilExpiry > 0) {
+            console.log(
+              `🔄 [AuthStore] Auto-refreshing token, expires in ${Math.round(timeUntilExpiry / 1000)}s`,
+            );
+            useAuthStore
+              .getState()
+              .refreshToken()
+              .catch((error) => {
+                console.warn(`🔄 [AuthStore] Token refresh failed:`, error);
+                // Refresh failed, will be handled by the refresh method
+              });
+          }
+        } else if (!isAuthenticated) {
+          // Stop the interval if user is not authenticated
+          if (tokenRefreshInterval) {
+            clearInterval(tokenRefreshInterval);
+            tokenRefreshInterval = null;
+          }
+        }
+      },
+      10 * 60 * 1000,
+    ); // Check every 10 minutes instead of 5 minutes
+  };
+
+  // Start the interval
+  startTokenRefreshInterval();
 }
 
 // Export selectors for easier access

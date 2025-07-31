@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Route, Redirect } from "react-router-dom";
 import { useAuthStore, authSelectors } from "../../store/authStore";
 
@@ -8,20 +8,13 @@ interface ProtectedRouteProps {
   path?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-  children,
-  exact,
-  path,
-  ...routeProps
-}) => {
-  const isAuthenticated = useAuthStore(authSelectors.isAuthenticated);
+const ProtectedRoute: React.FC<ProtectedRouteProps> = React.memo(
+  ({ children, exact, path, ...routeProps }) => {
+    const isAuthenticated = useAuthStore(authSelectors.isAuthenticated);
 
-  return (
-    <Route
-      exact={exact}
-      path={path}
-      {...routeProps}
-      render={({ location }) => {
+    // Memoize the render function to prevent unnecessary re-renders
+    const renderFunction = useMemo(() => {
+      return ({ location }: any) => {
         if (!isAuthenticated) {
           return (
             <Redirect
@@ -33,9 +26,20 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           );
         }
         return children;
-      }}
-    />
-  );
-};
+      };
+    }, [isAuthenticated, children]);
+
+    return (
+      <Route
+        exact={exact}
+        path={path}
+        {...routeProps}
+        render={renderFunction}
+      />
+    );
+  },
+);
+
+ProtectedRoute.displayName = "ProtectedRoute";
 
 export default ProtectedRoute;

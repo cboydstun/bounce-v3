@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { apiClient } from "../../services/api/apiClient";
 import { Task, TaskFilters, TaskSearchParams } from "../../types/task.types";
@@ -247,25 +248,102 @@ export const useMyTasks = (options: UseTasksOptions = {}) => {
 };
 
 export const useTaskById = (taskId: string, enabled = true) => {
-  const { isAuthenticated, tokens } = useAuthStore();
+  // Use stable selectors with useCallback to prevent re-renders
+  const isAuthenticated = useAuthStore(
+    React.useCallback((state) => state.isAuthenticated, []),
+  );
+  const hasAccessToken = useAuthStore(
+    React.useCallback((state) => !!state.tokens?.accessToken, []),
+  );
 
-  // Check if auth is ready - we need both authentication status and valid tokens
-  const isAuthReady = isAuthenticated && !!tokens?.accessToken;
+  // Use refs to track previous values and prevent unnecessary re-executions
+  const prevAuthReadyRef = React.useRef<boolean>(false);
+  const prevQueryEnabledRef = React.useRef<boolean>(false);
+  const queryExecutionCountRef = React.useRef<number>(0);
+
+  // Stable auth readiness with ref comparison
+  const isAuthReady = React.useMemo(() => {
+    const newAuthReady = isAuthenticated && hasAccessToken;
+    if (prevAuthReadyRef.current !== newAuthReady) {
+      console.log(`🔑 [useTaskById] Auth readiness changed:`, {
+        taskId,
+        from: prevAuthReadyRef.current,
+        to: newAuthReady,
+        isAuthenticated,
+        hasAccessToken,
+      });
+      prevAuthReadyRef.current = newAuthReady;
+    }
+    return newAuthReady;
+  }, [isAuthenticated, hasAccessToken, taskId]);
+
+  // Stable enabled condition with ref comparison
+  const queryEnabled = React.useMemo(() => {
+    const newEnabled = enabled && !!taskId && isAuthReady;
+    if (prevQueryEnabledRef.current !== newEnabled) {
+      console.log(`🎯 [useTaskById] Query enabled changed:`, {
+        taskId,
+        from: prevQueryEnabledRef.current,
+        to: newEnabled,
+        enabled,
+        hasTaskId: !!taskId,
+        isAuthReady,
+      });
+      prevQueryEnabledRef.current = newEnabled;
+    }
+    return newEnabled;
+  }, [enabled, taskId, isAuthReady]);
+
+  // Ultra-stable query key that only changes when absolutely necessary
+  const queryKey = React.useMemo(() => {
+    const key = ["tasks", "detail", taskId];
+    console.log(`🔑 [useTaskById] Query key generated:`, {
+      taskId,
+      key,
+      isAuthReady,
+      queryEnabled,
+    });
+    return key;
+  }, [taskId]); // Only depend on taskId, not auth state
+
+  console.log(`🚀 [useTaskById] Hook called:`, {
+    taskId,
+    enabled,
+    isAuthenticated,
+    hasAccessToken,
+    isAuthReady,
+    queryEnabled,
+    executionCount: queryExecutionCountRef.current,
+  });
 
   return useQuery({
-    queryKey: ["tasks", "detail", taskId, isAuthReady],
+    queryKey,
     queryFn: async (): Promise<Task> => {
+      queryExecutionCountRef.current += 1;
+
       try {
-        console.log(`🔍 [useTaskById] Fetching task:`, {
-          taskId,
-          isAuthenticated,
-          hasAccessToken: !!tokens?.accessToken,
-          isAuthReady,
-        });
+        console.log(
+          `🔍 [useTaskById] QueryFn executing - Attempt ${queryExecutionCountRef.current}:`,
+          {
+            taskId,
+            isAuthenticated,
+            hasAccessToken,
+            isAuthReady,
+            timestamp: new Date().toISOString(),
+          },
+        );
 
         const response: ApiResponse<Task> = await apiClient.get(
           `/tasks/${taskId}`,
         );
+
+        console.log(`📡 [useTaskById] API Response received:`, {
+          taskId,
+          success: response.success,
+          hasData: !!response.data,
+          statusCode: (response as any)?.statusCode,
+          executionCount: queryExecutionCountRef.current,
+        });
 
         if (!response.success) {
           const errorMessage =
@@ -275,6 +353,7 @@ export const useTaskById = (taskId: string, enabled = true) => {
             errorMessage,
             statusCode: (response as any)?.statusCode,
             isAuthReady,
+            executionCount: queryExecutionCountRef.current,
             fullResponse: response,
           });
 
@@ -298,6 +377,7 @@ export const useTaskById = (taskId: string, enabled = true) => {
           taskId,
           taskTitle: response.data.title,
           taskStatus: response.data.status,
+          executionCount: queryExecutionCountRef.current,
         });
 
         return response.data;
@@ -306,22 +386,36 @@ export const useTaskById = (taskId: string, enabled = true) => {
           taskId,
           error: (error as Error).message,
           isAuthReady,
+          executionCount: queryExecutionCountRef.current,
+          stack: (error as Error).stack,
         });
         throw error;
       }
     },
-    enabled: enabled && !!taskId && isAuthReady,
-    staleTime: 30000,
-    gcTime: 5 * 60 * 1000,
+    enabled: queryEnabled,
+    staleTime: 60000, // Increased from 30 seconds to 1 minute
+    gcTime: 10 * 60 * 1000, // Increased to 10 minutes
+    refetchOnWindowFocus: false, // Disable refetch on window focus
+    refetchOnReconnect: false, // Disable refetch on reconnect
+    refetchOnMount: false, // Disable refetch on mount if data exists
     retry: (failureCount, error) => {
+      console.log(`🔄 [useTaskById] Retry attempt ${failureCount}:`, {
+        taskId,
+        error: (error as Error).message,
+        willRetry:
+          failureCount < 2 &&
+          !(error as Error).message.includes("Authentication required"),
+        executionCount: queryExecutionCountRef.current,
+      });
+
       // Don't retry auth errors
       if ((error as Error).message.includes("Authentication required")) {
         return false;
       }
-      // Retry other errors up to 3 times
-      return failureCount < 3;
+      // Reduced retry attempts from 3 to 2
+      return failureCount < 2;
     },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 30000), // Increased initial delay
   });
 };
 
