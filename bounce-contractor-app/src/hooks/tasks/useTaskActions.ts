@@ -117,10 +117,18 @@ export const useClaimTask = () => {
       } else {
         // Handle successful online claim
         const claimedTask = result as Task;
+
+        // Update the task in cache with new data
         queryClient.setQueryData(
           ["tasks", "detail", claimedTask.id],
           claimedTask,
         );
+
+        // CRITICAL: Force invalidation of the specific task to trigger refetch
+        // This is essential for Android cache invalidation
+        queryClient.invalidateQueries({
+          queryKey: ["tasks", "detail", claimedTask.id],
+        });
 
         // Invalidate and refetch related queries
         queryClient.invalidateQueries({ queryKey: ["tasks", "available"] });
@@ -133,11 +141,19 @@ export const useClaimTask = () => {
       console.error("Failed to claim task:", error);
 
       // Provide more specific error messages for different error types
-      if (error.code === "RESOURCE_CONFLICT") {
+      if (error.code === "RESOURCE_CONFLICT" || error.statusCode === 409) {
         // Task is likely already claimed by another contractor
         console.warn(
           "This task has already been claimed by another contractor",
         );
+
+        // Force refresh the task data to show updated status
+        queryClient.invalidateQueries({
+          queryKey: ["tasks", "detail"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["tasks", "available"],
+        });
       }
     },
   });
@@ -226,6 +242,11 @@ export const useUpdateTaskStatus = () => {
           ["tasks", "detail", updatedTask.id],
           updatedTask,
         );
+
+        // Invalidate the specific task detail to trigger a refetch
+        queryClient.invalidateQueries({
+          queryKey: ["tasks", "detail", statusUpdate.taskId],
+        });
 
         // Invalidate related queries
         queryClient.invalidateQueries({ queryKey: ["tasks", "my-tasks"] });

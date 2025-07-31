@@ -1,4 +1,10 @@
-import React from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import {
   IonContent,
   IonPage,
@@ -18,6 +24,9 @@ import {
   IonButton,
   IonChip,
   IonLabel,
+  IonToast,
+  IonAlert,
+  useIonToast,
 } from "@ionic/react";
 import {
   calendarOutline,
@@ -38,7 +47,13 @@ import {
   cubeOutline,
 } from "ionicons/icons";
 import { useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTaskById } from "../../hooks/tasks/useTasks";
+import {
+  useClaimTask,
+  useUpdateTaskStatus,
+  useCompleteTask,
+} from "../../hooks/tasks/useTaskActions";
 
 interface TaskDetailsParams {
   id: string;
@@ -155,9 +170,27 @@ const formatDateTime = (dateString: string) => {
 
 const TaskDetails: React.FC = () => {
   const { id } = useParams<TaskDetailsParams>();
+  const [presentToast] = useIonToast();
+  const [showCompleteAlert, setShowCompleteAlert] = React.useState(false);
+  const queryClient = useQueryClient();
 
   // Android fallback - extract ID from URL if useParams fails
   const taskId = id || extractTaskIdFromUrl();
+
+  // Task action hooks
+  const claimTaskMutation = useClaimTask();
+  const updateStatusMutation = useUpdateTaskStatus();
+  const completeTaskMutation = useCompleteTask();
+
+  // NEW: Local state to override task status for optimistic updates
+  const [localTaskOverride, setLocalTaskOverride] = useState<{
+    status?: string;
+    timestamp?: string;
+  } | null>(null);
+
+  // NEW: Polling fallback refs
+  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Enhanced debugging for Android
   console.log("URL Debug:", {
@@ -178,14 +211,243 @@ const TaskDetails: React.FC = () => {
     error,
   } = useTaskById(taskId || "", !!taskId && taskId.trim() !== "");
 
+  // NEW: Computed display task with local overrides
+  const displayTask = useMemo(() => {
+    if (!task) return null;
+
+    return {
+      ...task,
+      // Override with local state if available
+      status: localTaskOverride?.status || task.status,
+      // Add visual indicator for optimistic updates
+      _isOptimistic: !!localTaskOverride,
+    };
+  }, [task, localTaskOverride]);
+
+  // NEW: Clear local override when server data updates
+  useEffect(() => {
+    if (task && localTaskOverride) {
+      // If server status matches our local override, clear it
+      if (task.status === localTaskOverride.status) {
+        console.log(
+          "🔄 Server status matches local override, clearing optimistic state",
+        );
+        setLocalTaskOverride(null);
+      }
+    }
+  }, [task, localTaskOverride]);
+
+  // NEW: Polling fallback function
+  const startPollingFallback = useCallback(
+    (taskId: string) => {
+      // Clear any existing polling
+      if (pollingTimeoutRef.current) clearTimeout(pollingTimeoutRef.current);
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+
+      console.log("🔄 Starting Android polling fallback for task:", taskId);
+
+      // Poll every 2 seconds for 20 seconds
+      pollingIntervalRef.current = setInterval(() => {
+        console.log("📡 Polling task status...");
+        queryClient.refetchQueries({
+          queryKey: ["tasks", "detail", taskId],
+          exact: true,
+        });
+      }, 2000);
+
+      // Stop polling after 20 seconds
+      pollingTimeoutRef.current = setTimeout(() => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        console.log("⏹️ Stopped Android polling fallback");
+      }, 20000);
+    },
+    [queryClient],
+  );
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingTimeoutRef.current) clearTimeout(pollingTimeoutRef.current);
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+    };
+  }, []);
+
   console.log("TaskDetails render:", {
     id: taskId,
     hasTask: !!task,
+    hasDisplayTask: !!displayTask,
     isLoading,
     isError,
     queryEnabled: !!taskId && taskId.trim() !== "",
     taskData: task,
+    displayTaskData: displayTask,
+    localOverride: localTaskOverride,
   });
+
+  // Button click handlers with optimistic updates
+  const handleClaimTask = () => {
+    if (!task) return;
+
+    // IMMEDIATE: Update local state for instant UI feedback
+    console.log('🚀 Optimistically updating task status to "assigned"');
+    setLocalTaskOverride({
+      status: "assigned",
+      timestamp: new Date().toISOString(),
+    });
+
+    claimTaskMutation.mutate(
+      {
+        taskId: task.id,
+        estimatedArrival: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 min from now
+        notes: "Task claimed via mobile app",
+      },
+      {
+        onSuccess: () => {
+          presentToast({
+            message: "Task claimed successfully!",
+            duration: 3000,
+            position: "top",
+            color: "success",
+          });
+
+          // Start Android polling fallback
+          startPollingFallback(task.id);
+        },
+        onError: (error) => {
+          // REVERT: Clear optimistic update on error
+          console.log("❌ Reverting optimistic update due to error");
+          setLocalTaskOverride(null);
+
+          let errorMessage = error.message || "Failed to claim task";
+
+          // Handle specific error cases
+          if (error.code === "RESOURCE_CONFLICT" || error.statusCode === 409) {
+            errorMessage =
+              "This task has already been claimed by another contractor";
+          }
+
+          presentToast({
+            message: errorMessage,
+            duration: 4000,
+            position: "top",
+            color: "danger",
+          });
+        },
+      },
+    );
+  };
+
+  const handleStartTask = () => {
+    if (!task) return;
+
+    // IMMEDIATE: Update local state for instant UI feedback
+    console.log('🚀 Optimistically updating task status to "in_progress"');
+    setLocalTaskOverride({
+      status: "in_progress",
+      timestamp: new Date().toISOString(),
+    });
+
+    updateStatusMutation.mutate(
+      {
+        taskId: task.id,
+        status: "in_progress", // Mobile app status
+        timestamp: new Date().toISOString(),
+        notes: "Task started",
+      },
+      {
+        onSuccess: () => {
+          presentToast({
+            message: "Task started successfully!",
+            duration: 3000,
+            position: "top",
+            color: "success",
+          });
+
+          // Start Android polling fallback
+          startPollingFallback(task.id);
+        },
+        onError: (error) => {
+          // REVERT: Clear optimistic update on error
+          console.log("❌ Reverting optimistic update due to error");
+          setLocalTaskOverride(null);
+
+          presentToast({
+            message: error.message || "Failed to start task",
+            duration: 4000,
+            position: "top",
+            color: "danger",
+          });
+        },
+      },
+    );
+  };
+
+  const handleCompleteTask = () => {
+    if (!task) return;
+
+    // IMMEDIATE: Update local state for instant UI feedback
+    console.log('🚀 Optimistically updating task status to "completed"');
+    setLocalTaskOverride({
+      status: "completed",
+      timestamp: new Date().toISOString(),
+    });
+
+    completeTaskMutation.mutate(
+      {
+        taskId: task.id,
+        completionPhotos: [], // Empty for now, can be enhanced later
+        actualDuration: 120, // Default 2 hours
+        completedAt: new Date().toISOString(),
+        contractorNotes: "Task completed successfully",
+      },
+      {
+        onSuccess: () => {
+          presentToast({
+            message: "Task completed successfully!",
+            duration: 3000,
+            position: "top",
+            color: "success",
+          });
+          setShowCompleteAlert(false);
+
+          // Start Android polling fallback
+          startPollingFallback(task.id);
+        },
+        onError: (error) => {
+          // REVERT: Clear optimistic update on error
+          console.log("❌ Reverting optimistic update due to error");
+          setLocalTaskOverride(null);
+
+          presentToast({
+            message: error.message || "Failed to complete task",
+            duration: 4000,
+            position: "top",
+            color: "danger",
+          });
+          setShowCompleteAlert(false);
+        },
+      },
+    );
+  };
+
+  const handleGetDirections = () => {
+    const address = displayTask?.location?.address?.formattedAddress;
+    if (address) {
+      // Open device's default maps app
+      const mapsUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}`;
+      window.open(mapsUrl, "_system");
+    } else {
+      presentToast({
+        message: "Address not available for directions",
+        duration: 3000,
+        position: "top",
+        color: "warning",
+      });
+    }
+  };
 
   // Loading state
   if (isLoading) {
@@ -212,7 +474,7 @@ const TaskDetails: React.FC = () => {
   }
 
   // Error state
-  if (isError || !task) {
+  if (isError || !displayTask) {
     return (
       <IonPage>
         <IonHeader>
@@ -261,28 +523,29 @@ const TaskDetails: React.FC = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <IonIcon
-                      icon={getTaskTypeIcon(task.type)}
-                      className={`text-${getTaskTypeColor(task.type)}`}
+                      icon={getTaskTypeIcon(displayTask.type)}
+                      className={`text-${getTaskTypeColor(displayTask.type)}`}
                     />
-                    <IonBadge color={getTaskTypeColor(task.type)}>
-                      {task.type || "Task"}
+                    <IonBadge color={getTaskTypeColor(displayTask.type)}>
+                      {displayTask.type || "Task"}
                     </IonBadge>
-                    <IonBadge color={getPriorityColor(task.priority)}>
-                      {task.priority || "Medium"} Priority
+                    <IonBadge color={getPriorityColor(displayTask.priority)}>
+                      {displayTask.priority || "Medium"} Priority
                     </IonBadge>
-                    <IonBadge color={getStatusColor(task.status)}>
-                      {task.status || "Unknown"}
+                    <IonBadge color={getStatusColor(displayTask.status)}>
+                      {displayTask.status || "Unknown"}
+                      {displayTask._isOptimistic && " (syncing...)"}
                     </IonBadge>
                   </div>
                   <IonCardTitle className="text-lg font-semibold">
-                    {task.title || "Task Details"}
+                    {displayTask.title || "Task Details"}
                   </IonCardTitle>
                 </div>
               </div>
             </IonCardHeader>
             <IonCardContent>
               <IonText className="text-gray-700">
-                {task.description || "No description available"}
+                {displayTask.description || "No description available"}
               </IonText>
             </IonCardContent>
           </IonCard>
@@ -302,21 +565,21 @@ const TaskDetails: React.FC = () => {
                   <div>
                     <div className="font-medium">Scheduled Time</div>
                     <div className="text-sm text-gray-600">
-                      {task.scheduledDate
-                        ? formatDateTime(task.scheduledDate)
+                      {displayTask.scheduledDate
+                        ? formatDateTime(displayTask.scheduledDate)
                         : "Not scheduled"}
                     </div>
                   </div>
                 </div>
 
-                {task.estimatedDuration && (
+                {displayTask.estimatedDuration && (
                   <div className="flex items-center gap-3">
                     <IonIcon icon={timeOutline} className="text-blue-500" />
                     <div>
                       <div className="font-medium">Estimated Duration</div>
                       <div className="text-sm text-gray-600">
-                        {Math.floor(task.estimatedDuration / 60)}h{" "}
-                        {task.estimatedDuration % 60}m
+                        {Math.floor(displayTask.estimatedDuration / 60)}h{" "}
+                        {displayTask.estimatedDuration % 60}m
                       </div>
                     </div>
                   </div>
@@ -326,8 +589,8 @@ const TaskDetails: React.FC = () => {
           </IonCard>
 
           {/* Location Information */}
-          {(task.location?.address?.formattedAddress ||
-            task.location?.coordinates) && (
+          {(displayTask.location?.address?.formattedAddress ||
+            displayTask.location?.coordinates) && (
             <IonCard>
               <IonCardHeader>
                 <IonCardTitle className="flex items-center gap-2">
@@ -337,7 +600,7 @@ const TaskDetails: React.FC = () => {
               </IonCardHeader>
               <IonCardContent>
                 <div className="space-y-3">
-                  {task.location?.address?.formattedAddress && (
+                  {displayTask.location?.address?.formattedAddress && (
                     <div className="flex items-start gap-3">
                       <IonIcon
                         icon={homeOutline}
@@ -346,7 +609,7 @@ const TaskDetails: React.FC = () => {
                       <div className="flex-1">
                         <div className="font-medium">Address</div>
                         <div className="text-sm text-gray-600">
-                          {task.location.address.formattedAddress}
+                          {displayTask.location.address.formattedAddress}
                         </div>
                       </div>
                       <IonButton fill="clear" size="small">
@@ -355,7 +618,7 @@ const TaskDetails: React.FC = () => {
                     </div>
                   )}
 
-                  {task.location?.coordinates && (
+                  {displayTask.location?.coordinates && (
                     <div className="flex items-center gap-3">
                       <IonIcon
                         icon={locationOutline}
@@ -364,8 +627,8 @@ const TaskDetails: React.FC = () => {
                       <div>
                         <div className="font-medium">Coordinates</div>
                         <div className="text-xs text-gray-500 font-mono">
-                          {task.location.coordinates.latitude},{" "}
-                          {task.location.coordinates.longitude}
+                          {displayTask.location.coordinates.latitude},{" "}
+                          {displayTask.location.coordinates.longitude}
                         </div>
                       </div>
                     </div>
@@ -376,7 +639,7 @@ const TaskDetails: React.FC = () => {
           )}
 
           {/* Payment Information */}
-          {task.compensation?.totalAmount && (
+          {displayTask.compensation?.totalAmount && (
             <IonCard>
               <IonCardHeader>
                 <IonCardTitle className="flex items-center gap-2">
@@ -387,20 +650,20 @@ const TaskDetails: React.FC = () => {
               <IonCardContent>
                 <div className="flex items-center gap-3">
                   <div className="text-2xl font-bold text-green-600">
-                    ${task.compensation.totalAmount.toFixed(2)}
+                    ${displayTask.compensation.totalAmount.toFixed(2)}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {task.compensation.currency || "USD"}
+                    {displayTask.compensation.currency || "USD"}
                   </div>
                 </div>
-                {task.compensation.baseAmount !==
-                  task.compensation.totalAmount && (
+                {displayTask.compensation.baseAmount !==
+                  displayTask.compensation.totalAmount && (
                   <div className="text-sm text-gray-600 mt-1">
-                    Base: ${task.compensation.baseAmount.toFixed(2)}
-                    {task.compensation.bonuses?.length > 0 && (
+                    Base: ${displayTask.compensation.baseAmount.toFixed(2)}
+                    {displayTask.compensation.bonuses?.length > 0 && (
                       <span>
                         {" "}
-                        + {task.compensation.bonuses.length} bonus(es)
+                        + {displayTask.compensation.bonuses.length} bonus(es)
                       </span>
                     )}
                   </div>
@@ -410,7 +673,7 @@ const TaskDetails: React.FC = () => {
           )}
 
           {/* Assignment Information */}
-          {task.contractor && (
+          {displayTask.contractor && (
             <IonCard>
               <IonCardHeader>
                 <IonCardTitle className="flex items-center gap-2">
@@ -425,11 +688,12 @@ const TaskDetails: React.FC = () => {
                     <div>
                       <div className="font-medium">Assigned Contractor</div>
                       <div className="text-sm text-gray-600">
-                        {task.contractor.contractorId}
+                        {displayTask.contractor.contractorId}
                       </div>
-                      {task.contractor.assignedAt && (
+                      {displayTask.contractor.assignedAt && (
                         <div className="text-xs text-gray-500">
-                          Assigned: {formatDateTime(task.contractor.assignedAt)}
+                          Assigned:{" "}
+                          {formatDateTime(displayTask.contractor.assignedAt)}
                         </div>
                       )}
                     </div>
@@ -454,12 +718,12 @@ const TaskDetails: React.FC = () => {
                   <div>
                     <div className="font-medium">Task ID</div>
                     <div className="text-xs text-gray-500 font-mono">
-                      {task.id}
+                      {displayTask.id}
                     </div>
                   </div>
                 </div>
 
-                {task.orderId && (
+                {displayTask.orderId && (
                   <div className="flex items-center gap-3">
                     <IonIcon
                       icon={businessOutline}
@@ -468,31 +732,31 @@ const TaskDetails: React.FC = () => {
                     <div>
                       <div className="font-medium">Order ID</div>
                       <div className="text-xs text-gray-500 font-mono">
-                        {task.orderId}
+                        {displayTask.orderId}
                       </div>
                     </div>
                   </div>
                 )}
 
-                {task.createdAt && (
+                {displayTask.createdAt && (
                   <div className="flex items-center gap-3">
                     <IonIcon icon={timeOutline} className="text-gray-500" />
                     <div>
                       <div className="font-medium">Created</div>
                       <div className="text-sm text-gray-600">
-                        {formatDateTime(task.createdAt)}
+                        {formatDateTime(displayTask.createdAt)}
                       </div>
                     </div>
                   </div>
                 )}
 
-                {task.updatedAt && (
+                {displayTask.updatedAt && (
                   <div className="flex items-center gap-3">
                     <IonIcon icon={timeOutline} className="text-gray-500" />
                     <div>
                       <div className="font-medium">Last Updated</div>
                       <div className="text-sm text-gray-600">
-                        {formatDateTime(task.updatedAt)}
+                        {formatDateTime(displayTask.updatedAt)}
                       </div>
                     </div>
                   </div>
@@ -503,35 +767,112 @@ const TaskDetails: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="space-y-3 pb-8">
-            {task.status === "published" && (
-              <IonButton expand="block" color="primary">
-                <IonIcon icon={playOutline} slot="start" />
-                Claim Task
+            {displayTask.status === "published" && (
+              <IonButton
+                expand="block"
+                color="primary"
+                onClick={handleClaimTask}
+                disabled={claimTaskMutation.isPending}
+              >
+                {claimTaskMutation.isPending ? (
+                  <IonSpinner name="crescent" />
+                ) : (
+                  <IonIcon icon={playOutline} slot="start" />
+                )}
+                {claimTaskMutation.isPending ? "Claiming..." : "Claim Task"}
+                {displayTask._isOptimistic && (
+                  <IonIcon
+                    icon={timeOutline}
+                    slot="end"
+                    className="text-orange-500"
+                  />
+                )}
               </IonButton>
             )}
 
-            {task.status === "assigned" && (
-              <IonButton expand="block" color="success">
-                <IonIcon icon={playOutline} slot="start" />
-                Start Task
+            {displayTask.status === "assigned" && (
+              <IonButton
+                expand="block"
+                color="success"
+                onClick={handleStartTask}
+                disabled={updateStatusMutation.isPending}
+              >
+                {updateStatusMutation.isPending ? (
+                  <IonSpinner name="crescent" />
+                ) : (
+                  <IonIcon icon={playOutline} slot="start" />
+                )}
+                {updateStatusMutation.isPending ? "Starting..." : "Start Task"}
+                {displayTask._isOptimistic && (
+                  <IonIcon
+                    icon={timeOutline}
+                    slot="end"
+                    className="text-orange-500"
+                  />
+                )}
               </IonButton>
             )}
 
-            {task.status === "in_progress" && (
-              <IonButton expand="block" color="success">
-                <IonIcon icon={checkmarkCircleOutline} slot="start" />
-                Complete Task
+            {displayTask.status === "in_progress" && (
+              <IonButton
+                expand="block"
+                color="success"
+                onClick={() => setShowCompleteAlert(true)}
+                disabled={completeTaskMutation.isPending}
+              >
+                {completeTaskMutation.isPending ? (
+                  <IonSpinner name="crescent" />
+                ) : (
+                  <IonIcon icon={checkmarkCircleOutline} slot="start" />
+                )}
+                {completeTaskMutation.isPending
+                  ? "Completing..."
+                  : "Complete Task"}
+                {displayTask._isOptimistic && (
+                  <IonIcon
+                    icon={timeOutline}
+                    slot="end"
+                    className="text-orange-500"
+                  />
+                )}
               </IonButton>
             )}
 
-            {task.location?.address?.formattedAddress && (
-              <IonButton expand="block" fill="outline" color="primary">
+            {displayTask.location?.address?.formattedAddress && (
+              <IonButton
+                expand="block"
+                fill="outline"
+                color="primary"
+                onClick={handleGetDirections}
+              >
                 <IonIcon icon={navigateOutline} slot="start" />
                 Get Directions
               </IonButton>
             )}
           </div>
         </div>
+
+        {/* Complete Task Confirmation Alert */}
+        <IonAlert
+          isOpen={showCompleteAlert}
+          onDidDismiss={() => setShowCompleteAlert(false)}
+          header="Complete Task"
+          message="Are you sure you want to mark this task as completed? This action cannot be undone."
+          buttons={[
+            {
+              text: "Cancel",
+              role: "cancel",
+              handler: () => {
+                setShowCompleteAlert(false);
+              },
+            },
+            {
+              text: "Complete",
+              role: "confirm",
+              handler: handleCompleteTask,
+            },
+          ]}
+        />
       </IonContent>
     </IonPage>
   );

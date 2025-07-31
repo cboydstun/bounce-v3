@@ -275,7 +275,7 @@ export const useTaskById = (taskId: string, enabled = true) => {
       prevAuthReadyRef.current = newAuthReady;
     }
     return newAuthReady;
-  }, [isAuthenticated, hasAccessToken, taskId]);
+  }, [isAuthenticated, hasAccessToken]); // Removed taskId from dependencies
 
   // Stable enabled condition with ref comparison
   const queryEnabled = React.useMemo(() => {
@@ -393,11 +393,12 @@ export const useTaskById = (taskId: string, enabled = true) => {
       }
     },
     enabled: queryEnabled,
-    staleTime: 60000, // Increased from 30 seconds to 1 minute
-    gcTime: 10 * 60 * 1000, // Increased to 10 minutes
-    refetchOnWindowFocus: false, // Disable refetch on window focus
-    refetchOnReconnect: false, // Disable refetch on reconnect
-    refetchOnMount: false, // Disable refetch on mount if data exists
+    // Android-optimized cache settings
+    staleTime: 10000, // Reduced to 10 seconds for faster updates
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true, // Enable for Android app focus
+    refetchOnReconnect: true, // Enable for Android network reconnect
+    refetchOnMount: true, // Always refetch on mount for fresh data
     retry: (failureCount, error) => {
       console.log(`🔄 [useTaskById] Retry attempt ${failureCount}:`, {
         taskId,
@@ -415,7 +416,7 @@ export const useTaskById = (taskId: string, enabled = true) => {
       // Reduced retry attempts from 3 to 2
       return failureCount < 2;
     },
-    retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 30000), // Increased initial delay
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Faster retry for Android
   });
 };
 
