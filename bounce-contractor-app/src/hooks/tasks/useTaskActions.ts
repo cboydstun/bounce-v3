@@ -14,15 +14,17 @@ import { useOfflineQueue } from "../common/useOfflineQueue";
 import { offlineService } from "../../services/offline/offlineService";
 
 // Status mapping from mobile app format to API server format
-const mapMobileStatusToApiStatus = (mobileStatus: TaskStatus): string => {
+export const mapMobileStatusToApiStatus = (
+  mobileStatus: TaskStatus,
+): string => {
   const statusMap: Record<TaskStatus, string> = {
     draft: "Pending",
     published: "Pending",
     assigned: "Assigned",
     accepted: "Assigned",
-    in_progress: "In Progress",
-    en_route: "In Progress",
-    on_site: "In Progress",
+    in_progress: "In_Progress",
+    en_route: "In_Progress",
+    on_site: "In_Progress",
     completed: "Completed",
     cancelled: "Cancelled",
     failed: "Cancelled",

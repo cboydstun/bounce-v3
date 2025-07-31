@@ -216,29 +216,19 @@ export class TaskController {
       };
 
       if (status && typeof status === "string") {
-        const validStatuses = [
-          "Assigned",
-          "In Progress",
-          "Completed",
-          "Cancelled",
-        ];
+        // Convert API underscore format to database space format
+        const convertApiStatusToDbStatus = (apiStatus: string): string => {
+          return apiStatus === "In_Progress" ? "In Progress" : apiStatus;
+        };
 
         // Handle comma-separated statuses
         const requestedStatuses = status.split(",").map((s) => s.trim());
-        const invalidStatuses = requestedStatuses.filter(
-          (s) => !validStatuses.includes(s),
-        );
 
-        if (invalidStatuses.length > 0) {
-          return res.status(400).json({
-            error: "Invalid status value(s)",
-            invalidStatuses,
-            validStatuses,
-          });
-        }
+        // Convert API format to database format for service layer
+        const dbStatuses = requestedStatuses.map(convertApiStatusToDbStatus);
 
-        // Pass all valid statuses to the service
-        filters.status = requestedStatuses;
+        // Pass converted statuses to the service
+        filters.status = dbStatuses;
       }
 
       const result = await TaskService.getContractorTasks(
@@ -448,10 +438,17 @@ export class TaskController {
         });
       }
 
+      // Convert API underscore format to database space format
+      const convertApiStatusToDbStatus = (apiStatus: string): string => {
+        return apiStatus === "In_Progress" ? "In Progress" : apiStatus;
+      };
+
+      const dbStatus = convertApiStatusToDbStatus(status);
+
       const result = await TaskService.updateTaskStatus(
         taskId,
         contractorId,
-        status,
+        dbStatus,
       );
 
       if (result.success) {

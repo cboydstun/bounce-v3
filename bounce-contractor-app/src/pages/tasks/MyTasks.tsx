@@ -18,29 +18,61 @@ import { useMyTasks } from "../../hooks/tasks/useTasks";
 import TaskList from "../../components/tasks/TaskList";
 import { TaskFilters, TaskStatus } from "../../types/task.types";
 import { useHistory } from "react-router-dom";
+import { mapMobileStatusToApiStatus } from "../../hooks/tasks/useTaskActions";
 
-type TaskFilter = "active" | "completed" | "all";
+type TaskFilter = "upcoming" | "completed" | "all";
 
 const MyTasks: React.FC = () => {
   const history = useHistory();
-  const [activeFilter, setActiveFilter] = useState<TaskFilter>("active");
+  const [activeFilter, setActiveFilter] = useState<TaskFilter>("upcoming");
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
   // Create filters based on selected tab
-  const getFilters = (filter: TaskFilter): TaskFilters => {
+  const getFilters = (filter: TaskFilter) => {
+    // Helper function to map mobile statuses to API statuses and remove duplicates
+    const mapStatusesToApi = (mobileStatuses: TaskStatus[]) => {
+      return mobileStatuses
+        .map(mapMobileStatusToApiStatus)
+        .filter((status, index, arr) => arr.indexOf(status) === index); // Remove duplicates
+    };
+
     switch (filter) {
-      case "active":
+      case "upcoming":
         return {
-          status: ["assigned", "in_progress"],
+          status: mapStatusesToApi([
+            "published",
+            "assigned",
+            "accepted",
+            "in_progress",
+            "en_route",
+            "on_site",
+          ] as TaskStatus[]),
         };
       case "completed":
         return {
-          status: ["completed"],
+          status: mapStatusesToApi([
+            "completed",
+            "cancelled",
+            "failed",
+          ] as TaskStatus[]),
         };
       case "all":
       default:
-        return {};
+        return {
+          // Exclude draft since contractors shouldn't see draft tasks
+          status: mapStatusesToApi([
+            "published",
+            "assigned",
+            "accepted",
+            "in_progress",
+            "en_route",
+            "on_site",
+            "completed",
+            "cancelled",
+            "failed",
+          ] as TaskStatus[]),
+        };
     }
   };
 
@@ -51,7 +83,7 @@ const MyTasks: React.FC = () => {
     error,
     refetch,
   } = useMyTasks({
-    filters: getFilters(activeFilter),
+    filters: getFilters(activeFilter) as TaskFilters,
     enabled: true,
   });
 
@@ -79,8 +111,8 @@ const MyTasks: React.FC = () => {
 
   const getEmptyMessage = (filter: TaskFilter) => {
     switch (filter) {
-      case "active":
-        return "No active tasks";
+      case "upcoming":
+        return "No upcoming tasks";
       case "completed":
         return "No completed tasks";
       case "all":
@@ -91,7 +123,7 @@ const MyTasks: React.FC = () => {
 
   const getEmptyIcon = (filter: TaskFilter) => {
     switch (filter) {
-      case "active":
+      case "upcoming":
         return "⏳";
       case "completed":
         return "✅";
@@ -116,8 +148,8 @@ const MyTasks: React.FC = () => {
             value={activeFilter}
             onIonChange={(e) => setActiveFilter(e.detail.value as TaskFilter)}
           >
-            <IonSegmentButton value="active">
-              <IonLabel>Active</IonLabel>
+            <IonSegmentButton value="upcoming">
+              <IonLabel>Upcoming</IonLabel>
             </IonSegmentButton>
             <IonSegmentButton value="completed">
               <IonLabel>Completed</IonLabel>

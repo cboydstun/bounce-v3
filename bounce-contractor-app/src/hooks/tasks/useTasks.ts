@@ -1,25 +1,17 @@
 import React from "react";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { apiClient } from "../../services/api/apiClient";
-import { Task, TaskFilters, TaskSearchParams } from "../../types/task.types";
+import {
+  Task,
+  TaskFilters,
+  TaskSearchParams,
+  TaskStatus,
+} from "../../types/task.types";
 import { ApiResponse, PaginatedResponse } from "../../types/api.types";
 import { useGeolocation } from "../location/useGeolocation";
 import { useAuthStore } from "../../store/authStore";
 import { APP_CONFIG } from "../../config/app.config";
-
-// Helper function to convert TypeScript status values to API format
-const convertStatusForAPI = (status: string): string => {
-  const statusMap: Record<string, string> = {
-    assigned: "Assigned",
-    in_progress: "In Progress",
-    completed: "Completed",
-    cancelled: "Cancelled",
-    accepted: "Accepted",
-    en_route: "En Route",
-    on_site: "On Site",
-  };
-  return statusMap[status] || status;
-};
+import { mapMobileStatusToApiStatus } from "./useTaskActions";
 
 interface UseTasksOptions {
   filters?: TaskFilters;
@@ -221,7 +213,7 @@ export const useMyTasks = (options: UseTasksOptions = {}) => {
       if (filters?.status && filters.status.length > 0) {
         // Convert all statuses to API format and send as comma-separated string
         const apiStatuses = filters.status.map((status) =>
-          convertStatusForAPI(status),
+          mapMobileStatusToApiStatus(status as TaskStatus),
         );
         params.status = apiStatuses.join(",");
       } else {
