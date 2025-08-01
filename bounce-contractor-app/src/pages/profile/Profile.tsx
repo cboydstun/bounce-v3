@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   IonContent,
   IonPage,
@@ -21,6 +21,7 @@ import { useI18n } from "../../hooks/common/useI18n";
 import { useW9Form } from "../../hooks/quickbooks/useW9Form";
 import EarningsSummary from "../../components/tasks/EarningsSummary";
 import { useEarnings } from "../../hooks/tasks/useEarnings";
+import HelpSupportModal from "../../components/support/HelpSupportModal";
 
 const Profile: React.FC = () => {
   const history = useHistory();
@@ -29,6 +30,7 @@ const Profile: React.FC = () => {
   const profile = useAuthStore(authSelectors.profile);
   const logout = useAuthStore((state) => state.logout);
   const { w9Status } = useW9Form();
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   // Get real earnings data from API
   const {
@@ -58,13 +60,11 @@ const Profile: React.FC = () => {
   };
 
   const handleViewEarningsDetails = () => {
-    // TODO: Navigate to earnings details page
-    console.log("View earnings details");
+    history.push("/profile/earnings-details");
   };
 
   const handleViewPaymentHistory = () => {
-    // TODO: Navigate to payment history page
-    console.log("View payment history");
+    history.push("/profile/payment-history");
   };
 
   // Fallback earnings data if API fails
@@ -198,6 +198,7 @@ const Profile: React.FC = () => {
               expand="block"
               fill="outline"
               className="border-gray-300 text-gray-600"
+              onClick={() => setShowHelpModal(true)}
             >
               {t("profile.helpSupport")}
             </IonButton>
@@ -214,6 +215,12 @@ const Profile: React.FC = () => {
           </div>
         </div>
       </IonContent>
+
+      {/* Help & Support Modal */}
+      <HelpSupportModal
+        isOpen={showHelpModal}
+        onDidDismiss={() => setShowHelpModal(false)}
+      />
     </IonPage>
   );
 };

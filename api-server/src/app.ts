@@ -33,6 +33,7 @@ import authRoutes from "./routes/auth.js";
 import contractorRoutes from "./routes/contractors.js";
 import taskRoutes from "./routes/tasks.js";
 import quickbooksRoutes from "./routes/quickbooks.js";
+import supportRoutes from "./routes/support.js";
 import healthRoutes from "./routes/health.js";
 
 const app = express();
@@ -165,6 +166,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/contractors", contractorRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/quickbooks", quickbooksRoutes);
+app.use("/api/support", supportRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {

@@ -74,4 +74,38 @@ router.get(
   },
 );
 
+// GET /api/contractors/payment-history - Get contractor payment history
+router.get(
+  "/payment-history",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      await contractorController.getPaymentHistory(req, res);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Internal server error",
+        code: "INTERNAL_ERROR",
+      });
+    }
+  },
+);
+
+// GET /api/contractors/earnings-details - Get contractor earnings details
+router.get(
+  "/earnings-details",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      await contractorController.getEarningsDetails(req, res);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Internal server error",
+        code: "INTERNAL_ERROR",
+      });
+    }
+  },
+);
+
 export default router;

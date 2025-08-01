@@ -358,6 +358,327 @@ class ContractorController {
   }
 
   /**
+   * Get contractor payment history
+   */
+  async getPaymentHistory(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      const contractorId = req.contractor?.contractorId;
+
+      if (!contractorId) {
+        res.status(401).json({
+          success: false,
+          error: "Authentication required",
+          code: "AUTH_REQUIRED",
+        });
+        return;
+      }
+
+      const { page = "1", limit = "20", startDate, endDate } = req.query;
+
+      logger.info("Get contractor payment history", {
+        contractorId,
+        page,
+        limit,
+        startDate,
+        endDate,
+      });
+
+      // Build filters for completed tasks with payments
+      const filters: any = {
+        status: "Completed",
+        page: parseInt(page as string, 10),
+        limit: Math.min(parseInt(limit as string, 10), 50),
+      };
+
+      // Add date filtering if provided
+      if (startDate || endDate) {
+        filters.dateRange = {};
+        if (startDate) {
+          filters.dateRange.start = new Date(startDate as string);
+        }
+        if (endDate) {
+          filters.dateRange.end = new Date(endDate as string);
+        }
+      }
+
+      // Get completed tasks for this contractor
+      const completedTasks = await TaskService.getContractorTasks(
+        contractorId,
+        filters,
+      );
+
+      // Transform tasks to payment history format
+      const paymentHistory = completedTasks.tasks
+        .filter((task) => task.paymentAmount && task.paymentAmount > 0)
+        .map((task) => {
+          const taskObj = task.toObject();
+          return {
+            id: taskObj._id.toString(),
+            orderId: taskObj.orderId,
+            taskTitle: taskObj.title || `${taskObj.type} Task`,
+            taskType: taskObj.type,
+            amount: taskObj.paymentAmount,
+            paymentDate: taskObj.completedAt,
+            paymentStatus: "paid", // Assuming completed tasks are paid
+            paymentMethod: "direct_deposit",
+            address: taskObj.address,
+            scheduledDate: taskObj.scheduledDateTime,
+            completedDate: taskObj.completedAt,
+          };
+        })
+        .sort(
+          (a, b) =>
+            new Date(b.paymentDate).getTime() -
+            new Date(a.paymentDate).getTime(),
+        );
+
+      // Calculate summary statistics
+      const totalAmount = paymentHistory.reduce(
+        (sum, payment) => sum + payment.amount,
+        0,
+      );
+      const averagePayment =
+        paymentHistory.length > 0 ? totalAmount / paymentHistory.length : 0;
+
+      res.json({
+        success: true,
+        data: {
+          payments: paymentHistory,
+          summary: {
+            totalPayments: paymentHistory.length,
+            totalAmount: Math.round(totalAmount * 100) / 100,
+            averagePayment: Math.round(averagePayment * 100) / 100,
+          },
+          pagination: {
+            page: filters.page,
+            limit: filters.limit,
+            total: paymentHistory.length,
+            totalPages: Math.ceil(paymentHistory.length / filters.limit),
+          },
+        },
+        message: "Payment history retrieved successfully",
+      });
+    } catch (error) {
+      logger.error("Get payment history error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to retrieve payment history",
+        code: "PAYMENT_HISTORY_FAILED",
+      });
+    }
+  }
+
+  /**
+   * Get contractor earnings details
+   */
+  async getEarningsDetails(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      const contractorId = req.contractor?.contractorId;
+
+      if (!contractorId) {
+        res.status(401).json({
+          success: false,
+          error: "Authentication required",
+          code: "AUTH_REQUIRED",
+        });
+        return;
+      }
+
+      logger.info("Get contractor earnings details", { contractorId });
+
+      // Get all completed tasks for this contractor
+      const completedTasks = await TaskService.getContractorTasks(
+        contractorId,
+        {
+          status: "Completed",
+          page: 1,
+          limit: 1000, // Get all completed tasks
+        },
+      );
+
+      // Calculate detailed earnings using Central Time
+      const now = new Date();
+      const centralTime = new Date(
+        now.toLocaleString("en-US", { timeZone: "America/Chicago" }),
+      );
+
+      // Initialize earnings data structures
+      const dailyEarnings: { [key: string]: number } = {};
+      const weeklyEarnings: { [key: string]: number } = {};
+      const monthlyEarnings: { [key: string]: number } = {};
+      const taskTypeEarnings: {
+        [key: string]: { count: number; total: number };
+      } = {};
+
+      let totalEarnings = 0;
+      let completedTasksCount = 0;
+
+      // Process each completed task
+      for (const task of completedTasks.tasks) {
+        const taskObj = task.toObject();
+        const paymentAmount = taskObj.paymentAmount || 0;
+        const completedAt = taskObj.completedAt
+          ? new Date(taskObj.completedAt)
+          : null;
+        const taskType = taskObj.type || "Unknown";
+
+        if (paymentAmount > 0 && completedAt) {
+          totalEarnings += paymentAmount;
+          completedTasksCount++;
+
+          // Convert to Central Time for grouping
+          const completedCentral = new Date(
+            completedAt.toLocaleString("en-US", {
+              timeZone: "America/Chicago",
+            }),
+          );
+
+          // Daily earnings
+          const dayKey = completedCentral.toISOString().split("T")[0];
+          if (dayKey) {
+            dailyEarnings[dayKey] =
+              (dailyEarnings[dayKey] || 0) + paymentAmount;
+          }
+
+          // Weekly earnings (ISO week)
+          const weekStart = new Date(completedCentral);
+          weekStart.setDate(
+            completedCentral.getDate() - completedCentral.getDay(),
+          );
+          const weekKey = weekStart.toISOString().split("T")[0];
+          if (weekKey) {
+            weeklyEarnings[weekKey] =
+              (weeklyEarnings[weekKey] || 0) + paymentAmount;
+          }
+
+          // Monthly earnings
+          const monthKey = `${completedCentral.getFullYear()}-${String(completedCentral.getMonth() + 1).padStart(2, "0")}`;
+          if (monthKey) {
+            monthlyEarnings[monthKey] =
+              (monthlyEarnings[monthKey] || 0) + paymentAmount;
+          }
+
+          // Task type earnings
+          if (taskType && !taskTypeEarnings[taskType]) {
+            taskTypeEarnings[taskType] = { count: 0, total: 0 };
+          }
+          if (taskType && taskTypeEarnings[taskType]) {
+            taskTypeEarnings[taskType].count++;
+            taskTypeEarnings[taskType].total += paymentAmount;
+          }
+        }
+      }
+
+      // Convert to arrays and sort
+      const dailyData = Object.entries(dailyEarnings)
+        .map(([date, amount]) => ({
+          date,
+          amount: Math.round(amount * 100) / 100,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-30); // Last 30 days
+
+      const weeklyData = Object.entries(weeklyEarnings)
+        .map(([weekStart, amount]) => ({
+          weekStart,
+          amount: Math.round(amount * 100) / 100,
+        }))
+        .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
+        .slice(-12); // Last 12 weeks
+
+      const monthlyData = Object.entries(monthlyEarnings)
+        .map(([month, amount]) => ({
+          month,
+          amount: Math.round(amount * 100) / 100,
+        }))
+        .sort((a, b) => a.month.localeCompare(b.month))
+        .slice(-12); // Last 12 months
+
+      const taskTypeData = Object.entries(taskTypeEarnings)
+        .map(([type, data]) => ({
+          taskType: type,
+          count: data.count,
+          totalEarnings: Math.round(data.total * 100) / 100,
+          averagePerTask: Math.round((data.total / data.count) * 100) / 100,
+        }))
+        .sort((a, b) => b.totalEarnings - a.totalEarnings);
+
+      // Calculate performance metrics
+      const averagePerTask =
+        completedTasksCount > 0 ? totalEarnings / completedTasksCount : 0;
+      const last30Days = dailyData
+        .slice(-30)
+        .reduce((sum, day) => sum + day.amount, 0);
+      const last7Days = dailyData
+        .slice(-7)
+        .reduce((sum, day) => sum + day.amount, 0);
+
+      const earningsDetails = {
+        summary: {
+          totalEarnings: Math.round(totalEarnings * 100) / 100,
+          completedTasks: completedTasksCount,
+          averagePerTask: Math.round(averagePerTask * 100) / 100,
+          last30DaysEarnings: Math.round(last30Days * 100) / 100,
+          last7DaysEarnings: Math.round(last7Days * 100) / 100,
+        },
+        trends: {
+          daily: dailyData,
+          weekly: weeklyData,
+          monthly: monthlyData,
+        },
+        breakdown: {
+          byTaskType: taskTypeData,
+        },
+        performance: {
+          bestDay:
+            dailyData.length > 0
+              ? dailyData.reduce((max, day) =>
+                  day.amount > max.amount ? day : max,
+                )
+              : null,
+          bestWeek:
+            weeklyData.length > 0
+              ? weeklyData.reduce((max, week) =>
+                  week.amount > max.amount ? week : max,
+                )
+              : null,
+          bestMonth:
+            monthlyData.length > 0
+              ? monthlyData.reduce((max, month) =>
+                  month.amount > max.amount ? month : max,
+                )
+              : null,
+        },
+      };
+
+      logger.info("Earnings details calculated", {
+        contractorId,
+        totalEarnings,
+        completedTasksCount,
+      });
+
+      res.json({
+        success: true,
+        data: earningsDetails,
+        message: "Earnings details retrieved successfully",
+      });
+    } catch (error) {
+      logger.error("Get earnings details error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to retrieve earnings details",
+        code: "EARNINGS_DETAILS_FAILED",
+      });
+    }
+  }
+
+  /**
    * Get contractor earnings summary
    */
   async getEarningsSummary(

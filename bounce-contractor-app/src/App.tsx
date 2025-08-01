@@ -56,6 +56,10 @@ const Profile = lazy(() => import("./pages/profile/Profile"));
 const EditProfile = lazy(() => import("./pages/profile/EditProfile"));
 const TaxSettings = lazy(() => import("./pages/profile/TaxSettings"));
 
+// Earnings Pages
+const PaymentHistory = lazy(() => import("./pages/earnings/PaymentHistory"));
+const EarningsDetails = lazy(() => import("./pages/earnings/EarningsDetails"));
+
 // Notification Pages
 const NotificationCenter = lazy(
   () => import("./pages/notifications/NotificationCenter"),
@@ -225,6 +229,16 @@ const App: React.FC = () => {
             <ProtectedRoute exact path="/profile/tax-settings">
               <Suspense fallback={<LoadingFallback />}>
                 <TaxSettings />
+              </Suspense>
+            </ProtectedRoute>
+            <ProtectedRoute exact path="/profile/payment-history">
+              <Suspense fallback={<LoadingFallback />}>
+                <PaymentHistory />
+              </Suspense>
+            </ProtectedRoute>
+            <ProtectedRoute exact path="/profile/earnings-details">
+              <Suspense fallback={<LoadingFallback />}>
+                <EarningsDetails />
               </Suspense>
             </ProtectedRoute>
             <ProtectedRoute exact path="/notifications">
