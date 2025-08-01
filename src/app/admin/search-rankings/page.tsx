@@ -465,110 +465,39 @@ export default function SearchRankingsPage() {
     }
   };
 
-  // Handle bulk ranking check for all keywords using job queue processing
+  // Handle bulk ranking check using new batch processing system
   const handleCheckAllKeywords = async () => {
     try {
       setIsBulkChecking(true);
-      setBulkProgress("Creating jobs for all keywords...");
+      setBulkProgress("Starting batch processing for all keywords...");
       setBulkResults(null);
 
-      console.log(
-        `🚀 Starting job queue-based bulk ranking check for all keywords`,
+      console.log(`🚀 Starting batch processing for all keywords`);
+
+      // Run batch processing (processes all keywords in one go)
+      const batchResponse = await api.get(
+        "/api/v1/search-rankings/cron?action=batch",
       );
 
-      // Step 1: Create jobs for all active keywords
-      const createResponse = await api.get(
-        "/api/v1/search-rankings/cron?action=create",
-      );
-
-      if (!createResponse.data.result.success) {
-        throw new Error("Failed to create ranking jobs");
+      if (!batchResponse.data.result.success) {
+        throw new Error(
+          batchResponse.data.result.message || "Batch processing failed",
+        );
       }
 
-      const { jobsCreated, totalKeywords } = createResponse.data.result;
-      console.log(
-        `📦 Created ${jobsCreated} jobs for ${totalKeywords} keywords`,
-      );
-
-      if (jobsCreated === 0) {
-        setBulkProgress("✅ No active keywords to process");
-        setTimeout(() => setBulkProgress(""), 3000);
-        return;
-      }
+      const batchResult = batchResponse.data.result;
+      console.log(`📦 Batch processing completed:`, batchResult);
 
       setBulkProgress(
-        `Created ${jobsCreated} jobs for ${totalKeywords} keywords. Processing...`,
+        `✅ Batch processing completed! Processed ${batchResult.processedKeywords}/${batchResult.totalKeywords} keywords in ${Math.round(batchResult.duration / 1000)}s`,
       );
 
-      // Step 2: Process jobs with progress tracking
-      let significantChangesTotal = 0;
-      let processedJobs = 0;
-
-      // Poll and process jobs until all are complete
-      while (true) {
-        // Get current queue status
-        const statusResponse = await api.get(
-          "/api/v1/search-rankings/cron?action=status",
-        );
-        const queueStatus: JobQueueStatus = statusResponse.data.result;
-
-        console.log(`📊 Job queue status:`, queueStatus);
-
-        // Update progress display
-        const completedJobs = queueStatus.completed + queueStatus.failed;
-        const progressPercent =
-          queueStatus.total > 0
-            ? Math.round((completedJobs / queueStatus.total) * 100)
-            : 0;
-
-        setBulkProgress(
-          `Processing jobs... ${progressPercent}% complete (${completedJobs}/${queueStatus.total} jobs)`,
-        );
-
-        // Check if all jobs are complete
-        if (queueStatus.pending === 0 && queueStatus.processing === 0) {
-          console.log(`✅ All jobs completed`);
-
-          setBulkResults({
-            checkedCount: queueStatus.completed,
-            errorCount: queueStatus.failed,
-            significantChanges: significantChangesTotal,
-            notificationsSent: 0, // Will be handled by individual job processing
-          });
-
-          setBulkProgress(
-            `✅ Completed! Processed ${queueStatus.completed} keywords, ${queueStatus.failed} failed`,
-          );
-          break;
-        }
-
-        // Process the next job
-        try {
-          const processResponse = await api.get(
-            "/api/v1/search-rankings/cron?action=process",
-          );
-          const processResult: JobProcessResult = processResponse.data.result;
-
-          if (processResult.success) {
-            processedJobs++;
-
-            if (processResult.significantChange) {
-              significantChangesTotal++;
-            }
-
-            console.log(
-              `🔄 Processed job for "${processResult.keyword}": Position ${processResult.position}`,
-            );
-          } else {
-            console.log(`❌ Failed to process job: ${processResult.message}`);
-          }
-        } catch (processError) {
-          console.error("Error processing job:", processError);
-        }
-
-        // Wait 3 seconds before next iteration (jobs process every 2 minutes, so we don't need to poll too frequently)
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-      }
+      setBulkResults({
+        checkedCount: batchResult.processedKeywords,
+        errorCount: batchResult.errors,
+        significantChanges: batchResult.significantChanges,
+        notificationsSent: batchResult.notifications,
+      });
 
       // Clear all caches to force fresh data
       setRankingsCache({});
@@ -611,7 +540,7 @@ export default function SearchRankingsPage() {
         }
       }
 
-      // Refresh last ranking dates and current positions after bulk operation
+      // Refresh last ranking dates and current positions after batch operation
       try {
         const latestResponse = await api.get("/api/v1/search-rankings/latest");
         const dateMap: Record<string, Date> = {};
@@ -622,13 +551,13 @@ export default function SearchRankingsPage() {
         );
         setLastRankingDates(dateMap);
         console.log(
-          `📅 Refreshed last ranking dates for ${Object.keys(dateMap).length} keywords after bulk operation`,
+          `📅 Refreshed last ranking dates for ${Object.keys(dateMap).length} keywords after batch operation`,
         );
       } catch (refreshError) {
         console.error("Error refreshing last ranking dates:", refreshError);
       }
 
-      // Refresh current positions after bulk operation
+      // Refresh current positions after batch operation
       try {
         await fetchCurrentPositions();
       } catch (refreshError) {
@@ -640,7 +569,7 @@ export default function SearchRankingsPage() {
         setBulkProgress("");
       }, 10000);
     } catch (error: any) {
-      console.error("Error in job queue-based bulk ranking check:", error);
+      console.error("Error in batch processing:", error);
       setBulkProgress(
         `❌ Error: ${error.response?.data?.message || error.message}`,
       );

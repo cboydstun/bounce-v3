@@ -5,6 +5,7 @@ import {
   getQueueStatus,
   cleanupOldJobs,
   resetStuckJobs,
+  processBatchRankings,
 } from "@/utils/jobQueueProcessor";
 import dbConnect from "@/lib/db/mongoose";
 import { getCurrentDateCT } from "@/utils/dateUtils";
@@ -133,9 +134,19 @@ export async function GET(req: NextRequest) {
         console.log(`🔄 Reset result:`, result);
         break;
 
+      case "batch":
+        console.log(
+          `🚀 Running batch ranking processing at ${currentTime.toISOString()}`,
+        );
+
+        // Process all keywords directly in a single batch
+        result = await processBatchRankings();
+        console.log(`📦 Batch processing result:`, result);
+        break;
+
       default:
         throw new Error(
-          `Invalid action: ${action}. Use 'create', 'process', 'status', or 'reset'`,
+          `Invalid action: ${action}. Use 'create', 'process', 'status', 'reset', or 'batch'`,
         );
     }
 

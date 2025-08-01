@@ -174,3 +174,20 @@ export interface BulkProgressUpdate {
   message: string;
   timestamp: Date;
 }
+
+export interface BatchRankingResult {
+  success: boolean;
+  totalKeywords: number;
+  processedKeywords: number;
+  errors: number;
+  significantChanges: number;
+  duration: number;
+  message: string;
+  results: Array<{
+    keyword: string;
+    position: number;
+    success: boolean;
+    error?: string;
+  }>;
+  notifications: number;
+}

@@ -34,6 +34,23 @@ interface QueueStatus {
   estimatedTimeRemaining?: number;
 }
 
+interface BatchRankingResult {
+  success: boolean;
+  totalKeywords: number;
+  processedKeywords: number;
+  errors: number;
+  significantChanges: number;
+  duration: number;
+  message: string;
+  results: Array<{
+    keyword: string;
+    position: number;
+    success: boolean;
+    error?: string;
+  }>;
+  notifications: number;
+}
+
 /**
  * Creates ranking jobs for all active keywords
  * This function completes quickly (<5 seconds) and never times out
@@ -355,5 +372,237 @@ export async function resetStuckJobs(stuckMinutes: number = 30): Promise<{
   } catch (error) {
     console.error("❌ Error resetting stuck jobs:", error);
     throw error;
+  }
+}
+
+/**
+ * NEW: Batch process all keywords directly without job queue
+ * This function processes all active keywords in a single run
+ * Designed for Vercel Hobby tier with daily cron limitations
+ */
+export async function processBatchRankings(): Promise<BatchRankingResult> {
+  const startTime = Date.now();
+  const results: Array<{
+    keyword: string;
+    position: number;
+    success: boolean;
+    error?: string;
+  }> = [];
+  const errors: Array<{ keyword: string; error: string }> = [];
+  let significantChanges = 0;
+  let notificationsSent = 0;
+
+  try {
+    await dbConnect();
+
+    console.log(
+      `🚀 Starting batch ranking processing at ${new Date().toISOString()}`,
+    );
+
+    // Step 1: Clean up ALL old jobs (complete cleanup)
+    const cleanupResult = await RankingJob.deleteMany({});
+    console.log(
+      `🧹 Cleaned up ${cleanupResult.deletedCount} old jobs (all statuses)`,
+    );
+
+    // Step 2: Get all active keywords
+    const keywords = await SearchKeyword.findActiveKeywords();
+    console.log(
+      `📋 Found ${keywords.length} active keywords for batch processing`,
+    );
+
+    if (keywords.length === 0) {
+      return {
+        success: true,
+        totalKeywords: 0,
+        processedKeywords: 0,
+        errors: 0,
+        significantChanges: 0,
+        duration: Date.now() - startTime,
+        message: "No active keywords to process",
+        results: [],
+        notifications: 0,
+      };
+    }
+
+    const targetDomain = process.env.TARGET_DOMAIN;
+    if (!targetDomain) {
+      throw new Error("TARGET_DOMAIN environment variable is not set");
+    }
+
+    // Step 3: Process each keyword directly
+    const significantChangeNotifications: RankingChangeNotification[] = [];
+
+    for (let i = 0; i < keywords.length; i++) {
+      const keyword = keywords[i];
+
+      // Time check: ensure we don't exceed 55 seconds (leave 5 seconds buffer)
+      const elapsed = Date.now() - startTime;
+      if (elapsed > 55000) {
+        console.log(
+          `⏰ Approaching time limit (${elapsed}ms), stopping at keyword ${i + 1}/${keywords.length}`,
+        );
+        break;
+      }
+
+      try {
+        console.log(
+          `🔄 Processing keyword "${keyword.keyword}" (${i + 1}/${keywords.length})`,
+        );
+
+        // Process the keyword ranking
+        const result = await checkKeywordRanking(
+          keyword.keyword,
+          targetDomain,
+          50, // Full search depth
+        );
+
+        // Ensure we have a valid URL
+        let rankingUrl = result.url;
+        if (!rankingUrl) {
+          rankingUrl = targetDomain.startsWith("http")
+            ? targetDomain
+            : `https://${targetDomain}`;
+        }
+
+        console.log(
+          `📊 Result for "${keyword.keyword}": Position ${result.position}`,
+        );
+
+        // Save the ranking result
+        const newRanking = await SearchRanking.create({
+          keywordId: keyword._id,
+          keyword: keyword.keyword,
+          date: new Date(),
+          position: result.position,
+          url: rankingUrl,
+          competitors: result.competitors,
+          metadata: {
+            totalResults: result.metadata.totalResults,
+            searchTime: result.metadata.searchTime,
+            resultCount: result.metadata.resultCount,
+            isValidationPassed: result.metadata.isValidationPassed,
+            validationWarnings: result.metadata.validationWarnings,
+            apiCallsUsed: result.metadata.apiCallsUsed,
+            searchDepth: result.metadata.searchDepth,
+            maxPositionSearched: result.metadata.maxPositionSearched,
+          },
+        });
+
+        // Check for significant changes
+        const previousRankings = await SearchRanking.find({
+          keywordId: keyword._id,
+          _id: { $ne: newRanking._id },
+        })
+          .sort({ date: -1 })
+          .limit(1);
+
+        if (previousRankings.length > 0) {
+          const previousRanking = previousRankings[0];
+          const positionChange = previousRanking.position - result.position;
+
+          console.log(
+            `📈 Position change for "${keyword.keyword}": ${previousRanking.position} → ${result.position} (${positionChange > 0 ? "+" : ""}${positionChange})`,
+          );
+
+          // Check if the change is significant (3 or more positions)
+          if (Math.abs(positionChange) >= 3) {
+            significantChanges++;
+            console.log(
+              `🚨 Significant change detected for "${keyword.keyword}"`,
+            );
+
+            // Collect notification data (send in batch later)
+            significantChangeNotifications.push({
+              keyword: keyword.keyword,
+              previousPosition: previousRanking.position,
+              currentPosition: result.position,
+              change: positionChange,
+              date: newRanking.date,
+              url: newRanking.url,
+            });
+          }
+        }
+
+        // Add to successful results
+        results.push({
+          keyword: keyword.keyword,
+          position: result.position,
+          success: true,
+        });
+
+        console.log(`✅ Successfully processed "${keyword.keyword}"`);
+      } catch (keywordError) {
+        console.error(
+          `❌ Error processing keyword "${keyword.keyword}":`,
+          keywordError,
+        );
+
+        const errorMessage =
+          keywordError instanceof Error
+            ? keywordError.message
+            : "Unknown processing error";
+
+        errors.push({
+          keyword: keyword.keyword,
+          error: errorMessage,
+        });
+
+        results.push({
+          keyword: keyword.keyword,
+          position: -1,
+          success: false,
+          error: errorMessage,
+        });
+      }
+    }
+
+    // Step 4: Send batch notifications for significant changes
+    if (significantChangeNotifications.length > 0) {
+      try {
+        await sendRankingChangeNotification(significantChangeNotifications);
+        notificationsSent = significantChangeNotifications.length;
+        console.log(
+          `📧 Sent batch notification for ${significantChangeNotifications.length} significant changes`,
+        );
+      } catch (emailError) {
+        console.error(`❌ Error sending batch notifications:`, emailError);
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    const successfulProcessed = results.filter((r) => r.success).length;
+
+    console.log(`✅ Batch processing completed in ${duration}ms`);
+    console.log(
+      `📊 Results: ${successfulProcessed}/${keywords.length} processed, ${errors.length} errors, ${significantChanges} significant changes`,
+    );
+
+    return {
+      success: true,
+      totalKeywords: keywords.length,
+      processedKeywords: successfulProcessed,
+      errors: errors.length,
+      significantChanges,
+      duration,
+      message: `Successfully processed ${successfulProcessed}/${keywords.length} keywords in ${Math.round(duration / 1000)}s`,
+      results,
+      notifications: notificationsSent,
+    };
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error("❌ Error in batch ranking processing:", error);
+
+    return {
+      success: false,
+      totalKeywords: 0,
+      processedKeywords: results.filter((r) => r.success).length,
+      errors: errors.length + 1,
+      significantChanges,
+      duration,
+      message: `Batch processing failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      results,
+      notifications: notificationsSent,
+    };
   }
 }
