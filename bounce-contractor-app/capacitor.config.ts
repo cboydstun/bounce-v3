@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.bouncecontractor.app",
-  appName: "Bounce Contractor",
+  appName: "Bounce Contractor (Alpha)",
   webDir: "dist",
   server: {
     androidScheme: "https",

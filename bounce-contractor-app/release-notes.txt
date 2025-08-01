@@ -1,0 +1,26 @@
+Alpha Release v1.0.0-alpha.2
+
+🚀 Redeploy of alpha version for internal testing
+
+Features included:
+- User authentication system
+- Basic app navigation and UI
+- Core functionality setup
+- Real-time notifications support
+- Offline capability foundation
+
+📱 Installation Instructions:
+1. Install "Firebase App Tester" from Google Play Store
+2. Open the invitation email on your phone
+3. Tap "Accept invitation" 
+4. Download and install the app
+
+🐛 Known Issues:
+- This is an alpha version - expect some bugs
+- Please report any crashes or issues
+- Some features may be incomplete
+
+📧 Feedback:
+Please send feedback, screenshots, and bug reports to the development team.
+
+Thank you for helping us test the Bounce Contractor app!

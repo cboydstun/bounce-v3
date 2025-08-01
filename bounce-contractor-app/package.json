@@ -1,7 +1,7 @@
 {
   "name": "partypad",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.0-alpha.2",
   "type": "module",
   "scripts": {
     "dev": "vite --mode development",
@@ -22,7 +22,9 @@
     "cap:run:ios": "npx cap run ios",
     "cap:build:android": "npm run build:prod && npx cap sync android && npx cap build android",
     "cap:build:ios": "npm run build:prod && npx cap sync ios && npx cap build ios",
-    "cap:clean:android": "rm -rf dist/ && rm -rf android/app/src/main/assets/public/ && npm run build:prod && npx cap sync android && npx cap run android"
+    "cap:clean:android": "rm -rf dist/ && rm -rf android/app/src/main/assets/public/ && npm run build:prod && npx cap sync android && npx cap run android",
+    "build:alpha": "./scripts/build-alpha.sh",
+    "build:firebase": "./scripts/build-firebase-alpha.sh"
   },
   "dependencies": {
     "@capacitor/android": "^7.3.0",
