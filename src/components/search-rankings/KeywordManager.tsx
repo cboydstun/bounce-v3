@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { SearchKeyword } from "@/types/searchRanking";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { getCurrentDateCT } from "@/utils/dateUtils";
+import { getCurrentDateCT, formatDateCT, isSameDayCT } from "@/utils/dateUtils";
 
 interface KeywordManagerProps {
   keywords: SearchKeyword[];
@@ -262,15 +262,45 @@ export default function KeywordManager({
     }
   };
 
-  const getDaysAgo = (date: Date) => {
-    const now = getCurrentDateCT();
-    const diffTime = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const getDaysAgo = (date: Date | string | undefined) => {
+    if (!date) return "Never checked";
 
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "1 day ago";
-    if (diffDays < 0) return "Today"; // Handle future dates as today
-    return `${diffDays} days ago`;
+    try {
+      // Use the date utility to get current date in Central Time
+      const now = getCurrentDateCT();
+
+      // Handle different input types and ensure we have a valid Date
+      let dateObj: Date;
+      if (date instanceof Date) {
+        dateObj = date;
+      } else if (typeof date === "string") {
+        // Try to parse the date string - could be ISO format from API
+        dateObj = new Date(date);
+      } else {
+        return "Invalid date";
+      }
+
+      // Validate the date object
+      if (isNaN(dateObj.getTime())) {
+        return "Invalid date";
+      }
+
+      // Use isSameDayCT for accurate same-day comparison in Central Time
+      if (isSameDayCT(now, dateObj)) {
+        return "Today";
+      }
+
+      // Calculate difference using Central Time
+      const diffTime = now.getTime() - dateObj.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) return "1 day ago";
+      if (diffDays < 0) return "Today"; // Handle future dates as today
+      return `${diffDays} days ago`;
+    } catch (error) {
+      console.warn("Error calculating days ago for date:", date, error);
+      return "Invalid date";
+    }
   };
 
   const getPositionDisplay = (keywordId: string) => {

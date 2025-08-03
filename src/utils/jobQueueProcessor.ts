@@ -436,9 +436,9 @@ export async function processBatchRankings(): Promise<BatchRankingResult> {
     for (let i = 0; i < keywords.length; i++) {
       const keyword = keywords[i];
 
-      // Time check: ensure we don't exceed 55 seconds (leave 5 seconds buffer)
+      // Time check: ensure we don't exceed 50 seconds (leave 10 seconds buffer)
       const elapsed = Date.now() - startTime;
-      if (elapsed > 55000) {
+      if (elapsed > 50000) {
         console.log(
           `⏰ Approaching time limit (${elapsed}ms), stopping at keyword ${i + 1}/${keywords.length}`,
         );
@@ -450,11 +450,11 @@ export async function processBatchRankings(): Promise<BatchRankingResult> {
           `🔄 Processing keyword "${keyword.keyword}" (${i + 1}/${keywords.length})`,
         );
 
-        // Process the keyword ranking
+        // Process the keyword ranking with reduced search depth for faster processing
         const result = await checkKeywordRanking(
           keyword.keyword,
           targetDomain,
-          50, // Full search depth
+          30, // Reduced search depth for batch processing performance
         );
 
         // Ensure we have a valid URL

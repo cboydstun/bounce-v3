@@ -60,6 +60,8 @@ export default function SearchRankingsPage() {
   // Job queue status
   const [queueStatus, setQueueStatus] = useState<JobQueueStatus | null>(null);
   const [showQueueStatus, setShowQueueStatus] = useState(false);
+  const [queuePollingInterval, setQueuePollingInterval] =
+    useState<NodeJS.Timeout | null>(null);
 
   // Current positions for all keywords
   const [currentPositions, setCurrentPositions] = useState<
@@ -465,6 +467,41 @@ export default function SearchRankingsPage() {
     }
   };
 
+  // Start polling queue status
+  const startQueuePolling = () => {
+    if (queuePollingInterval) {
+      clearInterval(queuePollingInterval);
+    }
+
+    const interval = setInterval(async () => {
+      if (!isBulkChecking) {
+        clearInterval(interval);
+        setQueuePollingInterval(null);
+        return;
+      }
+      await fetchQueueStatus();
+    }, 2000); // Poll every 2 seconds
+
+    setQueuePollingInterval(interval);
+  };
+
+  // Stop polling queue status
+  const stopQueuePolling = () => {
+    if (queuePollingInterval) {
+      clearInterval(queuePollingInterval);
+      setQueuePollingInterval(null);
+    }
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (queuePollingInterval) {
+        clearInterval(queuePollingInterval);
+      }
+    };
+  }, [queuePollingInterval]);
+
   // Handle bulk ranking check using new batch processing system
   const handleCheckAllKeywords = async () => {
     try {
@@ -473,6 +510,9 @@ export default function SearchRankingsPage() {
       setBulkResults(null);
 
       console.log(`🚀 Starting batch processing for all keywords`);
+
+      // Show initial progress - no job queue polling needed for batch processing
+      setBulkProgress("Processing keywords directly (bypassing job queue)...");
 
       // Run batch processing (processes all keywords in one go)
       const batchResponse = await api.get(
@@ -488,15 +528,21 @@ export default function SearchRankingsPage() {
       const batchResult = batchResponse.data.result;
       console.log(`📦 Batch processing completed:`, batchResult);
 
-      setBulkProgress(
-        `✅ Batch processing completed! Processed ${batchResult.processedKeywords}/${batchResult.totalKeywords} keywords in ${Math.round(batchResult.duration / 1000)}s`,
-      );
+      // Show completion status with details
+      const completionMessage =
+        batchResult.processedKeywords === batchResult.totalKeywords
+          ? `✅ Batch processing completed! Processed all ${batchResult.processedKeywords} keywords in ${Math.round(batchResult.duration / 1000)}s`
+          : `⚠️ Batch processing completed with timeout! Processed ${batchResult.processedKeywords}/${batchResult.totalKeywords} keywords in ${Math.round(batchResult.duration / 1000)}s`;
+
+      setBulkProgress(completionMessage);
 
       setBulkResults({
         checkedCount: batchResult.processedKeywords,
         errorCount: batchResult.errors,
         significantChanges: batchResult.significantChanges,
         notificationsSent: batchResult.notifications,
+        totalKeywords: batchResult.totalKeywords,
+        timedOut: batchResult.processedKeywords < batchResult.totalKeywords,
       });
 
       // Clear all caches to force fresh data
@@ -564,10 +610,10 @@ export default function SearchRankingsPage() {
         console.error("Error refreshing current positions:", refreshError);
       }
 
-      // Auto-hide progress after 10 seconds
+      // Auto-hide progress after 15 seconds (longer for timeout cases)
       setTimeout(() => {
         setBulkProgress("");
-      }, 10000);
+      }, 15000);
     } catch (error: any) {
       console.error("Error in batch processing:", error);
       setBulkProgress(
@@ -708,8 +754,8 @@ export default function SearchRankingsPage() {
         </div>
       </div>
 
-      {/* Job Queue Status Dashboard */}
-      {showQueueStatus && (
+      {/* Job Queue Status Dashboard - Hide during batch processing */}
+      {showQueueStatus && !isBulkChecking && (
         <div className="mb-6">
           <div className="bg-white shadow rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
@@ -854,11 +900,12 @@ export default function SearchRankingsPage() {
                   )}
                 </div>
 
-                {(queueStatus.pending > 0 || queueStatus.processing > 0) && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                {/* Show different messages based on context */}
+                {isBulkChecking && (
+                  <div className="mt-4 p-3 bg-green-50 rounded-lg">
                     <div className="flex items-center">
                       <svg
-                        className="w-5 h-5 text-blue-500 mr-2"
+                        className="w-5 h-5 text-green-500 mr-2 animate-spin"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -867,16 +914,66 @@ export default function SearchRankingsPage() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                         />
                       </svg>
-                      <span className="text-sm text-blue-800">
-                        Jobs are processed automatically every 2 minutes by the
-                        cron system.
+                      <span className="text-sm text-green-800">
+                        <strong>Batch processing active:</strong> Old jobs are
+                        being cleaned up and keywords processed directly. Queue
+                        will be empty when complete.
                       </span>
                     </div>
                   </div>
                 )}
+
+                {!isBulkChecking && queueStatus.total === 0 && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center">
+                      <svg
+                        className="w-5 h-5 text-gray-500 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="text-sm text-gray-600">
+                        Queue is clean. Use "Check All Keywords" for batch
+                        processing or individual keyword checks.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {!isBulkChecking &&
+                  (queueStatus.pending > 0 || queueStatus.processing > 0) && (
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                      <div className="flex items-center">
+                        <svg
+                          className="w-5 h-5 text-blue-500 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span className="text-sm text-blue-800">
+                          Jobs are processed automatically every 2 minutes by
+                          the cron system.
+                        </span>
+                      </div>
+                    </div>
+                  )}
               </div>
             ) : (
               <div className="text-center py-4">
@@ -888,68 +985,53 @@ export default function SearchRankingsPage() {
         </div>
       )}
 
-      {/* Enhanced Batch Progress Tracker */}
-      <BatchProgressTracker
-        isActive={isBulkChecking}
-        onComplete={() => {
-          console.log("✅ Batch processing completed");
-          setIsBulkChecking(false);
+      {/* Simple Batch Progress Display */}
+      {isBulkChecking && (
+        <div className="mb-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-blue-900">
+                Batch Processing Active
+              </h3>
+              <div className="flex items-center">
+                <LoadingSpinner className="w-5 h-5 mr-2 text-blue-600" />
+                <span className="text-sm text-blue-700">Processing...</span>
+              </div>
+            </div>
 
-          // Clear all caches to force fresh data
-          setRankingsCache({});
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-blue-800">Status:</span>
+                <span className="font-medium text-blue-900">
+                  Processing all keywords directly (bypassing job queue)
+                </span>
+              </div>
 
-          // Refresh current keyword data if one is selected
-          if (selectedKeyword) {
-            const { startDate, endDate } = getDateRangeForPeriod(period);
-            api
-              .get("/api/v1/search-rankings/history", {
-                params: {
-                  keywordId: selectedKeyword,
-                  startDate,
-                  endDate,
-                },
-              })
-              .then((response) => {
-                const newRankings = response.data.rankings;
-                setRankings(newRankings);
+              <div className="flex justify-between text-sm">
+                <span className="text-blue-800">Expected Duration:</span>
+                <span className="font-medium text-blue-900">
+                  ~50-60 seconds for all keywords
+                </span>
+              </div>
 
-                // Update validation status from the latest ranking
-                if (newRankings.length > 0) {
-                  const latestRanking = newRankings[0];
-                  if (latestRanking.metadata) {
-                    setValidationStatus({
-                      isValid: latestRanking.metadata.isValidationPassed,
-                      warnings: latestRanking.metadata.validationWarnings,
-                    });
-                  }
-                }
-              })
-              .catch((error) => {
-                console.error("Error refreshing current keyword data:", error);
-              });
-          }
+              <div className="flex justify-between text-sm">
+                <span className="text-blue-800">Progress:</span>
+                <span className="font-medium text-blue-900">
+                  Processing in background - results will appear when complete
+                </span>
+              </div>
+            </div>
 
-          // Refresh last ranking dates
-          api
-            .get("/api/v1/search-rankings/latest")
-            .then((response) => {
-              const dateMap: Record<string, Date> = {};
-              Object.entries(response.data.lastRankingDates || {}).forEach(
-                ([keywordId, dateStr]) => {
-                  dateMap[keywordId] = new Date(dateStr as string);
-                },
-              );
-              setLastRankingDates(dateMap);
-            })
-            .catch((error) => {
-              console.error("Error refreshing last ranking dates:", error);
-            });
-        }}
-        onError={(error) => {
-          console.error("❌ Batch processing error:", error);
-          setIsBulkChecking(false);
-        }}
-      />
+            <div className="mt-4 p-3 bg-blue-100 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Batch processing runs as a single
+                operation. Progress updates will appear in the console logs and
+                final results will be displayed when processing completes.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Legacy Progress Display (fallback) */}
       {(bulkProgress || bulkResults) && !isBulkChecking && (
