@@ -76,6 +76,9 @@ const Splash = lazy(() => import("./pages/auth/Splash"));
 // QuickBooks Pages
 const W9FormPage = lazy(() => import("./pages/quickbooks/W9FormPage"));
 
+// Debug Pages
+const BiometricDebug = lazy(() => import("./pages/debug/BiometricDebug"));
+
 /* Components - Keep critical components as static imports */
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import OfflineBanner from "./components/common/OfflineBanner";
@@ -83,6 +86,9 @@ import LoadingSpinner from "./components/common/LoadingSpinner";
 
 /* Store */
 import { useAuthStore, authSelectors } from "./store/authStore";
+
+/* i18n */
+import { useI18n } from "./hooks/common/useI18n";
 
 /* Utils */
 import { preloadCriticalChunks } from "./utils/preloader";
@@ -99,6 +105,7 @@ setupIonicReact({
 });
 
 const App: React.FC = () => {
+  const { t } = useI18n();
   const isAuthenticated = useAuthStore(authSelectors.isAuthenticated);
   const checkAuthStatus = useAuthStore((state) => state.checkAuthStatus);
 
@@ -155,7 +162,7 @@ const App: React.FC = () => {
   }, [isAuthenticated]);
 
   // Loading fallback component
-  const LoadingFallback = () => <LoadingSpinner message="Loading page..." />;
+  const LoadingFallback = () => <LoadingSpinner message={t("loading.page")} />;
 
   if (!isAuthenticated) {
     return (
@@ -256,6 +263,11 @@ const App: React.FC = () => {
                 <W9FormPage />
               </Suspense>
             </ProtectedRoute>
+            <ProtectedRoute exact path="/debug/biometric">
+              <Suspense fallback={<LoadingFallback />}>
+                <BiometricDebug />
+              </Suspense>
+            </ProtectedRoute>
             <ProtectedRoute exact path="/">
               <Redirect to="/available-tasks" />
             </ProtectedRoute>
@@ -274,7 +286,9 @@ const App: React.FC = () => {
                 icon={listOutline}
                 className="text-primary"
               />
-              <IonLabel className="text-sm font-medium">Available</IonLabel>
+              <IonLabel className="text-sm font-medium">
+                {t("navigation.available")}
+              </IonLabel>
             </IonTabButton>
 
             <IonTabButton tab="my-tasks" href="/my-tasks">
@@ -283,7 +297,9 @@ const App: React.FC = () => {
                 icon={checkboxOutline}
                 className="text-primary"
               />
-              <IonLabel className="text-sm font-medium">My Tasks</IonLabel>
+              <IonLabel className="text-sm font-medium">
+                {t("navigation.myTasks")}
+              </IonLabel>
             </IonTabButton>
 
             <IonTabButton tab="notifications" href="/notifications">
@@ -292,7 +308,9 @@ const App: React.FC = () => {
                 icon={notificationsOutline}
                 className="text-primary"
               />
-              <IonLabel className="text-sm font-medium">Alerts</IonLabel>
+              <IonLabel className="text-sm font-medium">
+                {t("navigation.alerts")}
+              </IonLabel>
             </IonTabButton>
 
             <IonTabButton tab="profile" href="/profile">
@@ -301,7 +319,9 @@ const App: React.FC = () => {
                 icon={personOutline}
                 className="text-primary"
               />
-              <IonLabel className="text-sm font-medium">Profile</IonLabel>
+              <IonLabel className="text-sm font-medium">
+                {t("navigation.profile")}
+              </IonLabel>
             </IonTabButton>
           </IonTabBar>
         </IonTabs>

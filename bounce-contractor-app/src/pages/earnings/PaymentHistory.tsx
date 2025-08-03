@@ -40,7 +40,7 @@ import { useI18n } from "../../hooks/common/useI18n";
 import { PaymentHistoryFilters } from "../../services/api/earningsService";
 
 const PaymentHistory: React.FC = () => {
-  const { formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency, formatDate } = useI18n();
   const [filters, setFilters] = useState<PaymentHistoryFilters>({
     page: 1,
     limit: 20,
@@ -108,17 +108,17 @@ const PaymentHistory: React.FC = () => {
             <IonButtons slot="start">
               <IonBackButton defaultHref="/profile" />
             </IonButtons>
-            <IonTitle>Payment History</IonTitle>
+            <IonTitle>{t("earnings.paymentHistory")}</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
           <div className="flex flex-col items-center justify-center h-full">
             <IonText color="danger" className="text-center">
-              <h2>Error Loading Payment History</h2>
+              <h2>{t("earnings.errorLoadingPaymentHistory")}</h2>
               <p>{error.message}</p>
             </IonText>
             <IonButton onClick={() => refetch()} className="mt-4">
-              Try Again
+              {t("earnings.tryAgain")}
             </IonButton>
           </div>
         </IonContent>
@@ -133,7 +133,7 @@ const PaymentHistory: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/profile" />
           </IonButtons>
-          <IonTitle>Payment History</IonTitle>
+          <IonTitle>{t("earnings.paymentHistory")}</IonTitle>
           <IonButtons slot="end">
             <IonButton fill="clear" onClick={() => setShowDateFilter(true)}>
               <IonIcon icon={filterOutline} />
@@ -153,7 +153,7 @@ const PaymentHistory: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle className="flex items-center">
                 <IonIcon icon={cashOutline} className="mr-2 text-green-600" />
-                Payment Summary
+                {t("paymentHistory.title")}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
@@ -163,7 +163,7 @@ const PaymentHistory: React.FC = () => {
                     {paymentData.summary.totalPayments}
                   </div>
                   <IonText className="text-sm text-gray-600">
-                    Total Payments
+                    {t("paymentHistory.totalPayments")}
                   </IonText>
                 </div>
                 <div>
@@ -171,7 +171,7 @@ const PaymentHistory: React.FC = () => {
                     {formatCurrency(paymentData.summary.totalAmount)}
                   </div>
                   <IonText className="text-sm text-gray-600">
-                    Total Amount
+                    {t("paymentHistory.totalAmount")}
                   </IonText>
                 </div>
                 <div>
@@ -179,7 +179,7 @@ const PaymentHistory: React.FC = () => {
                     {formatCurrency(paymentData.summary.averagePayment)}
                   </div>
                   <IonText className="text-sm text-gray-600">
-                    Average Payment
+                    {t("paymentHistory.averagePayment")}
                   </IonText>
                 </div>
               </div>
@@ -194,7 +194,7 @@ const PaymentHistory: React.FC = () => {
               <div className="flex items-center">
                 <IonIcon icon={filterOutline} className="mr-2 text-blue-600" />
                 <IonText className="text-sm text-blue-800">
-                  Filtered by date range
+                  {t("paymentHistory.filteredByDateRange")}
                 </IonText>
               </div>
               <IonButton
@@ -203,7 +203,7 @@ const PaymentHistory: React.FC = () => {
                 color="primary"
                 onClick={clearFilters}
               >
-                Clear
+                {t("paymentHistory.clear")}
               </IonButton>
             </div>
           </div>
@@ -225,7 +225,7 @@ const PaymentHistory: React.FC = () => {
                         {payment.taskTitle}
                       </h3>
                       <IonText className="text-sm text-gray-600">
-                        Order #{payment.orderId}
+                        {t("paymentHistory.orderId", { id: payment.orderId })}
                       </IonText>
                     </div>
                     <div className="text-right">
@@ -245,7 +245,9 @@ const PaymentHistory: React.FC = () => {
                     <div className="flex items-center text-sm text-gray-600">
                       <IonIcon icon={calendarOutline} className="mr-2" />
                       <span>
-                        Paid on {formatDate(new Date(payment.paymentDate))}
+                        {t("paymentHistory.paidOn", {
+                          date: formatDate(new Date(payment.paymentDate)),
+                        })}
                       </span>
                     </div>
 
@@ -262,13 +264,6 @@ const PaymentHistory: React.FC = () => {
                       </span>
                     </div>
                   </div>
-
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <IonText className="text-xs text-gray-500">
-                      Payment Method:{" "}
-                      {payment.paymentMethod.replace(/_/g, " ").toUpperCase()}
-                    </IonText>
-                  </div>
                 </IonCardContent>
               </IonCard>
             ))}
@@ -280,8 +275,8 @@ const PaymentHistory: React.FC = () => {
               className="text-6xl text-gray-300 mb-4"
             />
             <IonText className="text-center text-gray-500">
-              <h2>No Payment History</h2>
-              <p>Complete tasks to see your payment history here.</p>
+              <h2>{t("paymentHistory.noPaymentHistory")}</h2>
+              <p>{t("paymentHistory.completeTasks")}</p>
             </IonText>
           </div>
         )}
@@ -294,11 +289,13 @@ const PaymentHistory: React.FC = () => {
           onDidDismiss={() => setShowDateFilter(false)}
         >
           <div className="p-4">
-            <h3 className="font-semibold mb-4">Filter by Date Range</h3>
+            <h3 className="font-semibold mb-4">
+              {t("paymentHistory.filterByDateRange")}
+            </h3>
 
             <div className="space-y-4">
               <div>
-                <IonLabel>Start Date</IonLabel>
+                <IonLabel>{t("paymentHistory.startDate")}</IonLabel>
                 <IonDatetime
                   presentation="date"
                   value={filters.startDate}
@@ -312,7 +309,7 @@ const PaymentHistory: React.FC = () => {
               </div>
 
               <div>
-                <IonLabel>End Date</IonLabel>
+                <IonLabel>{t("paymentHistory.endDate")}</IonLabel>
                 <IonDatetime
                   presentation="date"
                   value={filters.endDate}
@@ -332,7 +329,7 @@ const PaymentHistory: React.FC = () => {
                 fill="outline"
                 onClick={() => setShowDateFilter(false)}
               >
-                Cancel
+                {t("paymentHistory.cancel")}
               </IonButton>
               <IonButton
                 expand="block"
@@ -340,7 +337,7 @@ const PaymentHistory: React.FC = () => {
                   handleDateFilter(filters.startDate, filters.endDate)
                 }
               >
-                Apply Filter
+                {t("paymentHistory.applyFilter")}
               </IonButton>
             </div>
           </div>

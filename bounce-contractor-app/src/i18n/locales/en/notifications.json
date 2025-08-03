@@ -57,7 +57,9 @@
     "clearAll": "Clear All",
     "today": "Today",
     "yesterday": "Yesterday",
-    "older": "Older"
+    "older": "Older",
+    "stayUpdated": "Stay updated with task alerts, payments, and important announcements.",
+    "comingSoon": "🚧 This feature is coming soon! You'll receive real-time notifications here."
   },
   "types": {
     "task": "Task",

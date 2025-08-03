@@ -46,6 +46,7 @@ import {
   photoService,
   PhotoUploadProgress,
 } from "../../services/api/photoService";
+import { useI18n } from "../../hooks/common/useI18n";
 
 interface EditProfileForm {
   firstName: string;
@@ -98,6 +99,7 @@ const RELATIONSHIP_OPTIONS = [
 ];
 
 const EditProfile: React.FC = () => {
+  const { t } = useI18n();
   const history = useHistory();
   const user = useAuthStore(authSelectors.user);
   const profile = useAuthStore(authSelectors.profile);
@@ -154,37 +156,39 @@ const EditProfile: React.FC = () => {
     const errors: EditProfileFormErrors = {};
 
     if (!formData.firstName.trim()) {
-      errors.firstName = "First name is required";
+      errors.firstName = t("editProfile.validation.firstNameRequired");
     }
 
     if (!formData.lastName.trim()) {
-      errors.lastName = "Last name is required";
+      errors.lastName = t("editProfile.validation.lastNameRequired");
     }
 
     if (!formData.email.trim()) {
-      errors.email = "Email is required";
+      errors.email = t("editProfile.validation.emailRequired");
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = "Invalid email format";
+      errors.email = t("editProfile.validation.emailInvalid");
     }
 
     if (!formData.phone.trim()) {
-      errors.phone = "Phone number is required";
+      errors.phone = t("editProfile.validation.phoneRequired");
     } else if (!/^\+?[\d\s\-\(\)]+$/.test(formData.phone)) {
-      errors.phone = "Invalid phone number format";
+      errors.phone = t("editProfile.validation.phoneInvalid");
     }
 
     if (formData.skills.length === 0) {
-      errors.skills = "At least one skill is required";
+      errors.skills = t("editProfile.validation.skillsRequired");
     }
 
     if (formData.emergencyContactName && !formData.emergencyContactPhone) {
-      errors.emergencyContactPhone =
-        "Emergency contact phone is required when name is provided";
+      errors.emergencyContactPhone = t(
+        "editProfile.validation.emergencyPhoneRequired",
+      );
     }
 
     if (formData.emergencyContactPhone && !formData.emergencyContactName) {
-      errors.emergencyContactName =
-        "Emergency contact name is required when phone is provided";
+      errors.emergencyContactName = t(
+        "editProfile.validation.emergencyNameRequired",
+      );
     }
 
     setFormErrors(errors);
@@ -243,7 +247,7 @@ const EditProfile: React.FC = () => {
 
   const handleSave = async () => {
     if (!validateForm()) {
-      setToastMessage("Please fix the errors before saving");
+      setToastMessage(t("editProfile.validation.fixErrors"));
       setToastColor("danger");
       setShowToast(true);
       return;
@@ -284,7 +288,7 @@ const EditProfile: React.FC = () => {
 
       await updateProfile(profileUpdateData);
 
-      setToastMessage("Profile updated successfully!");
+      setToastMessage(t("editProfile.messages.profileUpdated"));
       setToastColor("success");
       setShowToast(true);
 
@@ -294,7 +298,7 @@ const EditProfile: React.FC = () => {
       }, 1500);
     } catch (error) {
       console.error("Failed to update profile:", error);
-      setToastMessage("Failed to update profile. Please try again.");
+      setToastMessage(t("editProfile.messages.profileUpdateFailed"));
       setToastColor("danger");
       setShowToast(true);
     }
@@ -330,7 +334,7 @@ const EditProfile: React.FC = () => {
       // Update the profile photo in the store
       await updateProfilePhoto(uploadResult.url);
 
-      setToastMessage("Profile photo updated successfully!");
+      setToastMessage(t("editProfile.messages.photoUpdated"));
       setToastColor("success");
       setShowToast(true);
 
@@ -342,7 +346,7 @@ const EditProfile: React.FC = () => {
       }
     } catch (error) {
       console.error("Photo upload failed:", error);
-      setToastMessage("Failed to upload photo. Please try again.");
+      setToastMessage(t("editProfile.messages.photoUploadFailed"));
       setToastColor("danger");
       setShowToast(true);
     } finally {
@@ -391,7 +395,7 @@ const EditProfile: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/profile" />
           </IonButtons>
-          <IonTitle>Edit Profile</IonTitle>
+          <IonTitle>{t("editProfile.title")}</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={handleSave} disabled={isLoading}>
               <IonIcon icon={saveOutline} />
@@ -408,9 +412,15 @@ const EditProfile: React.FC = () => {
               <div className="mb-4">
                 <IonAvatar className="w-24 h-24 mx-auto mb-4">
                   {photoPreview ? (
-                    <img src={photoPreview} alt="Profile Preview" />
+                    <img
+                      src={photoPreview}
+                      alt={t("editProfile.profilePreview")}
+                    />
                   ) : user?.profileImage ? (
-                    <img src={user.profileImage} alt="Profile" />
+                    <img
+                      src={user.profileImage}
+                      alt={t("editProfile.profileAlt")}
+                    />
                   ) : (
                     <div className="w-full h-full bg-primary rounded-full flex items-center justify-center">
                       <span className="text-2xl font-bold text-white">
@@ -423,7 +433,9 @@ const EditProfile: React.FC = () => {
                 {selectedPhoto ? (
                   <div className="space-y-2">
                     <div className="text-sm text-gray-600 mb-2">
-                      Selected: {selectedPhoto.name}
+                      {t("editProfile.selectedPhoto", {
+                        filename: selectedPhoto.name,
+                      })}
                     </div>
                     {isUploadingPhoto && (
                       <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
@@ -441,7 +453,9 @@ const EditProfile: React.FC = () => {
                         disabled={isUploadingPhoto}
                       >
                         <IonIcon icon={saveOutline} slot="start" />
-                        {isUploadingPhoto ? "Uploading..." : "Upload Photo"}
+                        {isUploadingPhoto
+                          ? t("editProfile.uploading")
+                          : t("editProfile.uploadPhoto")}
                       </IonButton>
                       <IonButton
                         fill="outline"
@@ -449,7 +463,7 @@ const EditProfile: React.FC = () => {
                         onClick={cancelPhotoSelection}
                         disabled={isUploadingPhoto}
                       >
-                        Cancel
+                        {t("editProfile.cancel")}
                       </IonButton>
                     </div>
                   </div>
@@ -460,7 +474,7 @@ const EditProfile: React.FC = () => {
                     onClick={handleChangePhotoClick}
                   >
                     <IonIcon icon={cameraOutline} slot="start" />
-                    Change Photo
+                    {t("editProfile.changePhoto")}
                   </IonButton>
                 )}
               </div>
@@ -472,19 +486,21 @@ const EditProfile: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={personOutline} className="mr-2" />
-                Personal Information
+                {t("editProfile.personalInformation")}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
               <IonList>
                 <IonItem>
-                  <IonLabel position="stacked">First Name *</IonLabel>
+                  <IonLabel position="stacked">
+                    {t("editProfile.firstNameRequired")}
+                  </IonLabel>
                   <IonInput
                     value={formData.firstName}
                     onIonInput={(e) =>
                       handleStringInputChange("firstName", e.detail.value!)
                     }
-                    placeholder="Enter your first name"
+                    placeholder={t("editProfile.firstNamePlaceholder")}
                     className={formErrors.firstName ? "ion-invalid" : ""}
                   />
                   {formErrors.firstName && (
@@ -495,13 +511,15 @@ const EditProfile: React.FC = () => {
                 </IonItem>
 
                 <IonItem>
-                  <IonLabel position="stacked">Last Name *</IonLabel>
+                  <IonLabel position="stacked">
+                    {t("editProfile.lastNameRequired")}
+                  </IonLabel>
                   <IonInput
                     value={formData.lastName}
                     onIonInput={(e) =>
                       handleStringInputChange("lastName", e.detail.value!)
                     }
-                    placeholder="Enter your last name"
+                    placeholder={t("editProfile.lastNamePlaceholder")}
                     className={formErrors.lastName ? "ion-invalid" : ""}
                   />
                   {formErrors.lastName && (
@@ -512,14 +530,16 @@ const EditProfile: React.FC = () => {
                 </IonItem>
 
                 <IonItem>
-                  <IonLabel position="stacked">Email *</IonLabel>
+                  <IonLabel position="stacked">
+                    {t("editProfile.emailRequired")}
+                  </IonLabel>
                   <IonInput
                     type="email"
                     value={formData.email}
                     onIonInput={(e) =>
                       handleStringInputChange("email", e.detail.value!)
                     }
-                    placeholder="Enter your email"
+                    placeholder={t("editProfile.emailPlaceholder")}
                     className={formErrors.email ? "ion-invalid" : ""}
                   />
                   {formErrors.email && (
@@ -530,14 +550,16 @@ const EditProfile: React.FC = () => {
                 </IonItem>
 
                 <IonItem>
-                  <IonLabel position="stacked">Phone Number *</IonLabel>
+                  <IonLabel position="stacked">
+                    {t("editProfile.phoneNumberRequired")}
+                  </IonLabel>
                   <IonInput
                     type="tel"
                     value={formData.phone}
                     onIonInput={(e) =>
                       handleStringInputChange("phone", e.detail.value!)
                     }
-                    placeholder="Enter your phone number"
+                    placeholder={t("editProfile.phoneNumberPlaceholder")}
                     className={formErrors.phone ? "ion-invalid" : ""}
                   />
                   {formErrors.phone && (
@@ -555,21 +577,21 @@ const EditProfile: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={businessOutline} className="mr-2" />
-                Business Information
+                {t("editProfile.businessInformation")}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
               <IonList>
                 <IonItem>
                   <IonLabel position="stacked">
-                    Business Name (Optional)
+                    {t("editProfile.businessNameOptional")}
                   </IonLabel>
                   <IonInput
                     value={formData.businessName}
                     onIonInput={(e) =>
                       handleStringInputChange("businessName", e.detail.value!)
                     }
-                    placeholder="Enter your business name"
+                    placeholder={t("editProfile.businessNamePlaceholder")}
                   />
                 </IonItem>
               </IonList>
@@ -581,7 +603,7 @@ const EditProfile: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={checkmarkCircleOutline} className="mr-2" />
-                Skills *
+                {t("editProfile.skillsRequired")}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
@@ -618,13 +640,15 @@ const EditProfile: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={callOutline} className="mr-2" />
-                Emergency Contact
+                {t("editProfile.emergencyContact")}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
               <IonList>
                 <IonItem>
-                  <IonLabel position="stacked">Contact Name</IonLabel>
+                  <IonLabel position="stacked">
+                    {t("editProfile.contactName")}
+                  </IonLabel>
                   <IonInput
                     value={formData.emergencyContactName}
                     onIonInput={(e) =>
@@ -633,7 +657,7 @@ const EditProfile: React.FC = () => {
                         e.detail.value!,
                       )
                     }
-                    placeholder="Enter emergency contact name"
+                    placeholder={t("editProfile.contactNamePlaceholder")}
                     className={
                       formErrors.emergencyContactName ? "ion-invalid" : ""
                     }
@@ -646,7 +670,9 @@ const EditProfile: React.FC = () => {
                 </IonItem>
 
                 <IonItem>
-                  <IonLabel position="stacked">Contact Phone</IonLabel>
+                  <IonLabel position="stacked">
+                    {t("editProfile.contactPhone")}
+                  </IonLabel>
                   <IonInput
                     type="tel"
                     value={formData.emergencyContactPhone}
@@ -656,7 +682,7 @@ const EditProfile: React.FC = () => {
                         e.detail.value!,
                       )
                     }
-                    placeholder="Enter emergency contact phone"
+                    placeholder={t("editProfile.contactPhonePlaceholder")}
                     className={
                       formErrors.emergencyContactPhone ? "ion-invalid" : ""
                     }
@@ -669,7 +695,9 @@ const EditProfile: React.FC = () => {
                 </IonItem>
 
                 <IonItem>
-                  <IonLabel position="stacked">Relationship</IonLabel>
+                  <IonLabel position="stacked">
+                    {t("editProfile.relationship")}
+                  </IonLabel>
                   <IonSelect
                     value={formData.emergencyContactRelationship}
                     onIonChange={(e: CustomEvent) =>
@@ -678,11 +706,13 @@ const EditProfile: React.FC = () => {
                         e.detail.value,
                       )
                     }
-                    placeholder="Select relationship"
+                    placeholder={t("editProfile.relationshipPlaceholder")}
                   >
                     {RELATIONSHIP_OPTIONS.map((relationship) => (
                       <IonSelectOption key={relationship} value={relationship}>
-                        {relationship}
+                        {t(
+                          `editProfile.relationships.${relationship.toLowerCase()}`,
+                        )}
                       </IonSelectOption>
                     ))}
                   </IonSelect>
@@ -700,12 +730,15 @@ const EditProfile: React.FC = () => {
               className="h-12"
             >
               <IonIcon icon={saveOutline} slot="start" />
-              Save Changes
+              {t("editProfile.saveChanges")}
             </IonButton>
           </div>
         </div>
 
-        <IonLoading isOpen={isLoading} message="Updating profile..." />
+        <IonLoading
+          isOpen={isLoading}
+          message={t("editProfile.updatingProfile")}
+        />
 
         <IonToast
           isOpen={showToast}

@@ -34,7 +34,7 @@ import { useEarningsDetails } from "../../hooks/earnings/useEarningsDetails";
 import { useI18n } from "../../hooks/common/useI18n";
 
 const EarningsDetails: React.FC = () => {
-  const { formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency, formatDate } = useI18n();
   const [selectedPeriod, setSelectedPeriod] = useState<
     "daily" | "weekly" | "monthly"
   >("daily");
@@ -90,17 +90,17 @@ const EarningsDetails: React.FC = () => {
             <IonButtons slot="start">
               <IonBackButton defaultHref="/profile" />
             </IonButtons>
-            <IonTitle>Earnings Details</IonTitle>
+            <IonTitle>{t("earningsDetails.title")}</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
           <div className="flex flex-col items-center justify-center h-full">
             <IonText color="danger" className="text-center">
-              <h2>Error Loading Earnings Details</h2>
+              <h2>{t("earningsDetails.errorLoadingEarningsDetails")}</h2>
               <p>{error.message}</p>
             </IonText>
             <IonButton onClick={() => refetch()} className="mt-4">
-              Try Again
+              {t("earningsDetails.tryAgain")}
             </IonButton>
           </div>
         </IonContent>
@@ -116,7 +116,7 @@ const EarningsDetails: React.FC = () => {
             <IonButtons slot="start">
               <IonBackButton defaultHref="/profile" />
             </IonButtons>
-            <IonTitle>Earnings Details</IonTitle>
+            <IonTitle>{t("earningsDetails.title")}</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent>
@@ -135,7 +135,7 @@ const EarningsDetails: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/profile" />
           </IonButtons>
-          <IonTitle>Earnings Details</IonTitle>
+          <IonTitle>{t("earningsDetails.title")}</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -155,7 +155,7 @@ const EarningsDetails: React.FC = () => {
                       icon={cashOutline}
                       className="mr-2 text-green-600"
                     />
-                    Earnings Overview
+                    {t("earningsDetails.earningsOverview")}
                   </IonCardTitle>
                 </IonCardHeader>
                 <IonCardContent>
@@ -165,7 +165,7 @@ const EarningsDetails: React.FC = () => {
                         {formatCurrency(earningsData.summary.totalEarnings)}
                       </div>
                       <IonText className="text-sm text-gray-600">
-                        Total Earnings
+                        {t("earningsDetails.totalEarnings")}
                       </IonText>
                     </div>
                     <div className="text-center">
@@ -173,7 +173,7 @@ const EarningsDetails: React.FC = () => {
                         {earningsData.summary.completedTasks}
                       </div>
                       <IonText className="text-sm text-gray-600">
-                        Completed Tasks
+                        {t("earningsDetails.completedTasks")}
                       </IonText>
                     </div>
                   </div>
@@ -184,7 +184,7 @@ const EarningsDetails: React.FC = () => {
                         {formatCurrency(earningsData.summary.averagePerTask)}
                       </div>
                       <IonText className="text-xs text-gray-600">
-                        Avg per Task
+                        {t("earningsDetails.avgPerTask")}
                       </IonText>
                     </div>
                     <div className="text-center">
@@ -192,7 +192,7 @@ const EarningsDetails: React.FC = () => {
                         {formatCurrency(earningsData.summary.last7DaysEarnings)}
                       </div>
                       <IonText className="text-xs text-gray-600">
-                        Last 7 Days
+                        {t("earningsDetails.last7Days")}
                       </IonText>
                     </div>
                     <div className="text-center">
@@ -202,7 +202,7 @@ const EarningsDetails: React.FC = () => {
                         )}
                       </div>
                       <IonText className="text-xs text-gray-600">
-                        Last 30 Days
+                        {t("earningsDetails.last30Days")}
                       </IonText>
                     </div>
                   </div>
@@ -220,7 +220,7 @@ const EarningsDetails: React.FC = () => {
                         icon={starOutline}
                         className="mr-2 text-yellow-500"
                       />
-                      Performance Highlights
+                      {t("earningsDetails.performanceHighlights")}
                     </IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
@@ -228,7 +228,9 @@ const EarningsDetails: React.FC = () => {
                       {earningsData.performance.bestDay && (
                         <div className="flex justify-between items-center">
                           <div>
-                            <IonText className="font-medium">Best Day</IonText>
+                            <IonText className="font-medium">
+                              {t("earningsDetails.bestDay")}
+                            </IonText>
                             <br />
                             <IonText className="text-sm text-gray-600">
                               {formatDate(
@@ -250,10 +252,12 @@ const EarningsDetails: React.FC = () => {
                       {earningsData.performance.bestWeek && (
                         <div className="flex justify-between items-center">
                           <div>
-                            <IonText className="font-medium">Best Week</IonText>
+                            <IonText className="font-medium">
+                              {t("earningsDetails.bestWeek")}
+                            </IonText>
                             <br />
                             <IonText className="text-sm text-gray-600">
-                              Week of{" "}
+                              {t("earningsDetails.weekOf")}{" "}
                               {formatDate(
                                 new Date(
                                   earningsData.performance.bestWeek.weekStart,
@@ -276,7 +280,7 @@ const EarningsDetails: React.FC = () => {
                         <div className="flex justify-between items-center">
                           <div>
                             <IonText className="font-medium">
-                              Best Month
+                              {t("earningsDetails.bestMonth")}
                             </IonText>
                             <br />
                             <IonText className="text-sm text-gray-600">
@@ -312,7 +316,7 @@ const EarningsDetails: React.FC = () => {
                       icon={trendingUpOutline}
                       className="mr-2 text-blue-600"
                     />
-                    Earnings Trends
+                    {t("earningsDetails.earningsTrends")}
                   </IonCardTitle>
                 </IonCardHeader>
                 <IonCardContent>
@@ -324,13 +328,13 @@ const EarningsDetails: React.FC = () => {
                     className="mb-4"
                   >
                     <IonSegmentButton value="daily">
-                      <IonLabel>Daily</IonLabel>
+                      <IonLabel>{t("earningsDetails.daily")}</IonLabel>
                     </IonSegmentButton>
                     <IonSegmentButton value="weekly">
-                      <IonLabel>Weekly</IonLabel>
+                      <IonLabel>{t("earningsDetails.weekly")}</IonLabel>
                     </IonSegmentButton>
                     <IonSegmentButton value="monthly">
-                      <IonLabel>Monthly</IonLabel>
+                      <IonLabel>{t("earningsDetails.monthly")}</IonLabel>
                     </IonSegmentButton>
                   </IonSegment>
 
@@ -384,7 +388,7 @@ const EarningsDetails: React.FC = () => {
                         icon={statsChartOutline}
                         className="mr-2 text-purple-600"
                       />
-                      Earnings by Task Type
+                      {t("earningsDetails.earningsByTaskType")}
                     </IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
@@ -402,7 +406,8 @@ const EarningsDetails: React.FC = () => {
                                 </IonText>
                                 <br />
                                 <IonText className="text-sm text-gray-600">
-                                  {taskType.count} tasks completed
+                                  {taskType.count}{" "}
+                                  {t("earningsDetails.tasksCompleted")}
                                 </IonText>
                               </div>
                               <div className="text-right">
@@ -410,7 +415,8 @@ const EarningsDetails: React.FC = () => {
                                   {formatCurrency(taskType.totalEarnings)}
                                 </div>
                                 <IonText className="text-sm text-gray-600">
-                                  {formatCurrency(taskType.averagePerTask)} avg
+                                  {formatCurrency(taskType.averagePerTask)}{" "}
+                                  {t("earningsDetails.avg")}
                                 </IonText>
                               </div>
                             </div>

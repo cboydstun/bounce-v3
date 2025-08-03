@@ -9,6 +9,7 @@ import enValidation from "./locales/en/validation.json";
 import enTasks from "./locales/en/tasks.json";
 import enNotifications from "./locales/en/notifications.json";
 import enTax from "./locales/en/tax.json";
+import enSupport from "./locales/en/support.json";
 
 import esAuth from "./locales/es/auth.json";
 import esCommon from "./locales/es/common.json";
@@ -16,6 +17,7 @@ import esValidation from "./locales/es/validation.json";
 import esTasks from "./locales/es/tasks.json";
 import esNotifications from "./locales/es/notifications.json";
 import esTax from "./locales/es/tax.json";
+import esSupport from "./locales/es/support.json";
 
 // Translation resources
 const resources = {
@@ -26,6 +28,7 @@ const resources = {
     tasks: enTasks,
     notifications: enNotifications,
     tax: enTax,
+    support: enSupport,
   },
   es: {
     auth: esAuth,
@@ -34,6 +37,7 @@ const resources = {
     tasks: esTasks,
     notifications: esNotifications,
     tax: esTax,
+    support: esSupport,
   },
 };
 
@@ -66,7 +70,15 @@ i18n
 
     // Namespace configuration
     defaultNS: "common",
-    ns: ["common", "auth", "validation", "tasks", "notifications", "tax"],
+    ns: [
+      "common",
+      "auth",
+      "validation",
+      "tasks",
+      "notifications",
+      "tax",
+      "support",
+    ],
 
     // Interpolation configuration
     interpolation: {

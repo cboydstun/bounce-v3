@@ -54,6 +54,7 @@ import {
   useUpdateTaskStatus,
   useCompleteTask,
 } from "../../hooks/tasks/useTaskActions";
+import { useTaskTranslation } from "../../hooks/common/useI18n";
 
 interface TaskDetailsParams {
   id: string;
@@ -142,33 +143,35 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const formatDateTime = (dateString: string) => {
-  try {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+const createFormatDateTime =
+  (t: (key: string) => string) => (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = date.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    const timeStr = date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+      const timeStr = date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
-    if (diffDays === 0) {
-      return `Today at ${timeStr}`;
-    } else if (diffDays === 1) {
-      return `Tomorrow at ${timeStr}`;
-    } else if (diffDays === -1) {
-      return `Yesterday at ${timeStr}`;
-    } else {
-      return `${date.toLocaleDateString()} at ${timeStr}`;
+      if (diffDays === 0) {
+        return `${t("details.today")} ${t("details.at")} ${timeStr}`;
+      } else if (diffDays === 1) {
+        return `${t("details.tomorrow")} ${t("details.at")} ${timeStr}`;
+      } else if (diffDays === -1) {
+        return `${t("details.yesterday")} ${t("details.at")} ${timeStr}`;
+      } else {
+        return `${date.toLocaleDateString()} ${t("details.at")} ${timeStr}`;
+      }
+    } catch (error) {
+      return dateString;
     }
-  } catch (error) {
-    return dateString;
-  }
-};
+  };
 
 const TaskDetails: React.FC = () => {
+  const { t } = useTaskTranslation();
   const { id } = useParams<TaskDetailsParams>();
   const [presentToast] = useIonToast();
   const [showCompleteAlert, setShowCompleteAlert] = React.useState(false);
@@ -274,6 +277,9 @@ const TaskDetails: React.FC = () => {
       if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
     };
   }, []);
+
+  // Create formatDateTime function with translations
+  const formatDateTime = useMemo(() => createFormatDateTime(t), [t]);
 
   console.log("TaskDetails render:", {
     id: taskId,
@@ -458,14 +464,14 @@ const TaskDetails: React.FC = () => {
             <IonButtons slot="start">
               <IonBackButton defaultHref="/available-tasks" />
             </IonButtons>
-            <IonTitle>Task Details</IonTitle>
+            <IonTitle>{t("details.title")}</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent>
           <div className="flex flex-col justify-center items-center h-full p-8">
             <IonSpinner name="crescent" />
             <IonText className="text-sm text-gray-500 mt-4 text-center">
-              Loading task details...
+              {t("details.loading")}
             </IonText>
           </div>
         </IonContent>
@@ -482,19 +488,19 @@ const TaskDetails: React.FC = () => {
             <IonButtons slot="start">
               <IonBackButton defaultHref="/available-tasks" />
             </IonButtons>
-            <IonTitle>Task Details</IonTitle>
+            <IonTitle>{t("details.title")}</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent>
           <div className="flex flex-col items-center justify-center h-full p-8">
             <div className="text-4xl mb-4">⚠️</div>
             <IonText className="text-lg font-medium text-gray-900">
-              Task not found
+              {t("details.notFound")}
             </IonText>
             <IonText className="text-sm text-gray-500 text-center mt-2">
               {error instanceof Error
                 ? error.message
-                : "The task could not be loaded."}
+                : t("details.notFoundMessage")}
             </IonText>
           </div>
         </IonContent>
@@ -510,7 +516,7 @@ const TaskDetails: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/available-tasks" />
           </IonButtons>
-          <IonTitle>Task Details</IonTitle>
+          <IonTitle>{displayTask.title || t("details.title")}</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -555,7 +561,7 @@ const TaskDetails: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle className="flex items-center gap-2">
                 <IonIcon icon={calendarOutline} className="text-purple-500" />
-                Schedule
+                {t("details.schedule")}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
@@ -563,11 +569,13 @@ const TaskDetails: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <IonIcon icon={timeOutline} className="text-orange-500" />
                   <div>
-                    <div className="font-medium">Scheduled Time</div>
+                    <div className="font-medium">
+                      {t("details.scheduledTime")}
+                    </div>
                     <div className="text-sm text-gray-600">
                       {displayTask.scheduledDate
                         ? formatDateTime(displayTask.scheduledDate)
-                        : "Not scheduled"}
+                        : t("details.notScheduled")}
                     </div>
                   </div>
                 </div>
@@ -576,7 +584,9 @@ const TaskDetails: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <IonIcon icon={timeOutline} className="text-blue-500" />
                     <div>
-                      <div className="font-medium">Estimated Duration</div>
+                      <div className="font-medium">
+                        {t("details.estimatedDuration")}
+                      </div>
                       <div className="text-sm text-gray-600">
                         {Math.floor(displayTask.estimatedDuration / 60)}h{" "}
                         {displayTask.estimatedDuration % 60}m
@@ -595,7 +605,7 @@ const TaskDetails: React.FC = () => {
               <IonCardHeader>
                 <IonCardTitle className="flex items-center gap-2">
                   <IonIcon icon={locationOutline} className="text-blue-500" />
-                  Location
+                  {t("details.location")}
                 </IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
@@ -607,7 +617,9 @@ const TaskDetails: React.FC = () => {
                         className="text-green-500 mt-1"
                       />
                       <div className="flex-1">
-                        <div className="font-medium">Address</div>
+                        <div className="font-medium">
+                          {t("details.address")}
+                        </div>
                         <div className="text-sm text-gray-600">
                           {displayTask.location.address.formattedAddress}
                         </div>
@@ -625,7 +637,9 @@ const TaskDetails: React.FC = () => {
                         className="text-red-500"
                       />
                       <div>
-                        <div className="font-medium">Coordinates</div>
+                        <div className="font-medium">
+                          {t("details.coordinates")}
+                        </div>
                         <div className="text-xs text-gray-500 font-mono">
                           {displayTask.location.coordinates.latitude},{" "}
                           {displayTask.location.coordinates.longitude}
@@ -644,7 +658,7 @@ const TaskDetails: React.FC = () => {
               <IonCardHeader>
                 <IonCardTitle className="flex items-center gap-2">
                   <IonIcon icon={cashOutline} className="text-green-500" />
-                  Payment
+                  {t("details.payment")}
                 </IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
@@ -659,11 +673,13 @@ const TaskDetails: React.FC = () => {
                 {displayTask.compensation.baseAmount !==
                   displayTask.compensation.totalAmount && (
                   <div className="text-sm text-gray-600 mt-1">
-                    Base: ${displayTask.compensation.baseAmount.toFixed(2)}
+                    {t("details.base")}: $
+                    {displayTask.compensation.baseAmount.toFixed(2)}
                     {displayTask.compensation.bonuses?.length > 0 && (
                       <span>
                         {" "}
-                        + {displayTask.compensation.bonuses.length} bonus(es)
+                        + {displayTask.compensation.bonuses.length}{" "}
+                        {t("details.bonus")}
                       </span>
                     )}
                   </div>
@@ -678,7 +694,7 @@ const TaskDetails: React.FC = () => {
               <IonCardHeader>
                 <IonCardTitle className="flex items-center gap-2">
                   <IonIcon icon={personOutline} className="text-indigo-500" />
-                  Assignment
+                  {t("details.assignment")}
                 </IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
@@ -686,13 +702,15 @@ const TaskDetails: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <IonIcon icon={personOutline} className="text-blue-500" />
                     <div>
-                      <div className="font-medium">Assigned Contractor</div>
+                      <div className="font-medium">
+                        {t("details.assignedContractor")}
+                      </div>
                       <div className="text-sm text-gray-600">
                         {displayTask.contractor.contractorId}
                       </div>
                       {displayTask.contractor.assignedAt && (
                         <div className="text-xs text-gray-500">
-                          Assigned:{" "}
+                          {t("details.assigned")}:{" "}
                           {formatDateTime(displayTask.contractor.assignedAt)}
                         </div>
                       )}
@@ -708,7 +726,7 @@ const TaskDetails: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle className="flex items-center gap-2">
                 <IonIcon icon={businessOutline} className="text-gray-500" />
-                Task Information
+                {t("details.taskInformation")}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
@@ -730,7 +748,7 @@ const TaskDetails: React.FC = () => {
                       className="text-purple-500"
                     />
                     <div>
-                      <div className="font-medium">Order ID</div>
+                      <div className="font-medium">{t("details.orderId")}</div>
                       <div className="text-xs text-gray-500 font-mono">
                         {displayTask.orderId}
                       </div>
@@ -742,7 +760,7 @@ const TaskDetails: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <IonIcon icon={timeOutline} className="text-gray-500" />
                     <div>
-                      <div className="font-medium">Created</div>
+                      <div className="font-medium">{t("details.created")}</div>
                       <div className="text-sm text-gray-600">
                         {formatDateTime(displayTask.createdAt)}
                       </div>
@@ -754,7 +772,9 @@ const TaskDetails: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <IonIcon icon={timeOutline} className="text-gray-500" />
                     <div>
-                      <div className="font-medium">Last Updated</div>
+                      <div className="font-medium">
+                        {t("details.lastUpdated")}
+                      </div>
                       <div className="text-sm text-gray-600">
                         {formatDateTime(displayTask.updatedAt)}
                       </div>

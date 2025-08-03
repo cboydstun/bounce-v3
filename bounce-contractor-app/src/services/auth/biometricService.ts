@@ -14,6 +14,10 @@ import {
 } from "../../types/biometric.types";
 import { secureStorage } from "../storage/secureStorage";
 import { APP_CONFIG } from "../../config/app.config";
+import {
+  biometricLogger,
+  logBiometricOperation,
+} from "../../utils/biometricLogger";
 
 class BiometricService {
   private isNative: boolean;
@@ -27,48 +31,119 @@ class BiometricService {
    * Initialize biometric service
    */
   async initialize(): Promise<void> {
-    if (this.isInitialized) return;
-
-    try {
-      if (this.isNative) {
-        // Check if biometric is available on device initialization
-        await this.isAvailable();
+    return logBiometricOperation("initialize", async () => {
+      if (this.isInitialized) {
+        biometricLogger.debug("Initialize", "Already initialized, skipping");
+        return;
       }
-      this.isInitialized = true;
-    } catch (error) {
-      console.warn("Biometric service initialization failed:", error);
-      this.isInitialized = true; // Continue without biometric support
-    }
+
+      biometricLogger.info(
+        "Initialize",
+        "Starting biometric service initialization",
+        {
+          isNative: this.isNative,
+          platform: Capacitor.getPlatform(),
+        },
+      );
+
+      try {
+        if (this.isNative) {
+          biometricLogger.debug(
+            "Initialize",
+            "Checking biometric availability on native platform",
+          );
+          // Check if biometric is available on device initialization
+          await this.isAvailable();
+        } else {
+          biometricLogger.warn(
+            "Initialize",
+            "Running on web platform - biometric features limited",
+          );
+        }
+
+        this.isInitialized = true;
+        biometricLogger.info(
+          "Initialize",
+          "Biometric service initialized successfully",
+        );
+      } catch (error) {
+        biometricLogger.error(
+          "Initialize",
+          "Biometric service initialization failed",
+          error,
+        );
+        this.isInitialized = true; // Continue without biometric support
+        throw error;
+      }
+    });
   }
 
   /**
    * Check if biometric authentication is available
    */
   async isAvailable(): Promise<BiometricAvailabilityResult> {
-    try {
+    return logBiometricOperation("isAvailable", async () => {
+      biometricLogger.debug("Availability", "Checking biometric availability", {
+        isNative: this.isNative,
+        platform: Capacitor.getPlatform(),
+      });
+
       if (!this.isNative) {
-        return {
+        const result = {
           isAvailable: false,
           reason:
             "Biometric authentication is only available on native platforms",
         };
+        biometricLogger.warn("Availability", "Not on native platform", result);
+        return result;
       }
 
-      const result = await NativeBiometric.isAvailable();
+      try {
+        biometricLogger.logNativeCall("NativeBiometric.isAvailable");
+        const result = await NativeBiometric.isAvailable();
+        biometricLogger.logNativeResponse(
+          "NativeBiometric.isAvailable",
+          result,
+        );
 
-      return {
-        isAvailable: result.isAvailable,
-        biometryType: this.mapBiometryType(result.biometryType),
-        strongBiometryIsAvailable: (result as any).strongBiometryIsAvailable,
-        reason: (result as any).errorMessage,
-      };
-    } catch (error) {
-      console.error("Biometric availability check failed:", error);
-      return {
-        isAvailable: false,
-        reason: `Biometric check failed: ${error}`,
-      };
-    }
+        const mappedResult = {
+          isAvailable: result.isAvailable,
+          biometryType: this.mapBiometryType(result.biometryType),
+          strongBiometryIsAvailable: (result as any).strongBiometryIsAvailable,
+          reason: (result as any).errorMessage,
+        };
+
+        biometricLogger.info(
+          "Availability",
+          "Biometric availability check completed",
+          {
+            ...mappedResult,
+            rawResult: result,
+          },
+        );
+
+        return mappedResult;
+      } catch (error) {
+        biometricLogger.logNativeResponse(
+          "NativeBiometric.isAvailable",
+          undefined,
+          error,
+        );
+        const result = {
+          isAvailable: false,
+          reason: `Biometric check failed: ${error}`,
+        };
+        biometricLogger.error(
+          "Availability",
+          "Biometric availability check failed",
+          {
+            error,
+            result,
+          },
+        );
+        return result;
+      }
+    });
   }
 
   /**
@@ -77,60 +152,163 @@ class BiometricService {
   async authenticate(
     options: BiometricPromptOptions,
   ): Promise<BiometricAuthResult> {
-    try {
+    return logBiometricOperation("authenticate", async () => {
+      biometricLogger.info(
+        "Authenticate",
+        "Starting biometric authentication",
+        {
+          options: {
+            ...options,
+            // Don't log sensitive data, just structure
+            hasReason: !!options.reason,
+            hasTitle: !!options.title,
+            maxAttempts: options.maxAttempts,
+          },
+          isNative: this.isNative,
+          platform: Capacitor.getPlatform(),
+        },
+      );
+
       if (!this.isNative) {
-        return {
+        const result = {
           success: false,
           error:
             "Biometric authentication is only available on native platforms",
           errorCode: BiometricErrorCode.BIOMETRY_NOT_AVAILABLE,
         };
+        biometricLogger.warn("Authenticate", "Not on native platform", result);
+        return result;
       }
 
-      await this.initialize();
+      try {
+        biometricLogger.debug("Authenticate", "Initializing biometric service");
+        await this.initialize();
 
-      const availability = await this.isAvailable();
-      if (!availability.isAvailable) {
-        return {
-          success: false,
-          error:
-            availability.reason || "Biometric authentication not available",
-          errorCode: BiometricErrorCode.BIOMETRY_NOT_AVAILABLE,
+        biometricLogger.debug(
+          "Authenticate",
+          "Checking biometric availability",
+        );
+        const availability = await this.isAvailable();
+
+        if (!availability.isAvailable) {
+          const result = {
+            success: false,
+            error:
+              availability.reason || "Biometric authentication not available",
+            errorCode: BiometricErrorCode.BIOMETRY_NOT_AVAILABLE,
+          };
+          biometricLogger.error("Authenticate", "Biometric not available", {
+            availability,
+            result,
+          });
+          return result;
+        }
+
+        biometricLogger.info(
+          "Authenticate",
+          "Biometric available, proceeding with authentication",
+          {
+            biometryType: availability.biometryType,
+            strongBiometryIsAvailable: availability.strongBiometryIsAvailable,
+          },
+        );
+
+        const verifyParams = {
+          reason: options.reason,
+          title: options.title || "Biometric Authentication",
+          subtitle: options.subtitle || "Use your biometric to authenticate",
+          description:
+            options.description ||
+            "Place your finger on the sensor or look at the camera",
+          fallbackTitle: options.fallbackTitle || "Use Password",
+          negativeButtonText: options.negativeButtonText || "Cancel",
+          maxAttempts: options.maxAttempts || 3,
         };
+
+        biometricLogger.debug(
+          "Authenticate",
+          "Calling NativeBiometric.verifyIdentity",
+          {
+            params: verifyParams,
+          },
+        );
+
+        biometricLogger.logNativeCall(
+          "NativeBiometric.verifyIdentity",
+          verifyParams,
+        );
+        const result = await NativeBiometric.verifyIdentity(verifyParams);
+        biometricLogger.logNativeResponse(
+          "NativeBiometric.verifyIdentity",
+          result,
+        );
+
+        biometricLogger.info(
+          "Authenticate",
+          "Biometric authentication successful",
+        );
+
+        // Update last used timestamp
+        biometricLogger.debug("Authenticate", "Updating last used timestamp");
+        await this.updateLastUsed();
+
+        const successResult = { success: true };
+        biometricLogger.info(
+          "Authenticate",
+          "Authentication completed successfully",
+          successResult,
+        );
+        return successResult;
+      } catch (error: any) {
+        biometricLogger.logNativeResponse(
+          "NativeBiometric.verifyIdentity",
+          undefined,
+          error,
+        );
+
+        const errorCode = this.mapErrorCode(error.code || error.message);
+
+        biometricLogger.error(
+          "Authenticate",
+          "Biometric authentication failed",
+          {
+            error: {
+              message: error.message,
+              code: error.code,
+              name: error.name,
+              stack: error.stack,
+            },
+            mappedErrorCode: errorCode,
+            originalError: error,
+          },
+        );
+
+        // Track failure count
+        biometricLogger.debug("Authenticate", "Incrementing failure count");
+        try {
+          await this.incrementFailureCount();
+        } catch (incrementError) {
+          biometricLogger.warn(
+            "Authenticate",
+            "Failed to increment failure count",
+            incrementError,
+          );
+        }
+
+        const failureResult = {
+          success: false,
+          error: error.message || "Biometric authentication failed",
+          errorCode,
+        };
+
+        biometricLogger.error(
+          "Authenticate",
+          "Authentication failed with result",
+          failureResult,
+        );
+        return failureResult;
       }
-
-      const result = await NativeBiometric.verifyIdentity({
-        reason: options.reason,
-        title: options.title || "Biometric Authentication",
-        subtitle: options.subtitle || "Use your biometric to authenticate",
-        description:
-          options.description ||
-          "Place your finger on the sensor or look at the camera",
-        fallbackTitle: options.fallbackTitle || "Use Password",
-        negativeButtonText: options.negativeButtonText || "Cancel",
-        maxAttempts: options.maxAttempts || 3,
-      });
-
-      // Update last used timestamp
-      await this.updateLastUsed();
-
-      return {
-        success: true,
-      };
-    } catch (error: any) {
-      console.error("Biometric authentication failed:", error);
-
-      const errorCode = this.mapErrorCode(error.code || error.message);
-
-      // Track failure count
-      await this.incrementFailureCount();
-
-      return {
-        success: false,
-        error: error.message || "Biometric authentication failed",
-        errorCode,
-      };
-    }
+    });
   }
 
   /**

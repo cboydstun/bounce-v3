@@ -19,10 +19,12 @@ import TaskList from "../../components/tasks/TaskList";
 import { TaskFilters, TaskStatus } from "../../types/task.types";
 import { useHistory } from "react-router-dom";
 import { mapMobileStatusToApiStatus } from "../../hooks/tasks/useTaskActions";
+import { useTaskTranslation } from "../../hooks/common/useI18n";
 
 type TaskFilter = "upcoming" | "completed" | "all";
 
 const MyTasks: React.FC = () => {
+  const { t } = useTaskTranslation();
   const history = useHistory();
   const [activeFilter, setActiveFilter] = useState<TaskFilter>("upcoming");
   const [showToast, setShowToast] = useState(false);
@@ -99,25 +101,25 @@ const MyTasks: React.FC = () => {
 
   const handleTaskNavigate = (taskId: string) => {
     // This would open navigation app or show directions
-    setToastMessage("Opening navigation...");
+    setToastMessage(t("myTasks.toast.openingNavigation"));
     setShowToast(true);
   };
 
   const handleTaskUpdate = (taskId: string) => {
     // This would open task update modal
-    setToastMessage("Task update coming soon!");
+    setToastMessage(t("myTasks.toast.taskUpdateComingSoon"));
     setShowToast(true);
   };
 
   const getEmptyMessage = (filter: TaskFilter) => {
     switch (filter) {
       case "upcoming":
-        return "No upcoming tasks";
+        return t("myTasks.empty.upcoming");
       case "completed":
-        return "No completed tasks";
+        return t("myTasks.empty.completed");
       case "all":
       default:
-        return "No tasks found";
+        return t("myTasks.empty.all");
     }
   };
 
@@ -137,7 +139,7 @@ const MyTasks: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>My Tasks</IonTitle>
+          <IonTitle>{t("myTasks.title")}</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -149,13 +151,13 @@ const MyTasks: React.FC = () => {
             onIonChange={(e) => setActiveFilter(e.detail.value as TaskFilter)}
           >
             <IonSegmentButton value="upcoming">
-              <IonLabel>Upcoming</IonLabel>
+              <IonLabel>{t("myTasks.filters.upcoming")}</IonLabel>
             </IonSegmentButton>
             <IonSegmentButton value="completed">
-              <IonLabel>Completed</IonLabel>
+              <IonLabel>{t("myTasks.filters.completed")}</IonLabel>
             </IonSegmentButton>
             <IonSegmentButton value="all">
-              <IonLabel>All</IonLabel>
+              <IonLabel>{t("myTasks.filters.all")}</IonLabel>
             </IonSegmentButton>
           </IonSegment>
         </div>

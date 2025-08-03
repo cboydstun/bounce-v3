@@ -1,0 +1,31 @@
+{
+  "modal": {
+    "title": "Help & Support",
+    "back": "← Back"
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "contactSupport": "Contact Support",
+    "reportBug": "Report Bug",
+    "requestFeature": "Request Feature",
+    "viewFaq": "View FAQ"
+  },
+  "directContact": {
+    "title": "Direct Contact",
+    "phone": "(512) 210-0194",
+    "phoneHours": "Mon-Fri 8AM-6PM CST",
+    "email": "satxbounce@gmail.com",
+    "emailResponse": "Response within 24 hours",
+    "visitHelpCenter": "Visit Help Center"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions"
+  },
+  "toast": {
+    "emailOpening": "Opening email client...",
+    "phoneOpening": "Opening phone dialer...",
+    "phoneCopied": "Phone number copied to clipboard",
+    "emailCopied": "Email address copied to clipboard",
+    "helpCenterOpening": "Opening help center..."
+  }
+}

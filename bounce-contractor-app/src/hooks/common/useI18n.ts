@@ -165,3 +165,10 @@ export const useValidationTranslation = () => {
 export const useTaxTranslation = () => {
   return useTranslationWithNamespace("tax");
 };
+
+/**
+ * Hook specifically for support translations
+ */
+export const useSupportTranslation = () => {
+  return useTranslationWithNamespace("support");
+};

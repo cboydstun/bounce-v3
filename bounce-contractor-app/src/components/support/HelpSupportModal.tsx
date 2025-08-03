@@ -32,6 +32,7 @@ import { supportService } from "../../services/api/supportService";
 import ContactSupportForm from "./ContactSupportForm";
 import BugReportForm from "./BugReportForm";
 import FeatureRequestForm from "./FeatureRequestForm";
+import { useSupportTranslation } from "../../hooks/common/useI18n";
 
 interface HelpSupportModalProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
   isOpen,
   onDidDismiss,
 }) => {
+  const { t } = useSupportTranslation();
   const [currentView, setCurrentView] = useState<ModalView>("main");
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -61,35 +63,35 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
 
   const handleEmailSupport = () => {
     supportService.openEmailSupport();
-    showSuccessToast("Opening email client...");
+    showSuccessToast(t("toast.emailOpening"));
   };
 
   const handleCallSupport = () => {
     supportService.callSupport();
-    showSuccessToast("Opening phone dialer...");
+    showSuccessToast(t("toast.phoneOpening"));
   };
 
   const handleCopyPhone = async () => {
     try {
-      await navigator.clipboard.writeText("(512) 210-0194");
-      showSuccessToast("Phone number copied to clipboard");
+      await navigator.clipboard.writeText(t("directContact.phone"));
+      showSuccessToast(t("toast.phoneCopied"));
     } catch (error) {
-      showSuccessToast("Phone: (512) 210-0194");
+      showSuccessToast(`Phone: ${t("directContact.phone")}`);
     }
   };
 
   const handleCopyEmail = async () => {
     try {
-      await navigator.clipboard.writeText("satxbounce@gmail.com");
-      showSuccessToast("Email address copied to clipboard");
+      await navigator.clipboard.writeText(t("directContact.email"));
+      showSuccessToast(t("toast.emailCopied"));
     } catch (error) {
-      showSuccessToast("Email: satxbounce@gmail.com");
+      showSuccessToast(`Email: ${t("directContact.email")}`);
     }
   };
 
   const handleOpenHelpCenter = () => {
     window.open("https://www.satxbounce.com", "_blank");
-    showSuccessToast("Opening help center...");
+    showSuccessToast(t("toast.helpCenterOpening"));
   };
 
   const showSuccessToast = (message: string) => {
@@ -106,7 +108,7 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
     <>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Help & Support</IonTitle>
+          <IonTitle>{t("modal.title")}</IonTitle>
           <IonButtons slot="end">
             <IonButton fill="clear" onClick={handleClose}>
               <IonIcon icon={closeOutline} />
@@ -120,7 +122,9 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
           {/* Quick Actions */}
           <IonCard>
             <IonCardContent>
-              <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+              <h2 className="text-lg font-semibold mb-4">
+                {t("quickActions.title")}
+              </h2>
               <div className="space-y-3">
                 <IonButton
                   expand="block"
@@ -129,7 +133,7 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
                   className="text-left"
                 >
                   <IonIcon icon={mailOutline} slot="start" />
-                  Contact Support
+                  {t("quickActions.contactSupport")}
                 </IonButton>
 
                 <IonButton
@@ -139,7 +143,7 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
                   className="text-left"
                 >
                   <IonIcon icon={bugOutline} slot="start" />
-                  Report Bug
+                  {t("quickActions.reportBug")}
                 </IonButton>
 
                 <IonButton
@@ -149,7 +153,7 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
                   className="text-left"
                 >
                   <IonIcon icon={bulbOutline} slot="start" />
-                  Request Feature
+                  {t("quickActions.requestFeature")}
                 </IonButton>
 
                 <IonButton
@@ -159,7 +163,7 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
                   className="text-left"
                 >
                   <IonIcon icon={helpCircleOutline} slot="start" />
-                  View FAQ
+                  {t("quickActions.viewFaq")}
                 </IonButton>
               </div>
             </IonCardContent>
@@ -168,7 +172,9 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
           {/* Direct Contact */}
           <IonCard>
             <IonCardContent>
-              <h2 className="text-lg font-semibold mb-4">Direct Contact</h2>
+              <h2 className="text-lg font-semibold mb-4">
+                {t("directContact.title")}
+              </h2>
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center">
@@ -177,9 +183,11 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
                       className="mr-3 text-blue-600"
                     />
                     <div>
-                      <div className="font-medium">(512) 210-0194</div>
+                      <div className="font-medium">
+                        {t("directContact.phone")}
+                      </div>
                       <IonText className="text-sm text-gray-600">
-                        Mon-Fri 8AM-6PM CST
+                        {t("directContact.phoneHours")}
                       </IonText>
                     </div>
                   </div>
@@ -208,9 +216,11 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
                       className="mr-3 text-green-600"
                     />
                     <div>
-                      <div className="font-medium">satxbounce@gmail.com</div>
+                      <div className="font-medium">
+                        {t("directContact.email")}
+                      </div>
                       <IonText className="text-sm text-gray-600">
-                        Response within 24 hours
+                        {t("directContact.emailResponse")}
                       </IonText>
                     </div>
                   </div>
@@ -239,7 +249,7 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
                   className="mt-3"
                 >
                   <IonIcon icon={globeOutline} slot="start" />
-                  Visit Help Center
+                  {t("directContact.visitHelpCenter")}
                 </IonButton>
               </div>
             </IonCardContent>
@@ -255,10 +265,10 @@ const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
         <IonToolbar>
           <IonButtons slot="start">
             <IonButton fill="clear" onClick={handleBack}>
-              ← Back
+              {t("modal.back")}
             </IonButton>
           </IonButtons>
-          <IonTitle>Frequently Asked Questions</IonTitle>
+          <IonTitle>{t("faq.title")}</IonTitle>
           <IonButtons slot="end">
             <IonButton fill="clear" onClick={handleClose}>
               <IonIcon icon={closeOutline} />

@@ -57,7 +57,9 @@
     "clearAll": "Limpiar Todas",
     "today": "Hoy",
     "yesterday": "Ayer",
-    "older": "Anteriores"
+    "older": "Anteriores",
+    "stayUpdated": "Mantente actualizado con alertas de tareas, pagos y anuncios importantes.",
+    "comingSoon": "🚧 ¡Esta función estará disponible pronto! Recibirás notificaciones en tiempo real aquí."
   },
   "types": {
     "task": "Tarea",

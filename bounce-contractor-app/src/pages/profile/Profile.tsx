@@ -14,6 +14,7 @@ import {
   logOutOutline,
   settingsOutline,
   documentTextOutline,
+  bugOutline,
 } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 import { useAuthStore, authSelectors } from "../../store/authStore";
@@ -66,6 +67,13 @@ const Profile: React.FC = () => {
   const handleViewPaymentHistory = () => {
     history.push("/profile/payment-history");
   };
+
+  const handleDebugBiometric = () => {
+    history.push("/debug/biometric");
+  };
+
+  // Check if we're in development mode
+  const isDevelopment = import.meta.env.MODE === "development";
 
   // Fallback earnings data if API fails
   const fallbackEarnings = {
@@ -202,6 +210,19 @@ const Profile: React.FC = () => {
             >
               {t("profile.helpSupport")}
             </IonButton>
+
+            {/* Debug Button - Only show in development mode */}
+            {/* {isDevelopment && ( */}
+            <IonButton
+              expand="block"
+              fill="outline"
+              className="border-orange-300 text-orange-600"
+              onClick={handleDebugBiometric}
+            >
+              <IonIcon icon={bugOutline} slot="start" />
+              Biometric Debug
+            </IonButton>
+            {/* )} */}
 
             <IonButton
               expand="block"

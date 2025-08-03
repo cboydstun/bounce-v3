@@ -42,8 +42,13 @@ const Login: React.FC = () => {
   const isLoading = useAuthStore(authSelectors.isLoading);
   const error = useAuthStore(authSelectors.error);
 
-  const { isAvailable, isEnabled, availability, shouldOfferSetup } =
-    useBiometric();
+  const {
+    isAvailable,
+    isEnabled,
+    availability,
+    shouldOfferSetup,
+    setupBiometric,
+  } = useBiometric();
 
   const [shouldShowBiometricSetup, setShouldShowBiometricSetup] =
     useState(false);
@@ -100,6 +105,63 @@ const Login: React.FC = () => {
     setBiometricLoading(true);
 
     try {
+      // Check if biometric is enabled first
+      if (!isEnabled) {
+        // Biometric is available but not set up - set it up now
+        if (!credentials.email || !credentials.password) {
+          setToastMessage(
+            "Please enter your email and password to set up biometric login.",
+          );
+          setShowToast(true);
+          setBiometricLoading(false);
+          return;
+        }
+
+        // First, authenticate with password to verify identity
+        await login(credentials);
+
+        // Now set up biometric authentication with the verified credentials
+        try {
+          const setupResult = await setupBiometric({
+            username: credentials.email,
+            password: credentials.password,
+          });
+
+          if (setupResult.success) {
+            setToastMessage(
+              "Login successful! Biometric authentication has been set up.",
+            );
+          } else {
+            setToastMessage(
+              "Login successful! Biometric setup failed, but you can try again later.",
+            );
+          }
+        } catch (setupError) {
+          console.error("Biometric setup failed:", setupError);
+          setToastMessage(
+            "Login successful! Biometric setup failed, but you can try again later.",
+          );
+        }
+        setShowToast(true);
+
+        // Request notification permission after successful login (non-blocking)
+        requestNotificationPermission()
+          .then((result) => {
+            if (result.success) {
+              console.log("Notification permission granted");
+            }
+          })
+          .catch((error) => {
+            console.log("Notification permission request failed:", error);
+          });
+
+        // Redirect to intended page or default
+        const from = location.state?.from?.pathname || "/tasks/available";
+        history.replace(from);
+        return;
+      }
+
+      // Biometric is already enabled, use it for login
       await loginWithBiometric();
 
       // Request notification permission after successful biometric login (non-blocking)
@@ -109,11 +171,9 @@ const Login: React.FC = () => {
             setToastMessage(result.message);
             setShowToast(true);
           }
-          // Don't show error messages for notification failures - just log them
         })
         .catch((error) => {
           console.log("Notification permission request failed:", error);
-          // Silently fail - don't interrupt the login flow
         });
 
       // Redirect to intended page or default
@@ -292,7 +352,7 @@ const Login: React.FC = () => {
           </div>
 
           {/* Biometric Login Section */}
-          {APP_CONFIG.FEATURES.BIOMETRIC_AUTH && isAvailable && isEnabled && (
+          {APP_CONFIG.FEATURES.BIOMETRIC_AUTH && isAvailable && (
             <div className="mt-8">
               <div className="flex items-center mb-4">
                 <div className="flex-1 h-px bg-gray-300"></div>
@@ -315,9 +375,11 @@ const Login: React.FC = () => {
                 ) : null}
                 {biometricLoading
                   ? t("biometric.authenticating")
-                  : t("biometric.useYourBiometric", {
-                      type: getBiometricTypeText(),
-                    })}
+                  : isEnabled
+                    ? t("biometric.useYourBiometric", {
+                        type: getBiometricTypeText(),
+                      })
+                    : `Set up ${getBiometricTypeText()} Login`}
               </IonButton>
             </div>
           )}

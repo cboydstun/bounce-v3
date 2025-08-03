@@ -41,13 +41,13 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
   onViewDetails,
   onViewPaymentHistory,
 }) => {
-  const { formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
 
   if (isLoading) {
     return (
       <IonCard>
         <IonCardHeader>
-          <IonCardTitle>Earnings Summary</IonCardTitle>
+          <IonCardTitle>{t("earnings.title")}</IonCardTitle>
         </IonCardHeader>
         <IonCardContent>
           <div className="flex justify-center py-8">
@@ -68,7 +68,7 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
         <div className="flex items-center justify-between">
           <IonCardTitle className="flex items-center">
             <IonIcon icon={cashOutline} className="mr-2 text-green-600" />
-            Earnings Summary
+            {t("earnings.title")}
           </IonCardTitle>
           <IonButton
             fill="clear"
@@ -88,7 +88,9 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
             <IonText className="text-3xl font-bold text-green-600 block">
               {formatCurrency(earnings.totalEarnings)}
             </IonText>
-            <IonText className="text-sm text-green-700">Total Earnings</IonText>
+            <IonText className="text-sm text-green-700">
+              {t("earnings.totalEarnings")}
+            </IonText>
           </div>
 
           {/* Period Earnings */}
@@ -99,7 +101,9 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
                   <IonText className="text-lg font-semibold text-blue-600 block">
                     {formatCurrency(earnings.thisWeekEarnings)}
                   </IonText>
-                  <IonText className="text-xs text-blue-700">This Week</IonText>
+                  <IonText className="text-xs text-blue-700">
+                    {t("earnings.thisWeek")}
+                  </IonText>
                 </div>
               </IonCol>
               <IonCol size="6">
@@ -108,7 +112,7 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
                     {formatCurrency(earnings.thisMonthEarnings)}
                   </IonText>
                   <IonText className="text-xs text-purple-700">
-                    This Month
+                    {t("earnings.thisMonth")}
                   </IonText>
                 </div>
               </IonCol>
@@ -123,7 +127,9 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
                   icon={checkmarkCircleOutline}
                   className="mr-2 text-green-500"
                 />
-                <span className="text-sm text-gray-700">Completed Tasks</span>
+                <span className="text-sm text-gray-700">
+                  {t("earnings.completedTasks")}
+                </span>
               </div>
               <IonBadge color="success">{earnings.completedTasks}</IonBadge>
             </div>
@@ -134,7 +140,9 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
                   icon={trendingUpOutline}
                   className="mr-2 text-blue-500"
                 />
-                <span className="text-sm text-gray-700">Average per Task</span>
+                <span className="text-sm text-gray-700">
+                  {t("earnings.averagePerTask")}
+                </span>
               </div>
               <span className="font-medium text-blue-600">
                 {formatCurrency(earnings.averagePerTask)}
@@ -151,7 +159,7 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
               onClick={onViewPaymentHistory}
               className="flex-1"
             >
-              Payment History
+              {t("earnings.paymentHistory")}
             </IonButton>
             <IonButton
               expand="block"
@@ -160,7 +168,7 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({
               onClick={onViewDetails}
               className="flex-1"
             >
-              View Details
+              {t("earnings.viewDetails")}
             </IonButton>
           </div>
         </div>
