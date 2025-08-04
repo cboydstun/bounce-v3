@@ -288,6 +288,14 @@ class WebSocketService {
     });
 
     // Notification events
+    this.socket.on("notification:new", (data) => {
+      this.handleEvent("notification:new", data);
+    });
+
+    this.socket.on("notification:update", (data) => {
+      this.handleEvent("notification:update", data);
+    });
+
     this.socket.on("notification:system", (data) => {
       this.handleEvent("notification:system", data);
     });
@@ -359,6 +367,9 @@ class WebSocketService {
         case "task:completed":
           await this.playTaskCompletedAlert(data);
           break;
+        case "notification:new":
+          await this.playNewNotificationAlert(data);
+          break;
         case "notification:system":
         case "notification:personal":
           await this.playNotificationAlert(data);
@@ -425,6 +436,64 @@ class WebSocketService {
     });
 
     console.log("Played task completed alert");
+  }
+
+  /**
+   * Play audio alert for new notifications
+   */
+  private async playNewNotificationAlert(notificationData: any): Promise<void> {
+    if (!audioService.getStatus().isInitialized) {
+      console.log("🔊 Initializing audio service for new notification...");
+      try {
+        await audioService.initialize();
+      } catch (error) {
+        console.error("Failed to initialize audio service:", error);
+        return;
+      }
+    }
+
+    // Determine sound type based on notification type and priority
+    let soundType = "notification_general";
+    let vibrationPattern = [200, 100, 200];
+
+    if (notificationData.type === "task") {
+      // Task notifications get priority-based sounds
+      const priority = notificationData.priority || "normal";
+      const priorityMap: Record<string, string> = {
+        low: "new_task_low",
+        normal: "new_task_medium",
+        high: "new_task_high",
+        critical: "new_task_urgent",
+      };
+      soundType = priorityMap[priority] || "new_task_medium";
+
+      // Priority-based vibration patterns
+      const vibrationMap: Record<string, number[]> = {
+        low: [200],
+        normal: [200, 100, 200],
+        high: [300, 100, 300, 100, 300],
+        critical: [500, 100, 500, 100, 500, 100, 500],
+      };
+      vibrationPattern = vibrationMap[priority] || [200, 100, 200];
+    }
+
+    const isUrgent =
+      notificationData.priority === "critical" ||
+      notificationData.priority === "high";
+
+    await audioService.playAlert({
+      soundType: soundType as any,
+      vibrationPattern,
+      volume: isUrgent ? 1.0 : 0.8,
+      fadeIn: isUrgent,
+    });
+
+    console.log(`🔊 Played new notification alert:`, {
+      type: notificationData.type,
+      priority: notificationData.priority,
+      soundType,
+      isUrgent,
+    });
   }
 
   /**

@@ -10,6 +10,7 @@ import {
   IonText,
   IonChip,
   IonLabel,
+  useIonToast,
 } from "@ionic/react";
 import {
   locationOutline,
@@ -53,6 +54,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     isToday,
     isTomorrow,
   } = useI18n();
+  const [presentToast] = useIonToast();
 
   // Handle coordinates - database stores as [longitude, latitude] array
   const coordinates = task.location.coordinates;
@@ -97,15 +99,83 @@ const TaskCard: React.FC<TaskCardProps> = ({
     }
   };
 
-  const formatScheduledDate = (dateString: string) => {
+  const getOrdinalSuffix = (day: number) => {
+    if (day >= 11 && day <= 13) {
+      return "TH";
+    }
+    switch (day % 10) {
+      case 1:
+        return "ST";
+      case 2:
+        return "ND";
+      case 3:
+        return "RD";
+      default:
+        return "TH";
+    }
+  };
+
+  const formatProminentDate = (dateString: string) => {
     const date = new Date(dateString);
 
-    if (isToday(date)) {
-      return t("time.today") + " " + formatTaskTime(date);
-    } else if (isTomorrow(date)) {
-      return t("time.tomorrow") + " " + formatTaskTime(date);
+    const months = [
+      "JANUARY",
+      "FEBRUARY",
+      "MARCH",
+      "APRIL",
+      "MAY",
+      "JUNE",
+      "JULY",
+      "AUGUST",
+      "SEPTEMBER",
+      "OCTOBER",
+      "NOVEMBER",
+      "DECEMBER",
+    ];
+
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
+    const ordinalSuffix = getOrdinalSuffix(day);
+
+    return `${month} ${day}${ordinalSuffix} ${year}`;
+  };
+
+  const formatStartTime = (timeSlot: any) => {
+    if (!timeSlot || !timeSlot.startTime) {
+      return null;
+    }
+
+    const startTime = new Date(timeSlot.startTime);
+
+    // Format start time in Central Time
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: "America/Chicago",
+      hour12: true,
+    };
+
+    const startFormatted = startTime.toLocaleTimeString("en-US", formatOptions);
+
+    return `${startFormatted} CT`;
+  };
+
+  const handleGetDirections = () => {
+    // Construct address from task location data
+    const address = `${task.location.address.street}, ${task.location.address.city}`;
+
+    if (address && address.trim() !== ", ") {
+      // Open device's default maps app
+      const mapsUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}`;
+      window.open(mapsUrl, "_system");
     } else {
-      return formatTaskTime(date);
+      presentToast({
+        message: "Address not available for directions",
+        duration: 3000,
+        position: "top",
+        color: "warning",
+      });
     }
   };
 
@@ -146,42 +216,45 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
       <IonCardContent>
         <div className="space-y-3">
-          {/* Description */}
-          <IonText className="text-gray-700 text-sm line-clamp-2">
-            {task.description}
-          </IonText>
+          {/* PROMINENT DATE & TIME SECTION */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <IonIcon
+                  icon={calendarOutline}
+                  className="mr-2 text-blue-600 text-lg"
+                />
+                <div>
+                  <IonText className="text-lg font-bold text-blue-900 block">
+                    {formatProminentDate(task.scheduledDate)}
+                  </IonText>
+                  {formatStartTime(task.scheduledTimeSlot) && (
+                    <IonText className="text-sm font-medium text-blue-700 block">
+                      {formatStartTime(task.scheduledTimeSlot)}
+                    </IonText>
+                  )}
+                </div>
+              </div>
+              <IonIcon icon={timeOutline} className="text-blue-500 text-xl" />
+            </div>
+          </div>
 
           {/* Location */}
-          <div className="flex items-center text-gray-600">
-            <IonIcon icon={locationOutline} className="mr-2 text-blue-500" />
-            <IonText className="text-sm">
-              {task.location.address.street}, {task.location.address.city}
-            </IonText>
-          </div>
-
-          {/* Scheduled Date */}
-          <div className="flex items-center text-gray-600">
-            <IonIcon icon={calendarOutline} className="mr-2 text-purple-500" />
-            <IonText className="text-sm">
-              {formatScheduledDate(task.scheduledDate)}
-            </IonText>
-          </div>
-
-          {/* Duration */}
-          <div className="flex items-center text-gray-600">
-            <IonIcon icon={timeOutline} className="mr-2 text-orange-500" />
-            <IonText className="text-sm">
-              Est. {Math.round(task.estimatedDuration / 60)}h{" "}
-              {task.estimatedDuration % 60}m
-            </IonText>
-          </div>
-
-          {/* Customer */}
-          <div className="flex items-center text-gray-600">
-            <IonIcon icon={personOutline} className="mr-2 text-indigo-500" />
-            <IonText className="text-sm">
-              {task.customer.firstName} {task.customer.lastName}
-            </IonText>
+          <div className="flex items-center justify-between text-gray-600">
+            <div className="flex items-center flex-1">
+              <IonIcon icon={locationOutline} className="mr-2 text-blue-500" />
+              <IonText className="text-sm">
+                {task.location.address.street}, {task.location.address.city}
+              </IonText>
+            </div>
+            <IonButton
+              fill="clear"
+              size="small"
+              onClick={handleGetDirections}
+              className="ml-2"
+            >
+              <IonIcon icon={navigateOutline} className="text-blue-500" />
+            </IonButton>
           </div>
 
           {/* Required Skills */}
@@ -219,17 +292,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 {isLoading
                   ? tTask("actions.claiming")
                   : tTask("card.claimButton")}
-              </IonButton>
-            )}
-
-            {showNavigateButton && (
-              <IonButton
-                fill="outline"
-                color="primary"
-                onClick={() => onNavigate?.(task.id)}
-                className="min-w-0"
-              >
-                <IonIcon icon={navigateOutline} slot="icon-only" />
               </IonButton>
             )}
 

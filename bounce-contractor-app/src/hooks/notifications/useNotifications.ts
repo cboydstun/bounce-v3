@@ -13,6 +13,9 @@ import {
 } from "../../types/notification.types";
 import { websocketService } from "../../services/realtime/websocketService";
 import { createTestNotifications } from "../../utils/testNotifications";
+import { audioService } from "../../services/audio/audioService";
+import { SoundType, AudioAlert } from "../../types/audio.types";
+import { TaskPriority } from "../../types/task.types";
 
 export interface UseNotificationsOptions {
   autoLoad?: boolean;
@@ -69,6 +72,122 @@ const deduplicateNotifications = (
   }
 
   return deduplicated;
+};
+
+/**
+ * Map notification priority to task priority for audio alerts
+ */
+const mapNotificationPriorityToTaskPriority = (
+  priority: NotificationPriority,
+): TaskPriority => {
+  const priorityMap: Record<NotificationPriority, TaskPriority> = {
+    low: "low",
+    medium: "medium",
+    high: "high",
+    urgent: "urgent",
+  };
+  return priorityMap[priority] || "medium";
+};
+
+/**
+ * Map task priority string to notification priority
+ */
+const mapTaskPriorityToNotificationPriority = (
+  taskPriority?: string,
+): NotificationPriority => {
+  if (!taskPriority) return "medium";
+
+  const priorityMap: Record<string, NotificationPriority> = {
+    low: "low",
+    medium: "medium",
+    normal: "medium",
+    high: "high",
+    urgent: "urgent",
+    critical: "urgent",
+  };
+
+  return priorityMap[taskPriority.toLowerCase()] || "medium";
+};
+
+/**
+ * Get sound type based on notification category and priority
+ */
+const getSoundTypeForNotification = (
+  category: NotificationCategory,
+  priority: NotificationPriority,
+): SoundType => {
+  if (category === "task_alert") {
+    const taskPriority = mapNotificationPriorityToTaskPriority(priority);
+    const soundTypeMap: Record<TaskPriority, SoundType> = {
+      low: "new_task_low",
+      medium: "new_task_medium",
+      high: "new_task_high",
+      urgent: "new_task_urgent",
+    };
+    return soundTypeMap[taskPriority];
+  }
+
+  // Default sound for non-task notifications
+  return "notification_general";
+};
+
+/**
+ * Get vibration pattern based on notification priority
+ */
+const getVibrationPatternForNotification = (
+  priority: NotificationPriority,
+): number[] => {
+  const vibrationPatterns: Record<NotificationPriority, number[]> = {
+    low: [200],
+    medium: [200, 100, 200],
+    high: [300, 100, 300, 100, 300],
+    urgent: [500, 100, 500, 100, 500, 100, 500],
+  };
+  return vibrationPatterns[priority] || [200, 100, 200];
+};
+
+/**
+ * Play audio alert for notification
+ */
+const playNotificationAudio = async (
+  notification: Notification,
+): Promise<void> => {
+  try {
+    // Initialize audio service if not already initialized
+    if (!audioService.getStatus().isInitialized) {
+      console.log("🔊 Initializing audio service for notification...");
+      await audioService.initialize();
+    }
+
+    const soundType = getSoundTypeForNotification(
+      notification.category,
+      notification.priority,
+    );
+    const vibrationPattern = getVibrationPatternForNotification(
+      notification.priority,
+    );
+
+    const audioAlert: AudioAlert = {
+      soundType,
+      vibrationPattern,
+      volume: notification.priority === "urgent" ? 1.0 : 0.8,
+      fadeIn: notification.priority === "urgent",
+    };
+
+    console.log("🔊 Playing audio alert for notification:", {
+      id: notification.id,
+      title: notification.title,
+      category: notification.category,
+      priority: notification.priority,
+      soundType,
+      vibrationPattern,
+    });
+
+    await audioService.playAlert(audioAlert);
+  } catch (error) {
+    console.error("❌ Failed to play notification audio:", error);
+    // Don't throw - audio failure shouldn't break notification handling
+  }
 };
 
 /**
@@ -250,6 +369,30 @@ export const useNotifications = (
             return deduplicateNotifications(combined);
           });
         } else {
+          // Check for new notifications that weren't there before (for audio alerts)
+          const existingIds = new Set(notifications.map((n) => n.id));
+          const newNotifications = transformedNotifications.filter(
+            (n) => !existingIds.has(n.id),
+          );
+
+          // Play audio alerts for new notifications (fallback for when WebSocket isn't working)
+          if (newNotifications.length > 0 && !append && currentPage === 1) {
+            console.log(
+              `🔊 Found ${newNotifications.length} new notifications via REST API, playing audio alerts...`,
+            );
+            newNotifications.forEach((notification) => {
+              // Only play audio for unread notifications to avoid spam
+              if (!notification.isRead) {
+                playNotificationAudio(notification).catch((error) => {
+                  console.error(
+                    "Failed to play audio for REST API notification:",
+                    error,
+                  );
+                });
+              }
+            });
+          }
+
           setNotifications(deduplicateNotifications(transformedNotifications));
         }
 
@@ -506,6 +649,11 @@ export const useNotifications = (
 
         setPagination((prev) => ({ ...prev, total: prev.total + 1 }));
         setUnreadCount((prev) => prev + 1);
+
+        // 🔊 PLAY AUDIO ALERT FOR NEW NOTIFICATION
+        playNotificationAudio(transformedNotification).catch((error) => {
+          console.error("Failed to play audio for new notification:", error);
+        });
       } catch (error) {
         console.error("❌ Error handling WebSocket notification:", error);
       }
@@ -553,6 +701,76 @@ export const useNotifications = (
       }
     };
 
+    // 🎯 NEW: Handle task events and convert them to notifications
+    const handleNewTask = (eventData: any) => {
+      const taskData = eventData.payload;
+
+      console.log("🎯 NEW TASK EVENT RECEIVED:", taskData);
+
+      try {
+        // Convert task event to notification format
+        const taskNotification: Notification = {
+          id: `task-${taskData.id}`, // Prefix to avoid ID conflicts
+          type: "in_app" as NotificationType,
+          category: "task_alert" as NotificationCategory,
+          title: `New ${taskData.type} Task Available`,
+          body:
+            taskData.description || taskData.title || "A new task is available",
+          data: {
+            taskId: taskData.id,
+            taskTitle: taskData.title,
+            taskType: taskData.type,
+            taskStatus: taskData.status,
+            scheduledDate: taskData.scheduledDateTime,
+            location: { address: taskData.address },
+            compensation: taskData.paymentAmount,
+            urgency:
+              taskData.priority?.toLowerCase() === "high" ? "urgent" : "normal",
+          },
+          userId: "current-contractor", // Will be set properly when we have auth
+          isRead: false,
+          isPersistent: true,
+          priority: mapTaskPriorityToNotificationPriority(taskData.priority),
+          createdAt: taskData.timestamp || new Date().toISOString(),
+          readAt: undefined,
+          expiresAt: undefined,
+        };
+
+        console.log("🔄 Converted task to notification:", taskNotification);
+
+        // Add to notifications list
+        setNotifications((prev) => {
+          // Check if notification already exists
+          const exists = prev.some((n) => n.id === taskNotification.id);
+          if (exists) {
+            console.warn("🔄 Task notification already exists, skipping:", {
+              id: taskNotification.id,
+              title: taskNotification.title,
+            });
+            return prev;
+          }
+
+          console.log("✅ Adding new task notification:", {
+            id: taskNotification.id,
+            title: taskNotification.title,
+          });
+
+          return [taskNotification, ...prev];
+        });
+
+        setPagination((prev) => ({ ...prev, total: prev.total + 1 }));
+        setUnreadCount((prev) => prev + 1);
+
+        // 🔊 PLAY AUDIO ALERT FOR NEW TASK
+        console.log("🔊 About to play audio alert for new task...");
+        playNotificationAudio(taskNotification).catch((error) => {
+          console.error("❌ Failed to play audio for new task:", error);
+        });
+      } catch (error) {
+        console.error("❌ Error handling WebSocket task event:", error);
+      }
+    };
+
     // Subscribe to WebSocket events
     const unsubscribeNew = websocketService.on(
       "notification:new",
@@ -563,9 +781,13 @@ export const useNotifications = (
       handleNotificationUpdate,
     );
 
+    // 🎯 NEW: Subscribe to task events
+    const unsubscribeNewTask = websocketService.on("task:new", handleNewTask);
+
     return () => {
       unsubscribeNew();
       unsubscribeUpdate();
+      unsubscribeNewTask();
     };
   }, []);
 
