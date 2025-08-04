@@ -72,6 +72,48 @@
     "view": "View",
     "dismiss": "Dismiss",
     "markRead": "Mark as Read",
-    "markUnread": "Mark as Unread"
+    "markUnread": "Mark as Unread",
+    "markAllRead": "Mark All as Read",
+    "cancel": "Cancel"
+  },
+  "filters": {
+    "all": "All",
+    "unread": "Unread",
+    "tasks": "Tasks",
+    "system": "System",
+    "personal": "Personal"
+  },
+  "item": {
+    "new": "New",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} min ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "markRead": "Mark Read",
+    "delete": "Delete"
+  },
+  "list": {
+    "loading": "Loading notifications...",
+    "loadingMore": "Loading more...",
+    "errorTitle": "Unable to load notifications",
+    "retry": "Try Again",
+    "emptyTitle": "No notifications",
+    "emptyMessage": "You're all caught up! New notifications will appear here.",
+    "refresh": "Refresh"
+  },
+  "detail": {
+    "title": "Notification Details",
+    "close": "Close",
+    "viewTask": "View Task",
+    "delete": "Delete",
+    "markRead": "Mark as Read",
+    "taskDetails": "Task Details",
+    "paymentDetails": "Payment Details",
+    "location": "Location",
+    "payment": "Payment",
+    "scheduled": "Scheduled",
+    "customer": "Customer",
+    "taskTitle": "Task",
+    "taskType": "Type"
   }
 }

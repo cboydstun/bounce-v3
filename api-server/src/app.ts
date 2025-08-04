@@ -35,6 +35,9 @@ import taskRoutes from "./routes/tasks.js";
 import quickbooksRoutes from "./routes/quickbooks.js";
 import supportRoutes from "./routes/support.js";
 import healthRoutes from "./routes/health.js";
+import notificationRoutes, {
+  setSocketHandlers,
+} from "./routes/notifications.js";
 
 const app = express();
 const server = createServer(app);
@@ -167,6 +170,7 @@ app.use("/api/contractors", contractorRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/quickbooks", quickbooksRoutes);
 app.use("/api/support", supportRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {
@@ -214,6 +218,9 @@ io.use(socketAuthMiddleware);
 // Initialize socket handlers
 const socketHandlers = new SocketHandlers(io);
 socketHandlers.initializeHandlers();
+
+// Set socket handlers for notification routes
+setSocketHandlers(socketHandlers);
 
 // Initialize realtime service
 RealtimeService.initialize(socketHandlers);

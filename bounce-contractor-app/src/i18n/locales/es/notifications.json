@@ -72,6 +72,48 @@
     "view": "Ver",
     "dismiss": "Descartar",
     "markRead": "Marcar como Leída",
-    "markUnread": "Marcar como No Leída"
+    "markUnread": "Marcar como No Leída",
+    "markAllRead": "Marcar Todas como Leídas",
+    "cancel": "Cancelar"
+  },
+  "filters": {
+    "all": "Todas",
+    "unread": "No Leídas",
+    "tasks": "Tareas",
+    "system": "Sistema",
+    "personal": "Personal"
+  },
+  "item": {
+    "new": "Nueva",
+    "justNow": "Ahora mismo",
+    "minutesAgo": "hace {{count}} min",
+    "hoursAgo": "hace {{count}}h",
+    "daysAgo": "hace {{count}}d",
+    "markRead": "Marcar Leída",
+    "delete": "Eliminar"
+  },
+  "list": {
+    "loading": "Cargando notificaciones...",
+    "loadingMore": "Cargando más...",
+    "errorTitle": "No se pueden cargar las notificaciones",
+    "retry": "Intentar de Nuevo",
+    "emptyTitle": "Sin notificaciones",
+    "emptyMessage": "¡Estás al día! Las nuevas notificaciones aparecerán aquí.",
+    "refresh": "Actualizar"
+  },
+  "detail": {
+    "title": "Detalles de Notificación",
+    "close": "Cerrar",
+    "viewTask": "Ver Tarea",
+    "delete": "Eliminar",
+    "markRead": "Marcar como Leída",
+    "taskDetails": "Detalles de la Tarea",
+    "paymentDetails": "Detalles del Pago",
+    "location": "Ubicación",
+    "payment": "Pago",
+    "scheduled": "Programado",
+    "customer": "Cliente",
+    "taskTitle": "Tarea",
+    "taskType": "Tipo"
   }
 }

@@ -10,6 +10,26 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { TaskFormData, TaskStatus } from "@/types/task";
 import { geocodeAddress } from "@/utils/geocoding";
+import { NotificationService } from "@/services/notificationService";
+import WebSocketBroadcastService, {
+  TaskBroadcastData,
+} from "@/services/websocketBroadcastService";
+
+// Helper function to map task priority to notification priority
+const getNotificationPriority = (
+  taskPriority: string,
+): "critical" | "high" | "normal" | "low" => {
+  switch (taskPriority) {
+    case "High":
+      return "high";
+    case "Medium":
+      return "normal";
+    case "Low":
+      return "low";
+    default:
+      return "normal";
+  }
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -406,7 +426,10 @@ export async function POST(request: NextRequest) {
       try {
         const geocodedLocation = await geocodeAddress(addressToUse);
         if (geocodedLocation) {
-          locationToUse = geocodedLocation;
+          locationToUse = {
+            type: "Point",
+            coordinates: geocodedLocation,
+          };
           console.log(`Successfully geocoded address: ${addressToUse}`);
         } else {
           console.warn(
@@ -478,6 +501,94 @@ export async function POST(request: NextRequest) {
         console.error("Error logging initial payment:", historyError);
         // Don't fail the request if history logging fails
       }
+    }
+
+    // Create notifications for all active contractors
+    try {
+      // Get all active and verified contractors
+      const activeContractors = await Contractor.find({
+        isActive: true,
+        isVerified: true,
+      }).select("_id");
+
+      const contractorIds = activeContractors.map((c) =>
+        (c._id as mongoose.Types.ObjectId).toString(),
+      );
+
+      if (contractorIds.length > 0) {
+        // Create bulk notifications for all active contractors
+        await NotificationService.createBulkNotifications(contractorIds, {
+          type: "task",
+          priority: getNotificationPriority(savedTask.priority),
+          title: `New ${savedTask.type} Task Available`,
+          message: `${savedTask.type} task${savedTask.address ? ` in ${savedTask.address}` : ""}${savedTask.paymentAmount ? ` - $${savedTask.paymentAmount}` : ""}`,
+          data: {
+            taskId: (savedTask._id as mongoose.Types.ObjectId).toString(),
+            taskType: savedTask.type,
+            address: savedTask.address,
+            paymentAmount: savedTask.paymentAmount,
+            scheduledDateTime: savedTask.scheduledDateTime,
+            priority: savedTask.priority,
+            orderId: savedTask.orderId.toString(),
+          },
+          expiresInHours: 24, // Tasks expire after 24 hours
+        });
+
+        console.log(
+          `Created notifications for ${contractorIds.length} contractors for new task ${savedTask._id}`,
+        );
+
+        // Trigger WebSocket broadcast to notify mobile apps in real-time
+        try {
+          const taskBroadcastData: TaskBroadcastData = {
+            taskId: (savedTask._id as mongoose.Types.ObjectId).toString(),
+            orderId: savedTask.orderId.toString(),
+            type: savedTask.type as
+              | "Delivery"
+              | "Setup"
+              | "Pickup"
+              | "Maintenance",
+            title: savedTask.title,
+            description: savedTask.description,
+            priority: savedTask.priority as "High" | "Medium" | "Low",
+            scheduledDateTime: savedTask.scheduledDateTime,
+            address: savedTask.address,
+            paymentAmount: savedTask.paymentAmount,
+            location: savedTask.location,
+          };
+
+          const broadcastResult =
+            await WebSocketBroadcastService.broadcastNewTask(
+              taskBroadcastData,
+              contractorIds,
+            );
+
+          if (broadcastResult.success) {
+            console.log(
+              `Successfully broadcasted new task ${savedTask._id} to mobile apps`,
+            );
+          } else {
+            console.warn(
+              `Failed to broadcast new task ${savedTask._id}:`,
+              broadcastResult.error,
+            );
+          }
+        } catch (broadcastError) {
+          // Log error but don't fail the task creation
+          console.error(
+            "Failed to broadcast new task to mobile apps:",
+            broadcastError,
+          );
+        }
+      } else {
+        console.log("No active contractors found for notification");
+      }
+    } catch (notificationError) {
+      // Log error but don't fail the task creation
+      console.error(
+        "Failed to create notifications for new task:",
+        notificationError,
+      );
     }
 
     return NextResponse.json(savedTask, { status: 201 });

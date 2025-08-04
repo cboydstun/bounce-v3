@@ -1,3 +1,44 @@
+// API Notification Types (matches API server response)
+export interface ApiNotification {
+  id: string;
+  contractorId: string;
+  type: "task" | "system" | "personal";
+  priority: "critical" | "high" | "normal" | "low";
+  title: string;
+  message: string;
+  data?: any;
+  isRead: boolean;
+  isDelivered: boolean;
+  createdAt: string;
+  deliveredAt?: string;
+  readAt?: string;
+  expiresAt?: string;
+}
+
+export interface ApiNotificationResponse {
+  notifications: ApiNotification[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface ApiNotificationStats {
+  total: number;
+  unread: number;
+  undelivered: number;
+  byType: {
+    task: number;
+    system: number;
+    personal: number;
+  };
+  byPriority: {
+    critical: number;
+    high: number;
+    normal: number;
+    low: number;
+  };
+}
+
 // Notification Core Types
 export interface Notification {
   id: string;
