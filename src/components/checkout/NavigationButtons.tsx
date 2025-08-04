@@ -17,20 +17,18 @@ export const NavigationButtons: React.FC<NavigationButtonsProps> = ({
   // Determine button text based on current step
   const getNextButtonText = () => {
     switch (currentStep) {
-      case "payment":
-        return "Complete Order";
       case "review":
-        return "Proceed to Payment";
+        return "Complete Order";
       default:
         return "Continue";
     }
   };
 
-  // Hide next button on payment step (PayPal button will be used)
-  const showNextButton = currentStep !== "payment";
+  // Always show next button since we removed the payment step
+  const showNextButton = true;
 
   // First step doesn't need a back button
-  const showPreviousButton = currentStep !== "delivery";
+  const showPreviousButton = currentStep !== "selection";
 
   return (
     <div className="flex justify-between mt-8">

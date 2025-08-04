@@ -19,8 +19,7 @@ export type OrderStep =
   | "datetime"
   | "details"
   | "extras"
-  | "review"
-  | "payment";
+  | "review";
 
 // Define the step configuration
 export interface StepConfig {
@@ -34,8 +33,7 @@ export const steps: StepConfig[] = [
   { id: "datetime", label: "Date & Time" },
   { id: "details", label: "Your Info" },
   { id: "extras", label: "Add Extras" },
-  { id: "review", label: "Review Order" },
-  { id: "payment", label: "Payment" },
+  { id: "review", label: "Review & Complete Order" },
 ];
 
 // Define the slushy mixer options
@@ -220,19 +218,8 @@ export interface Step4Props extends BaseStepProps {
   onEditStep: (step: OrderStep) => void;
 }
 
-// Define props for Step5_Payment
-export interface Step5Props extends BaseStepProps {
-  onPaymentSuccess: (details: any) => void;
-  onPaymentInitiation?: () => void;
-}
-
 // Union type for all step props
-export type StepProps =
-  | Step1Props
-  | Step2Props
-  | Step3Props
-  | Step4Props
-  | Step5Props;
+export type StepProps = Step1Props | Step2Props | Step3Props | Step4Props;
 
 // Define action types
 export type CheckoutAction =

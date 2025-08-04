@@ -11,7 +11,6 @@ import {
   Step2Props,
   Step3Props,
   Step4Props,
-  Step5Props,
 } from "./utils/types";
 import { ProgressBar } from "./ProgressBar";
 import { NavigationButtons } from "./NavigationButtons";
@@ -55,14 +54,6 @@ const Step3_Extras = dynamic<Step3Props>(
 
 const Step4_OrderReview = dynamic<Step4Props>(
   () => import("./steps/Step4_OrderReview").then((mod) => mod.default as any),
-  {
-    loading: () => <StepSkeleton />,
-    ssr: false,
-  },
-);
-
-const Step5_Payment = dynamic<Step5Props>(
-  () => import("./steps/Step5_Payment").then((mod) => mod.default as any),
   {
     loading: () => <StepSkeleton />,
     ssr: false,
@@ -277,9 +268,6 @@ const CheckoutWizard: React.FC = () => {
 
       // Mark as complete (but with different status than PayPal)
       dispatch({ type: "CASH_ORDER_SUCCESS" });
-
-      // Go to confirmation step
-      dispatch({ type: "GO_TO_STEP", payload: "payment" });
     } catch (error) {
       console.error("Error creating cash order:", error);
       dispatch({
@@ -422,15 +410,6 @@ const CheckoutWizard: React.FC = () => {
             onEditStep={goToStep}
           />
         );
-      case "payment":
-        return (
-          <Step5_Payment
-            state={state}
-            dispatch={dispatch}
-            onPaymentSuccess={handlePaymentSuccess}
-            onPaymentInitiation={handlePaymentInitiation}
-          />
-        );
       default:
         return null;
     }
@@ -453,8 +432,8 @@ const CheckoutWizard: React.FC = () => {
         {/* Form Steps with Suspense boundary */}
         <Suspense fallback={<StepSkeleton />}>{renderStepContent()}</Suspense>
 
-        {/* Navigation Buttons */}
-        {(state.currentStep !== "payment" || state.paymentError) && (
+        {/* Navigation Buttons - Hide when order is complete */}
+        {!(state.currentStep === "review" && state.paymentComplete) && (
           <NavigationButtons
             currentStep={state.currentStep}
             onNext={goToNextStep}

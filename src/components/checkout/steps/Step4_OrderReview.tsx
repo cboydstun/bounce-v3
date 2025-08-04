@@ -33,14 +33,19 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
 }) => {
   // Recalculate prices when component mounts or when payment method changes
   useEffect(() => {
+    // Set payment method to cash by default (since it's the only option now)
+    if (state.paymentMethod !== "cash") {
+      dispatch({ type: "SET_PAYMENT_METHOD", payload: "cash" });
+    }
+
     const prices = calculatePrices(state);
     dispatch({ type: "UPDATE_PRICES", payload: prices });
 
     // Update balance due
     dispatch({ type: "UPDATE_BALANCE_DUE" });
 
-    // Reset deposit amount to 0 when payment method is cash
-    if (state.paymentMethod === "cash" && state.depositAmount > 0) {
+    // Reset deposit amount to 0 for cash payments
+    if (state.depositAmount > 0) {
       dispatch({ type: "SET_DEPOSIT_AMOUNT", payload: 0 });
     }
   }, [
@@ -70,6 +75,225 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
 
   // Get selected extras
   const selectedExtras = state.extras.filter((extra) => extra.selected);
+
+  // Show loading state while creating order
+  if (state.isLoading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold text-gray-800">
+          Creating Your Order
+        </h2>
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-purple"></div>
+          <span className="ml-3 text-lg">Processing your order...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show success state when order is complete
+  if (state.paymentComplete && state.orderNumber) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 text-green-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Reservation Confirmed!
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Your equipment rental reservation has been successfully placed.
+          </p>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4">Reservation Details</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Order Number:</span>
+              <span className="font-medium">{state.orderNumber}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Total Amount:</span>
+              <span className="font-medium">
+                ${state.totalAmount.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Reservation Status:</span>
+              <span className="font-medium text-green-600">Confirmed</span>
+            </div>
+          </div>
+        </div>
+
+        {/* How It Works Section */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            How It Works
+          </h3>
+          <div className="space-y-3 text-blue-800">
+            <p>
+              <strong>✓ Your reservation is complete!</strong> We don't get paid
+              until we arrive with your equipment rental.
+            </p>
+            <p>
+              <strong>🌤️ Weather dependent:</strong> We are dependent on the
+              weather and will have to cancel if it is raining or too windy for
+              safety reasons.
+            </p>
+            <p>
+              <strong>📞 Day-before confirmation:</strong> We will follow up the
+              day before to confirm the weather is cooperating and the party is
+              still on.
+            </p>
+          </div>
+        </div>
+
+        {/* Important Payment Warning */}
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-red-900 mb-4 flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
+            Important Payment Information
+          </h3>
+          <div className="space-y-3 text-red-800">
+            <p>
+              <strong>⚠️ Please do NOT pay the invoice early!</strong>
+            </p>
+            <p>
+              <strong>🚫 We do NOT offer refunds for any reason.</strong>
+            </p>
+            <p>
+              <strong>🌧️ Rain check policy:</strong> If you pay the invoice
+              early and sudden inclement weather cancels the party, there will
+              be no refund - it will be a "rain check." You will still get your
+              party, but only when it is safe.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-green-50 p-4 rounded-md">
+          <p className="text-green-800">
+            A confirmation email has been sent to {state.customerEmail}. If you
+            have any questions about your reservation, please contact us at{" "}
+            <a href="tel:5122100194" className="font-medium underline">
+              (512) 210-0194
+            </a>
+            .
+          </p>
+        </div>
+
+        <div className="text-center mt-6">
+          <a
+            href="/"
+            className="inline-block px-6 py-3 bg-primary-purple text-white rounded-lg font-medium hover:bg-primary-purple/90 transition-colors"
+          >
+            Return to Home
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if there's an error
+  if (state.paymentError) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 text-red-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Order Failed
+          </h2>
+          <p className="text-red-600 mb-6">{state.paymentError}</p>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4">What to do next?</h3>
+          <p className="text-gray-600 mb-4">
+            You can try the following options:
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-gray-600">
+            <li>Go back and check your order details</li>
+            <li>Try again in a few moments</li>
+            <li>
+              Contact us at{" "}
+              <a href="tel:5122100194" className="text-primary-purple">
+                (512) 210-0194
+              </a>{" "}
+              for assistance
+            </li>
+          </ul>
+        </div>
+
+        <div className="text-center mt-6">
+          <button
+            type="button"
+            onClick={() => {
+              dispatch({ type: "PAYMENT_ERROR", payload: "" });
+            }}
+            className="inline-block px-6 py-3 bg-primary-purple text-white rounded-lg font-medium hover:bg-primary-purple/90 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -436,176 +660,6 @@ const Step4_OrderReview: React.FC<Step4Props> = ({
           )}
         </div>
       </div>
-
-      {/* Payment Method Selection */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-800">Payment Method</h3>
-        </div>
-        <div className="p-4 space-y-4">
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <input
-                type="radio"
-                id="paypal"
-                name="paymentMethod"
-                checked={state.paymentMethod === "paypal"}
-                onChange={() =>
-                  dispatch({ type: "SET_PAYMENT_METHOD", payload: "paypal" })
-                }
-                className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300"
-              />
-              <label htmlFor="paypal" className="flex items-center space-x-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 576 512"
-                  className="w-6 h-6 text-blue-600"
-                  fill="currentColor"
-                >
-                  <path d="M186.3 258.2c0 12.2-9.7 21.5-22 21.5-9.2 0-16-5.2-16-15 0-12.2 9.5-22 21.7-22 9.3 0 16.3 5.7 16.3 15.5zM80.5 209.7h-4.7c-1.5 0-3 1-3.2 2.7l-4.3 26.7 8.2-.3c11 0 19.5-1.5 21.5-14.2 2.3-13.4-6.2-14.9-17.5-14.9zm284 0H360c-1.8 0-3 1-3.2 2.7l-4.2 26.7 8-.3c13 0 22-3 22-18-.1-10.6-9.6-11.1-18.1-11.1zM576 80v352c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V80c0-26.5 21.5-48 48-48h480c26.5 0 48 21.5 48 48zM128.3 215.4c0-21-16.2-28-34.7-28h-40c-2.5 0-5 2-5.2 4.7L32 294.2c-.3 2 1.2 4 3.2 4h19c2.7 0 5.2-2.9 5.5-5.7l4.5-26.6c1-7.2 13.2-4.7 18-4.7 28.6 0 46.1-17 46.1-45.8zm84.2 8.8h-19c-3.8 0-4 5.5-4.2 8.2-5.8-8.5-14.2-10-23.7-10-24.5 0-43.2 21.5-43.2 45.2 0 19.5 12.2 32.2 31.7 32.2 9 0 20.2-4.9 26.5-11.9-.5 1.5-1 4.7-1 6.2 0 2.3 1 4 3.2 4H200c2.7 0 5-2.9 5.5-5.7l10.2-64.3c.3-1.9-1.2-3.9-3.2-3.9zm40.5 97.9l63.7-92.6c.5-.5.5-1 .5-1.7 0-1.7-1.5-3.5-3.2-3.5h-19.2c-1.7 0-3.5 1-4.5 2.5l-26.5 39-11-37.5c-.8-2.2-3-4-5.5-4h-18.7c-1.7 0-3.2 1.8-3.2 3.5 0 1.2 19.5 56.8 21.2 62.1-2.7 3.8-20.5 28.6-20.5 31.6 0 1.8 1.5 3.2 3.2 3.2h19.2c1.8-.1 3.5-1.1 4.5-2.6zm159.3-106.7c0-21-16.2-28-34.7-28h-39.7c-2.7 0-5.2 2-5.5 4.7l-16.2 102c-.2 2 1.3 4 3.2 4h20.5c2 0 3.5-1.5 4-3.2l4.5-29c1-7.2 13.2-4.7 18-4.7 28.4 0 45.9-17 45.9-45.8zm84.2 8.8h-19c-3.8 0-4 5.5-4.3 8.2-5.5-8.5-14-10-23.7-10-24.5 0-43.2 21.5-43.2 45.2 0 19.5 12.2 32.2 31.7 32.2 9.3 0 20.5-4.9 26.5-11.9-.3 1.5-1 4.7-1 6.2 0 2.3 1 4 3.2 4H484c2.7 0 5-2.9 5.5-5.7l10.2-64.3c.3-1.9-1.2-3.9-3.2-3.9zm47.5-33.3c0-2-1.5-3.5-3.2-3.5h-18.5c-1.5 0-3 1.2-3.2 2.7l-16.2 104-.3.5c0 1.8 1.5 3.5 3.5 3.5h16.5c2.5 0 5-2.9 5.2-5.7L544 191.2v-.3zm-90 51.8c-12.2 0-21.7 9.7-21.7 22 0 9.7 7 15 16.2 15 12 0 21.7-9.2 21.7-21.5.1-9.8-6.9-15.5-16.2-15.5z" />
-                </svg>
-                <span className="font-medium">Pay Online (Pay Now)</span>
-              </label>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <input
-                type="radio"
-                id="cash"
-                name="paymentMethod"
-                checked={state.paymentMethod === "cash"}
-                onChange={() => {
-                  dispatch({ type: "SET_PAYMENT_METHOD", payload: "cash" });
-                  // Reset deposit amount to 0 for cash payments
-                  dispatch({ type: "SET_DEPOSIT_AMOUNT", payload: 0 });
-                  dispatch({ type: "UPDATE_BALANCE_DUE" });
-                }}
-                className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300"
-              />
-              <label htmlFor="cash" className="flex items-center space-x-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-green-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"
-                  />
-                </svg>
-                <span className="font-medium">
-                  Cash on Delivery (Pay Later)
-                </span>
-              </label>
-            </div>
-          </div>
-
-          {/* Payment method explanations */}
-          <div className="mt-4">
-            {state.paymentMethod === "paypal" && (
-              <div className="bg-blue-50 p-3 rounded-md">
-                <p className="text-sm text-blue-800">
-                  <strong>PayPal:</strong> You'll be redirected to PayPal to
-                  complete your payment securely.
-                  {state.depositAmount > 0 ? (
-                    <span>
-                      {" "}
-                      You'll pay the deposit amount of $
-                      {state.depositAmount.toFixed(2)} now.
-                    </span>
-                  ) : (
-                    <span>
-                      {" "}
-                      You'll pay the full amount of $
-                      {state.totalAmount.toFixed(2)} now.
-                    </span>
-                  )}
-                </p>
-              </div>
-            )}
-
-            {state.paymentMethod === "cash" && (
-              <div className="bg-green-50 p-3 rounded-md">
-                <p className="text-sm text-green-800">
-                  <strong>Cash on Delivery:</strong> No payment required now.
-                  <span>
-                    {" "}
-                    You'll pay the full amount of $
-                    {state.totalAmount.toFixed(2)} in cash when we deliver your
-                    order.
-                  </span>
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Deposit Options - Only show for PayPal */}
-      {state.paymentMethod === "paypal" && (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-800">
-              Deposit Options
-            </h3>
-          </div>
-          <div className="p-4 space-y-4">
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <input
-                  type="radio"
-                  id="fullPayment"
-                  name="depositOption"
-                  checked={state.depositAmount === 0}
-                  onChange={() => {
-                    dispatch({ type: "SET_DEPOSIT_AMOUNT", payload: 0 });
-                    dispatch({ type: "UPDATE_BALANCE_DUE" });
-                  }}
-                  className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300"
-                />
-                <label htmlFor="fullPayment" className="text-gray-700">
-                  Pay in Full (${state.totalAmount.toFixed(2)})
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <input
-                  type="radio"
-                  id="depositPayment"
-                  name="depositOption"
-                  checked={state.depositAmount > 0}
-                  onChange={() => {
-                    // Set deposit to 50% of total (rounded to nearest dollar)
-                    const deposit = Math.round(state.totalAmount * 0.5);
-                    dispatch({ type: "SET_DEPOSIT_AMOUNT", payload: deposit });
-                    dispatch({ type: "UPDATE_BALANCE_DUE" });
-                  }}
-                  className="h-4 w-4 text-primary-purple focus:ring-primary-purple border-gray-300"
-                />
-                <label htmlFor="depositPayment" className="text-gray-700">
-                  Pay 50% Deposit Now ($
-                  {Math.round(state.totalAmount * 0.5).toFixed(2)})
-                </label>
-              </div>
-            </div>
-
-            {state.depositAmount > 0 && (
-              <div className="bg-blue-50 p-3 rounded-md mt-3">
-                <p className="text-sm text-blue-800">
-                  <strong>Deposit Payment:</strong> You'll pay $
-                  {state.depositAmount.toFixed(2)} now, and the remaining
-                  balance of ${state.balanceDue.toFixed(2)} will be due on the
-                  day of delivery.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Terms and Conditions */}
       <div className="bg-blue-50 p-4 rounded-md">
