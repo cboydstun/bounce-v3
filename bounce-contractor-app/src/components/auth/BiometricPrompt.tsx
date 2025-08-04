@@ -26,7 +26,7 @@ import {
   BiometryType,
   BiometricErrorCode,
 } from "../../types/biometric.types";
-import { useAuthTranslation } from "../../hooks/common/useI18n";
+import { useAuthTranslation, useI18n } from "../../hooks/common/useI18n";
 
 interface BiometricPromptProps {
   isOpen: boolean;
@@ -47,7 +47,8 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
   showFallback = true,
   onFallback,
 }) => {
-  const { t } = useAuthTranslation();
+  const { t: tAuth } = useAuthTranslation();
+  const { t: tCommon } = useI18n();
   const { authenticate, isLoading, error, availability, clearError } =
     useBiometric();
 
@@ -144,19 +145,19 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
   };
 
   const getBiometricTypeText = () => {
-    if (!availability) return t("biometric.touchId");
+    if (!availability) return tAuth("biometric.touchId");
 
     switch (availability.biometryType) {
       case BiometryType.FACE_ID:
-        return t("biometric.faceId");
+        return tAuth("biometric.faceId");
       case BiometryType.FACE_AUTHENTICATION:
-        return t("biometric.faceAuthentication");
+        return tAuth("biometric.faceAuthentication");
       case BiometryType.TOUCH_ID:
-        return t("biometric.touchId");
+        return tAuth("biometric.touchId");
       case BiometryType.FINGERPRINT:
-        return t("biometric.fingerprint");
+        return tAuth("biometric.fingerprint");
       default:
-        return t("biometric.biometric");
+        return tAuth("biometric.biometric");
     }
   };
 
@@ -171,10 +172,10 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
             />
             <IonText>
               <h3 className="text-lg font-medium mb-2">
-                {t("biometric.authenticating")}
+                {tAuth("biometric.authenticating")}
               </h3>
               <p className="text-gray-600">
-                {t("biometric.authenticatingMessage")}
+                {tAuth("biometric.authenticatingMessage")}
               </p>
             </IonText>
           </div>
@@ -189,7 +190,7 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
             />
             <IonText>
               <h3 className="text-lg font-medium text-green-600">
-                {t("biometric.success")}
+                {tAuth("biometric.success")}
               </h3>
             </IonText>
           </div>
@@ -204,14 +205,14 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
             />
             <IonText>
               <h3 className="text-lg font-medium text-red-600 mb-2">
-                {t("biometric.failed")}
+                {tAuth("biometric.failed")}
               </h3>
               <p className="text-gray-600 mb-4">
-                {error || t("biometric.tryAgain")}
+                {error || tAuth("biometric.tryAgain")}
               </p>
               {attempts < maxAttempts && (
                 <p className="text-sm text-gray-500">
-                  {t("biometric.attemptsRemaining", {
+                  {tAuth("biometric.attemptsRemaining", {
                     remaining: maxAttempts - attempts,
                   })}
                 </p>
@@ -229,11 +230,11 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
             />
             <IonText>
               <h3 className="text-xl font-medium mb-2">
-                {options.title || t("biometric.authenticate")}
+                {options.title || tAuth("biometric.authenticate")}
               </h3>
               <p className="text-gray-600 mb-2">
                 {options.subtitle ||
-                  t("biometric.useYourBiometric", {
+                  tAuth("biometric.useYourBiometric", {
                     type: getBiometricTypeText(),
                   })}
               </p>
@@ -255,7 +256,9 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
     <IonModal isOpen={isOpen} onDidDismiss={onDidDismiss}>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{options.title || t("biometric.authenticate")}</IonTitle>
+          <IonTitle>
+            {options.title || tAuth("biometric.authenticate")}
+          </IonTitle>
           <IonButton
             fill="clear"
             slot="end"
@@ -279,7 +282,7 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
                 className="btn-primary"
                 disabled={isLoading}
               >
-                {t("biometric.authenticate")}
+                {tAuth("biometric.authenticate")}
               </IonButton>
             )}
 
@@ -290,7 +293,7 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
                 className="btn-primary"
                 disabled={isLoading}
               >
-                {t("biometric.tryAgain")}
+                {tAuth("biometric.tryAgain")}
               </IonButton>
             )}
 
@@ -304,7 +307,7 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
                 }}
                 disabled={authState === "authenticating"}
               >
-                {options.fallbackTitle || t("biometric.usePassword")}
+                {options.fallbackTitle || tAuth("biometric.usePassword")}
               </IonButton>
             )}
 
@@ -314,7 +317,7 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
               onClick={onDidDismiss}
               disabled={authState === "authenticating"}
             >
-              {options.negativeButtonText || t("common.cancel")}
+              {options.negativeButtonText || tCommon("app.cancel")}
             </IonButton>
           </div>
 
@@ -324,7 +327,7 @@ const BiometricPrompt: React.FC<BiometricPromptProps> = ({
               <IonItem lines="none" className="px-0">
                 <IonLabel>
                   <h3 className="text-sm font-medium text-gray-700">
-                    {t("biometric.availableMethod")}
+                    {tAuth("biometric.availableMethod")}
                   </h3>
                   <p className="text-sm text-gray-500">
                     {getBiometricTypeText()}
