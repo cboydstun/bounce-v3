@@ -1,7 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TaskType, TaskPriority, TaskFormData } from "@/types/task";
+import { Order } from "@/types/order";
 import OrderSelector from "./OrderSelector";
 import ContractorSelector from "./ContractorSelector";
+import {
+  generateTaskTitle,
+  generateTaskDescription,
+  calculateTaskPayment,
+  generateDefaultScheduledDateTime,
+  formatDateTimeLocal,
+} from "@/utils/taskUtils";
 
 interface TaskCreateModalProps {
   isOpen: boolean;
@@ -9,7 +17,7 @@ interface TaskCreateModalProps {
   onTaskCreated: () => void;
 }
 
-interface Order {
+interface OrderSelectorOrder {
   _id: string;
   orderNumber: string;
   customerName: string;
@@ -34,12 +42,76 @@ export default function TaskCreateModal({
     priority: "Medium",
     assignedContractors: [],
   });
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderSelectorOrder | null>(
+    null,
+  );
+  const [fullOrderData, setFullOrderData] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const taskTypes: TaskType[] = ["Delivery", "Setup", "Pickup", "Maintenance"];
   const priorities: TaskPriority[] = ["High", "Medium", "Low"];
+
+  // Fetch full order data and auto-populate form fields
+  const fetchFullOrderAndPopulate = async (orderId: string) => {
+    try {
+      const response = await fetch(`/api/v1/orders/${orderId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch order details");
+      }
+
+      const order: Order = await response.json();
+      setFullOrderData(order);
+
+      // Auto-populate form fields based on order data and current task type
+      populateFormFromOrder(order, formData.type as TaskType);
+    } catch (error) {
+      console.error("Error fetching order details:", error);
+      setErrors((prev) => ({
+        ...prev,
+        submit: "Failed to load order details for auto-population",
+      }));
+    }
+  };
+
+  // Auto-populate form fields based on order data and task type
+  const populateFormFromOrder = (order: Order, taskType: TaskType) => {
+    console.log("🔄 populateFormFromOrder called with:", {
+      taskType,
+      orderNumber: order.orderNumber,
+    });
+
+    // Generate task title
+    const title = generateTaskTitle(order.items, taskType);
+
+    // Generate task description
+    const description = generateTaskDescription(order, taskType);
+
+    // Calculate payment amount
+    const paymentAmount = calculateTaskPayment(taskType, order.totalAmount);
+
+    // Generate default scheduled date/time
+    const defaultDateTime = generateDefaultScheduledDateTime(taskType, order);
+    const scheduledDateTime = defaultDateTime
+      ? formatDateTimeLocal(defaultDateTime)
+      : "";
+
+    // Update form data with auto-populated values
+    setFormData((prev) => ({
+      ...prev,
+      title,
+      description,
+      paymentAmount,
+      scheduledDateTime,
+    }));
+  };
+
+  // Auto-populate when task type changes (if order is selected)
+  useEffect(() => {
+    if (fullOrderData && formData.type) {
+      populateFormFromOrder(fullOrderData, formData.type as TaskType);
+    }
+  }, [formData.type, fullOrderData]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -61,7 +133,7 @@ export default function TaskCreateModal({
     }
   };
 
-  const handleOrderSelect = (order: Order | null) => {
+  const handleOrderSelect = (order: OrderSelectorOrder | null) => {
     setSelectedOrder(order);
     setFormData((prev) => ({
       ...prev,
@@ -73,6 +145,21 @@ export default function TaskCreateModal({
       setErrors((prev) => ({
         ...prev,
         orderId: "",
+      }));
+    }
+
+    // Fetch full order data and auto-populate form
+    if (order) {
+      fetchFullOrderAndPopulate(order._id);
+    } else {
+      setFullOrderData(null);
+      // Clear auto-populated fields when order is deselected
+      setFormData((prev) => ({
+        ...prev,
+        title: "",
+        description: "",
+        scheduledDateTime: "",
+        paymentAmount: undefined,
       }));
     }
   };
@@ -184,15 +271,20 @@ export default function TaskCreateModal({
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      type: "Delivery",
+      priority: "Medium",
+      assignedContractors: [],
+    });
+    setSelectedOrder(null);
+    setFullOrderData(null);
+    setErrors({});
+  };
+
   const handleClose = () => {
     if (!loading) {
-      setFormData({
-        type: "Delivery",
-        priority: "Medium",
-        assignedContractors: [],
-      });
-      setSelectedOrder(null);
-      setErrors({});
+      resetForm();
       onClose();
     }
   };
@@ -290,10 +382,46 @@ export default function TaskCreateModal({
               </div>
             </div>
 
+            {/* Auto-population Info */}
+            {selectedOrder && fullOrderData && (
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <div className="flex items-start">
+                  <svg
+                    className="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div className="text-sm text-blue-700">
+                    <p className="font-medium">
+                      Auto-populated from Order {selectedOrder.orderNumber}
+                    </p>
+                    <p className="mt-1">
+                      Fields below have been automatically filled based on the
+                      selected order and task type. You can modify any field as
+                      needed.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Title */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Task Title (Optional)
+                {selectedOrder && fullOrderData && (
+                  <span className="ml-1 text-xs text-blue-600 font-normal">
+                    • Auto-populated
+                  </span>
+                )}
               </label>
               <input
                 type="text"
@@ -302,7 +430,11 @@ export default function TaskCreateModal({
                 onChange={handleInputChange}
                 disabled={loading}
                 placeholder="e.g., Deliver bounce house to birthday party"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-blue-500 focus:ring-blue-500"
+                className={`w-full border rounded-md px-3 py-2 focus:border-blue-500 focus:ring-blue-500 ${
+                  selectedOrder && fullOrderData && formData.title
+                    ? "bg-blue-50 border-blue-200"
+                    : "border-gray-300"
+                }`}
               />
             </div>
 
@@ -310,6 +442,11 @@ export default function TaskCreateModal({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Description *
+                {selectedOrder && fullOrderData && (
+                  <span className="ml-1 text-xs text-blue-600 font-normal">
+                    • Auto-populated
+                  </span>
+                )}
               </label>
               <textarea
                 name="description"
@@ -321,7 +458,9 @@ export default function TaskCreateModal({
                 className={`w-full border rounded-md px-3 py-2 ${
                   errors.description
                     ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    : selectedOrder && fullOrderData && formData.description
+                      ? "bg-blue-50 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 }`}
               />
               {errors.description && (
@@ -335,6 +474,13 @@ export default function TaskCreateModal({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Scheduled Date & Time *
+                {selectedOrder &&
+                  fullOrderData &&
+                  formData.scheduledDateTime && (
+                    <span className="ml-1 text-xs text-blue-600 font-normal">
+                      • Auto-populated
+                    </span>
+                  )}
               </label>
               <input
                 type="datetime-local"
@@ -351,7 +497,11 @@ export default function TaskCreateModal({
                 className={`w-full border rounded-md px-3 py-2 ${
                   errors.scheduledDateTime
                     ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    : selectedOrder &&
+                        fullOrderData &&
+                        formData.scheduledDateTime
+                      ? "bg-blue-50 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 }`}
               />
               {errors.scheduledDateTime && (
@@ -359,6 +509,14 @@ export default function TaskCreateModal({
                   {errors.scheduledDateTime}
                 </p>
               )}
+              {selectedOrder &&
+                fullOrderData &&
+                formData.type === "Maintenance" &&
+                !formData.scheduledDateTime && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Maintenance tasks require manual date/time selection
+                  </p>
+                )}
             </div>
 
             {/* Contractor Assignment */}
@@ -377,6 +535,11 @@ export default function TaskCreateModal({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Payment Amount (Optional)
+                {selectedOrder && fullOrderData && formData.paymentAmount && (
+                  <span className="ml-1 text-xs text-blue-600 font-normal">
+                    • Auto-calculated
+                  </span>
+                )}
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
@@ -395,13 +558,22 @@ export default function TaskCreateModal({
                   className={`w-full border rounded-md pl-8 pr-3 py-2 ${
                     errors.paymentAmount
                       ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      : selectedOrder && fullOrderData && formData.paymentAmount
+                        ? "bg-blue-50 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                        : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   }`}
                 />
               </div>
               {errors.paymentAmount && (
                 <p className="mt-1 text-sm text-red-600">
                   {errors.paymentAmount}
+                </p>
+              )}
+              {selectedOrder && fullOrderData && formData.paymentAmount && (
+                <p className="mt-1 text-xs text-gray-500">
+                  {formData.type === "Setup" || formData.type === "Maintenance"
+                    ? `Fixed rate: $${formData.paymentAmount.toFixed(2)}`
+                    : `Base $10.00 + 10% of order total ($${fullOrderData.totalAmount.toFixed(2)}) = $${formData.paymentAmount.toFixed(2)}`}
                 </p>
               )}
             </div>

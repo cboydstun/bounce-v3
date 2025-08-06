@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { getEventDateDisplay } from "@/utils/dateUtils";
 
 interface Order {
   _id: string;
@@ -135,7 +136,7 @@ export default function OrderSelector({
           .filter(Boolean)
           .join(
             ", ",
-          )} • ${order.eventDate ? new Date(order.eventDate).toLocaleDateString() : "No Event Date"} • $${order.totalAmount || 0}`,
+          )} • ${getEventDateDisplay(order)} • $${order.totalAmount || 0}`,
       };
 
       setSelectedOrder(formattedOrder);
@@ -296,12 +297,9 @@ export default function OrderSelector({
               <p className="text-xs text-blue-700">
                 Address: {selectedOrder.fullAddress}
               </p>
-              {selectedOrder.eventDate && (
-                <p className="text-xs text-blue-700">
-                  Event Date:{" "}
-                  {new Date(selectedOrder.eventDate).toLocaleDateString()}
-                </p>
-              )}
+              <p className="text-xs text-blue-700">
+                Event Date: {getEventDateDisplay(selectedOrder)}
+              </p>
             </div>
             <span
               className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
