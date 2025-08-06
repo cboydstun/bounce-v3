@@ -13,6 +13,7 @@ import { OrderProductSelector } from "@/components/admin/orders/OrderProductSele
 import { OrderItemsTable } from "@/components/admin/orders/OrderItemsTable";
 import { PricingSection } from "@/components/admin/orders/PricingSection";
 import { useOrderPricing } from "@/hooks/useOrderPricing";
+import TaskCreateModal from "@/components/admin/TaskCreateModal";
 
 interface PageProps {
   params: {
@@ -45,6 +46,9 @@ export default function EditOrderPage({ params }: PageProps) {
 
   // New task state
   const [newTask, setNewTask] = useState<string>("");
+
+  // Task modal state
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
   // Get the NextAuth session
   const { data: session, status: authStatus } = useSession();
@@ -273,6 +277,13 @@ export default function EditOrderPage({ params }: PageProps) {
       ...prev,
       tasks: updatedTasks,
     }));
+  };
+
+  // Handle task creation success from modal
+  const handleTaskCreated = () => {
+    setIsTaskModalOpen(false);
+    // Note: The TaskCreateModal creates proper Task objects via API,
+    // not simple text strings like the legacy task system
   };
 
   // Recalculate order totals
@@ -834,45 +845,93 @@ export default function EditOrderPage({ params }: PageProps) {
               </label>
             </div>
 
-            {/* Tasks */}
+            {/* Enhanced Task Management */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tasks
-              </label>
-              <div className="space-y-2">
-                {order.tasks && order.tasks.length > 0 ? (
-                  order.tasks.map((task, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-sm text-gray-900">{task}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTask(index)}
-                        className="text-red-600 hover:text-red-900"
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Task Management
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsTaskModalOpen(true)}
+                  className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm transition-colors"
+                >
+                  Create Task
+                </button>
+              </div>
+
+              {/* Legacy Tasks Display (if any) */}
+              {order.tasks && order.tasks.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-2">
+                    Legacy Tasks (Simple Notes):
+                  </p>
+                  <div className="space-y-2">
+                    {order.tasks.map((task, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-gray-50 p-2 rounded"
                       >
-                        Remove
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500">No tasks added</p>
-                )}
+                        <span className="text-sm text-gray-900">{task}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTask(index)}
+                          className="text-red-600 hover:text-red-900 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Information about task creation */}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-start">
+                  <svg
+                    className="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div className="text-sm text-blue-700">
+                    <p className="font-medium">Enhanced Task Creation</p>
+                    <p className="mt-1">
+                      Use the "Create Task" button to create structured tasks
+                      with auto-population, contractor assignment, payment
+                      calculation, and scheduling features.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Legacy task input (kept for backward compatibility) */}
+              <div className="mt-4">
+                <p className="text-xs text-gray-500 mb-2">
+                  Quick Note (Legacy):
+                </p>
                 <div className="flex items-center">
                   <input
                     type="text"
                     value={newTask}
                     onChange={(e) => setNewTask(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="Add a new task"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                    placeholder="Add a quick note/task"
                   />
                   <button
                     type="button"
                     onClick={handleAddTask}
-                    className="ml-2 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="ml-2 px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                   >
-                    Add Task
+                    Add Note
                   </button>
                 </div>
               </div>
@@ -890,6 +949,15 @@ export default function EditOrderPage({ params }: PageProps) {
           </button>
         </div>
       </form>
+
+      {/* Task Create Modal with Auto-population */}
+      <TaskCreateModal
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        onTaskCreated={handleTaskCreated}
+        preSelectedOrderId={order._id}
+        hideOrderSelector={true}
+      />
     </div>
   );
 }

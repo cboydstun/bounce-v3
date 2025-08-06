@@ -15,6 +15,8 @@ interface TaskCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onTaskCreated: () => void;
+  preSelectedOrderId?: string; // Skip order selection and auto-select this order
+  hideOrderSelector?: boolean; // Hide the order selector UI
 }
 
 interface OrderSelectorOrder {
@@ -36,6 +38,8 @@ export default function TaskCreateModal({
   isOpen,
   onClose,
   onTaskCreated,
+  preSelectedOrderId,
+  hideOrderSelector = false,
 }: TaskCreateModalProps) {
   const [formData, setFormData] = useState<Partial<TaskFormData>>({
     type: "Delivery",
@@ -105,6 +109,68 @@ export default function TaskCreateModal({
       scheduledDateTime,
     }));
   };
+
+  // Handle pre-selected order when modal opens
+  useEffect(() => {
+    if (isOpen && preSelectedOrderId && !selectedOrder) {
+      // Fetch the order data immediately and create selectedOrder from it
+      const fetchPreSelectedOrder = async () => {
+        try {
+          const response = await fetch(`/api/v1/orders/${preSelectedOrderId}`);
+          if (!response.ok) {
+            throw new Error("Failed to fetch pre-selected order");
+          }
+
+          const order: Order = await response.json();
+
+          // Create a mock OrderSelectorOrder from the full order data
+          const mockSelectedOrder: OrderSelectorOrder = {
+            _id: order._id,
+            orderNumber: order.orderNumber,
+            customerName: order.customerName || "Unknown Customer",
+            customerEmail: order.customerEmail || "",
+            customerPhone: order.customerPhone || "",
+            fullAddress:
+              `${order.customerAddress || ""}, ${order.customerCity || ""}, ${order.customerState || ""} ${order.customerZipCode || ""}`
+                .trim()
+                .replace(/^,\s*|,\s*$/g, ""),
+            eventDate: order.eventDate
+              ? typeof order.eventDate === "string"
+                ? order.eventDate
+                : order.eventDate.toISOString()
+              : "",
+            deliveryDate: order.deliveryDate
+              ? typeof order.deliveryDate === "string"
+                ? order.deliveryDate
+                : order.deliveryDate.toISOString()
+              : "",
+            status: order.status,
+            totalAmount: order.totalAmount,
+            displayText: `Order ${order.orderNumber}`,
+            displaySubtext: `${order.customerName || "Unknown Customer"} - $${order.totalAmount.toFixed(2)}`,
+          };
+
+          setSelectedOrder(mockSelectedOrder);
+          setFullOrderData(order);
+          setFormData((prev) => ({
+            ...prev,
+            orderId: preSelectedOrderId,
+          }));
+
+          // Auto-populate form fields
+          populateFormFromOrder(order, formData.type as TaskType);
+        } catch (error) {
+          console.error("Error fetching pre-selected order:", error);
+          setErrors((prev) => ({
+            ...prev,
+            submit: "Failed to load pre-selected order details",
+          }));
+        }
+      };
+
+      fetchPreSelectedOrder();
+    }
+  }, [isOpen, preSelectedOrderId, selectedOrder, formData.type]);
 
   // Auto-populate when task type changes (if order is selected)
   useEffect(() => {
@@ -341,18 +407,48 @@ export default function TaskCreateModal({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Order Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Order *
-              </label>
-              <OrderSelector
-                selectedOrderId={selectedOrder?._id}
-                onOrderSelect={handleOrderSelect}
-                error={errors.orderId}
-                disabled={loading}
-              />
-            </div>
+            {/* Order Selection - Hide when hideOrderSelector is true */}
+            {!hideOrderSelector && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Order *
+                </label>
+                <OrderSelector
+                  selectedOrderId={selectedOrder?._id}
+                  onOrderSelect={handleOrderSelect}
+                  error={errors.orderId}
+                  disabled={loading}
+                />
+              </div>
+            )}
+
+            {/* Pre-selected Order Info - Show when hideOrderSelector is true */}
+            {hideOrderSelector && selectedOrder && (
+              <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+                <div className="flex items-start">
+                  <svg
+                    className="h-5 w-5 text-gray-400 mt-0.5 mr-2 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <div className="text-sm text-gray-700">
+                    <p className="font-medium">Creating task for:</p>
+                    <p className="mt-1">
+                      {selectedOrder.displayText} -{" "}
+                      {selectedOrder.displaySubtext}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Task Type and Priority */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { TaskSection } from "@/components/tasks/TaskSection";
+import { EnhancedTaskSection } from "@/components/admin/EnhancedTaskSection";
 import { getOrderById, getContactById } from "@/utils/api";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
 import { Contact } from "@/types/contact";
@@ -532,7 +532,7 @@ export default function OrderDetailPage({ params }: PageProps) {
         )}
 
       {/* Task Management Section */}
-      <TaskSection
+      <EnhancedTaskSection
         orderId={order._id}
         orderAddress={`${order.customerAddress || ""}, ${order.customerCity || ""}, ${order.customerState || ""} ${order.customerZipCode || ""}`
           .trim()

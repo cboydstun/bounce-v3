@@ -52,7 +52,6 @@ interface OrderFormData {
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
   notes?: string;
-  tasks?: string[];
   sourcePage: string;
 }
 
@@ -163,27 +162,6 @@ export default function NewOrder() {
     setFormData((prev) => ({ ...prev, depositAmount: value }));
   }, []);
 
-  const handleAddTask = useCallback(() => {
-    const taskInput = document.getElementById("new-task") as HTMLInputElement;
-    const taskValue = taskInput.value.trim();
-
-    if (!taskValue) return;
-
-    setFormData((prev) => ({
-      ...prev,
-      tasks: [...(prev.tasks || []), taskValue],
-    }));
-
-    taskInput.value = "";
-  }, []);
-
-  const handleRemoveTask = useCallback((index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      tasks: prev.tasks?.filter((_, i) => i !== index),
-    }));
-  }, []);
-
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -234,8 +212,10 @@ export default function NewOrder() {
             : undefined,
         };
 
-        await createOrder(orderData);
-        router.push("/admin/orders");
+        const newOrder = await createOrder(orderData);
+
+        // Redirect to the newly created order's detail page
+        router.push(`/admin/orders/${newOrder._id}`);
         router.refresh();
       } catch (error) {
         if (error instanceof Error && error.message.includes("401")) {
@@ -541,48 +521,30 @@ export default function NewOrder() {
                   </label>
                 </div>
 
-                {/* Tasks */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tasks
-                  </label>
-
-                  {/* Existing Tasks */}
-                  {formData.tasks && formData.tasks.length > 0 && (
-                    <ul className="mb-4 space-y-2">
-                      {formData.tasks.map((task, index) => (
-                        <li
-                          key={index}
-                          className="flex items-center justify-between bg-gray-50 p-2 rounded"
-                        >
-                          <span>{task}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTask(index)}
-                            className="text-red-600 hover:text-red-900 text-sm"
-                          >
-                            Remove
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  {/* Add New Task */}
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      id="new-task"
-                      placeholder="Enter a new task"
-                      className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddTask}
-                      className="px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                {/* Task Creation Info */}
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                  <div className="flex items-start">
+                    <svg
+                      className="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      Add Task
-                    </button>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <div className="text-sm text-blue-700">
+                      <p className="font-medium">Task Management</p>
+                      <p className="mt-1">
+                        Tasks can be created after the order is saved. You'll be
+                        able to create and manage tasks from the order detail
+                        page.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
