@@ -140,20 +140,28 @@ export function calculateTaskPayment(
   taskType: TaskType,
   orderTotal: number,
 ): number {
+  let amount: number;
+
   switch (taskType) {
     case "Setup":
     case "Maintenance":
-      return 20.0;
+      amount = 20.0;
+      break;
 
     case "Delivery":
     case "Pickup":
       const baseAmount = 10.0;
       const percentage = orderTotal * 0.1; // 10% of order total
-      return Math.round((baseAmount + percentage) * 100) / 100; // Round to 2 decimal places
+      amount = baseAmount + percentage;
+      break;
 
     default:
-      return 0;
+      amount = 0;
+      break;
   }
+
+  // Ensure exactly 2 decimal places to avoid floating-point precision issues
+  return parseFloat(amount.toFixed(2));
 }
 
 /**

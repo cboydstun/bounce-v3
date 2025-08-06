@@ -119,10 +119,30 @@ export default function TaskCreateModal({
     >,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    // Special handling for payment amount to ensure proper monetary formatting
+    if (name === "paymentAmount") {
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue) && numValue >= 0) {
+        // Format to 2 decimal places for monetary values
+        const formattedValue = parseFloat(numValue.toFixed(2));
+        setFormData((prev) => ({
+          ...prev,
+          [name]: formattedValue,
+        }));
+      } else if (value === "" || value === "0") {
+        // Handle empty or zero values
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value === "" ? undefined : 0,
+        }));
+      }
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
 
     // Clear error when user starts typing
     if (errors[name]) {
@@ -233,7 +253,7 @@ export default function TaskCreateModal({
         priority: formData.priority as TaskPriority,
         assignedContractors: formData.assignedContractors || [],
         paymentAmount: formData.paymentAmount
-          ? Number(formData.paymentAmount)
+          ? parseFloat(Number(formData.paymentAmount).toFixed(2))
           : undefined,
       };
 
@@ -572,8 +592,8 @@ export default function TaskCreateModal({
               {selectedOrder && fullOrderData && formData.paymentAmount && (
                 <p className="mt-1 text-xs text-gray-500">
                   {formData.type === "Setup" || formData.type === "Maintenance"
-                    ? `Fixed rate: $${formData.paymentAmount.toFixed(2)}`
-                    : `Base $10.00 + 10% of order total ($${fullOrderData.totalAmount.toFixed(2)}) = $${formData.paymentAmount.toFixed(2)}`}
+                    ? `Fixed rate: $${Number(formData.paymentAmount).toFixed(2)}`
+                    : `Base $10.00 + 10% of order total ($${fullOrderData.totalAmount.toFixed(2)}) = $${Number(formData.paymentAmount).toFixed(2)}`}
                 </p>
               )}
             </div>

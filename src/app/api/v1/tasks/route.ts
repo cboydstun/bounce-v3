@@ -364,10 +364,9 @@ export async function POST(request: NextRequest) {
         );
       }
       // Check for valid monetary value (up to 2 decimal places)
-      if (
-        Math.round(taskData.paymentAmount * 100) !==
-        taskData.paymentAmount * 100
-      ) {
+      // Use a more robust check that accounts for floating-point precision issues
+      const roundedAmount = Math.round(taskData.paymentAmount * 100) / 100;
+      if (Math.abs(taskData.paymentAmount - roundedAmount) > 0.001) {
         return NextResponse.json(
           { error: "Payment amount must have at most 2 decimal places" },
           { status: 400 },
