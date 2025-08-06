@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { getProducts } from "@/utils/api";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
@@ -10,7 +9,6 @@ import { trackContactForm } from "@/utils/trackConversion";
 import {
   initFormTracking,
   trackFieldInteraction,
-  trackExtrasSelection,
   trackFormCompletion,
 } from "@/utils/formEngagementTracking";
 
@@ -35,14 +33,6 @@ interface FormData {
   phone: string;
   message: string;
   sourcePage: string;
-  tablesChairs: boolean;
-  generator: boolean;
-  popcornMachine: boolean;
-  cottonCandyMachine: boolean;
-  snowConeMachine: boolean;
-  basketballShoot: boolean;
-  slushyMachine: boolean;
-  overnight: boolean;
   consentToContact: boolean;
 }
 
@@ -79,19 +69,10 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
     phone: "",
     message: "",
     sourcePage: "contact",
-    tablesChairs: false,
-    generator: false,
-    popcornMachine: false,
-    cottonCandyMachine: false,
-    snowConeMachine: false,
-    basketballShoot: false,
-    slushyMachine: false,
-    overnight: false,
     consentToContact: false,
   });
 
   const [bouncers, setBouncers] = useState<Bouncer[]>([]);
-  const [selectedBouncerImage, setSelectedBouncerImage] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -124,15 +105,12 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
 
         setBouncers(filteredBouncers);
 
-        // Set selected bouncer image and name if initialBouncerId is provided
+        // Set selected bouncer name if initialBouncerId is provided
         if (initialBouncerId) {
           const selectedBouncer = filteredBouncers.find(
             (b: Bouncer) => b._id === initialBouncerId,
           );
           if (selectedBouncer) {
-            if (selectedBouncer.images[0]?.url) {
-              setSelectedBouncerImage(selectedBouncer.images[0].url);
-            }
             setFormData((prev) => ({
               ...prev,
               bouncer: selectedBouncer.name,
@@ -150,30 +128,9 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
     fetchBouncers();
   }, [initialBouncerId]);
 
-  const formatPhoneNumber = (value: string): string => {
-    // Remove all non-digits
-    const numbers = value.replace(/\D/g, "");
-
-    // Format as (###)-###-####
-    if (numbers.length >= 10) {
-      return `(${numbers.slice(0, 3)})-${numbers.slice(3, 6)}-${numbers.slice(
-        6,
-        10,
-      )}`;
-    } else if (numbers.length >= 6) {
-      return `(${numbers.slice(0, 3)})-${numbers.slice(3, 6)}-${numbers.slice(
-        6,
-      )}`;
-    } else if (numbers.length >= 3) {
-      return `(${numbers.slice(0, 3)})-${numbers.slice(3)}`;
-    }
-    return numbers;
-  };
-
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
     const emailRegex = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
-    const phoneRegex = /^\(\d{3}\)-\d{3}-\d{4}$/;
 
     if (!formData.bouncer) newErrors.bouncer = "Please select a bouncer";
 
@@ -191,9 +148,9 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
       newErrors.partyZipCode = "Party zip code is required";
     }
 
-    if (formData.phone && !phoneRegex.test(formData.phone)) {
-      newErrors.phone =
-        "Please enter a valid phone number in format (###)-###-####";
+    // Simplified phone validation - just check if it has some digits if provided
+    if (formData.phone && formData.phone.replace(/\D/g, "").length < 10) {
+      newErrors.phone = "Please enter a valid phone number";
     }
 
     setErrors(newErrors);
@@ -212,16 +169,6 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
     trackFormSubmit("contact-form", undefined, {
       formType: "contact",
       bouncer: formData.bouncer,
-      extras: {
-        tablesChairs: formData.tablesChairs,
-        generator: formData.generator,
-        popcornMachine: formData.popcornMachine,
-        cottonCandyMachine: formData.cottonCandyMachine,
-        snowConeMachine: formData.snowConeMachine,
-        basketballShoot: formData.basketballShoot,
-        slushyMachine: formData.slushyMachine,
-        overnight: formData.overnight,
-      },
     });
 
     try {
@@ -273,53 +220,9 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
     // Track field interaction
     trackFieldInteraction("contact-form", name, "change", value);
 
-    // Track extras selection for checkboxes
-    if (
-      type === "checkbox" &&
-      [
-        "tablesChairs",
-        "generator",
-        "popcornMachine",
-        "cottonCandyMachine",
-        "snowConeMachine",
-        "basketballShoot",
-        "slushyMachine",
-        "overnight",
-      ].includes(name)
-    ) {
-      // Count how many extras are selected after this change
-      const updatedFormData = {
-        ...formData,
-        [name]: checked,
-      };
-
-      const extrasCount = Object.keys(updatedFormData).filter(
-        (key) =>
-          [
-            "tablesChairs",
-            "generator",
-            "popcornMachine",
-            "cottonCandyMachine",
-            "snowConeMachine",
-            "basketballShoot",
-            "slushyMachine",
-            "overnight",
-          ].includes(key) &&
-          updatedFormData[key as keyof typeof updatedFormData] === true,
-      ).length;
-
-      trackExtrasSelection("contact-form", extrasCount);
-    }
-
-    if (name === "phone") {
-      setFormData((prev) => ({
-        ...prev,
-        phone: formatPhoneNumber(value),
-      }));
-    } else if (name === "bouncer") {
+    if (name === "bouncer") {
       const selectedBouncer = bouncers.find((b: Bouncer) => b._id === value);
       if (selectedBouncer) {
-        setSelectedBouncerImage(selectedBouncer.images[0]?.url || "");
         setFormData((prev) => ({
           ...prev,
           bouncer: selectedBouncer.name, // Store the name instead of _id
@@ -401,19 +304,6 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
         )}
       </div>
 
-      {/* Selected Bouncer Image */}
-      {selectedBouncerImage && (
-        <div className="rounded-xl overflow-hidden shadow-md">
-          <Image
-            src={selectedBouncerImage}
-            alt="Selected bouncer"
-            className="w-full h-full object-cover"
-            width={800}
-            height={600}
-          />
-        </div>
-      )}
-
       {/* Contact Details */}
       <div className="space-y-4">
         <div>
@@ -494,61 +384,12 @@ const ContactForm = ({ initialBouncerId }: ContactFormProps) => {
             value={formData.phone}
             onChange={handleChange}
             className="w-full rounded-lg border-2 border-secondary-blue/20 shadow-sm focus:border-primary-purple focus:ring-primary-purple p-3"
-            placeholder="(###)-###-####"
+            placeholder="Your phone number"
             autoComplete="tel"
           />
           {errors.phone && (
             <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
           )}
-        </div>
-      </div>
-
-      {/* Extras Section */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-center text-primary-purple">
-          Make Your Party Extra Special! ✨
-        </h3>
-
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { id: "tablesChairs", label: "🪑 Tables & Chairs" },
-            { id: "generator", label: "⚡ Generator" },
-            { id: "popcornMachine", label: "🍿 Popcorn Machine" },
-            { id: "cottonCandyMachine", label: "🍭 Cotton Candy" },
-            { id: "snowConeMachine", label: "🧊 Snow Cones" },
-            { id: "basketballShoot", label: "🏀 Basketball Shoot" },
-            { id: "slushyMachine", label: "🥤 Slushy Machine" },
-            { id: "overnight", label: "🌙 Overnight Rental" },
-          ].map(({ id, label }) => (
-            <div
-              key={id}
-              className="flex items-center space-x-2 bg-secondary-blue/5 p-3 rounded-lg hover:bg-secondary-blue/10 transition-colors cursor-pointer"
-              onClick={() =>
-                handleChange({
-                  target: {
-                    type: "checkbox",
-                    name: id,
-                    checked: !formData[id as keyof typeof formData],
-                  },
-                } as React.ChangeEvent<HTMLInputElement>)
-              }
-            >
-              <input
-                type="checkbox"
-                id={id}
-                name={id}
-                checked={formData[id as keyof typeof formData] as boolean}
-                onChange={handleChange}
-                className="rounded border-2 border-secondary-blue/20 text-primary-purple focus:ring-primary-purple"
-              />
-              <label
-                htmlFor={id}
-                className="text-sm text-gray-700 cursor-pointer"
-              >
-                {label}
-              </label>
-            </div>
-          ))}
         </div>
       </div>
 

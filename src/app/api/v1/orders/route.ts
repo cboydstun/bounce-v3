@@ -589,6 +589,134 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // CRITICAL: Final availability check before creating order to prevent double bookings
+    if (
+      orderData.items &&
+      orderData.items.length > 0 &&
+      (orderData.eventDate || orderData.deliveryDate)
+    ) {
+      const eventDate = orderData.eventDate || orderData.deliveryDate;
+      const eventDateStr = new Date(eventDate).toISOString().split("T")[0]; // Convert to YYYY-MM-DD format
+
+      // Get all bounce house items from the order
+      const bouncerItems = orderData.items.filter(
+        (item: any) => item.type === "bouncer",
+      );
+
+      if (bouncerItems.length > 0) {
+        try {
+          // Check availability for all bounce house items
+          const availabilityResponse = await fetch(
+            `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/v1/products/batch-availability`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                productSlugs: [], // We'll use product names instead since we don't have slugs in order items
+                date: eventDateStr,
+                // Use a custom approach - we'll check by product names
+                productNames: bouncerItems.map((item: any) => item.name),
+              }),
+            },
+          );
+
+          // For now, let's do a direct database check instead of the API call
+          // since we need to check by product names, not IDs or slugs
+
+          // Check if any of the bounce house items are already booked for this date
+          const [existingContacts, existingOrders] = await Promise.all([
+            Contact.find({
+              bouncer: { $in: bouncerItems.map((item: any) => item.name) },
+              partyDate: {
+                $gte: new Date(eventDateStr + "T00:00:00.000Z"),
+                $lte: new Date(eventDateStr + "T23:59:59.999Z"),
+              },
+              confirmed: { $in: ["Confirmed", "Converted"] },
+            }),
+            Order.find({
+              $or: [
+                {
+                  eventDate: {
+                    $gte: new Date(eventDateStr + "T00:00:00.000Z"),
+                    $lte: new Date(eventDateStr + "T23:59:59.999Z"),
+                  },
+                },
+                {
+                  $and: [
+                    { eventDate: { $exists: false } },
+                    {
+                      deliveryDate: {
+                        $gte: new Date(eventDateStr + "T00:00:00.000Z"),
+                        $lte: new Date(eventDateStr + "T23:59:59.999Z"),
+                      },
+                    },
+                  ],
+                },
+              ],
+              items: {
+                $elemMatch: {
+                  name: { $in: bouncerItems.map((item: any) => item.name) },
+                },
+              },
+              status: { $nin: ["Cancelled", "Refunded"] },
+            }),
+          ]);
+
+          // Check if any products are already booked
+          const bookedProducts = new Set([
+            ...existingContacts.map((contact: any) => contact.bouncer),
+            ...existingOrders.flatMap((order: any) =>
+              order.items
+                .filter((item: any) =>
+                  bouncerItems.some(
+                    (bouncerItem: any) => bouncerItem.name === item.name,
+                  ),
+                )
+                .map((item: any) => item.name),
+            ),
+          ]);
+
+          const conflictingItems = bouncerItems.filter((item: any) =>
+            bookedProducts.has(item.name),
+          );
+
+          if (conflictingItems.length > 0) {
+            console.error("Double booking prevented during order creation:", {
+              orderData: {
+                customerEmail: orderData.customerEmail,
+                eventDate: eventDateStr,
+                items: conflictingItems.map((item: any) => item.name),
+              },
+              existingBookings: {
+                contacts: existingContacts.length,
+                orders: existingOrders.length,
+              },
+            });
+
+            return NextResponse.json(
+              {
+                error: `The following items are no longer available for ${eventDateStr}: ${conflictingItems.map((item: any) => item.name).join(", ")}. Please select a different date or different products.`,
+                debug: "Availability check failed during order creation",
+                conflictingItems: conflictingItems.map(
+                  (item: any) => item.name,
+                ),
+              },
+              { status: 409 }, // Conflict status code
+            );
+          }
+        } catch (availabilityError) {
+          console.error(
+            "Error checking availability during order creation:",
+            availabilityError,
+          );
+          // Continue with order creation but log the error
+          // In production, you might want to fail the order creation here
+        }
+      }
+    }
+
     // Generate order number if not provided
     if (!orderData.orderNumber) {
       orderData.orderNumber = await Order.generateOrderNumber();

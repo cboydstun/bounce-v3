@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongoose";
 import Product from "@/models/Product";
 import Contact from "@/models/Contact";
+import Order from "@/models/Order";
 import Settings from "@/models/Settings";
 import {
   formatDateCT,
@@ -104,49 +105,162 @@ export async function POST(request: NextRequest) {
       Math.max(...allEndDates.map((d) => d.getTime())),
     );
 
-    // Find all bookings for these products across all dates in a single query
-    const allBookings = await Contact.find({
-      bouncer: { $in: products.map((p) => p.name) },
-      partyDate: {
-        $gte: overallStartDate,
-        $lte: overallEndDate,
-      },
-      confirmed: { $in: ["Confirmed", "Converted"] },
-    });
-
-    // Get total bookings per date across all products
-    const totalBookingsPerDate = await Contact.aggregate([
-      {
-        $match: {
-          partyDate: {
-            $gte: overallStartDate,
-            $lte: overallEndDate,
-          },
-          confirmed: { $in: ["Confirmed", "Converted"] },
+    // Find all bookings for these products across all dates in both Contact and Order collections
+    const [contactBookings, orderBookings] = await Promise.all([
+      // Check Contact collection (leads/inquiries)
+      Contact.find({
+        bouncer: { $in: products.map((p) => p.name) },
+        partyDate: {
+          $gte: overallStartDate,
+          $lte: overallEndDate,
         },
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: {
-              format: "%Y-%m-%d",
-              date: "$partyDate",
-              timezone: "America/Chicago",
+        confirmed: { $in: ["Confirmed", "Converted"] },
+      }),
+      // Check Order collection (actual bookings)
+      Order.find({
+        $or: [
+          {
+            eventDate: {
+              $gte: overallStartDate,
+              $lte: overallEndDate,
             },
           },
-          count: { $sum: 1 },
+          {
+            $and: [
+              { eventDate: { $exists: false } },
+              {
+                deliveryDate: {
+                  $gte: overallStartDate,
+                  $lte: overallEndDate,
+                },
+              },
+            ],
+          },
+        ],
+        items: {
+          $elemMatch: {
+            name: { $in: products.map((p) => p.name) },
+          },
         },
-      },
+        status: { $nin: ["Cancelled", "Refunded"] },
+      }),
     ]);
 
-    // Create a map of date to total bookings
-    const bookingsCountByDate = totalBookingsPerDate.reduce(
-      (acc, item) => {
-        acc[item._id] = item.count;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+    // Combine bookings from both collections
+    const allBookings = [
+      ...contactBookings.map((contact: any) => ({
+        bouncer: contact.bouncer,
+        partyDate: contact.partyDate,
+        source: "contact",
+      })),
+      ...orderBookings
+        .flatMap((order: any) =>
+          order.items
+            .filter((item: any) =>
+              products.some((p: any) => p.name === item.name),
+            )
+            .map((item: any) => ({
+              bouncer: item.name,
+              partyDate: order.eventDate || order.deliveryDate,
+              source: "order",
+            })),
+        )
+        .filter((booking: any) => booking.partyDate), // Filter out bookings without dates
+    ];
+
+    // Get total bookings per date across all products from both Contact and Order collections
+    const [contactBookingsPerDate, orderBookingsPerDate] = await Promise.all([
+      // Count bookings from Contact collection
+      Contact.aggregate([
+        {
+          $match: {
+            partyDate: {
+              $gte: overallStartDate,
+              $lte: overallEndDate,
+            },
+            confirmed: { $in: ["Confirmed", "Converted"] },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$partyDate",
+                timezone: "America/Chicago",
+              },
+            },
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+      // Count bookings from Order collection
+      Order.aggregate([
+        {
+          $match: {
+            $or: [
+              {
+                eventDate: {
+                  $gte: overallStartDate,
+                  $lte: overallEndDate,
+                },
+              },
+              {
+                $and: [
+                  { eventDate: { $exists: false } },
+                  {
+                    deliveryDate: {
+                      $gte: overallStartDate,
+                      $lte: overallEndDate,
+                    },
+                  },
+                ],
+              },
+            ],
+            status: { $nin: ["Cancelled", "Refunded"] },
+          },
+        },
+        {
+          $addFields: {
+            bookingDate: {
+              $ifNull: ["$eventDate", "$deliveryDate"],
+            },
+          },
+        },
+        {
+          $match: {
+            bookingDate: { $ne: null },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$bookingDate",
+                timezone: "America/Chicago",
+              },
+            },
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+    ]);
+
+    // Create a map of date to total bookings (combining both collections)
+    const bookingsCountByDate: Record<string, number> = {};
+
+    // Add contact bookings
+    contactBookingsPerDate.forEach((item: any) => {
+      bookingsCountByDate[item._id] =
+        (bookingsCountByDate[item._id] || 0) + item.count;
+    });
+
+    // Add order bookings
+    orderBookingsPerDate.forEach((item: any) => {
+      bookingsCountByDate[item._id] =
+        (bookingsCountByDate[item._id] || 0) + item.count;
+    });
 
     // Process results for each date
     const results: Record<string, any> = {};

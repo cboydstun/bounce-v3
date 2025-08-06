@@ -173,15 +173,6 @@ export async function POST(request: NextRequest) {
                       Party Date: ${contactData.partyDate}
                       Party Zip Code: ${contactData.partyZipCode}
                       Phone: ${contactData.phone || "Not provided"}
-                      Tables and Chairs: ${contactData.tablesChairs ? "Yes" : "No"}
-                      Generator: ${contactData.generator ? "Yes" : "No"}
-                      Popcorn Machine: ${contactData.popcornMachine ? "Yes" : "No"}
-                      Cotton Candy Machine: ${contactData.cottonCandyMachine ? "Yes" : "No"}
-                      Snow Cone Machine: ${contactData.snowConeMachine ? "Yes" : "No"}
-                      Basketball Shoot: ${contactData.basketballShoot ? "Yes" : "No"}
-                      Slushy Machine: ${contactData.slushyMachine ? "Yes" : "No"}
-                      Overnight: ${contactData.overnight ? "Yes" : "No"}
-                      Confirmed: NOT YET!
                       Message: ${contactData.message || "No message provided"}
                       Source Page: ${contactData.sourcePage}
                   `,
