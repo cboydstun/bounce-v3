@@ -18,20 +18,55 @@ import {
  * This endpoint is public and does not require authentication
  * as it's used to track all website visitors
  */
+// Global type declaration for processing requests
+declare global {
+  var processingRequests: Set<string> | undefined;
+}
+
 export async function POST(req: NextRequest) {
+  // Implement request deduplication to prevent multiple concurrent calls
+  const requestId =
+    req.headers.get("x-request-id") || `${Date.now()}-${Math.random()}`;
+  const dedupeKey = `visitor-request-${requestId}`;
+
+  // Check if this request is already being processed
+  if (global.processingRequests?.has(dedupeKey)) {
+    return NextResponse.json(
+      { success: true, message: "Request already processing" },
+      { status: 202 },
+    );
+  }
+
+  // Mark request as processing
+  if (!global.processingRequests) {
+    global.processingRequests = new Set();
+  }
+  global.processingRequests.add(dedupeKey);
+
   try {
-    // Connect to database with timeout
+    // Connect to database with shorter timeout for better performance
     const dbConnectPromise = dbConnect();
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Database connection timeout")), 10000),
+      setTimeout(() => reject(new Error("Database connection timeout")), 5000),
     );
 
     await Promise.race([dbConnectPromise, timeoutPromise]);
 
-    // Parse and validate request body
+    // Parse and validate request body with size limit
     let data;
     try {
-      data = await req.json();
+      const body = await req.text();
+
+      // Check payload size (limit to 100KB)
+      if (body.length > 100 * 1024) {
+        console.warn("Request payload too large, truncating");
+        return NextResponse.json(
+          { success: false, error: "Request payload too large" },
+          { status: 413 },
+        );
+      }
+
+      data = JSON.parse(body);
     } catch (error) {
       return NextResponse.json(
         { success: false, error: "Invalid JSON in request body" },
@@ -59,6 +94,18 @@ export async function POST(req: NextRequest) {
       ...visitorData
     } = data;
 
+    // Generate visitorId if missing (fallback mechanism)
+    let actualVisitorId = visitorId;
+    if (!actualVisitorId) {
+      console.warn("Missing visitorId, generating fallback");
+      const ipAddress =
+        req.headers.get("x-forwarded-for") ||
+        req.headers.get("x-real-ip") ||
+        "unknown";
+      const userAgent = req.headers.get("user-agent") || "unknown";
+      actualVisitorId = `fallback-${Buffer.from(`${ipAddress}-${userAgent}-${Date.now()}`).toString("base64").slice(0, 16)}`;
+    }
+
     // Get IP address from request with error handling
     let ipAddress;
     try {
@@ -84,7 +131,7 @@ export async function POST(req: NextRequest) {
       locationData = await Promise.race([
         getLocationFromIp(ipAddress),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Geolocation timeout")), 5000),
+          setTimeout(() => reject(new Error("Geolocation timeout")), 3000),
         ),
       ]);
     } catch (error) {
@@ -95,8 +142,8 @@ export async function POST(req: NextRequest) {
     // Get current timestamp
     const now = new Date();
 
-    // Check if visitor exists
-    let visitor = await Visitor.findOne({ visitorId });
+    // Check if visitor exists (use actualVisitorId)
+    let visitor = await Visitor.findOne({ visitorId: actualVisitorId });
 
     if (visitor) {
       // Update existing visitor
@@ -309,15 +356,56 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Save with error handling
+      // Optimize database operations - use atomic updates for better performance
+      const updateOperations: any = {
+        $set: {
+          lastVisit: now,
+          visitCount: visitor.visitCount,
+        },
+        $push: {
+          visitedPages: {
+            url: currentPage || "/",
+            timestamp: now,
+            duration: data.duration,
+          },
+        },
+      };
+
+      // Add interaction if provided
+      if (interaction) {
+        if (!updateOperations.$push.interactions) {
+          updateOperations.$push.interactions = [];
+        }
+        updateOperations.$push.interactions = {
+          ...interaction,
+          timestamp: now,
+          page: interaction.page || currentPage || "/",
+        };
+      }
+
+      // Add conversion event if provided
+      if (conversionEvent) {
+        if (!updateOperations.$push.conversionEvents) {
+          updateOperations.$push.conversionEvents = [];
+        }
+        updateOperations.$push.conversionEvents = {
+          ...conversionEvent,
+          timestamp: now,
+        };
+      }
+
+      // Save with optimized update operation
       try {
-        await visitor.save();
+        await Visitor.updateOne(
+          { visitorId: actualVisitorId },
+          updateOperations,
+        );
       } catch (saveError) {
         console.error("Error saving existing visitor:", saveError);
-        // Try to save with minimal data if full save fails
+        // Try minimal fallback save
         try {
           await Visitor.updateOne(
-            { visitorId },
+            { visitorId: actualVisitorId },
             {
               $set: {
                 lastVisit: now,
@@ -327,13 +415,13 @@ export async function POST(req: NextRequest) {
           );
         } catch (fallbackError) {
           console.error("Fallback save also failed:", fallbackError);
-          throw saveError; // Re-throw original error
+          throw saveError;
         }
       }
     } else {
-      // Create new visitor
+      // Create new visitor with actualVisitorId
       const newVisitor = {
-        visitorId,
+        visitorId: actualVisitorId,
         userAgent,
         device,
         ipAddress,
@@ -443,13 +531,18 @@ export async function POST(req: NextRequest) {
       visitor = await Visitor.create(newVisitor);
     }
 
-    return NextResponse.json({ success: true, visitorId });
+    return NextResponse.json({ success: true, visitorId: actualVisitorId });
   } catch (error) {
     console.error("Error tracking visitor:", error);
     return NextResponse.json(
       { success: false, error: "Failed to track visitor" },
       { status: 500 },
     );
+  } finally {
+    // Clean up processing request tracking
+    if (global.processingRequests) {
+      global.processingRequests.delete(dedupeKey);
+    }
   }
 }
 

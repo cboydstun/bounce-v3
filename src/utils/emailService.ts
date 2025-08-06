@@ -32,18 +32,6 @@ export async function sendEmail(emailData: EmailData): Promise<void> {
       ? emailData.to
       : [emailData.to];
 
-    console.log("📧 EMAIL SEND ATTEMPT:", {
-      timestamp: new Date().toISOString(),
-      to: emailData.to,
-      from: emailData.from,
-      subject: emailData.subject,
-      recipientCount,
-      recipients: recipients,
-      hasHtml: !!emailData.html,
-      textLength: emailData.text.length,
-      htmlLength: emailData.html?.length || 0,
-    });
-
     // 🚨 SAFETY CHECK: Alert if sending to multiple recipients 🚨
     if (recipientCount > 1) {
       console.warn("⚠️  MULTIPLE RECIPIENTS DETECTED:", {
@@ -54,48 +42,9 @@ export async function sendEmail(emailData: EmailData): Promise<void> {
       });
     }
 
-    // 🚨 EXTRA SAFETY: Check for test mode indicators 🚨
-    const isTestEmail = recipients.some(
-      (email) =>
-        email.includes(process.env.OTHER_EMAIL || "") ||
-        email.includes("test") ||
-        email.includes("admin"),
-    );
-
-    if (isTestEmail) {
-      console.log("🧪 TEST EMAIL DETECTED:", {
-        timestamp: new Date().toISOString(),
-        recipients: recipients,
-        subject: emailData.subject,
-      });
-    }
-
     // Send the email
     const response = await sgMail.send(emailData);
-
-    // Log successful send with full details
-    console.log("✅ EMAIL SENT SUCCESSFULLY:", {
-      timestamp: new Date().toISOString(),
-      messageId: response[0]?.headers?.["x-message-id"],
-      statusCode: response[0]?.statusCode,
-      to: emailData.to,
-      subject: emailData.subject,
-      recipientCount,
-      isTestEmail,
-    });
   } catch (error: any) {
-    // Enhanced error logging
-    console.error("❌ EMAIL SEND FAILED:", {
-      timestamp: new Date().toISOString(),
-      to: emailData.to,
-      subject: emailData.subject,
-      error: error.message,
-      code: error.code,
-      response: error.response?.body,
-      statusCode: error.response?.statusCode,
-      recipientCount: Array.isArray(emailData.to) ? emailData.to.length : 1,
-    });
-
     // Provide more specific error messages
     if (error.code === 401) {
       throw new Error(

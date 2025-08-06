@@ -118,7 +118,7 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
     const handleBeforeUnload = () => {
       // Only track abandonment if payment is not in progress or complete
       if (
-        (currentStep !== "payment" || !formData.paymentComplete) &&
+        !formData.paymentComplete &&
         localStorage.getItem("checkoutPaymentInProgress") !== "true" &&
         localStorage.getItem("checkoutPaymentComplete") !== "true"
       ) {
@@ -142,7 +142,6 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
       // But only if we're not in the middle of a payment process
       if (
         formActiveRef.current &&
-        currentStep !== "payment" &&
         !formData.paymentComplete &&
         localStorage.getItem("checkoutPaymentInProgress") !== "true" &&
         localStorage.getItem("checkoutPaymentComplete") !== "true"
@@ -210,11 +209,7 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
 
   // Track form completion
   useEffect(() => {
-    if (
-      currentStep === "payment" &&
-      formData.paymentComplete &&
-      !hasRecordedCompletion
-    ) {
+    if (formData.paymentComplete && !hasRecordedCompletion) {
       // Mark form as inactive since it's completed
       formActiveRef.current = false;
 
@@ -270,16 +265,16 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
         });
       }
     }
-  }, [currentStep, formData.paymentComplete, formData, hasRecordedCompletion]);
+  }, [formData.paymentComplete, formData, hasRecordedCompletion]);
 
-  // Helper function to track checkout events with retry logic
+  // Helper function to track checkout events with optimized retry logic
   const trackCheckoutEvent = async (
     type: string,
     data: any,
     retryCount = 0,
   ) => {
-    const maxRetries = 3;
-    const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+    const maxRetries = 2; // Reduced from 3
+    const retryDelay = Math.min(Math.pow(2, retryCount) * 1000, 5000); // Cap at 5 seconds
 
     try {
       // Get visitorId from localStorage (set by Fingerprint.tsx)
@@ -307,21 +302,22 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
         },
       };
 
-      // Validate payload size (limit to 100KB)
+      // Validate payload size (limit to 50KB for checkout events)
       const payloadSize = new Blob([JSON.stringify(payload)]).size;
-      if (payloadSize > 100 * 1024) {
+      if (payloadSize > 50 * 1024) {
         console.warn("Tracking payload too large, truncating data");
         payload.interaction.data = { type, truncated: true };
       }
 
-      // Send event to visitor API with timeout
+      // Send event to visitor API with shorter timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 6000); // Reduced to 6 seconds
 
       const response = await fetch("/api/v1/visitors", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-request-id": `checkout-${Date.now()}-${Math.random()}`, // Add request ID for deduplication
         },
         body: JSON.stringify(payload),
         signal: controller.signal,
@@ -363,7 +359,7 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
           trackCheckoutEvent(type, data, retryCount + 1);
         }, retryDelay);
       } else {
-        // Store failed event for later retry
+        // Store failed event for later retry (but don't block checkout)
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         storeFailedTrackingEvent("checkout", {
@@ -372,8 +368,8 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
           error: errorMessage,
         });
 
-        // Try fallback tracking method
-        tryFallbackTracking(type, data);
+        // Skip fallback tracking to reduce load
+        // tryFallbackTracking(type, data);
       }
     }
   };
@@ -630,8 +626,6 @@ const OrderFormTracker: React.FC<OrderFormTrackerProps> = ({
         return "Add Extras";
       case "review":
         return "Review Order";
-      case "payment":
-        return "Payment";
       default:
         return step;
     }

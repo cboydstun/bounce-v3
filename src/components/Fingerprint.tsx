@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
 import { usePathname } from "next/navigation";
 import { detectBrowser, detectOS } from "@/utils/device";
@@ -8,25 +8,41 @@ import { detectBrowser, detectOS } from "@/utils/device";
 /**
  * Fingerprint component for visitor tracking
  * This component doesn't render anything visible but tracks visitor information
- * and sends it to the API
+ * and sends it to the API with optimized request handling
  */
 function Fingerprint() {
   const [fingerprint, setFingerprint] = useState<string>("");
   const pathname = usePathname();
-
-  // Function to get the fingerprint and other visitor data
-  // and send it to the API
-  console.log(fingerprint);
+  const trackingInProgress = useRef<boolean>(false);
+  const lastTrackedPath = useRef<string>("");
 
   useEffect(() => {
     const trackVisitor = async () => {
-      try {
-        // Get fingerprint
-        const visitorId = await getFingerprint();
-        setFingerprint(visitorId);
+      // Prevent multiple concurrent tracking requests
+      if (trackingInProgress.current) {
+        return;
+      }
 
-        // Store in localStorage for conversion tracking
-        localStorage.setItem("visitorId", visitorId);
+      // Skip if we've already tracked this path recently
+      if (lastTrackedPath.current === pathname) {
+        return;
+      }
+
+      trackingInProgress.current = true;
+
+      try {
+        // Check if we already have a visitorId in localStorage
+        let visitorId = localStorage.getItem("visitorId");
+
+        if (!visitorId) {
+          // Get fingerprint only if we don't have one
+          visitorId = await getFingerprint();
+          setFingerprint(visitorId);
+          // Store in localStorage for conversion tracking
+          localStorage.setItem("visitorId", visitorId);
+        } else {
+          setFingerprint(visitorId);
+        }
 
         // Get additional browser information
         const screenData = {
@@ -94,32 +110,92 @@ function Fingerprint() {
           ? performance.timing.loadEventEnd - performance.timing.navigationStart
           : null;
 
-        // Send data to API
-        await fetch("/api/v1/visitors", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            visitorId,
-            currentPage: pathname,
-            referrer,
-            screen: screenData,
-            timezone: timezoneData,
-            language,
-            browser: browserInfo,
-            os: osInfo,
-            network: networkInfo,
-            hardware: hardwareInfo,
-            utmParams: Object.values(utmParams).some((v) => v)
-              ? utmParams
-              : undefined,
-            pageLoadTime:
-              pageLoadTime && pageLoadTime > 0 ? pageLoadTime : undefined,
-          }),
-        });
+        // Create request payload
+        const payload = {
+          visitorId,
+          currentPage: pathname,
+          referrer,
+          screen: screenData,
+          timezone: timezoneData,
+          language,
+          browser: browserInfo,
+          os: osInfo,
+          network: networkInfo,
+          hardware: hardwareInfo,
+          utmParams: Object.values(utmParams).some((v) => v)
+            ? utmParams
+            : undefined,
+          pageLoadTime:
+            pageLoadTime && pageLoadTime > 0 ? pageLoadTime : undefined,
+        };
+
+        // Send data to API with timeout and retry logic
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
+        try {
+          const response = await fetch("/api/v1/visitors", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-request-id": `${Date.now()}-${Math.random()}`, // For deduplication
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          // Mark this path as tracked
+          lastTrackedPath.current = pathname;
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+
+          // Store failed request for retry later
+          const failedRequest = {
+            payload,
+            timestamp: Date.now(),
+            error:
+              fetchError instanceof Error
+                ? fetchError.message
+                : String(fetchError),
+          };
+
+          try {
+            const existingFailed = localStorage.getItem(
+              "failedVisitorTracking",
+            );
+            const failedRequests = existingFailed
+              ? JSON.parse(existingFailed)
+              : [];
+            failedRequests.push(failedRequest);
+
+            // Keep only last 10 failed requests
+            if (failedRequests.length > 10) {
+              failedRequests.splice(0, failedRequests.length - 10);
+            }
+
+            localStorage.setItem(
+              "failedVisitorTracking",
+              JSON.stringify(failedRequests),
+            );
+          } catch (storageError) {
+            console.error(
+              "Failed to store failed tracking request:",
+              storageError,
+            );
+          }
+
+          throw fetchError;
+        }
       } catch (error) {
         console.error("Error tracking visitor:", error);
+      } finally {
+        trackingInProgress.current = false;
       }
     };
 
@@ -128,6 +204,58 @@ function Fingerprint() {
       trackVisitor();
     }
   }, [pathname]); // Re-run when pathname changes
+
+  // Retry failed requests on component mount
+  useEffect(() => {
+    const retryFailedRequests = async () => {
+      try {
+        const failedRequests = localStorage.getItem("failedVisitorTracking");
+        if (!failedRequests) return;
+
+        const requests = JSON.parse(failedRequests);
+        const now = Date.now();
+        const validRequests = requests.filter(
+          (req: any) => now - req.timestamp < 24 * 60 * 60 * 1000, // Only retry requests less than 24 hours old
+        );
+
+        if (validRequests.length === 0) {
+          localStorage.removeItem("failedVisitorTracking");
+          return;
+        }
+
+        // Try to resend the most recent failed request
+        const latestRequest = validRequests[validRequests.length - 1];
+
+        const response = await fetch("/api/v1/visitors", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-request-id": `retry-${Date.now()}-${Math.random()}`,
+          },
+          body: JSON.stringify(latestRequest.payload),
+        });
+
+        if (response.ok) {
+          // Remove successful request from failed list
+          const remainingRequests = validRequests.slice(0, -1);
+          if (remainingRequests.length > 0) {
+            localStorage.setItem(
+              "failedVisitorTracking",
+              JSON.stringify(remainingRequests),
+            );
+          } else {
+            localStorage.removeItem("failedVisitorTracking");
+          }
+        }
+      } catch (error) {
+        console.error("Error retrying failed visitor tracking:", error);
+      }
+    };
+
+    // Retry after a short delay to avoid blocking initial page load
+    const retryTimeout = setTimeout(retryFailedRequests, 3000);
+    return () => clearTimeout(retryTimeout);
+  }, []);
 
   // Component doesn't render anything visible
   return null;

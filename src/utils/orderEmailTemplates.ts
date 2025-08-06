@@ -65,6 +65,37 @@ export function generateNewOrderEmailAdmin(order: IOrderDocument): string {
                 </tr>
               </table>
               
+              <!-- Delivery Details -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 20px;">
+                <tr>
+                  <td style="background: linear-gradient(to right, #e53e3e, #d69e2e); color: white; padding: 10px; text-align: center; border-radius: 8px 8px 0 0;">
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">🚚 DELIVERY DETAILS</h2>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: rgba(229, 62, 62, 0.05); padding: 15px; border-radius: 0 0 8px 8px; border: 1px solid rgba(229, 62, 62, 0.2); border-top: none;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="padding: 4px 0; font-size: 16px; font-weight: 600; color: #e53e3e;"><strong>📍 DELIVERY ADDRESS:</strong></td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0;">${order.customerAddress || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0;">${order.customerCity || "N/A"}, ${order.customerState || "N/A"} ${order.customerZipCode || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #e53e3e;"><strong>⏰ DELIVERY SCHEDULE:</strong></td>
+                      </tr>
+                      ${order.deliveryDate ? `<tr><td style="padding: 4px 0;"><strong>Delivery Date:</strong> ${formatDateCT(order.deliveryDate)}</td></tr>` : ""}
+                      ${order.deliveryTimePreference ? `<tr><td style="padding: 4px 0;"><strong>Delivery Time Preference:</strong> ${order.deliveryTimePreference === "specific" ? "Specific Time Required" : "Flexible Timing"}</td></tr>` : ""}
+                      ${order.pickupTimePreference ? `<tr><td style="padding: 4px 0;"><strong>Pickup Time Preference:</strong> ${order.pickupTimePreference === "specific" ? "Specific Time Required" : "Flexible Timing"}</td></tr>` : ""}
+                      ${order.specificTimeCharge > 0 ? `<tr><td style="padding: 4px 0;"><strong>Specific Time Charge:</strong> $${order.specificTimeCharge.toFixed(2)}</td></tr>` : ""}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
               <!-- Order Details -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 20px;">
                 <tr>
@@ -234,6 +265,33 @@ export function generateNewOrderEmailCustomer(order: IOrderDocument): string {
                       <tr>
                         <td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #805ad5;"><strong>🎉 Event Date:</strong> ${getEventDateDisplay(order)}</td>
                       </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Delivery Details for Customer -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 20px;">
+                <tr>
+                  <td style="background: linear-gradient(to right, #e53e3e, #d69e2e); color: white; padding: 10px; text-align: center; border-radius: 8px 8px 0 0;">
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">🚚 DELIVERY INFORMATION</h2>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: rgba(229, 62, 62, 0.05); padding: 15px; border-radius: 0 0 8px 8px; border: 1px solid rgba(229, 62, 62, 0.2); border-top: none;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="padding: 4px 0; font-size: 16px; font-weight: 600; color: #e53e3e;"><strong>📍 DELIVERY ADDRESS:</strong></td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0;">${order.customerAddress || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0;">${order.customerCity || "N/A"}, ${order.customerState || "N/A"} ${order.customerZipCode || "N/A"}</td>
+                      </tr>
+                      ${order.deliveryDate ? `<tr><td style="padding: 8px 0;"><strong>📅 Delivery Date:</strong> ${formatDateCT(order.deliveryDate)}</td></tr>` : ""}
+                      ${order.deliveryTimePreference ? `<tr><td style="padding: 4px 0;"><strong>⏰ Delivery Time:</strong> ${order.deliveryTimePreference === "specific" ? "Specific Time Required" : "Flexible Timing"}</td></tr>` : ""}
+                      ${order.pickupTimePreference ? `<tr><td style="padding: 4px 0;"><strong>🔄 Pickup Time:</strong> ${order.pickupTimePreference === "specific" ? "Specific Time Required" : "Flexible Timing"}</td></tr>` : ""}
                     </table>
                   </td>
                 </tr>
