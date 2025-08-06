@@ -38,6 +38,7 @@ export default function OrderSelector({
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [isSelectingOrder, setIsSelectingOrder] = useState(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -60,13 +61,13 @@ export default function OrderSelector({
 
   // Search orders when search term changes
   useEffect(() => {
-    if (debouncedSearchTerm.trim().length >= 2) {
+    if (debouncedSearchTerm.trim().length >= 2 && !isSelectingOrder) {
       searchOrders(debouncedSearchTerm);
     } else {
       setOrders([]);
       setIsOpen(false);
     }
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, isSelectingOrder]);
 
   // Load selected order if selectedOrderId is provided
   useEffect(() => {
@@ -102,6 +103,7 @@ export default function OrderSelector({
 
   const loadSelectedOrder = async (orderId: string) => {
     try {
+      setIsSelectingOrder(true);
       const response = await fetch(`/api/v1/orders/${orderId}`);
       if (!response.ok) {
         throw new Error("Failed to load order");
@@ -141,16 +143,29 @@ export default function OrderSelector({
 
       setSelectedOrder(formattedOrder);
       setSearchTerm(formattedOrder.displayText);
+
+      // Reset the flag after a brief delay
+      setTimeout(() => {
+        setIsSelectingOrder(false);
+      }, 100);
     } catch (err) {
       console.error("Error loading selected order:", err);
+      setIsSelectingOrder(false);
     }
   };
 
   const handleOrderSelect = (order: Order) => {
+    setIsSelectingOrder(true);
     setSelectedOrder(order);
     setSearchTerm(order.displayText);
+    setOrders([]);
     setIsOpen(false);
     onOrderSelect(order);
+
+    // Reset the flag after a brief delay to allow for future searches
+    setTimeout(() => {
+      setIsSelectingOrder(false);
+    }, 100);
   };
 
   const handleClearSelection = () => {
@@ -165,6 +180,9 @@ export default function OrderSelector({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
+
+    // Reset the selecting flag when user starts typing
+    setIsSelectingOrder(false);
 
     // If user clears the input, clear the selection
     if (!value.trim()) {
