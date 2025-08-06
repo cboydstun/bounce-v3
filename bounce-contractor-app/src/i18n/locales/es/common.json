@@ -210,7 +210,6 @@
     "applyFilter": "Aplicar Filtro",
     "information": "Información",
     "orderId": "Orden #{{id}}",
-    "paidOn": "Pagado el {{date}}",
     "completeTasks": "Completa tareas para ver tu historial de pagos aquí.",
     "filteredByDateRange": "Filtrado por rango de fechas"
   },
