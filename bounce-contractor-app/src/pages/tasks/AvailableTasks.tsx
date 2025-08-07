@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   IonContent,
   IonPage,
@@ -54,6 +54,37 @@ const AvailableTasks: React.FC = () => {
     enableAudioAlerts: true,
     enablePushNotifications: true,
   });
+
+  // Manually initialize push notifications since auto-init is disabled
+  useEffect(() => {
+    const initializePushNotifications = async () => {
+      try {
+        console.log("🔔 Manually initializing notification system...");
+
+        if (!notificationSystem.pushNotifications.isInitialized) {
+          await notificationSystem.initialize();
+          console.log("✅ Notification system initialized successfully");
+
+          // Request permissions if not already granted
+          if (
+            notificationSystem.pushNotifications.permissionStatus === "default"
+          ) {
+            const permissions = await notificationSystem.requestPermissions();
+            console.log(`🔔 Permission request results:`, permissions);
+          }
+        } else {
+          console.log("✅ Notification system already initialized");
+        }
+      } catch (error) {
+        console.error("❌ Failed to initialize notification system:", error);
+      }
+    };
+
+    // Initialize with a small delay to ensure other systems are ready
+    const timeoutId = setTimeout(initializePushNotifications, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [notificationSystem]);
 
   // Configuration for task notifications
   const MAX_NOTIFICATION_RADIUS = 50; // miles - configurable radius for task notifications
@@ -207,18 +238,41 @@ const AvailableTasks: React.FC = () => {
   // Enhanced new task handler with notifications
   const handleNewTask = useCallback(
     async (task: Task): Promise<void> => {
+      console.log("🎯 handleNewTask called with task:", {
+        taskId: task?.id,
+        title: task?.title,
+        priority: task?.priority,
+        status: task?.status,
+        type: task?.type,
+        hasCompensation: !!task?.compensation,
+        compensationAmount: task?.compensation?.totalAmount,
+        hasLocation: !!task?.location,
+        notificationSystemStatus: {
+          audioInitialized: notificationSystem.audioAlerts.isInitialized,
+          audioEnabled: notificationSystem.audioAlerts.isEnabled,
+          pushInitialized: notificationSystem.pushNotifications.isInitialized,
+          pushEnabled: notificationSystem.pushNotifications.isEnabled,
+        },
+        timestamp: new Date().toISOString(),
+      });
+
       try {
         // Always show the in-app toast (existing behavior)
+        console.log("📱 Setting in-app toast message");
         setRealtimeMessage(`New task available: ${task.title}`);
         setRealtimeToast(true);
 
         // Auto-refresh to show the new task (existing behavior)
+        console.log("🔄 Triggering task list refresh");
         refetch();
 
         // Smart filtering for notifications
-        if (shouldNotifyForTask(task)) {
+        const shouldNotify = shouldNotifyForTask(task);
+        console.log(`🔍 Task notification filtering result: ${shouldNotify}`);
+
+        if (shouldNotify) {
           console.log(
-            `Sending notifications for new task: ${task.title} (Priority: ${task.priority})`,
+            `🔔 Sending notifications for new task: ${task.title} (Priority: ${task.priority})`,
           );
 
           // Play audio alert based on task priority
@@ -226,14 +280,20 @@ const AvailableTasks: React.FC = () => {
             notificationSystem.audioAlerts.isInitialized &&
             notificationSystem.audioAlerts.isEnabled
           ) {
+            console.log("🔊 Attempting to play audio alert...");
             try {
               await notificationSystem.playTaskAlert(task.priority);
               console.log(
-                `Audio alert played for task ${task.id} with priority ${task.priority}`,
+                `✅ Audio alert played successfully for task ${task.id} with priority ${task.priority}`,
               );
             } catch (audioError) {
-              console.error("Failed to play audio alert:", audioError);
+              console.error("❌ Failed to play audio alert:", audioError);
             }
+          } else {
+            console.warn("⚠️ Audio alerts not available:", {
+              initialized: notificationSystem.audioAlerts.isInitialized,
+              enabled: notificationSystem.audioAlerts.isEnabled,
+            });
           }
 
           // Send push notification
@@ -241,20 +301,34 @@ const AvailableTasks: React.FC = () => {
             notificationSystem.pushNotifications.isInitialized &&
             notificationSystem.pushNotifications.isEnabled
           ) {
+            console.log("📲 Attempting to send push notification...");
             try {
               await sendTaskNotification(task);
+              console.log("✅ Push notification sent successfully");
             } catch (notificationError) {
               console.error(
-                "Failed to send push notification:",
+                "❌ Failed to send push notification:",
                 notificationError,
               );
             }
+          } else {
+            console.warn("⚠️ Push notifications not available:", {
+              initialized: notificationSystem.pushNotifications.isInitialized,
+              enabled: notificationSystem.pushNotifications.isEnabled,
+            });
           }
+
+          console.log(
+            "🎉 All notification attempts completed for task:",
+            task.id,
+          );
         } else {
-          console.log(`Task ${task.id} filtered out - no notifications sent`);
+          console.log(
+            `🚫 Task ${task.id} filtered out - no notifications sent`,
+          );
         }
       } catch (error) {
-        console.error("Error in handleNewTask:", error);
+        console.error("❌ Error in handleNewTask:", error);
         // Ensure the basic functionality still works even if notifications fail
       }
     },
@@ -338,61 +412,105 @@ const AvailableTasks: React.FC = () => {
   const handleTestNotification = useCallback(async () => {
     console.log("🧪 Manual notification test triggered");
 
-    // Create a mock task for testing
-    const mockTask: Task = {
-      id: `test-${Date.now()}`,
-      orderId: "test-order",
-      title: "Test Bounce House Setup",
-      description: "This is a test task for notification debugging",
-      type: "delivery_and_setup",
-      category: "bounce_house",
-      priority: "high",
-      status: "published",
-      requiredSkills: ["setup", "delivery"],
-      estimatedDuration: 120,
-      scheduledDate: new Date().toISOString(),
-      scheduledTimeSlot: {
-        startTime: new Date().toISOString(),
-        endTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-        isFlexible: false,
-      },
-      location: {
-        coordinates: { latitude: 29.4241, longitude: -98.4936 },
-        address: {
-          street: "123 Test Street",
-          city: "San Antonio",
-          state: "TX",
-          zipCode: "78201",
-          country: "US",
-          formattedAddress: "123 Test Street, San Antonio, TX 78201",
-        },
-        contactOnArrival: true,
-      },
-      customer: {
-        id: "test-customer",
-        firstName: "Test",
-        lastName: "Customer",
-        email: "test@example.com",
-        phone: "555-0123",
-        preferredContactMethod: "phone",
-      },
-      equipment: [],
-      instructions: [],
-      compensation: {
-        baseAmount: 150,
-        bonuses: [],
-        totalAmount: 150,
-        currency: "USD",
-        paymentMethod: "direct_deposit",
-        paymentSchedule: "weekly",
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      // Test 1: Test the notification system directly
+      console.log("🧪 Test 1: Testing notification system...");
+      await notificationSystem.testNotifications();
 
-    console.log("🧪 Calling handleNewTask with mock task:", mockTask);
-    await handleNewTask(mockTask);
-  }, [handleNewTask]);
+      // Test 2: Create a mock task for testing client-side notifications
+      console.log("🧪 Test 2: Testing client-side task notification...");
+      const mockTask: Task = {
+        id: `test-${Date.now()}`,
+        orderId: "test-order",
+        title: "Test Bounce House Setup",
+        description: "This is a test task for notification debugging",
+        type: "delivery_and_setup",
+        category: "bounce_house",
+        priority: "high",
+        status: "published",
+        requiredSkills: ["setup", "delivery"],
+        estimatedDuration: 120,
+        scheduledDate: new Date().toISOString(),
+        scheduledTimeSlot: {
+          startTime: new Date().toISOString(),
+          endTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+          isFlexible: false,
+        },
+        location: {
+          coordinates: { latitude: 29.4241, longitude: -98.4936 },
+          address: {
+            street: "123 Test Street",
+            city: "San Antonio",
+            state: "TX",
+            zipCode: "78201",
+            country: "US",
+            formattedAddress: "123 Test Street, San Antonio, TX 78201",
+          },
+          contactOnArrival: true,
+        },
+        customer: {
+          id: "test-customer",
+          firstName: "Test",
+          lastName: "Customer",
+          email: "test@example.com",
+          phone: "555-0123",
+          preferredContactMethod: "phone",
+        },
+        equipment: [],
+        instructions: [],
+        compensation: {
+          baseAmount: 150,
+          bonuses: [],
+          totalAmount: 150,
+          currency: "USD",
+          paymentMethod: "direct_deposit",
+          paymentSchedule: "weekly",
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      console.log("🧪 Calling handleNewTask with mock task:", mockTask);
+      await handleNewTask(mockTask);
+
+      // Test 3: Test server-side push notification (if we have an FCM token)
+      if (notificationSystem.pushNotifications.fcmToken) {
+        console.log("🧪 Test 3: Testing server-side push notification...");
+        try {
+          const response = await fetch(
+            "/api/contractors/test-push-notification",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+              },
+            },
+          );
+
+          if (response.ok) {
+            console.log("✅ Server-side push notification test successful");
+          } else {
+            console.log(
+              "❌ Server-side push notification test failed:",
+              response.status,
+            );
+          }
+        } catch (serverError) {
+          console.error(
+            "❌ Server-side push notification test error:",
+            serverError,
+          );
+        }
+      } else {
+        console.log("⚠️ No FCM token available - skipping server-side test");
+      }
+
+      console.log("✅ All notification tests completed");
+    } catch (error) {
+      console.error("❌ Notification test failed:", error);
+    }
+  }, [handleNewTask, notificationSystem]);
 
   return (
     <IonPage>

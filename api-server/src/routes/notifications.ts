@@ -360,6 +360,103 @@ router.post("/", async (req, res) => {
 });
 
 /**
+ * Transform CRM task data format to mobile app format
+ */
+function transformTaskDataForMobileApp(crmTaskData: any): any {
+  // Map CRM priority to mobile app priority format
+  const priorityMap: Record<string, string> = {
+    High: "high",
+    Medium: "medium",
+    Low: "low",
+  };
+
+  // Map CRM task type to mobile app task type format
+  const typeMap: Record<string, string> = {
+    Delivery: "delivery_and_setup",
+    Setup: "delivery_and_setup",
+    Pickup: "pickup",
+    Maintenance: "maintenance",
+  };
+
+  // Transform location from GeoJSON to mobile app format
+  let transformedLocation;
+  if (crmTaskData.location && crmTaskData.location.coordinates) {
+    transformedLocation = {
+      coordinates: {
+        latitude: crmTaskData.location.coordinates[1], // GeoJSON is [lng, lat]
+        longitude: crmTaskData.location.coordinates[0],
+      },
+      address: crmTaskData.address
+        ? {
+            formattedAddress: crmTaskData.address,
+            street: crmTaskData.address.split(",")[0] || "",
+            city: crmTaskData.address.split(",")[1]?.trim() || "",
+            state: "TX", // Default for now
+            zipCode: "",
+            country: "US",
+          }
+        : undefined,
+    };
+  }
+
+  // Create mobile app compatible task data
+  const transformedData = {
+    id: crmTaskData.id,
+    orderId: crmTaskData.orderId,
+    title: crmTaskData.title || `${crmTaskData.type} Task`,
+    description: crmTaskData.description,
+    type: typeMap[crmTaskData.type] || "delivery_and_setup",
+    category: "bounce_house", // Default category
+    priority: priorityMap[crmTaskData.priority] || "medium",
+    status: "published", // Mobile app expects "published" for available tasks
+    requiredSkills: [crmTaskData.type.toLowerCase()],
+    estimatedDuration: 120, // Default 2 hours
+    scheduledDate: crmTaskData.scheduledDateTime,
+    scheduledTimeSlot: {
+      startTime: crmTaskData.scheduledDateTime,
+      endTime: new Date(
+        new Date(crmTaskData.scheduledDateTime).getTime() + 2 * 60 * 60 * 1000,
+      ).toISOString(),
+      isFlexible: false,
+    },
+    location: transformedLocation,
+    customer: {
+      id: "crm-customer",
+      firstName: "CRM",
+      lastName: "Customer",
+      email: "customer@example.com",
+      phone: "555-0123",
+      preferredContactMethod: "phone",
+    },
+    equipment: [],
+    instructions: [],
+    compensation: {
+      baseAmount: crmTaskData.paymentAmount || 50,
+      bonuses: [],
+      totalAmount: crmTaskData.paymentAmount || 50,
+      currency: "USD",
+      paymentMethod: "direct_deposit",
+      paymentSchedule: "weekly",
+    },
+    createdAt: crmTaskData.timestamp || new Date().toISOString(),
+    updatedAt: crmTaskData.timestamp || new Date().toISOString(),
+  };
+
+  logger.info("🔄 Transformed CRM task data for mobile app:", {
+    originalId: crmTaskData.id,
+    originalType: crmTaskData.type,
+    originalPriority: crmTaskData.priority,
+    transformedType: transformedData.type,
+    transformedPriority: transformedData.priority,
+    transformedStatus: transformedData.status,
+    hasLocation: !!transformedData.location,
+    compensation: transformedData.compensation.totalAmount,
+  });
+
+  return transformedData;
+}
+
+/**
  * POST /api/notifications/broadcast
  * Broadcast WebSocket events from CRM
  */
@@ -386,11 +483,18 @@ router.post(
         return;
       }
 
-      logger.info("Received broadcast request from CRM", {
+      logger.info("📡 Received broadcast request from CRM", {
         eventType,
         contractorIds: contractorIds?.length || 0,
         targetContractor,
         source: metadata?.source,
+        originalTaskData: taskData
+          ? {
+              id: taskData.id,
+              type: taskData.type,
+              priority: taskData.priority,
+            }
+          : undefined,
       });
 
       switch (eventType) {
@@ -403,14 +507,21 @@ router.post(
             return;
           }
 
-          // Broadcast to all contractors or specific ones
-          await socketHandlers.broadcastTaskEvent("task:new", taskData, {
-            // If contractorIds provided, broadcast to all but exclude none
-            // Otherwise broadcast globally
-          });
+          // Transform CRM data format to mobile app format
+          const transformedTaskData = transformTaskDataForMobileApp(taskData);
+
+          // Broadcast to all contractors with transformed data
+          await socketHandlers.broadcastTaskEvent(
+            "task:new",
+            transformedTaskData,
+            {
+              // If contractorIds provided, broadcast to all but exclude none
+              // Otherwise broadcast globally
+            },
+          );
 
           logger.info(
-            `Broadcasted task:new event for task ${taskData.id} to all contractors`,
+            `✅ Broadcasted task:new event for task ${taskData.id} to all contractors with mobile app format`,
           );
           break;
 

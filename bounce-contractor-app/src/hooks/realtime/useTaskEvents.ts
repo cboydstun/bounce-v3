@@ -51,16 +51,41 @@ export const useTaskEvents = (
   useEffect(() => {
     const unsubscribe = subscribe("task:new", (event) => {
       const task = event.payload;
-      console.log("📋 New task available:", task);
+      console.log("📋 useTaskEvents: New task event received:", {
+        taskId: task?.id,
+        title: task?.title,
+        priority: task?.priority,
+        status: task?.status,
+        type: task?.type,
+        hasCompensation: !!task?.compensation,
+        compensationAmount: task?.compensation?.totalAmount,
+        hasLocation: !!task?.location,
+        hasOnNewTaskHandler: !!onNewTask,
+        timestamp: new Date().toISOString(),
+      });
 
       if (onNewTask) {
-        onNewTask(task);
+        console.log("🎯 Calling onNewTask handler with task data");
+        try {
+          onNewTask(task);
+          console.log("✅ onNewTask handler completed successfully");
+        } catch (error) {
+          console.error("❌ Error in onNewTask handler:", error);
+        }
+      } else {
+        console.warn(
+          "⚠️ No onNewTask handler provided - task event will be ignored",
+        );
       }
 
       invalidateTaskQueries();
     });
 
-    return unsubscribe;
+    console.log("🔗 useTaskEvents: Subscribed to task:new events");
+    return () => {
+      console.log("🔌 useTaskEvents: Unsubscribing from task:new events");
+      unsubscribe();
+    };
   }, [subscribe, onNewTask, invalidateTaskQueries]);
 
   // Handle task assigned events

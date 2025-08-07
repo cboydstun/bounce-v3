@@ -314,6 +314,19 @@ class WebSocketService {
    * Handle incoming WebSocket events
    */
   private handleEvent(eventType: string, data: any): void {
+    console.log(`🔔 WebSocket event received: ${eventType}`, {
+      eventType,
+      dataKeys: data ? Object.keys(data) : [],
+      hasId: !!data?.id,
+      hasTitle: !!data?.title,
+      hasPriority: !!data?.priority,
+      hasCompensation: !!data?.compensation,
+      priority: data?.priority,
+      status: data?.status,
+      type: data?.type,
+      timestamp: new Date().toISOString(),
+    });
+
     const eventData: WebSocketEventData = {
       type: eventType,
       payload: data,
@@ -321,32 +334,36 @@ class WebSocketService {
       id: this.generateEventId(),
     };
 
-    // Handle audio alerts for specific events
+    // Handle audio alerts for specific events FIRST
     this.handleAudioAlerts(eventType, data);
 
     // Notify all handlers for this event type
     const handlers = this.eventHandlers.get(eventType);
     if (handlers) {
+      console.log(`📢 Notifying ${handlers.size} handlers for ${eventType}`);
       handlers.forEach((handler) => {
         try {
           handler(eventData);
         } catch (error) {
           console.error(
-            `Error in WebSocket event handler for ${eventType}:`,
+            `❌ Error in WebSocket event handler for ${eventType}:`,
             error,
           );
         }
       });
+    } else {
+      console.warn(`⚠️ No handlers registered for event type: ${eventType}`);
     }
 
     // Also notify wildcard handlers
     const wildcardHandlers = this.eventHandlers.get("*");
     if (wildcardHandlers) {
+      console.log(`📢 Notifying ${wildcardHandlers.size} wildcard handlers`);
       wildcardHandlers.forEach((handler) => {
         try {
           handler(eventData);
         } catch (error) {
-          console.error("Error in WebSocket wildcard event handler:", error);
+          console.error("❌ Error in WebSocket wildcard event handler:", error);
         }
       });
     }
