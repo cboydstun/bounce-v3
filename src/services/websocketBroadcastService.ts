@@ -136,6 +136,109 @@ export class WebSocketBroadcastService {
   }
 
   /**
+   * Broadcast new task with BOTH WebSocket AND FCM push notifications
+   * This ensures contractors get notified whether the app is open or closed
+   */
+  static async broadcastNewTaskWithPush(
+    taskData: TaskBroadcastData,
+    contractorIds: string[],
+  ): Promise<BroadcastResponse> {
+    console.log(
+      `🚨 MISSION CRITICAL: Broadcasting new task ${taskData.taskId} with WebSocket + FCM push to ${contractorIds.length} contractors`,
+    );
+
+    try {
+      // 1. Send WebSocket broadcast (for open apps - real-time audio alerts)
+      console.log("📡 Sending WebSocket broadcast for real-time alerts...");
+      const wsResult = await this.broadcastNewTask(taskData, contractorIds);
+
+      // 2. Send FCM push notifications (for background apps - system notifications)
+      console.log("📲 Sending FCM push notifications for background alerts...");
+      const pushResult = await this.sendFCMPushNotification(
+        taskData,
+        contractorIds,
+      );
+
+      // Combine results
+      const combinedSuccess = wsResult.success && pushResult.success;
+      const combinedMessage = `WebSocket: ${wsResult.message} | FCM: ${pushResult.message}`;
+      const combinedError = wsResult.error || pushResult.error;
+
+      console.log(`✅ Combined broadcast result:`, {
+        success: combinedSuccess,
+        websocketSuccess: wsResult.success,
+        fcmSuccess: pushResult.success,
+        message: combinedMessage,
+      });
+
+      return {
+        success: combinedSuccess,
+        message: combinedMessage,
+        error: combinedError,
+      };
+    } catch (error) {
+      console.error("❌ Critical error in broadcastNewTaskWithPush:", error);
+      return {
+        success: false,
+        message: "Failed to broadcast task notifications",
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  /**
+   * Send FCM push notifications via API server
+   * This handles background notifications when the app is closed
+   */
+  static async sendFCMPushNotification(
+    taskData: TaskBroadcastData,
+    contractorIds: string[],
+  ): Promise<BroadcastResponse> {
+    console.log(
+      `📲 Sending FCM push notifications for task ${taskData.taskId} to ${contractorIds.length} contractors`,
+    );
+
+    // Map CRM priority to notification priority
+    const priorityMap: Record<string, string> = {
+      High: "high",
+      Medium: "normal",
+      Low: "low",
+    };
+
+    const pushData = {
+      title: `🔥 New ${taskData.type} Task Available`,
+      message: `${taskData.description}${taskData.paymentAmount ? ` - $${taskData.paymentAmount}` : ""}${taskData.address ? ` in ${taskData.address}` : ""}`,
+      priority: priorityMap[taskData.priority] || "normal",
+      data: {
+        taskId: taskData.taskId,
+        orderId: taskData.orderId,
+        type: "new_task",
+        taskType: taskData.type,
+        priority: taskData.priority,
+        paymentAmount: taskData.paymentAmount,
+        address: taskData.address,
+        scheduledDateTime: taskData.scheduledDateTime.toISOString(),
+        // Add action buttons for the notification
+        actions: JSON.stringify([
+          { action: "view", title: "View Task" },
+          { action: "dismiss", title: "Dismiss" },
+        ]),
+      },
+      contractorIds,
+      metadata: {
+        source: "crm",
+        timestamp: new Date().toISOString(),
+        critical: true, // Mark as critical for background delivery
+      },
+    };
+
+    return this.makeRequest(
+      "/api/contractors/send-push-notification",
+      pushData,
+    );
+  }
+
+  /**
    * Broadcast task assigned event
    */
   static async broadcastTaskAssigned(

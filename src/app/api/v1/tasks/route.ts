@@ -537,7 +537,8 @@ export async function POST(request: NextRequest) {
           `Created notifications for ${contractorIds.length} contractors for new task ${savedTask._id}`,
         );
 
-        // Trigger WebSocket broadcast to notify mobile apps in real-time
+        // 🚨 MISSION CRITICAL: Trigger BOTH WebSocket AND FCM push notifications
+        // This ensures contractors get notified whether the app is open or closed
         try {
           const taskBroadcastData: TaskBroadcastData = {
             taskId: (savedTask._id as mongoose.Types.ObjectId).toString(),
@@ -556,26 +557,31 @@ export async function POST(request: NextRequest) {
             location: savedTask.location,
           };
 
+          console.log(
+            `🚨 MISSION CRITICAL: Broadcasting new task ${savedTask._id} with WebSocket + FCM push to ${contractorIds.length} contractors`,
+          );
+
+          // Use the new combined method that sends BOTH WebSocket AND FCM push
           const broadcastResult =
-            await WebSocketBroadcastService.broadcastNewTask(
+            await WebSocketBroadcastService.broadcastNewTaskWithPush(
               taskBroadcastData,
               contractorIds,
             );
 
           if (broadcastResult.success) {
             console.log(
-              `Successfully broadcasted new task ${savedTask._id} to mobile apps`,
+              `✅ Successfully sent BOTH WebSocket + FCM notifications for task ${savedTask._id}`,
             );
           } else {
-            console.warn(
-              `Failed to broadcast new task ${savedTask._id}:`,
+            console.error(
+              `❌ Failed to send notifications for task ${savedTask._id}:`,
               broadcastResult.error,
             );
           }
         } catch (broadcastError) {
           // Log error but don't fail the task creation
           console.error(
-            "Failed to broadcast new task to mobile apps:",
+            "❌ CRITICAL: Failed to send task notifications:",
             broadcastError,
           );
         }
