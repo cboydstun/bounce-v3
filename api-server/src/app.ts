@@ -23,6 +23,7 @@ import { database } from "./utils/database.js";
 import { socketAuthMiddleware } from "./middleware/socketAuth.js";
 import { SocketHandlers } from "./websocket/socketHandlers.js";
 import { RealtimeService } from "./services/realtimeService.js";
+import { initializeFirebase } from "./config/firebase.js";
 
 // Import services
 import { cacheService } from "./services/cacheService.js";
@@ -240,6 +241,17 @@ async function startServer() {
     // Connect to database
     await database.connect();
     logger.info("Database connected successfully");
+
+    // Initialize Firebase for push notifications
+    try {
+      initializeFirebase();
+      logger.info("Firebase initialized for push notifications");
+    } catch (firebaseError) {
+      logger.warn(
+        "Firebase initialization failed - push notifications will be disabled:",
+        firebaseError,
+      );
+    }
 
     // Start server
     server.listen(PORT, () => {

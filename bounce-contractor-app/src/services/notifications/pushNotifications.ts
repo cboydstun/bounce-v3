@@ -844,19 +844,18 @@ class PushNotificationService {
    */
   private async registerTokenWithServer(token: string): Promise<void> {
     try {
-      await apiClient.post("/contractors/fcm-token", {
+      await apiClient.post("/contractors/register-device", {
         token,
         platform: Capacitor.getPlatform(),
-        deviceInfo: {
-          model: Capacitor.isNativePlatform() ? "mobile" : "web",
-          platform: Capacitor.getPlatform(),
-          version: "1.0.0",
-        },
       });
 
       errorLogger.logInfo(
         "push-notifications",
         "FCM token registered with server",
+        {
+          platform: Capacitor.getPlatform(),
+          tokenLength: token.length,
+        },
       );
     } catch (error) {
       errorLogger.logError(

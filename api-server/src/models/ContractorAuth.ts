@@ -19,6 +19,7 @@ export interface IContractorAuth {
   isVerified: boolean;
   notes?: string;
   refreshTokens: string[];
+  deviceTokens: string[]; // FCM device tokens for push notifications
   lastLogin?: Date;
   resetPasswordToken?: string | undefined;
   resetPasswordExpires?: Date | undefined;
@@ -116,6 +117,11 @@ const ContractorAuthSchema = new Schema<
     refreshTokens: {
       type: [String],
       default: [],
+    },
+    deviceTokens: {
+      type: [String],
+      default: [],
+      index: true,
     },
     lastLogin: {
       type: Date,

@@ -5,6 +5,12 @@ import {
   AuthenticatedRequest,
 } from "../middleware/auth.js";
 import { contractorController } from "../controllers/contractorController.js";
+import {
+  registerDeviceToken,
+  unregisterDeviceToken,
+  getDeviceTokens,
+  testPushNotification,
+} from "../controllers/deviceTokenController.js";
 
 const router = express.Router();
 
@@ -107,5 +113,17 @@ router.get(
     }
   },
 );
+
+// POST /api/contractors/register-device - Register device token for push notifications
+router.post("/register-device", authenticateToken, registerDeviceToken);
+
+// POST /api/contractors/unregister-device - Unregister device token
+router.post("/unregister-device", authenticateToken, unregisterDeviceToken);
+
+// GET /api/contractors/devices - Get registered device tokens (for debugging)
+router.get("/devices", authenticateToken, getDeviceTokens);
+
+// POST /api/contractors/test-notification - Send test push notification (for debugging)
+router.post("/test-notification", authenticateToken, testPushNotification);
 
 export default router;

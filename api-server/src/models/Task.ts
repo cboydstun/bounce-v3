@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { ITaskDocument, ITaskModel, TaskStatus } from "../types/task.js";
+import { pushNotificationService } from "../services/pushNotificationService.js";
 
 const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
   {
@@ -304,6 +305,45 @@ TaskSchema.pre("save", function (next) {
     (this as any)._original = this.toObject();
   }
   next();
+});
+
+// Push notification integration - send notifications when new tasks are created
+TaskSchema.post("save", async function (doc: ITaskDocument) {
+  try {
+    // Only send notifications for new tasks with "Pending" status
+    if (this.isNew && doc.status === "Pending") {
+      console.log(
+        `📢 New task created: ${doc._id} - sending push notifications to all contractors`,
+      );
+
+      // Map priority to mobile app format
+      const priorityMap: Record<string, "low" | "medium" | "high" | "urgent"> =
+        {
+          Low: "low",
+          Medium: "medium",
+          High: "high",
+        };
+
+      const taskData = {
+        taskId: (doc._id as mongoose.Types.ObjectId).toString(),
+        title: doc.title || `${doc.type} Task`,
+        priority: priorityMap[doc.priority] || "medium",
+        compensation: doc.paymentAmount || 50,
+        type: "new_task" as const,
+      };
+
+      // Send push notification to all contractors
+      await pushNotificationService.sendNewTaskNotification(taskData);
+
+      console.log(`✅ Push notifications sent for new task: ${doc._id}`);
+    }
+  } catch (error) {
+    // Don't fail the task creation if push notifications fail
+    console.error(
+      `❌ Failed to send push notifications for task ${doc._id}:`,
+      error,
+    );
+  }
 });
 
 // Export interfaces for use in other files
