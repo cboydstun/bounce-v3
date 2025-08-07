@@ -4,15 +4,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  optimizeRoute,
+  optimizeRouteForOrders,
   OptimizedRoute,
 } from "../../../utils/routeOptimization";
 import RouteMap from "../../../components/RouteMap";
 import { DeliverySchedule } from "../../../components/DeliverySchedule";
+import { Order } from "../../../types/order";
 import { Contact } from "../../../types/contact";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { getContacts } from "../../../utils/api";
+import { getOrders } from "../../../utils/api";
 import { formatDateCT } from "../../../utils/dateUtils";
 
 export default function RoutePlannerPage() {
@@ -20,7 +21,7 @@ export default function RoutePlannerPage() {
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [optimizedRoute, setOptimizedRoute] = useState<OptimizedRoute | null>(
     null,
   );
@@ -51,27 +52,35 @@ export default function RoutePlannerPage() {
     }
   }, [status, session, router]);
 
-  // Fetch contacts for selected date
+  // Fetch orders for selected date
   useEffect(() => {
     if (isLoading) return;
 
-    async function fetchContacts() {
+    async function fetchOrders() {
       try {
         setError(null);
         // Format date as YYYY-MM-DD using centralized date utilities
         const formattedDate = formatDateCT(selectedDate);
 
-        // Use the API utility instead of direct fetch
+        // Use the API utility to fetch orders for the selected date
         try {
-          const data = await getContacts({ deliveryDay: formattedDate });
+          const data = await getOrders({
+            startDate: formattedDate,
+            endDate: formattedDate,
+          });
 
-          if (data.contacts) {
-            setContacts(data.contacts);
+          if (data.orders) {
+            // Filter out cancelled and refunded orders
+            const activeOrders = data.orders.filter(
+              (order: Order) =>
+                !["Cancelled", "Refunded"].includes(order.status),
+            );
+            setOrders(activeOrders);
           } else {
-            setContacts([]);
+            setOrders([]);
           }
         } catch (error) {
-          console.error("Error fetching contacts:", error);
+          console.error("Error fetching orders:", error);
 
           // Handle authentication errors
           if (
@@ -83,23 +92,23 @@ export default function RoutePlannerPage() {
             return;
           }
 
-          setError("Failed to fetch contacts. Please try again.");
-          setContacts([]);
+          setError("Failed to fetch orders. Please try again.");
+          setOrders([]);
         }
       } catch (error) {
         console.error("Error formatting date:", error);
         setError("Invalid date selected. Please try again.");
-        setContacts([]);
+        setOrders([]);
       }
     }
 
-    fetchContacts();
+    fetchOrders();
   }, [selectedDate, isLoading, router]);
 
   // Optimize route
   async function handleOptimizeRoute() {
-    if (contacts.length === 0) {
-      setError("No contacts found for selected date");
+    if (orders.length === 0) {
+      setError("No orders found for selected date");
       return;
     }
 
@@ -109,8 +118,8 @@ export default function RoutePlannerPage() {
 
     try {
       // Pass the start time and return to start preference
-      const result = await optimizeRoute(
-        contacts,
+      const result = await optimizeRouteForOrders(
+        orders,
         startAddress,
         startTime,
         returnToStart,
@@ -221,15 +230,15 @@ export default function RoutePlannerPage() {
       <div className="mb-6">
         <button
           onClick={handleOptimizeRoute}
-          disabled={loading || contacts.length === 0}
+          disabled={loading || orders.length === 0}
           className="bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
         >
           {loading ? "Optimizing..." : "Optimize Route"}
         </button>
 
-        {contacts.length > 0 ? (
+        {orders.length > 0 ? (
           <span className="ml-4">
-            {contacts.length} deliveries found for selected date
+            {orders.length} deliveries found for selected date
           </span>
         ) : (
           <span className="ml-4">No deliveries found for selected date</span>
@@ -280,7 +289,7 @@ export default function RoutePlannerPage() {
           <div className="mb-6">
             <h2 className="text-xl font-bold mb-2">Route Map</h2>
             <RouteMap
-              contacts={contacts}
+              contacts={optimizedRoute.deliveryOrder}
               optimizedOrder={optimizedRoute.deliveryOrder}
               routeGeometry={optimizedRoute.routeGeometry}
               startAddress={startAddress}
@@ -297,14 +306,8 @@ export default function RoutePlannerPage() {
               {optimizedRoute.deliveryOrder.map(
                 (contact: Contact, index: number) => (
                   <li key={contact._id} className="mb-2">
-                    <strong>{contact.bouncer}</strong>
-                    <br />
                     {contact.streetAddress}, {contact.city}, {contact.state}{" "}
                     {contact.partyZipCode}
-                    <br />
-                    <span className="text-sm text-gray-600">
-                      Phone: {contact.phone || "N/A"}
-                    </span>
                   </li>
                 ),
               )}

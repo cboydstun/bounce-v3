@@ -61,18 +61,69 @@ export async function POST(request: NextRequest) {
       `Making directions request for ${coordinates.length} coordinates`,
     );
 
-    const response = await axios.post(
-      "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
-      { coordinates },
-      {
-        headers: {
-          Authorization: apiKey,
-          "Content-Type": "application/json",
+    try {
+      const response = await axios.post(
+        "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
+        { coordinates },
+        {
+          headers: {
+            Authorization: apiKey,
+            "Content-Type": "application/json",
+          },
         },
-      },
-    );
+      );
 
-    return NextResponse.json(response.data);
+      return NextResponse.json(response.data);
+    } catch (routingError) {
+      // Handle specific routing errors
+      if (
+        axios.isAxiosError(routingError) &&
+        routingError.response?.status === 404
+      ) {
+        const errorData = routingError.response.data;
+
+        // Check if it's a "could not find routable point" error
+        if (
+          errorData?.error?.message?.includes("Could not find routable point")
+        ) {
+          console.warn(
+            "Some coordinates are not routable, attempting fallback approach",
+          );
+
+          // Try with a simplified approach - just return a basic route structure
+          // This allows the route planner to continue working without the detailed geometry
+          const fallbackGeometry = {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                properties: {
+                  segments: [],
+                  summary: {
+                    distance: 0,
+                    duration: 0,
+                  },
+                  way_points: Array.from(
+                    { length: coordinates.length },
+                    (_, i) => i,
+                  ),
+                },
+                geometry: {
+                  type: "LineString",
+                  coordinates: coordinates,
+                },
+              },
+            ],
+          };
+
+          console.log("Using fallback geometry for non-routable coordinates");
+          return NextResponse.json(fallbackGeometry);
+        }
+      }
+
+      // Re-throw the error if it's not a routing issue we can handle
+      throw routingError;
+    }
   } catch (error) {
     console.error("Route geometry error:", error);
 
