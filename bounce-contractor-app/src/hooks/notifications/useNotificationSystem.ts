@@ -37,6 +37,8 @@ export interface UseNotificationSystemReturn {
 
   // Combined actions
   initialize: () => Promise<void>;
+  destroy: () => Promise<void>;
+  forceDestroy: () => void;
   requestPermissions: () => Promise<{ push: boolean; audio: boolean }>;
   playTaskAlert: (priority: TaskPriority) => Promise<void>;
   testNotifications: () => Promise<void>;
@@ -278,6 +280,73 @@ export const useNotificationSystem = (
     [enablePushNotifications, pushNotifications.setEnabled],
   );
 
+  /**
+   * Destroy the complete notification system
+   */
+  const destroy = useCallback(async (): Promise<void> => {
+    try {
+      console.log("Starting notification system destruction");
+      const destroyPromises: Promise<void>[] = [];
+
+      // Destroy audio alerts
+      if (enableAudioAlerts) {
+        console.log("Destroying audio alerts...");
+        destroyPromises.push(audioAlerts.destroy());
+      }
+
+      // Destroy push notifications
+      if (enablePushNotifications) {
+        console.log("Destroying push notifications...");
+        destroyPromises.push(pushNotifications.destroy());
+      }
+
+      // Wait for all destruction to complete
+      await Promise.allSettled(destroyPromises);
+
+      console.log("Notification system destruction completed");
+    } catch (error) {
+      console.error("Failed to destroy notification system:", error);
+      throw error;
+    }
+  }, [
+    enableAudioAlerts,
+    enablePushNotifications,
+    audioAlerts.destroy,
+    pushNotifications.destroy,
+  ]);
+
+  /**
+   * Force destroy the complete notification system
+   */
+  const forceDestroy = useCallback((): void => {
+    console.warn("Force destroying notification system...");
+
+    // Force destroy audio alerts
+    if (enableAudioAlerts) {
+      try {
+        audioAlerts.forceDestroy();
+      } catch (error) {
+        console.error("Failed to force destroy audio alerts:", error);
+      }
+    }
+
+    // Force destroy push notifications
+    if (enablePushNotifications) {
+      try {
+        pushNotifications.forceDestroy();
+      } catch (error) {
+        console.error("Failed to force destroy push notifications:", error);
+      }
+    }
+
+    console.log("Notification system force destruction completed");
+  }, [
+    enableAudioAlerts,
+    enablePushNotifications,
+    audioAlerts.forceDestroy,
+    pushNotifications.forceDestroy,
+  ]);
+
   // Set up WebSocket event listeners for real-time notifications
   useEffect(() => {
     if (!audioAlerts.isInitialized && !pushNotifications.isInitialized) {
@@ -362,6 +431,8 @@ export const useNotificationSystem = (
     },
     // Actions
     initialize,
+    destroy,
+    forceDestroy,
     requestPermissions,
     playTaskAlert,
     testNotifications,

@@ -24,6 +24,8 @@ export interface UsePushNotificationsReturn {
 
   // Actions
   initialize: () => Promise<void>;
+  destroy: () => Promise<void>;
+  forceDestroy: () => void;
   requestPermission: () => Promise<boolean>;
   setEnabled: (enabled: boolean) => void;
   testNotification: () => Promise<void>;
@@ -288,6 +290,135 @@ export const usePushNotifications = (
     [],
   );
 
+  /**
+   * Destroy push notifications system
+   */
+  const destroy = useCallback(async (): Promise<void> => {
+    if (!isMountedRef.current) return;
+
+    safeSetState(() => setIsLoading(true));
+
+    try {
+      errorLogger.logInfo("usePushNotifications", "Starting destruction...");
+
+      // Run local cleanup first
+      cleanupFunctionsRef.current.forEach((cleanup) => {
+        try {
+          cleanup();
+        } catch (err) {
+          errorLogger.logError(
+            "usePushNotifications",
+            "Error during local cleanup",
+            err,
+          );
+        }
+      });
+      cleanupFunctionsRef.current = [];
+
+      // Delegate to global service for destruction
+      if (typeof (pushNotificationService as any).destroy === "function") {
+        await (pushNotificationService as any).destroy();
+      } else {
+        // Fallback: disable and clear state
+        pushNotificationService.setEnabled(false);
+      }
+
+      if (!isMountedRef.current) return;
+
+      // Reset local state
+      safeSetState(() => {
+        setFcmToken(null);
+        setPermissionStatus("unknown");
+        setGlobalState({
+          isInitialized: false,
+          isInitializing: false,
+          initializationPromise: null,
+          error: null,
+          lastFailureTime: 0,
+          failureCount: 0,
+          isCircuitBreakerOpen: false,
+        });
+      });
+
+      errorLogger.logInfo(
+        "usePushNotifications",
+        "Push notifications destroyed successfully",
+      );
+    } catch (err) {
+      if (!isMountedRef.current) return;
+
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to destroy push notifications";
+      errorLogger.logError(
+        "usePushNotifications",
+        "Push notifications destruction failed",
+        err,
+      );
+
+      // Force cleanup if graceful destruction failed
+      try {
+        forceDestroy();
+      } catch (forceError) {
+        errorLogger.logError(
+          "usePushNotifications",
+          "Force destruction also failed",
+          forceError,
+        );
+        throw forceError;
+      }
+    } finally {
+      if (isMountedRef.current) {
+        safeSetState(() => setIsLoading(false));
+      }
+    }
+  }, [safeSetState]);
+
+  /**
+   * Force destroy push notifications system
+   */
+  const forceDestroy = useCallback((): void => {
+    if (!isMountedRef.current) return;
+
+    errorLogger.logWarn("usePushNotifications", "Force destroying...");
+
+    // Aggressive cleanup
+    cleanupFunctionsRef.current.forEach((cleanup) => {
+      try {
+        cleanup();
+      } catch (err) {
+        // Ignore cleanup errors during force destroy
+      }
+    });
+    cleanupFunctionsRef.current = [];
+
+    // Force disable service
+    try {
+      pushNotificationService.setEnabled(false);
+    } catch (err) {
+      // Ignore errors during force destroy
+    }
+
+    // Reset all local state
+    safeSetState(() => {
+      setFcmToken(null);
+      setPermissionStatus("unknown");
+      setGlobalState({
+        isInitialized: false,
+        isInitializing: false,
+        initializationPromise: null,
+        error: null,
+        lastFailureTime: 0,
+        failureCount: 0,
+        isCircuitBreakerOpen: false,
+      });
+      setIsLoading(false);
+    });
+
+    errorLogger.logInfo("usePushNotifications", "Force destruction completed");
+  }, [safeSetState]);
+
   // Subscribe to global state changes
   useEffect(() => {
     const unsubscribe = pushNotificationService.onGlobalStateChange(
@@ -494,6 +625,8 @@ export const usePushNotifications = (
     error: globalState.error,
     // Actions
     initialize,
+    destroy,
+    forceDestroy,
     requestPermission,
     setEnabled,
     testNotification,

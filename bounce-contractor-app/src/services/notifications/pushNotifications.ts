@@ -4,6 +4,7 @@ import {
   PushNotificationSchema,
   ActionPerformed,
 } from "@capacitor/push-notifications";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { Capacitor } from "@capacitor/core";
 import { firebaseMessaging } from "../../config/firebase.config";
 import { apiClient } from "../api/apiClient";
@@ -1376,7 +1377,7 @@ class PushNotificationService {
   }
 
   /**
-   * Test notification (development only)
+   * Test notification with platform-specific support
    */
   public async testNotification(): Promise<void> {
     if (!this.isEnabled()) {
@@ -1384,17 +1385,26 @@ class PushNotificationService {
         "push-notifications",
         "Notifications are disabled - cannot send test notification",
       );
-      return;
+      throw new Error("Push notifications are disabled");
     }
 
     try {
-      this.showLocalNotification({
-        title: "Test Notification",
-        body: "This is a test notification from the Bounce Contractor app",
-        data: { test: true },
+      errorLogger.logInfo("push-notifications", "Starting test notification", {
+        platform: Capacitor.getPlatform(),
+        isNative: Capacitor.isNativePlatform(),
+        permissionStatus: this.getPermissionStatus(),
       });
 
-      errorLogger.logInfo("push-notifications", "Test notification sent");
+      if (Capacitor.isNativePlatform()) {
+        await this.sendNativeTestNotification();
+      } else {
+        await this.sendWebTestNotification();
+      }
+
+      errorLogger.logInfo(
+        "push-notifications",
+        "Test notification sent successfully",
+      );
     } catch (error) {
       errorLogger.logError(
         "push-notifications",
@@ -1402,6 +1412,315 @@ class PushNotificationService {
         error,
       );
       throw error;
+    }
+  }
+
+  /**
+   * Send test notification for native platforms (Android/iOS)
+   */
+  private async sendNativeTestNotification(): Promise<void> {
+    console.log("🔔 DEBUG: Starting sendNativeTestNotification");
+
+    try {
+      errorLogger.logInfo(
+        "push-notifications",
+        "Attempting native test notification",
+      );
+
+      // Method 1: Try using Local Notifications for actual visual notification
+      console.log(
+        "🔔 DEBUG: Method 1 - Checking LocalNotifications availability",
+      );
+
+      try {
+        // Check if LocalNotifications is available
+        console.log(
+          "🔔 DEBUG: LocalNotifications object:",
+          !!LocalNotifications,
+        );
+        console.log(
+          "🔔 DEBUG: LocalNotifications methods:",
+          LocalNotifications ? Object.keys(LocalNotifications) : "N/A",
+        );
+
+        if (LocalNotifications) {
+          errorLogger.logInfo(
+            "push-notifications",
+            "Using LocalNotifications for native test",
+          );
+          console.log(
+            "🔔 DEBUG: LocalNotifications is available, requesting permissions",
+          );
+
+          // Request permission for local notifications first
+          console.log(
+            "🔔 DEBUG: About to call LocalNotifications.requestPermissions()",
+          );
+          const permission = await LocalNotifications.requestPermissions();
+          console.log("🔔 DEBUG: Permission result:", permission);
+
+          if (permission.display === "granted") {
+            console.log(
+              "🔔 DEBUG: Permission granted, scheduling notification",
+            );
+
+            // Schedule a local notification that will appear in the system tray
+            const notificationData = {
+              notifications: [
+                {
+                  title: "Test Notification",
+                  body: "This is a test notification from the Bounce Contractor app",
+                  id: Math.floor(Math.random() * 2147483647), // Java-compatible integer
+                  schedule: { at: new Date(Date.now() + 1000) }, // 1 second delay
+                  sound: this.config.sound ? "default" : undefined,
+                  extra: { test: true, type: "test_notification" },
+                },
+              ],
+            };
+
+            console.log("🔔 DEBUG: Notification data:", notificationData);
+            console.log(
+              "🔔 DEBUG: About to call LocalNotifications.schedule()",
+            );
+
+            await LocalNotifications.schedule(notificationData);
+
+            console.log(
+              "🔔 DEBUG: LocalNotifications.schedule() completed successfully",
+            );
+            errorLogger.logInfo(
+              "push-notifications",
+              "Local notification scheduled successfully",
+            );
+
+            // Also emit event for in-app handling
+            this.emit("testNotificationSent", {
+              type: "native_local_notification",
+              title: "Test Notification",
+              body: "This is a test notification from the Bounce Contractor app",
+            });
+
+            // Force show alert for debugging
+            setTimeout(() => {
+              if (typeof window !== "undefined" && window.alert) {
+                window.alert(
+                  "✅ Local notification scheduled successfully! Check your notification tray.",
+                );
+              }
+            }, 500);
+
+            console.log("🔔 DEBUG: Method 1 completed successfully");
+            return;
+          } else {
+            console.log("🔔 DEBUG: Permission not granted:", permission);
+            errorLogger.logWarn(
+              "push-notifications",
+              "Local notification permission not granted",
+              { permission },
+            );
+
+            // Force show alert for debugging
+            setTimeout(() => {
+              if (typeof window !== "undefined" && window.alert) {
+                window.alert(
+                  `❌ Local notification permission denied: ${permission.display}`,
+                );
+              }
+            }, 500);
+          }
+        } else {
+          console.log("🔔 DEBUG: LocalNotifications plugin not available");
+          errorLogger.logWarn(
+            "push-notifications",
+            "LocalNotifications plugin not available",
+          );
+
+          // Force show alert for debugging
+          setTimeout(() => {
+            if (typeof window !== "undefined" && window.alert) {
+              window.alert("❌ LocalNotifications plugin not available");
+            }
+          }, 500);
+        }
+      } catch (localNotificationError) {
+        console.error(
+          "🔔 DEBUG: Local notification error:",
+          localNotificationError,
+        );
+        errorLogger.logWarn(
+          "push-notifications",
+          "Local notification failed",
+          localNotificationError as Error,
+        );
+
+        // Force show alert for debugging
+        setTimeout(() => {
+          if (typeof window !== "undefined" && window.alert) {
+            window.alert(
+              `❌ Local notification error: ${localNotificationError instanceof Error ? localNotificationError.message : "Unknown error"}`,
+            );
+          }
+        }, 500);
+      }
+
+      console.log("🔔 DEBUG: Method 2 - Trying notification simulation");
+
+      // Method 2: Try triggering through the existing notification system (for audio/vibration)
+      try {
+        const testPayload: PushNotificationSchema = {
+          id: `test-${Date.now()}`,
+          title: "Test Notification",
+          body: "This is a test notification from the Bounce Contractor app",
+          data: { test: true, type: "test_notification" } as Record<
+            string,
+            any
+          >,
+        };
+
+        console.log(
+          "🔔 DEBUG: Simulating notification with payload:",
+          testPayload,
+        );
+
+        // Simulate a received notification to trigger the display logic
+        this.handleNotificationReceived(testPayload);
+
+        console.log("🔔 DEBUG: Notification simulation completed");
+        errorLogger.logInfo(
+          "push-notifications",
+          "Native test notification via simulation",
+        );
+
+        // Also emit event for in-app handling
+        this.emit("testNotificationSent", {
+          type: "native_simulation",
+          title: "Test Notification",
+          body: "This is a test notification from the Bounce Contractor app",
+        });
+
+        console.log("🔔 DEBUG: Method 2 completed successfully");
+        return;
+      } catch (simulationError) {
+        console.error("🔔 DEBUG: Simulation error:", simulationError);
+        errorLogger.logWarn(
+          "push-notifications",
+          "Notification simulation failed",
+          simulationError as Error,
+        );
+      }
+
+      console.log("🔔 DEBUG: Method 3 - Fallback to in-app notification");
+
+      // Method 3: Fallback to in-app notification
+      this.showInAppTestNotification();
+    } catch (error) {
+      console.error("🔔 DEBUG: All methods failed with error:", error);
+      errorLogger.logError(
+        "push-notifications",
+        "All native test methods failed",
+        error,
+      );
+
+      // Force show alert for debugging
+      setTimeout(() => {
+        if (typeof window !== "undefined" && window.alert) {
+          window.alert(
+            `❌ All test methods failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          );
+        }
+      }, 500);
+
+      // Final fallback: in-app notification
+      this.showInAppTestNotification();
+    }
+
+    console.log("🔔 DEBUG: sendNativeTestNotification completed");
+  }
+
+  /**
+   * Send test notification for web platforms
+   */
+  private async sendWebTestNotification(): Promise<void> {
+    try {
+      // Check browser notification support and permission
+      if (!("Notification" in window)) {
+        throw new Error("Browser does not support notifications");
+      }
+
+      if (Notification.permission !== "granted") {
+        throw new Error(
+          `Browser notification permission is ${Notification.permission}`,
+        );
+      }
+
+      // Send browser notification
+      this.showLocalNotification({
+        title: "Test Notification",
+        body: "This is a test notification from the Bounce Contractor app",
+        data: { test: true },
+      });
+
+      errorLogger.logInfo(
+        "push-notifications",
+        "Web browser notification sent",
+      );
+
+      // Also emit event for in-app handling
+      this.emit("testNotificationSent", {
+        type: "web_browser",
+        title: "Test Notification",
+        body: "This is a test notification from the Bounce Contractor app",
+      });
+    } catch (error) {
+      errorLogger.logWarn(
+        "push-notifications",
+        "Web notification failed, using fallback",
+        error as Error,
+      );
+
+      // Fallback to in-app notification
+      this.showInAppTestNotification();
+    }
+  }
+
+  /**
+   * Show in-app test notification as fallback
+   */
+  private showInAppTestNotification(): void {
+    try {
+      errorLogger.logInfo(
+        "push-notifications",
+        "Showing in-app test notification fallback",
+      );
+
+      // Emit event that can be caught by UI components
+      this.emit("testNotificationSent", {
+        type: "in_app_fallback",
+        title: "Test Notification",
+        body: "This is a test notification from the Bounce Contractor app (in-app fallback)",
+        message:
+          "Test notification sent! Since native notifications may not be visible in development, this in-app message confirms the test worked.",
+      });
+
+      // Also try to show a simple alert as last resort
+      if (typeof window !== "undefined" && window.alert) {
+        setTimeout(() => {
+          window.alert(
+            "Test Notification: This is a test notification from the Bounce Contractor app",
+          );
+        }, 500);
+      }
+
+      errorLogger.logInfo(
+        "push-notifications",
+        "In-app test notification fallback completed",
+      );
+    } catch (error) {
+      errorLogger.logError(
+        "push-notifications",
+        "Even in-app fallback failed",
+        error,
+      );
     }
   }
 }

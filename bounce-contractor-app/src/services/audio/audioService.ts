@@ -644,19 +644,91 @@ class AudioService {
   }
 
   /**
-   * Cleanup resources
+   * Cleanup resources with comprehensive error handling
    */
-  destroy(): void {
-    this.stop();
+  async destroy(): Promise<void> {
+    console.log("Starting audio service cleanup...");
 
-    if (this.audioContext) {
-      this.audioContext.close();
+    try {
+      // Stop any current playback
+      this.stop();
+
+      // Clear audio buffers
+      this.audioBuffers.clear();
+
+      // Close AudioContext with error handling
+      if (this.audioContext) {
+        try {
+          if (this.audioContext.state !== "closed") {
+            await this.audioContext.close();
+          }
+        } catch (error) {
+          console.warn("Failed to close AudioContext gracefully:", error);
+          // Force cleanup
+          this.audioContext = null;
+        }
+        this.audioContext = null;
+      }
+
+      // Clear current audio element
+      if (this.currentAudio) {
+        try {
+          this.currentAudio.pause();
+          this.currentAudio.src = "";
+          this.currentAudio.load();
+        } catch (error) {
+          console.warn("Failed to cleanup HTML audio element:", error);
+        }
+        this.currentAudio = null;
+      }
+
+      // Reset all state
+      this.isInitialized = false;
+      this.currentState = "idle";
+
+      // Reset capabilities
+      this.capabilities = {
+        canPlayAudio: false,
+        canVibrate: false,
+        supportedFormats: [],
+        maxVolume: 1.0,
+        respectsSilentMode: true,
+      };
+
+      console.log("Audio service cleanup completed successfully");
+    } catch (error) {
+      console.error("Audio service cleanup failed:", error);
+      // Force reset even if cleanup failed
       this.audioContext = null;
+      this.currentAudio = null;
+      this.audioBuffers.clear();
+      this.isInitialized = false;
+      this.currentState = "error";
+      throw error;
     }
+  }
 
+  /**
+   * Force cleanup - use when graceful cleanup fails
+   */
+  forceDestroy(): void {
+    console.warn("Force destroying audio service...");
+
+    // Aggressive cleanup
+    this.audioContext = null;
+    this.currentAudio = null;
     this.audioBuffers.clear();
     this.isInitialized = false;
     this.currentState = "idle";
+    this.capabilities = {
+      canPlayAudio: false,
+      canVibrate: false,
+      supportedFormats: [],
+      maxVolume: 1.0,
+      respectsSilentMode: true,
+    };
+
+    console.log("Audio service force cleanup completed");
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IonButton,
   IonCard,
@@ -26,10 +26,12 @@ import {
   playOutline,
   powerOutline,
   warningOutline,
+  refreshOutline,
 } from "ionicons/icons";
 import { useNotificationSystem } from "../hooks/notifications/useNotificationSystem";
 import { TaskPriority } from "../types/task.types";
 import { errorLogger } from "../services/debug/errorLogger";
+import { APP_CONFIG } from "../config/app.config";
 
 interface AudioAlertsDemoProps {
   className?: string;
@@ -39,19 +41,163 @@ interface AudioAlertsDemoProps {
  * Demo component for testing audio alerts and push notifications
  * This component provides a UI to test all notification features
  */
+// System state interface for persistence
+interface SystemState {
+  masterEnabled: boolean;
+  audioEnabled: boolean;
+  pushEnabled: boolean;
+  lastToggleTime: number;
+}
+
 export const AudioAlertsDemo: React.FC<AudioAlertsDemoProps> = ({
   className,
 }) => {
   const [isInitializing, setIsInitializing] = useState(false);
+  const [isDestroying, setIsDestroying] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(
     null,
   );
+  const [destroyError, setDestroyError] = useState<string | null>(null);
+
+  // System state management
+  const [systemState, setSystemState] = useState<SystemState>(() => {
+    try {
+      const stored = localStorage.getItem(
+        APP_CONFIG.STORAGE_KEYS.SYSTEM_INITIALIZATION_STATE,
+      );
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error("Failed to load system state:", error);
+    }
+    return {
+      masterEnabled: false,
+      audioEnabled: false,
+      pushEnabled: false,
+      lastToggleTime: 0,
+    };
+  });
 
   // FIXED: Disable auto-initialization to prevent crashes
   const notificationSystem = useNotificationSystem({
     autoInitialize: false, // ← CRASH FIX: No automatic initialization
     autoRequestPermissions: false,
   });
+
+  // Persist system state
+  const persistSystemState = (newState: SystemState) => {
+    try {
+      localStorage.setItem(
+        APP_CONFIG.STORAGE_KEYS.SYSTEM_INITIALIZATION_STATE,
+        JSON.stringify(newState),
+      );
+      setSystemState(newState);
+    } catch (error) {
+      console.error("Failed to persist system state:", error);
+    }
+  };
+
+  // Sync component state with actual system state on mount
+  useEffect(() => {
+    const syncSystemState = async () => {
+      try {
+        // Check if localStorage indicates system should be enabled
+        if (
+          systemState.masterEnabled ||
+          systemState.audioEnabled ||
+          systemState.pushEnabled
+        ) {
+          // Check if the actual notification system is initialized
+          const audioInitialized = notificationSystem.audioAlerts.isInitialized;
+          const pushInitialized =
+            notificationSystem.pushNotifications.isInitialized;
+
+          errorLogger.logInfo("audio-alerts-demo", "State sync check", {
+            storedMasterEnabled: systemState.masterEnabled,
+            storedAudioEnabled: systemState.audioEnabled,
+            storedPushEnabled: systemState.pushEnabled,
+            actualAudioInitialized: audioInitialized,
+            actualPushInitialized: pushInitialized,
+          });
+
+          // If localStorage says enabled but system isn't initialized, initialize it
+          if (!audioInitialized && !pushInitialized) {
+            errorLogger.logInfo(
+              "audio-alerts-demo",
+              "Auto-initializing system to match stored preferences",
+            );
+            await handleSystemInitialization();
+          } else {
+            errorLogger.logInfo(
+              "audio-alerts-demo",
+              "System already initialized, state in sync",
+            );
+          }
+        } else {
+          errorLogger.logInfo(
+            "audio-alerts-demo",
+            "Stored preferences indicate system should be disabled",
+          );
+        }
+      } catch (error) {
+        errorLogger.logError(
+          "audio-alerts-demo",
+          "Failed to sync system state",
+          error,
+        );
+      }
+    };
+
+    // Run sync after component mounts
+    const timeoutId = setTimeout(syncSystemState, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, []); // Only run once on mount
+
+  // Update toggle states to reflect actual system status
+  useEffect(() => {
+    const updateToggleStates = () => {
+      const audioInitialized = notificationSystem.audioAlerts.isInitialized;
+      const pushInitialized =
+        notificationSystem.pushNotifications.isInitialized;
+      const masterShouldBeEnabled = audioInitialized || pushInitialized;
+
+      // If actual system state doesn't match stored state, update stored state
+      if (
+        systemState.masterEnabled !== masterShouldBeEnabled ||
+        systemState.audioEnabled !== audioInitialized ||
+        systemState.pushEnabled !== pushInitialized
+      ) {
+        const correctedState = {
+          masterEnabled: masterShouldBeEnabled,
+          audioEnabled: audioInitialized,
+          pushEnabled: pushInitialized,
+          lastToggleTime: Date.now(),
+        };
+
+        errorLogger.logInfo(
+          "audio-alerts-demo",
+          "Correcting stored state to match actual system",
+          {
+            old: systemState,
+            new: correctedState,
+          },
+        );
+
+        persistSystemState(correctedState);
+      }
+    };
+
+    // Update toggle states when system initialization status changes
+    updateToggleStates();
+  }, [
+    notificationSystem.audioAlerts.isInitialized,
+    notificationSystem.pushNotifications.isInitialized,
+    systemState.masterEnabled,
+    systemState.audioEnabled,
+    systemState.pushEnabled,
+  ]);
 
   const handleTestTaskAlert = async (priority: TaskPriority) => {
     try {
@@ -183,6 +329,196 @@ export const AudioAlertsDemo: React.FC<AudioAlertsDemoProps> = ({
     if (!isInitialized) return "Not Initialized";
     if (!isEnabled) return "Disabled";
     return "Active";
+  };
+
+  // Master toggle handler
+  const handleMasterToggle = async (e: CustomEvent) => {
+    const enabled = e.detail.checked;
+    const newState = {
+      ...systemState,
+      masterEnabled: enabled,
+      audioEnabled: enabled,
+      pushEnabled: enabled,
+      lastToggleTime: Date.now(),
+    };
+
+    persistSystemState(newState);
+
+    if (enabled) {
+      await handleSystemInitialization();
+    } else {
+      await handleSystemDestruction();
+    }
+  };
+
+  // Audio system toggle handler
+  const handleAudioSystemToggle = async (e: CustomEvent) => {
+    const enabled = e.detail.checked;
+    const newState = {
+      ...systemState,
+      audioEnabled: enabled,
+      masterEnabled: enabled || systemState.pushEnabled,
+      lastToggleTime: Date.now(),
+    };
+
+    persistSystemState(newState);
+
+    if (enabled) {
+      await handleSystemInitialization();
+    } else if (!systemState.pushEnabled) {
+      await handleSystemDestruction();
+    }
+  };
+
+  // Push system toggle handler
+  const handlePushSystemToggle = async (e: CustomEvent) => {
+    const enabled = e.detail.checked;
+    const newState = {
+      ...systemState,
+      pushEnabled: enabled,
+      masterEnabled: enabled || systemState.audioEnabled,
+      lastToggleTime: Date.now(),
+    };
+
+    persistSystemState(newState);
+
+    if (enabled) {
+      await handleSystemInitialization();
+    } else if (!systemState.audioEnabled) {
+      await handleSystemDestruction();
+    }
+  };
+
+  // System initialization handler
+  const handleSystemInitialization = async () => {
+    if (isInitializing) return;
+
+    setIsInitializing(true);
+    setInitializationError(null);
+    setDestroyError(null);
+
+    try {
+      errorLogger.logInfo(
+        "audio-alerts-demo",
+        "System initialization started",
+        {
+          audioEnabled: systemState.audioEnabled,
+          pushEnabled: systemState.pushEnabled,
+        },
+      );
+
+      await notificationSystem.initialize();
+
+      errorLogger.logInfo(
+        "audio-alerts-demo",
+        "System initialization completed",
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Initialization failed";
+      setInitializationError(errorMessage);
+      errorLogger.logError(
+        "audio-alerts-demo",
+        "System initialization failed",
+        error,
+      );
+    } finally {
+      setIsInitializing(false);
+    }
+  };
+
+  // System destruction handler
+  const handleSystemDestruction = async () => {
+    if (isDestroying) return;
+
+    setIsDestroying(true);
+    setDestroyError(null);
+    setInitializationError(null);
+
+    try {
+      errorLogger.logInfo("audio-alerts-demo", "System destruction started");
+
+      await notificationSystem.destroy();
+
+      errorLogger.logInfo("audio-alerts-demo", "System destruction completed");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Destruction failed";
+      setDestroyError(errorMessage);
+      errorLogger.logError(
+        "audio-alerts-demo",
+        "System destruction failed",
+        error,
+      );
+
+      // Try force destroy if graceful destruction failed
+      try {
+        notificationSystem.forceDestroy();
+        errorLogger.logInfo("audio-alerts-demo", "Force destruction completed");
+      } catch (forceError) {
+        errorLogger.logError(
+          "audio-alerts-demo",
+          "Force destruction also failed",
+          forceError,
+        );
+      }
+    } finally {
+      setIsDestroying(false);
+    }
+  };
+
+  // Force reset handler
+  const handleForceReset = () => {
+    try {
+      notificationSystem.forceDestroy();
+
+      const resetState = {
+        masterEnabled: false,
+        audioEnabled: false,
+        pushEnabled: false,
+        lastToggleTime: Date.now(),
+      };
+
+      persistSystemState(resetState);
+      setInitializationError(null);
+      setDestroyError(null);
+
+      errorLogger.logInfo("audio-alerts-demo", "Force reset completed");
+    } catch (error) {
+      errorLogger.logError("audio-alerts-demo", "Force reset failed", error);
+    }
+  };
+
+  // System status helpers
+  const getSystemStatusIcon = () => {
+    if (isInitializing || isDestroying) return powerOutline;
+    if (initializationError || destroyError) return alertCircleOutline;
+    if (systemState.masterEnabled) return checkmarkCircleOutline;
+    return powerOutline;
+  };
+
+  const getSystemStatusColor = () => {
+    if (initializationError || destroyError) return "danger";
+    if (systemState.masterEnabled) return "success";
+    return "medium";
+  };
+
+  const getSystemStatusText = () => {
+    if (isInitializing) return "Initializing systems...";
+    if (isDestroying) return "Destroying systems...";
+    if (initializationError)
+      return `Initialization failed: ${initializationError}`;
+    if (destroyError) return `Destruction failed: ${destroyError}`;
+    if (systemState.masterEnabled) return "System active";
+    return "System disabled";
+  };
+
+  const getSystemStatusBadge = () => {
+    if (isInitializing) return "INIT";
+    if (isDestroying) return "DESTROY";
+    if (initializationError || destroyError) return "ERROR";
+    if (systemState.masterEnabled) return "ACTIVE";
+    return "DISABLED";
   };
 
   return (
@@ -412,50 +748,94 @@ export const AudioAlertsDemo: React.FC<AudioAlertsDemoProps> = ({
                 <IonCardTitle>System Controls</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
-                {/* Manual Initialization Section */}
-                {!notificationSystem.pushNotifications.isInitialized && (
-                  <div className="mb-4">
-                    <IonNote color="primary">
-                      <p className="text-sm mb-3">
-                        <IonIcon icon={warningOutline} className="mr-1" />
-                        <strong>Safe Mode:</strong> Push notifications require
-                        manual initialization to prevent crashes. Click
-                        "Initialize System" to enable push notification testing.
-                      </p>
-                    </IonNote>
+                {/* Master System Toggle */}
+                <IonItem className="mb-4">
+                  <IonIcon icon={powerOutline} slot="start" />
+                  <IonLabel>
+                    <h3>Master System Control</h3>
+                    <p>Enable/disable the complete notification system</p>
+                  </IonLabel>
+                  <IonToggle
+                    checked={systemState.masterEnabled}
+                    onIonChange={handleMasterToggle}
+                    disabled={isInitializing || isDestroying}
+                  />
+                </IonItem>
 
-                    <IonButton
-                      expand="block"
-                      color="secondary"
-                      onClick={handleInitializeSystem}
-                      disabled={isInitializing}
-                    >
-                      {isInitializing ? (
-                        <IonSpinner name="crescent" className="mr-2" />
-                      ) : (
-                        <IonIcon icon={powerOutline} slot="start" />
-                      )}
-                      {isInitializing ? "Initializing..." : "Initialize System"}
-                    </IonButton>
-                  </div>
-                )}
+                {/* Individual System Toggles */}
+                <IonItem className="mb-2">
+                  <IonIcon icon={volumeHighOutline} slot="start" />
+                  <IonLabel>
+                    <h3>Audio Alerts System</h3>
+                    <p>Control audio alert initialization</p>
+                  </IonLabel>
+                  <IonToggle
+                    checked={systemState.audioEnabled}
+                    onIonChange={handleAudioSystemToggle}
+                    disabled={isInitializing || isDestroying}
+                  />
+                </IonItem>
 
-                {/* Initialization Error Display */}
-                {initializationError && (
-                  <IonItem color="danger" className="mb-4">
-                    <IonIcon icon={alertCircleOutline} slot="start" />
+                <IonItem className="mb-4">
+                  <IonIcon icon={notificationsOutline} slot="start" />
+                  <IonLabel>
+                    <h3>Push Notifications System</h3>
+                    <p>Control push notification initialization</p>
+                  </IonLabel>
+                  <IonToggle
+                    checked={systemState.pushEnabled}
+                    onIonChange={handlePushSystemToggle}
+                    disabled={isInitializing || isDestroying}
+                  />
+                </IonItem>
+
+                {/* System Status Display */}
+                <IonItem className="mb-4">
+                  <IonIcon
+                    icon={getSystemStatusIcon()}
+                    color={getSystemStatusColor()}
+                    slot="start"
+                  />
+                  <IonLabel>
+                    <h3>System Status</h3>
+                    <p>{getSystemStatusText()}</p>
+                  </IonLabel>
+                  <IonBadge color={getSystemStatusColor()} slot="end">
+                    {getSystemStatusBadge()}
+                  </IonBadge>
+                </IonItem>
+
+                {/* Loading States */}
+                {(isInitializing || isDestroying) && (
+                  <IonItem className="mb-4">
+                    <IonSpinner name="crescent" slot="start" />
                     <IonLabel>
-                      <IonText color="danger">
-                        <strong>Initialization Failed:</strong>{" "}
-                        {initializationError}
+                      <IonText color="primary">
+                        {isInitializing
+                          ? "Initializing systems..."
+                          : "Destroying systems..."}
                       </IonText>
                     </IonLabel>
                   </IonItem>
                 )}
 
+                {/* Error Display */}
+                {(initializationError || destroyError) && (
+                  <IonItem color="danger" className="mb-4">
+                    <IonIcon icon={alertCircleOutline} slot="start" />
+                    <IonLabel>
+                      <IonText color="danger">
+                        <strong>System Error:</strong>{" "}
+                        {initializationError || destroyError}
+                      </IonText>
+                    </IonLabel>
+                  </IonItem>
+                )}
+
+                {/* Action Buttons */}
                 <IonGrid>
                   <IonRow>
-                    <IonCol size="12" sizeMd="4">
+                    <IonCol size="12" sizeMd="3">
                       <IonButton
                         expand="block"
                         color="primary"
@@ -469,7 +849,7 @@ export const AudioAlertsDemo: React.FC<AudioAlertsDemoProps> = ({
                         Test All
                       </IonButton>
                     </IonCol>
-                    <IonCol size="12" sizeMd="4">
+                    <IonCol size="12" sizeMd="3">
                       <IonButton
                         expand="block"
                         fill="outline"
@@ -480,7 +860,7 @@ export const AudioAlertsDemo: React.FC<AudioAlertsDemoProps> = ({
                         Enable All
                       </IonButton>
                     </IonCol>
-                    <IonCol size="12" sizeMd="4">
+                    <IonCol size="12" sizeMd="3">
                       <IonButton
                         expand="block"
                         fill="outline"
@@ -491,8 +871,34 @@ export const AudioAlertsDemo: React.FC<AudioAlertsDemoProps> = ({
                         Disable All
                       </IonButton>
                     </IonCol>
+                    <IonCol size="12" sizeMd="3">
+                      <IonButton
+                        expand="block"
+                        fill="outline"
+                        color="warning"
+                        onClick={handleForceReset}
+                        disabled={isInitializing || isDestroying}
+                      >
+                        <IonIcon icon={refreshOutline} slot="start" />
+                        Force Reset
+                      </IonButton>
+                    </IonCol>
                   </IonRow>
                 </IonGrid>
+
+                {/* Debug Information */}
+                <div className="mt-4">
+                  <IonText color="medium">
+                    <p className="text-xs">
+                      Last toggle:{" "}
+                      {systemState.lastToggleTime
+                        ? new Date(
+                            systemState.lastToggleTime,
+                          ).toLocaleTimeString()
+                        : "Never"}
+                    </p>
+                  </IonText>
+                </div>
               </IonCardContent>
             </IonCard>
           </IonCol>

@@ -76,6 +76,7 @@ export const APP_CONFIG = {
     BIOMETRIC_CREDENTIALS: "biometric_credentials",
     LOCATION_PERMISSION: "location_permission",
     NOTIFICATION_SETTINGS: "notification_settings",
+    SYSTEM_INITIALIZATION_STATE: "system_initialization_state",
     OFFLINE_QUEUE: "offline_queue",
     CACHED_TASKS: "cached_tasks",
     APP_SETTINGS: "app_settings",

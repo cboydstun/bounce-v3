@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 import { IonContent, IonPage, IonSpinner } from "@ionic/react";
 import { useAuthStore, authSelectors } from "../../store/authStore";
+import { useNotificationSystem } from "../../hooks/notifications/useNotificationSystem";
 import { APP_CONFIG } from "../../config/app.config";
 
 const Splash: React.FC = () => {
@@ -9,33 +10,170 @@ const Splash: React.FC = () => {
   const isAuthenticated = useAuthStore(authSelectors.isAuthenticated);
   const checkAuthStatus = useAuthStore((state) => state.checkAuthStatus);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<
+    "auth" | "notifications" | "workspace" | "ready"
+  >("auth");
+  const [initializationStatus, setInitializationStatus] = useState<{
+    auth: boolean;
+    notifications: boolean;
+    error?: string;
+  }>({
+    auth: false,
+    notifications: false,
+  });
+
+  // Check if user has enabled notifications in their previous settings
+  const shouldInitializeNotifications = () => {
+    try {
+      const stored = localStorage.getItem(
+        APP_CONFIG.STORAGE_KEYS.SYSTEM_INITIALIZATION_STATE,
+      );
+      if (stored) {
+        const state = JSON.parse(stored);
+        return state.masterEnabled || state.audioEnabled || state.pushEnabled;
+      }
+    } catch (error) {
+      console.error("Failed to check notification settings:", error);
+    }
+    // Default to true for first-time users to ensure notifications are ready
+    return true;
+  };
+
+  // Initialize notification system with user's preferences
+  const notificationSystem = useNotificationSystem({
+    autoInitialize: shouldInitializeNotifications(),
+    autoRequestPermissions: false, // Don't auto-request permissions on splash
+    enableAudioAlerts: true,
+    enablePushNotifications: true,
+    preloadSounds: true,
+  });
 
   useEffect(() => {
     // Trigger animations after component mounts
     setTimeout(() => setIsLoaded(true), 100);
 
-    const initializeAuth = async () => {
+    const initializeApp = async () => {
       try {
+        // Stage 1: Authentication
+        setLoadingStage("auth");
         const isValid = await checkAuthStatus();
+        setInitializationStatus((prev) => ({ ...prev, auth: true }));
 
-        // Add a small delay for better UX
+        // Stage 2: Notifications (if enabled)
+        if (shouldInitializeNotifications()) {
+          setLoadingStage("notifications");
+          try {
+            // Give the notification system time to initialize
+            await new Promise((resolve) => setTimeout(resolve, 500));
+
+            // Check if at least one system is working (lenient success criteria)
+            const audioWorking =
+              notificationSystem.audioAlerts.isSupported &&
+              !notificationSystem.audioAlerts.error;
+            const pushWorking =
+              notificationSystem.pushNotifications.isSupported &&
+              !notificationSystem.pushNotifications.error;
+
+            if (audioWorking || pushWorking) {
+              console.log("Notification system initialized successfully", {
+                audio: audioWorking,
+                push: pushWorking,
+              });
+              setInitializationStatus((prev) => ({
+                ...prev,
+                notifications: true,
+              }));
+            } else {
+              console.warn(
+                "Notification system initialization had issues, but continuing",
+              );
+              setInitializationStatus((prev) => ({
+                ...prev,
+                notifications: true, // Still mark as complete to not block app
+                error: "Notifications may not be fully functional",
+              }));
+            }
+          } catch (error) {
+            console.error("Notification system initialization failed:", error);
+            setInitializationStatus((prev) => ({
+              ...prev,
+              notifications: true, // Don't block app startup
+              error: "Notification setup failed",
+            }));
+          }
+        } else {
+          // Skip notification initialization
+          setInitializationStatus((prev) => ({ ...prev, notifications: true }));
+        }
+
+        // Stage 3: Workspace preparation
+        setLoadingStage("workspace");
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
+        // Stage 4: Ready
+        setLoadingStage("ready");
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        // Navigate to appropriate screen
         setTimeout(() => {
           if (isValid) {
             history.replace("/tasks/available");
           } else {
             history.replace("/login");
           }
-        }, 1500);
+        }, 500);
       } catch (error) {
-        console.error("Auth check failed:", error);
+        console.error("App initialization failed:", error);
+        setInitializationStatus((prev) => ({
+          ...prev,
+          error: "Initialization failed",
+        }));
         setTimeout(() => {
           history.replace("/login");
         }, 1500);
       }
     };
 
-    initializeAuth();
-  }, [checkAuthStatus, history]);
+    initializeApp();
+  }, [
+    checkAuthStatus,
+    history,
+    notificationSystem.audioAlerts.isSupported,
+    notificationSystem.audioAlerts.error,
+    notificationSystem.pushNotifications.isSupported,
+    notificationSystem.pushNotifications.error,
+  ]);
+
+  // Get loading text based on current stage
+  const getLoadingText = () => {
+    switch (loadingStage) {
+      case "auth":
+        return "Authenticating...";
+      case "notifications":
+        return "Setting up notifications...";
+      case "workspace":
+        return "Preparing workspace...";
+      case "ready":
+        return "Ready!";
+      default:
+        return "Initializing...";
+    }
+  };
+
+  const getLoadingSubtext = () => {
+    switch (loadingStage) {
+      case "auth":
+        return "Verifying your credentials";
+      case "notifications":
+        return "Configuring audio alerts and push notifications";
+      case "workspace":
+        return "Loading your personalized dashboard";
+      case "ready":
+        return "Welcome back!";
+      default:
+        return "Setting up your workspace";
+    }
+  };
 
   return (
     <IonPage>
@@ -151,11 +289,46 @@ const Splash: React.FC = () => {
                 </div>
               </div>
 
+              {/* Progress Indicators */}
+              <div className="flex justify-center space-x-2 mb-4">
+                <div
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    initializationStatus.auth ? "bg-white" : "bg-white/30"
+                  }`}
+                ></div>
+                <div
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    initializationStatus.notifications
+                      ? "bg-white"
+                      : "bg-white/30"
+                  }`}
+                ></div>
+                <div
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    loadingStage === "workspace" || loadingStage === "ready"
+                      ? "bg-white"
+                      : "bg-white/30"
+                  }`}
+                ></div>
+                <div
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    loadingStage === "ready" ? "bg-white" : "bg-white/30"
+                  }`}
+                ></div>
+              </div>
+
               {/* Loading Text */}
               <p className="text-white/80 text-base font-medium mb-2">
-                Initializing...
+                {getLoadingText()}
               </p>
-              <p className="text-white/60 text-sm">Setting up your workspace</p>
+              <p className="text-white/60 text-sm">{getLoadingSubtext()}</p>
+
+              {/* Error Display */}
+              {initializationStatus.error && (
+                <p className="text-red-300 text-xs mt-2 italic">
+                  {initializationStatus.error}
+                </p>
+              )}
             </div>
 
             {/* Feature Highlights */}

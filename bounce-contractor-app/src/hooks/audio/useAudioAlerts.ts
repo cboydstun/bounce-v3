@@ -23,6 +23,8 @@ export interface UseAudioAlertsReturn {
 
   // Actions
   initialize: () => Promise<void>;
+  destroy: () => Promise<void>;
+  forceDestroy: () => void;
   playTaskAlert: (priority: TaskPriority) => Promise<void>;
   playAlert: (alert: AudioAlert) => Promise<void>;
   playSound: (soundType: SoundType, volume?: number) => Promise<void>;
@@ -263,6 +265,52 @@ export const useAudioAlerts = (
     }
   }, [error]);
 
+  /**
+   * Destroy audio alerts system
+   */
+  const destroy = useCallback(async (): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await audioService.destroy();
+      setIsInitialized(false);
+      setStatus(audioService.getStatus());
+      setPreferences(audioService.getPreferences());
+      console.log("Audio alerts destroyed successfully");
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to destroy audio alerts";
+      setError(errorMessage);
+      console.error("Audio alerts destruction failed:", err);
+
+      // Force cleanup if graceful destruction failed
+      try {
+        audioService.forceDestroy();
+        setIsInitialized(false);
+        setStatus(audioService.getStatus());
+        console.log("Audio alerts force destroyed");
+      } catch (forceError) {
+        console.error("Force destruction also failed:", forceError);
+        throw forceError;
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Force destroy audio alerts system
+   */
+  const forceDestroy = useCallback((): void => {
+    audioService.forceDestroy();
+    setIsInitialized(false);
+    setStatus(audioService.getStatus());
+    setPreferences(audioService.getPreferences());
+    setError(null);
+    console.log("Audio alerts force destroyed");
+  }, []);
+
   return {
     isInitialized,
     isSupported: status.isSupported,
@@ -272,6 +320,8 @@ export const useAudioAlerts = (
     error,
     // Actions
     initialize,
+    destroy,
+    forceDestroy,
     playTaskAlert,
     playAlert,
     playSound,
