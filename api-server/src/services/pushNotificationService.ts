@@ -28,14 +28,25 @@ export class PushNotificationService {
   private messaging: admin.messaging.Messaging | null = null;
 
   constructor() {
+    console.log("🚀 Initializing Push Notification Service...");
+
     if (isFirebaseConfigured()) {
+      console.log(
+        "✅ Firebase configuration detected, attempting to initialize messaging...",
+      );
       try {
         this.messaging = getFirebaseMessaging();
-        console.log("✅ Push Notification Service initialized");
-      } catch (error) {
+        console.log("✅ Push Notification Service initialized successfully");
+        console.log("🔔 FCM messaging service is ready to send notifications");
+      } catch (error: any) {
         console.error(
-          "❌ Failed to initialize Push Notification Service:",
-          error,
+          "❌ CRITICAL: Failed to initialize Push Notification Service",
+        );
+        console.error("Error type:", error?.constructor?.name || "Unknown");
+        console.error("Error message:", error?.message || "Unknown error");
+        console.error("Error stack:", error?.stack || "No stack trace");
+        console.error(
+          "🔍 This error prevents FCM push notifications from working",
         );
         this.messaging = null;
       }
@@ -43,7 +54,15 @@ export class PushNotificationService {
       console.warn(
         "⚠️ Push Notification Service disabled - Firebase not configured",
       );
+      console.warn(
+        "🔍 Check FIREBASE_SERVICE_ACCOUNT_KEY and FIREBASE_PROJECT_ID environment variables",
+      );
+      this.messaging = null;
     }
+
+    console.log(
+      `📊 Push Notification Service status: ${this.messaging ? "ACTIVE" : "DISABLED"}`,
+    );
   }
 
   /**

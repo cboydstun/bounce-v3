@@ -119,6 +119,38 @@ const App: React.FC = () => {
 
           // Hide splash screen
           await SplashScreen.hide();
+        } else {
+          // 🚨 MISSION CRITICAL: Register Firebase service worker for background notifications
+          console.log(
+            "🔧 Registering Firebase service worker for background notifications...",
+          );
+
+          if ("serviceWorker" in navigator) {
+            try {
+              const registration = await navigator.serviceWorker.register(
+                "/firebase-messaging-sw.js",
+                {
+                  scope: "/",
+                },
+              );
+
+              console.log(
+                "✅ Firebase service worker registered successfully:",
+                registration,
+              );
+
+              // Wait for service worker to be ready
+              await navigator.serviceWorker.ready;
+              console.log("✅ Firebase service worker is ready");
+            } catch (swError) {
+              console.error(
+                "❌ Firebase service worker registration failed:",
+                swError,
+              );
+            }
+          } else {
+            console.warn("⚠️ Service workers not supported in this browser");
+          }
         }
 
         // Check authentication status (works on all platforms)

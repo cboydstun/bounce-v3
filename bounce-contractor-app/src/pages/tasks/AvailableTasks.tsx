@@ -13,6 +13,8 @@ import {
   IonToast,
 } from "@ionic/react";
 import { filterOutline, mapOutline, listOutline } from "ionicons/icons";
+import { LocalNotifications } from "@capacitor/local-notifications";
+import { Capacitor } from "@capacitor/core";
 import { useInfiniteTasks } from "../../hooks/tasks/useTasks";
 import { useGeolocation } from "../../hooks/location/useGeolocation";
 import { useTaskEvents } from "../../hooks/realtime/useTaskEvents";
@@ -134,7 +136,7 @@ const AvailableTasks: React.FC = () => {
     [location, getDistanceFromCurrent],
   );
 
-  // Send rich push notification for new task
+  // Send rich local notification for new task (cross-platform)
   const sendTaskNotification = useCallback(
     async (task: Task): Promise<void> => {
       try {
@@ -165,56 +167,124 @@ const AvailableTasks: React.FC = () => {
         const title = `${priorityEmoji} New ${priorityText} Priority Task`;
         const body = `${task.title} - $${task.compensation.totalAmount}${distanceText}`;
 
-        // Use browser's native Notification API for cross-platform compatibility
-        if ("Notification" in window && Notification.permission === "granted") {
-          const notification = new Notification(title, {
-            body,
-            icon: "/favicon.png",
-            badge: "/favicon.png",
-            data: {
-              taskId: task.id,
-              type: "new_task",
-              priority: task.priority,
-              compensation: task.compensation.totalAmount,
-              location: task.location?.address?.city || "Unknown location",
-              scheduledDate: task.scheduledDate,
-            },
-            tag: `task-${task.id}`,
-            requireInteraction: true,
-            silent: false,
-          });
+        console.log(`🔔 Sending local notification for task ${task.id}:`, {
+          title,
+          body,
+        });
 
-          // Handle notification click
-          notification.onclick = () => {
-            window.focus();
-            history.push(`/task-details/${task.id}`);
-            notification.close();
-          };
+        // Platform-specific notification handling
+        if (Capacitor.isNativePlatform()) {
+          // Use Capacitor LocalNotifications for native platforms (Android/iOS)
+          console.log(
+            "📱 Using Capacitor LocalNotifications for native platform",
+          );
 
-          // Auto-close after 10 seconds
-          setTimeout(() => {
-            notification.close();
-          }, 10000);
+          try {
+            // Request permission for local notifications
+            const permission = await LocalNotifications.requestPermissions();
+            console.log("🔔 LocalNotifications permission:", permission);
 
-          console.log(`Browser notification sent for task ${task.id}:`, title);
-        } else if (Notification.permission === "default") {
-          // Request permission if not yet granted
-          const permission = await Notification.requestPermission();
-          if (permission === "granted") {
-            // Retry sending notification
-            await sendTaskNotification(task);
-          } else {
-            console.log(
-              "Notification permission denied, skipping browser notification",
+            if (permission.display === "granted") {
+              // Generate unique notification ID
+              const notificationId = Math.floor(Math.random() * 2147483647);
+
+              // Schedule local notification
+              await LocalNotifications.schedule({
+                notifications: [
+                  {
+                    title,
+                    body,
+                    id: notificationId,
+                    schedule: { at: new Date(Date.now() + 100) }, // Show immediately
+                    sound: "default",
+                    extra: {
+                      taskId: task.id,
+                      type: "new_task",
+                      priority: task.priority,
+                      compensation: task.compensation.totalAmount,
+                      location:
+                        task.location?.address?.city || "Unknown location",
+                      scheduledDate: task.scheduledDate,
+                    },
+                  },
+                ],
+              });
+
+              console.log(
+                `✅ Capacitor local notification scheduled for task ${task.id}`,
+              );
+            } else {
+              console.log(
+                "❌ LocalNotifications permission denied:",
+                permission.display,
+              );
+            }
+          } catch (capacitorError) {
+            console.error(
+              "❌ Capacitor LocalNotifications error:",
+              capacitorError,
             );
+            // Fallback to in-app notification
+            console.log("🔄 Falling back to in-app notification");
           }
         } else {
-          console.log(
-            "Browser notifications not supported or permission denied",
-          );
+          // Use browser Notification API for web platforms
+          console.log("🌐 Using browser Notification API for web platform");
+
+          if ("Notification" in window) {
+            if (Notification.permission === "granted") {
+              const notification = new Notification(title, {
+                body,
+                icon: "/favicon.png",
+                badge: "/favicon.png",
+                data: {
+                  taskId: task.id,
+                  type: "new_task",
+                  priority: task.priority,
+                  compensation: task.compensation.totalAmount,
+                  location: task.location?.address?.city || "Unknown location",
+                  scheduledDate: task.scheduledDate,
+                },
+                tag: `task-${task.id}`,
+                requireInteraction: true,
+                silent: false,
+              });
+
+              // Handle notification click
+              notification.onclick = () => {
+                window.focus();
+                history.push(`/task-details/${task.id}`);
+                notification.close();
+              };
+
+              // Auto-close after 10 seconds
+              setTimeout(() => {
+                notification.close();
+              }, 10000);
+
+              console.log(`✅ Browser notification sent for task ${task.id}`);
+            } else if (Notification.permission === "default") {
+              // Request permission if not yet granted
+              const permission = await Notification.requestPermission();
+              if (permission === "granted") {
+                // Retry sending notification
+                await sendTaskNotification(task);
+              } else {
+                console.log("❌ Browser notification permission denied");
+              }
+            } else {
+              console.log("❌ Browser notification permission denied");
+            }
+          } else {
+            console.log("❌ Browser notifications not supported");
+          }
         }
+
+        console.log(
+          `✅ Local notification handling completed for task ${task.id}`,
+        );
       } catch (error) {
-        console.error("Failed to send task notification:", error);
+        console.error("❌ Failed to send task notification:", error);
         // Don't throw - notification failure shouldn't break the app
       }
     },
@@ -413,6 +483,16 @@ const AvailableTasks: React.FC = () => {
     console.log("🧪 Manual notification test triggered");
 
     try {
+      // 🚨 MISSION CRITICAL: Debug FCM token generation and registration
+      console.log("🔍 DEBUGGING FCM TOKEN REGISTRATION:");
+      console.log("📱 Notification System Status:", {
+        pushInitialized: notificationSystem.pushNotifications.isInitialized,
+        pushEnabled: notificationSystem.pushNotifications.isEnabled,
+        fcmToken: notificationSystem.pushNotifications.fcmToken,
+        permissionStatus: notificationSystem.pushNotifications.permissionStatus,
+        isSupported: notificationSystem.pushNotifications.isSupported,
+      });
+
       // Test 1: Test the notification system directly
       console.log("🧪 Test 1: Testing notification system...");
       await notificationSystem.testNotifications();
@@ -473,9 +553,19 @@ const AvailableTasks: React.FC = () => {
       console.log("🧪 Calling handleNewTask with mock task:", mockTask);
       await handleNewTask(mockTask);
 
-      // Test 3: Test server-side push notification (if we have an FCM token)
-      if (notificationSystem.pushNotifications.fcmToken) {
-        console.log("🧪 Test 3: Testing server-side push notification...");
+      // 🚨 MISSION CRITICAL: Test FCM token generation and registration
+      console.log("🧪 Test 3: FCM Token Generation and Registration Test");
+
+      const fcmToken = notificationSystem.pushNotifications.fcmToken;
+      console.log(
+        "🔑 Current FCM Token:",
+        fcmToken ? `${fcmToken.substring(0, 20)}...` : "NULL/UNDEFINED",
+      );
+
+      if (fcmToken) {
+        console.log(
+          "✅ FCM token exists - testing server-side push notification...",
+        );
         try {
           const response = await fetch(
             "/api/contractors/test-push-notification",
@@ -503,7 +593,74 @@ const AvailableTasks: React.FC = () => {
           );
         }
       } else {
-        console.log("⚠️ No FCM token available - skipping server-side test");
+        console.log("❌ CRITICAL: No FCM token available!");
+        console.log("🔧 Attempting to manually generate FCM token...");
+
+        try {
+          // Try to manually initialize and get FCM token
+          if (!notificationSystem.pushNotifications.isInitialized) {
+            console.log(
+              "🔄 Push notifications not initialized - initializing now...",
+            );
+            await notificationSystem.initialize();
+          }
+
+          // Try to request permissions and get token
+          console.log("🔔 Requesting push notification permissions...");
+          const permissionGranted =
+            await notificationSystem.requestPermissions();
+          console.log("🔔 Permission result:", permissionGranted);
+
+          // Check if we now have a token
+          const newToken = notificationSystem.pushNotifications.fcmToken;
+          console.log(
+            "🔑 Token after permission request:",
+            newToken ? `${newToken.substring(0, 20)}...` : "STILL NULL",
+          );
+
+          if (newToken) {
+            console.log("✅ FCM token generated successfully!");
+            console.log("🧪 Testing server registration with new token...");
+
+            try {
+              const response = await fetch(
+                "/api/contractors/test-push-notification",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+                  },
+                },
+              );
+
+              if (response.ok) {
+                console.log(
+                  "✅ Server-side push notification test successful with new token!",
+                );
+              } else {
+                console.log(
+                  "❌ Server-side push notification test failed with new token:",
+                  response.status,
+                );
+              }
+            } catch (serverError) {
+              console.error(
+                "❌ Server-side push notification test error with new token:",
+                serverError,
+              );
+            }
+          } else {
+            console.log(
+              "❌ CRITICAL: Still no FCM token after manual initialization!",
+            );
+            console.log(
+              "🔍 This indicates a Firebase configuration or platform issue",
+            );
+          }
+        } catch (manualError) {
+          console.error("❌ Manual FCM token generation failed:", manualError);
+        }
       }
 
       console.log("✅ All notification tests completed");

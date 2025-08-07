@@ -499,90 +499,109 @@ class PushNotificationService {
         throw new Error(errorMsg);
       }
 
-      // CRASH FIX: Skip PushNotifications.register() call to prevent native crashes
+      // 🚨 MISSION CRITICAL: Enable FCM token registration for push notifications
       errorLogger.logInfo(
         "push-notifications-native",
-        "Skipping direct registration call to prevent native crashes",
+        "🚨 MISSION CRITICAL: Enabling FCM token registration for background notifications",
       );
 
-      // Instead of calling PushNotifications.register(), we'll rely on event-based registration
-      // The event listeners are already set up and working properly
-
-      if (Capacitor.getPlatform() === "android") {
+      try {
+        // Call PushNotifications.register() to get FCM token
         errorLogger.logInfo(
           "push-notifications-native",
-          "Android detected - using event-based registration strategy",
+          "Calling PushNotifications.register() to obtain FCM token",
         );
 
-        // On Android, the registration often happens automatically after permission is granted
-        // We'll wait for the registration event instead of forcing it
+        await PushNotifications.register();
+
         errorLogger.logInfo(
           "push-notifications-native",
-          "Waiting for automatic registration via events",
+          "✅ PushNotifications.register() completed successfully",
         );
 
-        // Set up a timeout to wait for automatic registration
-        const waitForRegistration = new Promise<void>(async (resolve) => {
-          // Set up a temporary listener for registration success
-          let registrationReceived = false;
+        // Wait for registration event with timeout
+        const waitForRegistration = new Promise<void>(
+          async (resolve, reject) => {
+            let registrationReceived = false;
+            let timeoutId: NodeJS.Timeout;
 
-          const tempListener = await PushNotifications.addListener(
-            "registration",
-            (token: Token) => {
+            const tempListener = await PushNotifications.addListener(
+              "registration",
+              (token: Token) => {
+                if (!registrationReceived) {
+                  registrationReceived = true;
+                  clearTimeout(timeoutId);
+
+                  errorLogger.logInfo(
+                    "push-notifications-native",
+                    "🎉 FCM token registration successful!",
+                    {
+                      hasToken: !!token?.value,
+                      tokenLength: token?.value?.length || 0,
+                    },
+                  );
+
+                  if (token?.value) {
+                    this.fcmToken = token.value;
+                    console.log(
+                      "🔑 FCM Token obtained:",
+                      token.value.substring(0, 20) + "...",
+                    );
+
+                    // Register token with server immediately
+                    this.registerTokenWithServer(token.value).catch((err) => {
+                      errorLogger.logError(
+                        "push-notifications-native",
+                        "Failed to register token with server",
+                        err,
+                      );
+                    });
+                  } else {
+                    errorLogger.logWarn(
+                      "push-notifications-native",
+                      "Registration successful but no token received",
+                    );
+                  }
+
+                  tempListener.remove();
+                  resolve();
+                }
+              },
+            );
+
+            // Set timeout for registration
+            timeoutId = setTimeout(() => {
               if (!registrationReceived) {
-                registrationReceived = true;
-                errorLogger.logInfo(
+                errorLogger.logWarn(
                   "push-notifications-native",
-                  "Automatic registration successful via event",
-                  {
-                    hasToken: !!token?.value,
-                    tokenLength: token?.value?.length || 0,
-                  },
+                  "FCM token registration timeout - continuing anyway",
                 );
                 tempListener.remove();
-                resolve();
+                resolve(); // Don't reject - continue with initialization
               }
-            },
-          );
-
-          // Also resolve after a short timeout even if no registration event comes
-          setTimeout(() => {
-            if (!registrationReceived) {
-              errorLogger.logInfo(
-                "push-notifications-native",
-                "No automatic registration event received - continuing anyway",
-              );
-              tempListener.remove();
-              resolve();
-            }
-          }, 2000); // Wait 2 seconds for automatic registration
-        });
-
-        await waitForRegistration;
-      } else {
-        // For non-Android platforms, we might still try registration if it's safer
-        errorLogger.logInfo(
-          "push-notifications-native",
-          "Non-Android platform - registration may work differently",
+            }, 5000); // Wait 5 seconds for registration
+          },
         );
 
-        // For now, skip registration on all platforms to be safe
-        errorLogger.logInfo(
+        await waitForRegistration;
+      } catch (registrationError) {
+        errorLogger.logError(
           "push-notifications-native",
-          "Skipping registration on all platforms for safety",
+          "FCM token registration failed",
+          registrationError,
+        );
+
+        // Don't throw - continue with initialization even if registration fails
+        // The app should still work for WebSocket notifications
+        errorLogger.logWarn(
+          "push-notifications-native",
+          "Continuing initialization despite registration failure",
         );
       }
 
       errorLogger.logInfo(
         "push-notifications-native",
-        "Registration phase completed (event-based approach)",
-      );
-
-      // Mark as successfully initialized since we completed the safe initialization process
-      // This is important for the UI to show correct status
-      errorLogger.logInfo(
-        "push-notifications-native",
-        "Marking native initialization as successful (event-based)",
+        "✅ Native initialization completed with FCM token registration",
       );
 
       errorLogger.logInfo(

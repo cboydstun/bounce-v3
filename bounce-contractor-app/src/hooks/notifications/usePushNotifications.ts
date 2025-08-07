@@ -441,10 +441,8 @@ export const usePushNotifications = (
     return unsubscribe;
   }, []);
 
-  // DISABLED: Auto-initialization to prevent cascading failures and render loops
-  // Auto-initialization is now manual only to prevent crashes
+  // 🚨 MISSION CRITICAL: Enable auto-initialization for FCM token registration
   useEffect(() => {
-    // Only log that auto-initialization is disabled
     if (
       autoInitialize &&
       isSupported &&
@@ -453,14 +451,25 @@ export const usePushNotifications = (
     ) {
       errorLogger.logInfo(
         "usePushNotifications",
-        "Auto-initialization disabled to prevent crashes - use manual initialization",
+        "🚨 MISSION CRITICAL: Auto-initializing push notifications for FCM token registration",
       );
+
+      // Auto-initialize with error handling
+      initialize().catch((error) => {
+        errorLogger.logError(
+          "usePushNotifications",
+          "Auto-initialization failed - this is expected and handled gracefully",
+          error,
+        );
+        // Don't throw - let the app continue working
+      });
     }
   }, [
     autoInitialize,
     isSupported,
     globalState.isInitialized,
     globalState.isInitializing,
+    initialize,
   ]);
 
   // Auto-request permission
