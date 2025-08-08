@@ -147,9 +147,20 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                   <div className="text-xs text-gray-500">
                     {formatDate(order.createdAt)}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {formatCurrency(order.totalAmount)} • {order.status} •{" "}
-                    {order.paymentStatus}
+                  <div className="text-xs mt-1 flex items-center space-x-2">
+                    <span className="text-gray-500">
+                      {formatCurrency(order.totalAmount)}
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}
+                    >
+                      {order.status}
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusColor(order.paymentStatus)}`}
+                    >
+                      {order.paymentStatus}
+                    </span>
                   </div>
                 </div>
               </td>
@@ -188,14 +199,18 @@ export const OrderTable: React.FC<OrderTableProps> = ({
 
               {/* Agreement Status Column */}
               <td className="px-4 py-4">
-                <AgreementStatusBadge
-                  status={order.agreementStatus || "not_sent"}
-                  deliveryDate={
-                    order.deliveryDate
-                      ? new Date(order.deliveryDate)
-                      : undefined
-                  }
-                />
+                {/* Only show Agreement Status Badge if order is not cancelled or refunded */}
+                {order.status !== "Cancelled" &&
+                  order.status !== "Refunded" && (
+                    <AgreementStatusBadge
+                      status={order.agreementStatus || "not_sent"}
+                      deliveryDate={
+                        order.deliveryDate
+                          ? new Date(order.deliveryDate)
+                          : undefined
+                      }
+                    />
+                  )}
                 {/* Agreement Actions */}
                 <AgreementActions
                   order={order}

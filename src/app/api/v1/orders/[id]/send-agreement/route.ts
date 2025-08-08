@@ -47,6 +47,14 @@ export async function POST(
       );
     }
 
+    // Check if order is cancelled or refunded
+    if (order.status === "Cancelled" || order.status === "Refunded") {
+      return NextResponse.json(
+        { error: "Cannot send agreement to cancelled or refunded orders" },
+        { status: 400 },
+      );
+    }
+
     // Check if agreement has already been signed
     if (order.agreementStatus === "signed") {
       return NextResponse.json(

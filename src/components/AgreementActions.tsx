@@ -29,6 +29,12 @@ export const AgreementActions: React.FC<AgreementActionsProps> = ({
       return;
     }
 
+    // Check if order is cancelled or refunded
+    if (order.status === "Cancelled" || order.status === "Refunded") {
+      setError("Cannot send agreement to cancelled or refunded orders");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setSuccess(null);
@@ -145,24 +151,29 @@ export const AgreementActions: React.FC<AgreementActionsProps> = ({
   const isDisabled =
     (order.agreementStatus || "not_sent") === "signed" ||
     isLoading ||
-    !order.customerEmail;
+    !order.customerEmail ||
+    order.status === "Cancelled" ||
+    order.status === "Refunded";
 
   return (
     <div className={`space-y-2 ${className}`}>
       <div className="flex space-x-2">
-        <button
-          onClick={handleSendAgreement}
-          disabled={isDisabled}
-          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md transition-colors ${getButtonStyle()}`}
-        >
-          {isLoading && <LoadingSpinner className="w-4 h-4 mr-2" />}
-          {(order.agreementStatus || "not_sent") === "signed" && (
-            <span className="mr-2" role="img" aria-label="signed">
-              ✅
-            </span>
-          )}
-          {getButtonText()}
-        </button>
+        {/* Only show Send Agreement button if order is not cancelled or refunded */}
+        {order.status !== "Cancelled" && order.status !== "Refunded" && (
+          <button
+            onClick={handleSendAgreement}
+            disabled={isDisabled}
+            className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md transition-colors ${getButtonStyle()}`}
+          >
+            {isLoading && <LoadingSpinner className="w-4 h-4 mr-2" />}
+            {(order.agreementStatus || "not_sent") === "signed" && (
+              <span className="mr-2" role="img" aria-label="signed">
+                ✅
+              </span>
+            )}
+            {getButtonText()}
+          </button>
+        )}
 
         {/* Sync Status Button - only show if there's a submission ID */}
         {order.docusealSubmissionId && (
@@ -178,12 +189,14 @@ export const AgreementActions: React.FC<AgreementActionsProps> = ({
         )}
       </div>
 
-      {/* Show customer email if available */}
-      {order.customerEmail && (
-        <div className="text-xs text-gray-500">
-          Will send to: {order.customerEmail}
-        </div>
-      )}
+      {/* Show customer email if available and order is not cancelled/refunded */}
+      {order.customerEmail &&
+        order.status !== "Cancelled" &&
+        order.status !== "Refunded" && (
+          <div className="text-xs text-gray-500">
+            Will send to: {order.customerEmail}
+          </div>
+        )}
 
       {/* Show error message */}
       {error && (
@@ -203,6 +216,13 @@ export const AgreementActions: React.FC<AgreementActionsProps> = ({
       {!order.customerEmail && (
         <div className="text-xs text-yellow-600 bg-yellow-50 p-2 rounded border border-yellow-200">
           ⚠️ No customer email on file
+        </div>
+      )}
+
+      {/* Show message for cancelled/refunded orders */}
+      {(order.status === "Cancelled" || order.status === "Refunded") && (
+        <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
+          🚫 Order {order.status.toLowerCase()} - Agreement cannot be sent
         </div>
       )}
 

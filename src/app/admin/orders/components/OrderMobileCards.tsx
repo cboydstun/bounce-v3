@@ -101,17 +101,19 @@ export const OrderMobileCards: React.FC<OrderMobileCardsProps> = ({
 
             {/* Card Footer - Agreement and Actions */}
             <div className="space-y-3">
-              {/* Agreement Status */}
-              <div>
-                <AgreementStatusBadge
-                  status={order.agreementStatus || "not_sent"}
-                  deliveryDate={
-                    order.deliveryDate
-                      ? new Date(order.deliveryDate)
-                      : undefined
-                  }
-                />
-              </div>
+              {/* Agreement Status - only show if order is not cancelled or refunded */}
+              {order.status !== "Cancelled" && order.status !== "Refunded" && (
+                <div>
+                  <AgreementStatusBadge
+                    status={order.agreementStatus || "not_sent"}
+                    deliveryDate={
+                      order.deliveryDate
+                        ? new Date(order.deliveryDate)
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
 
               {/* Agreement Actions */}
               <div>
