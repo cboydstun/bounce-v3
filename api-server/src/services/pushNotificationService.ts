@@ -79,6 +79,27 @@ export class PushNotificationService {
   }
 
   /**
+   * Convert all data values to strings (FCM requirement)
+   */
+  private convertDataToStrings(
+    data: Record<string, any>,
+  ): Record<string, string> {
+    const stringData: Record<string, string> = {};
+
+    for (const [key, value] of Object.entries(data)) {
+      if (value === null || value === undefined) {
+        stringData[key] = "";
+      } else if (typeof value === "string") {
+        stringData[key] = value;
+      } else {
+        stringData[key] = String(value);
+      }
+    }
+
+    return stringData;
+  }
+
+  /**
    * Check if push notifications are available
    */
   public isAvailable(): boolean {
@@ -119,7 +140,7 @@ export class PushNotificationService {
       const message: admin.messaging.MulticastMessage = {
         tokens: tokens,
         notification,
-        data: payload.data || {},
+        data: this.convertDataToStrings(payload.data || {}),
         android: {
           notification: {
             icon: "ic_notification",
