@@ -5,6 +5,7 @@ import {
   formatDateCT,
   parseDateFromNotes,
   parsePartyDateCT as parseDate,
+  CENTRAL_TIMEZONE,
 } from "./dateUtils";
 
 /**
@@ -165,6 +166,31 @@ export function calculateTaskPayment(
 }
 
 /**
+ * Create a date with specific time in Central Time
+ * @param baseDate The base date to use
+ * @param hours Hour (0-23)
+ * @param minutes Minutes (0-59)
+ * @returns Date object with the specified time in Central Time
+ */
+function createDateWithTimeCT(
+  baseDate: Date,
+  hours: number,
+  minutes: number,
+): Date {
+  // Create a new date string in Central Time format
+  const year = baseDate.getFullYear();
+  const month = String(baseDate.getMonth() + 1).padStart(2, "0");
+  const day = String(baseDate.getDate()).padStart(2, "0");
+  const hoursStr = String(hours).padStart(2, "0");
+  const minutesStr = String(minutes).padStart(2, "0");
+
+  // Create date string in Central Time (using -06:00 for CST, -05:00 for CDT)
+  // For simplicity, we'll use -06:00 and let the system handle DST
+  const centralTimeStr = `${year}-${month}-${day}T${hoursStr}:${minutesStr}:00-06:00`;
+  return new Date(centralTimeStr);
+}
+
+/**
  * Generate default scheduled date/time based on task type and order dates
  * @param taskType Type of task
  * @param order Order object with date information
@@ -195,15 +221,15 @@ export function generateDefaultScheduledDateTime(
           try {
             const deliveryDate = parsePartyDateCT(order.deliveryDate);
             if (deliveryDate && deliveryDate > now) {
-              // Set to 9 AM on delivery date as default
-              deliveryDate.setHours(9, 0, 0, 0);
+              // Set to 9 AM Central Time on delivery date as default
+              const scheduledDate = createDateWithTimeCT(deliveryDate, 9, 0);
               console.log(
                 "✅ Using delivery date for",
                 taskType,
                 ":",
-                deliveryDate,
+                scheduledDate,
               );
-              return deliveryDate;
+              return scheduledDate;
             }
           } catch (error) {
             console.warn(
@@ -219,15 +245,15 @@ export function generateDefaultScheduledDateTime(
           try {
             const eventDate = parsePartyDateCT(order.eventDate);
             if (eventDate && eventDate > now) {
-              // Set to 9 AM on event date as fallback
-              eventDate.setHours(9, 0, 0, 0);
+              // Set to 9 AM Central Time on event date as fallback
+              const scheduledDate = createDateWithTimeCT(eventDate, 9, 0);
               console.log(
                 "✅ Using event date as fallback for",
                 taskType,
                 ":",
-                eventDate,
+                scheduledDate,
               );
-              return eventDate;
+              return scheduledDate;
             }
           } catch (error) {
             console.warn(
@@ -243,30 +269,35 @@ export function generateDefaultScheduledDateTime(
           try {
             const parsedDate = parseDateFromNotes(order.notes);
             if (parsedDate && parsedDate > now) {
-              // Extract time from notes if available, otherwise default to 9 AM
+              // Extract time from notes if available, otherwise default to 9 AM Central Time
               const timeMatch = order.notes.match(
                 /Delivery:\s*\d{4}-\d{2}-\d{2}\s+(\d{1,2}):(\d{2})/i,
               );
               if (timeMatch) {
                 const hours = parseInt(timeMatch[1]);
                 const minutes = parseInt(timeMatch[2]);
-                parsedDate.setHours(hours, minutes, 0, 0);
+                const scheduledDate = createDateWithTimeCT(
+                  parsedDate,
+                  hours,
+                  minutes,
+                );
                 console.log(
                   "✅ Using delivery date from notes with specific time for",
                   taskType,
                   ":",
-                  parsedDate,
+                  scheduledDate,
                 );
+                return scheduledDate;
               } else {
-                parsedDate.setHours(9, 0, 0, 0);
+                const scheduledDate = createDateWithTimeCT(parsedDate, 9, 0);
                 console.log(
                   "✅ Using delivery date from notes with default time for",
                   taskType,
                   ":",
-                  parsedDate,
+                  scheduledDate,
                 );
+                return scheduledDate;
               }
-              return parsedDate;
             }
           } catch (error) {
             console.warn(
@@ -284,10 +315,10 @@ export function generateDefaultScheduledDateTime(
           try {
             const eventDate = parsePartyDateCT(order.eventDate);
             if (eventDate) {
-              // Default to next day after event at 10 AM
-              const pickupDate = new Date(eventDate);
-              pickupDate.setDate(pickupDate.getDate() + 1);
-              pickupDate.setHours(10, 0, 0, 0);
+              // Default to next day after event at 10 AM Central Time
+              const nextDay = new Date(eventDate);
+              nextDay.setDate(nextDay.getDate() + 1);
+              const pickupDate = createDateWithTimeCT(nextDay, 10, 0);
 
               // Only use if it's in the future
               if (pickupDate > now) {
@@ -312,9 +343,9 @@ export function generateDefaultScheduledDateTime(
           try {
             const deliveryDate = parsePartyDateCT(order.deliveryDate);
             if (deliveryDate) {
-              const pickupDate = new Date(deliveryDate);
-              pickupDate.setDate(pickupDate.getDate() + 2);
-              pickupDate.setHours(10, 0, 0, 0);
+              const twoDaysLater = new Date(deliveryDate);
+              twoDaysLater.setDate(twoDaysLater.getDate() + 2);
+              const pickupDate = createDateWithTimeCT(twoDaysLater, 10, 0);
 
               if (pickupDate > now) {
                 console.log(
@@ -344,9 +375,13 @@ export function generateDefaultScheduledDateTime(
               const dateStr = pickupMatch[1];
               const hours = parseInt(pickupMatch[2]);
               const minutes = parseInt(pickupMatch[3]);
-              const pickupDate = parsePartyDateCT(dateStr);
-              if (pickupDate && pickupDate > now) {
-                pickupDate.setHours(hours, minutes, 0, 0);
+              const parsedDate = parsePartyDateCT(dateStr);
+              if (parsedDate && parsedDate > now) {
+                const pickupDate = createDateWithTimeCT(
+                  parsedDate,
+                  hours,
+                  minutes,
+                );
                 console.log(
                   "✅ Using pickup date from notes with specific time:",
                   pickupDate,
@@ -358,9 +393,9 @@ export function generateDefaultScheduledDateTime(
             // If no specific pickup time, try to use delivery date from notes + 1 day
             const parsedDate = parseDateFromNotes(order.notes);
             if (parsedDate && parsedDate > now) {
-              const pickupDate = new Date(parsedDate);
-              pickupDate.setDate(pickupDate.getDate() + 1);
-              pickupDate.setHours(10, 0, 0, 0);
+              const nextDay = new Date(parsedDate);
+              nextDay.setDate(nextDay.getDate() + 1);
+              const pickupDate = createDateWithTimeCT(nextDay, 10, 0);
               console.log(
                 "✅ Using delivery date from notes + 1 day for pickup:",
                 pickupDate,
@@ -395,16 +430,36 @@ export function generateDefaultScheduledDateTime(
 }
 
 /**
- * Format date for datetime-local input
+ * Format date for datetime-local input in Central Time
+ * @param date Date object
+ * @returns Formatted string for datetime-local input in Central Time
+ */
+export function formatDateTimeLocalCT(date: Date): string {
+  // Convert to Central Time using toLocaleString
+  const centralTimeStr = date.toLocaleString("en-CA", {
+    timeZone: CENTRAL_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  // Format: "2025-01-08, 21:30" -> "2025-01-08T21:30"
+  const [datePart, timePart] = centralTimeStr.split(", ");
+  return `${datePart}T${timePart}`;
+}
+
+/**
+ * Format date for datetime-local input (legacy function - use formatDateTimeLocalCT instead)
  * @param date Date object
  * @returns Formatted string for datetime-local input
+ * @deprecated Use formatDateTimeLocalCT for Central Time consistency
  */
 export function formatDateTimeLocal(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
+  console.warn(
+    "formatDateTimeLocal is deprecated. Use formatDateTimeLocalCT for Central Time consistency.",
+  );
+  return formatDateTimeLocalCT(date);
 }

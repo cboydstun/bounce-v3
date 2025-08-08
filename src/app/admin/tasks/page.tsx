@@ -199,6 +199,7 @@ export default function TasksAdminPage() {
     const date =
       typeof dateString === "string" ? new Date(dateString) : dateString;
     return date.toLocaleDateString("en-US", {
+      timeZone: "America/Chicago",
       year: "numeric",
       month: "short",
       day: "numeric",

@@ -1,34 +1,15 @@
-import { API_BASE_URL, API_ROUTES } from "@/config/constants";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { Blog } from "@/types/blog";
+import { getBlogBySlug } from "@/utils/api";
 import Image from "next/image";
 
 async function getBlog(slug: string): Promise<Blog> {
   try {
-    // Construct absolute URL for server-side fetching
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_URL || process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000";
-
-    const apiUrl = `${baseUrl}${API_ROUTES.BLOGS}/${slug}`;
-
-    const response = await fetch(apiUrl, {
-      next: { revalidate: 3600 }, // Revalidate every hour
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        notFound();
-      }
-      throw new Error(`Failed to fetch blog: ${response.statusText}`);
-    }
-
-    return response.json();
+    return await getBlogBySlug(slug);
   } catch (error) {
     console.error("Error fetching blog:", error);
-    throw error;
+    notFound();
   }
 }
 

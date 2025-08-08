@@ -73,3 +73,35 @@ export function serializeProduct(product: any): ProductWithId {
 export function serializeProducts(products: any[]): ProductWithId[] {
   return products.map(serializeProduct);
 }
+
+/**
+ * Serializes a blog object for safe passage from Server to Client components
+ */
+export function serializeBlog(blog: any): any {
+  const serialized = serializeObject(blog);
+
+  // Ensure required fields are properly formatted
+  return {
+    ...serialized,
+    _id: serialized._id?.toString() || serialized._id,
+    author: serialized.author
+      ? {
+          _id: serialized.author._id?.toString() || serialized.author._id,
+          name: serialized.author.name,
+        }
+      : serialized.author,
+    createdAt: serialized.createdAt
+      ? new Date(serialized.createdAt)
+      : undefined,
+    updatedAt: serialized.updatedAt
+      ? new Date(serialized.updatedAt)
+      : undefined,
+  };
+}
+
+/**
+ * Serializes an array of blogs
+ */
+export function serializeBlogs(blogs: any[]): any[] {
+  return blogs.map(serializeBlog);
+}

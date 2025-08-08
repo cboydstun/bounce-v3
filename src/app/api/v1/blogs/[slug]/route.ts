@@ -4,6 +4,7 @@ import { Blog, User } from "@/models"; // Import from central models file
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { serializeBlog } from "@/utils/serialization";
 
 export async function GET(
   request: NextRequest,
@@ -33,7 +34,11 @@ export async function GET(
     blog.meta.views += 1;
     await blog.save();
 
-    return NextResponse.json(blog);
+    // Convert to plain object and serialize to ensure it's safe for JSON response
+    const blogObj = blog.toObject();
+    const serializedBlog = serializeBlog(blogObj);
+
+    return NextResponse.json(serializedBlog);
   } catch (error) {
     console.error("Error fetching blog:", error);
     return NextResponse.json(
@@ -113,7 +118,17 @@ export async function PUT(
       { new: true, runValidators: true },
     ).populate("author", "name");
 
-    return NextResponse.json(updatedBlog);
+    if (!updatedBlog) {
+      return NextResponse.json(
+        { error: "Failed to update blog" },
+        { status: 500 },
+      );
+    }
+
+    // Serialize the updated blog for consistent response format
+    const serializedBlog = serializeBlog(updatedBlog.toObject());
+
+    return NextResponse.json(serializedBlog);
   } catch (error) {
     console.error("Error updating blog:", error);
     return NextResponse.json(

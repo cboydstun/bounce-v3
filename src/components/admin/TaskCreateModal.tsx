@@ -8,7 +8,7 @@ import {
   generateTaskDescription,
   calculateTaskPayment,
   generateDefaultScheduledDateTime,
-  formatDateTimeLocal,
+  formatDateTimeLocalCT,
 } from "@/utils/taskUtils";
 
 interface TaskCreateModalProps {
@@ -97,7 +97,7 @@ export default function TaskCreateModal({
     // Generate default scheduled date/time
     const defaultDateTime = generateDefaultScheduledDateTime(taskType, order);
     const scheduledDateTime = defaultDateTime
-      ? formatDateTimeLocal(defaultDateTime)
+      ? formatDateTimeLocalCT(defaultDateTime)
       : "";
 
     // Update form data with auto-populated values
