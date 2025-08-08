@@ -15,7 +15,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyAz7olOEMdDURfHksMtD2TKaQgq6GKUoYw",
   authDomain: "bouncer-contractor.firebaseapp.com",
   projectId: "bouncer-contractor",
-  storageBucket: "bouncer-contractor.appspot.com",
+  storageBucket: "bouncer-contractor.firebasestorage.app",
   messagingSenderId: "105191716611",
   appId: "1:105191716611:web:f9b0035b6d150a7fce1b36",
   measurementId: "G-HFLBTFQK4H",

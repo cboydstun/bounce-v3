@@ -19,7 +19,7 @@ const firebaseConfig = {
     import.meta.env.VITE_FIREBASE_PROJECT_ID || "bounce-contractor-demo",
   storageBucket:
     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ||
-    "bounce-contractor-demo.appspot.com",
+    "bouncer-contractor.firebasestorage.app",
   messagingSenderId:
     import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789012",
   appId:

@@ -28,41 +28,54 @@ export class PushNotificationService {
   private messaging: admin.messaging.Messaging | null = null;
 
   constructor() {
-    console.log("🚀 Initializing Push Notification Service...");
+    console.log(
+      "🚀 Push Notification Service created (Firebase will be initialized when needed)",
+    );
+    // Don't initialize Firebase here - it may not be ready yet
+    // Firebase will be initialized lazily when first needed
+    this.messaging = null;
+  }
 
-    if (isFirebaseConfigured()) {
-      console.log(
-        "✅ Firebase configuration detected, attempting to initialize messaging...",
-      );
-      try {
-        this.messaging = getFirebaseMessaging();
-        console.log("✅ Push Notification Service initialized successfully");
-        console.log("🔔 FCM messaging service is ready to send notifications");
-      } catch (error: any) {
-        console.error(
-          "❌ CRITICAL: Failed to initialize Push Notification Service",
-        );
-        console.error("Error type:", error?.constructor?.name || "Unknown");
-        console.error("Error message:", error?.message || "Unknown error");
-        console.error("Error stack:", error?.stack || "No stack trace");
-        console.error(
-          "🔍 This error prevents FCM push notifications from working",
-        );
-        this.messaging = null;
-      }
-    } else {
-      console.warn(
-        "⚠️ Push Notification Service disabled - Firebase not configured",
-      );
+  /**
+   * Ensure Firebase messaging is initialized (lazy initialization)
+   */
+  private async ensureFirebaseInitialized(): Promise<boolean> {
+    // If already initialized, return true
+    if (this.messaging) {
+      return true;
+    }
+
+    console.log("🔔 Checking Firebase availability for push notifications...");
+
+    // Check if Firebase is configured
+    if (!isFirebaseConfigured()) {
+      console.warn("⚠️ Firebase not configured - push notifications disabled");
       console.warn(
         "🔍 Check FIREBASE_SERVICE_ACCOUNT_KEY and FIREBASE_PROJECT_ID environment variables",
       );
-      this.messaging = null;
+      return false;
     }
 
-    console.log(
-      `📊 Push Notification Service status: ${this.messaging ? "ACTIVE" : "DISABLED"}`,
-    );
+    // Try to initialize Firebase messaging
+    try {
+      console.log(
+        "🔧 Initializing Firebase messaging for push notifications...",
+      );
+      this.messaging = getFirebaseMessaging();
+      console.log("✅ Firebase messaging initialized successfully");
+      console.log("🔔 FCM messaging service is ready to send notifications");
+      return true;
+    } catch (error: any) {
+      console.error("❌ CRITICAL: Failed to initialize Firebase messaging");
+      console.error("Error type:", error?.constructor?.name || "Unknown");
+      console.error("Error message:", error?.message || "Unknown error");
+      console.error("Error stack:", error?.stack || "No stack trace");
+      console.error(
+        "🔍 This error prevents FCM push notifications from working",
+      );
+      this.messaging = null;
+      return false;
+    }
   }
 
   /**
@@ -79,9 +92,11 @@ export class PushNotificationService {
     tokens: string[],
     payload: PushNotificationPayload,
   ): Promise<{ success: number; failure: number; invalidTokens: string[] }> {
-    if (!this.messaging) {
+    // Ensure Firebase is initialized before sending
+    const isFirebaseReady = await this.ensureFirebaseInitialized();
+    if (!isFirebaseReady) {
       console.warn(
-        "Push notifications not available - Firebase not configured",
+        "Push notifications not available - Firebase not initialized",
       );
       return { success: 0, failure: tokens.length, invalidTokens: [] };
     }
@@ -162,7 +177,7 @@ export class PushNotificationService {
         data: payload.data,
       });
 
-      const response = await this.messaging.sendEachForMulticast(message);
+      const response = await this.messaging!.sendEachForMulticast(message);
 
       // Process results and identify invalid tokens
       const invalidTokens: string[] = [];
