@@ -8,6 +8,7 @@ import {
   OptimizedRoute,
 } from "../../../utils/routeOptimization";
 import RouteMap from "../../../components/RouteMap";
+import GoogleRouteMap from "../../../components/GoogleRouteMap";
 import { DeliverySchedule } from "../../../components/DeliverySchedule";
 import { Order } from "../../../types/order";
 import { Contact } from "../../../types/contact";
@@ -15,6 +16,13 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getOrders } from "../../../utils/api";
 import { formatDateCT } from "../../../utils/dateUtils";
+import {
+  DistanceUnit,
+  formatDistance,
+  formatDuration,
+  loadUnitsPreference,
+  saveUnitsPreference,
+} from "../../../utils/unitConversions";
 
 export default function RoutePlannerPage() {
   const router = useRouter();
@@ -37,6 +45,20 @@ export default function RoutePlannerPage() {
   );
   const [returnToStart, setReturnToStart] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [useGoogleMaps, setUseGoogleMaps] = useState<boolean>(true);
+  const [units, setUnits] = useState<DistanceUnit>("miles");
+
+  // Load user's preferred units on component mount
+  useEffect(() => {
+    const savedUnits = loadUnitsPreference();
+    setUnits(savedUnits);
+  }, []);
+
+  // Handle units change
+  const handleUnitsChange = (newUnits: DistanceUnit) => {
+    setUnits(newUnits);
+    saveUnitsPreference(newUnits);
+  };
 
   // Check authentication using NextAuth.js
   useEffect(() => {
@@ -248,14 +270,38 @@ export default function RoutePlannerPage() {
       {optimizedRoute && (
         <div className="mt-6">
           <div className="bg-gray-100 p-4 rounded mb-4">
-            <h2 className="text-xl font-bold mb-2">Route Summary</h2>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-bold">Route Summary</h2>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Units:</span>
+                <button
+                  onClick={() => handleUnitsChange("miles")}
+                  className={`px-3 py-1 text-sm rounded ${
+                    units === "miles"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  Miles
+                </button>
+                <button
+                  onClick={() => handleUnitsChange("kilometers")}
+                  className={`px-3 py-1 text-sm rounded ${
+                    units === "kilometers"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  Kilometers
+                </button>
+              </div>
+            </div>
             <p>
-              Total distance: {(optimizedRoute.totalDistance / 1000).toFixed(2)}{" "}
-              km
+              Total distance:{" "}
+              {formatDistance(optimizedRoute.totalDistance, units)}
             </p>
             <p>
-              Estimated duration:{" "}
-              {Math.round(optimizedRoute.totalDuration / 60)} minutes
+              Estimated duration: {formatDuration(optimizedRoute.totalDuration)}
             </p>
             <p>Number of stops: {optimizedRoute.deliveryOrder.length}</p>
             <p>
@@ -279,22 +325,58 @@ export default function RoutePlannerPage() {
             optimizedRoute={optimizedRoute}
             startAddress={startAddress}
             editable={true}
+            units={units}
             onScheduleChange={(updatedRoute) => {
               console.log("Schedule updated:", updatedRoute);
-              // In a real implementation, we would update the route
-              // setOptimizedRoute(updatedRoute);
+              // Update the optimized route state when schedule changes
+              setOptimizedRoute(updatedRoute);
             }}
           />
 
           <div className="mb-6">
-            <h2 className="text-xl font-bold mb-2">Route Map</h2>
-            <RouteMap
-              contacts={optimizedRoute.deliveryOrder}
-              optimizedOrder={optimizedRoute.deliveryOrder}
-              routeGeometry={optimizedRoute.routeGeometry}
-              startAddress={startAddress}
-              startCoordinates={startCoordinates}
-            />
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Route Map</h2>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Map Type:</span>
+                <button
+                  onClick={() => setUseGoogleMaps(false)}
+                  className={`px-3 py-1 text-sm rounded ${
+                    !useGoogleMaps
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  Leaflet
+                </button>
+                <button
+                  onClick={() => setUseGoogleMaps(true)}
+                  className={`px-3 py-1 text-sm rounded ${
+                    useGoogleMaps
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  Google Maps
+                </button>
+              </div>
+            </div>
+            {useGoogleMaps ? (
+              <GoogleRouteMap
+                contacts={optimizedRoute.deliveryOrder}
+                optimizedOrder={optimizedRoute.deliveryOrder}
+                routeGeometry={optimizedRoute.routeGeometry}
+                startAddress={startAddress}
+                startCoordinates={startCoordinates}
+              />
+            ) : (
+              <RouteMap
+                contacts={optimizedRoute.deliveryOrder}
+                optimizedOrder={optimizedRoute.deliveryOrder}
+                routeGeometry={optimizedRoute.routeGeometry}
+                startAddress={startAddress}
+                startCoordinates={startCoordinates}
+              />
+            )}
           </div>
 
           <div className="mb-6">

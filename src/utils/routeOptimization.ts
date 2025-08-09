@@ -1,6 +1,7 @@
 import { Contact } from "../types/contact";
 import { Order } from "../types/order";
 import { geocodeAddress } from "./geocoding";
+import { geocodeAddressEnhanced } from "./googleGeocoding";
 import { getDistanceMatrix, Location } from "./distanceMatrix";
 import axios from "axios";
 
@@ -141,7 +142,7 @@ export async function optimizeRoute(
           continue;
         }
 
-        const coords = await geocodeAddress(address);
+        const coords = await geocodeAddressEnhanced(address);
         contactsWithCoords.push({ ...contact, coordinates: coords });
       } catch (error) {
         failedAddresses.push({
@@ -356,14 +357,14 @@ export async function optimizeRouteForOrders(
           continue;
         }
 
-        const coords = await geocodeAddress(address);
+        const coords = await geocodeAddressEnhanced(address);
 
         // Validate that coordinates are within San Antonio bounds
         const sanAntonioBounds = {
-          min_lon: -98.8,
-          max_lon: -98.2,
-          min_lat: 29.2,
-          max_lat: 29.7,
+          min_lon: -99, // Slightly expanded west
+          max_lon: -98, // Slightly expanded east
+          min_lat: 29, // Slightly expanded south
+          max_lat: 30, // Expanded north to include 78260 area
         };
 
         const [longitude, latitude] = coords;
@@ -495,10 +496,10 @@ export async function optimizeRouteForOrders(
           `Route segment: ${(travelDistance / 1000).toFixed(1)}km, ${Math.round(travelDuration / 60)}min to ${nextOrder.customerAddress}`,
         );
 
-        // Add time slot
+        // Add time slot with full order data
         timeSlots.push({
           contact: contactForSlot,
-          order: nextOrder,
+          order: nextOrder, // Preserve full order data including time preferences
           timeBlock: {
             start: deliveryStartTime,
             end: deliveryEndTime,
@@ -574,6 +575,164 @@ export async function optimizeRouteForOrders(
   } catch (error) {
     throw new Error(
       `Route optimization failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+}
+
+/**
+ * Recalculates route geometry and travel information for a reordered delivery sequence
+ * @param reorderedTimeSlots Array of time slots in the new delivery order (preserves order data)
+ * @param startAddress Starting address for the route
+ * @param startCoordinates Coordinates of the start address
+ * @param startTime The time to start the first delivery
+ * @param returnToStart Whether to return to the starting point
+ * @returns Promise resolving to updated optimized route
+ */
+export async function recalculateRouteForReorderedDeliveries(
+  reorderedTimeSlots: DeliveryTimeSlot[],
+  startAddress: string,
+  startCoordinates: [number, number],
+  startTime: Date,
+  returnToStart: boolean = true,
+): Promise<OptimizedRoute> {
+  try {
+    // Extract contacts from the reordered time slots
+    const reorderedContacts = reorderedTimeSlots.map((slot) => slot.contact);
+
+    // 1. Create locations array for the new order
+    const locations: Location[] = [
+      { id: "start", coordinates: startCoordinates },
+      ...reorderedContacts.map((c) => ({
+        id: c._id,
+        coordinates: [0, 0] as [number, number], // Will be filled by geocoding
+      })),
+    ];
+
+    // 2. Geocode all contact addresses in the new order
+    const contactsWithCoords: ContactWithCoordinates[] = [];
+    const failedAddresses: { contact: Contact; error: string }[] = [];
+
+    for (const contact of reorderedContacts) {
+      try {
+        const address = `${contact.streetAddress || ""}, ${contact.city || ""}, ${contact.state || ""} ${contact.partyZipCode || ""}`;
+
+        if (!contact.streetAddress || !contact.city) {
+          failedAddresses.push({
+            contact,
+            error: "Incomplete address information",
+          });
+          continue;
+        }
+
+        const coords = await geocodeAddressEnhanced(address);
+        contactsWithCoords.push({ ...contact, coordinates: coords });
+
+        // Update the location coordinates
+        const locationIndex = locations.findIndex(
+          (loc) => loc.id === contact._id,
+        );
+        if (locationIndex > 0) {
+          locations[locationIndex].coordinates = coords;
+        }
+      } catch (error) {
+        failedAddresses.push({
+          contact,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+
+    if (contactsWithCoords.length === 0) {
+      throw new Error(
+        "Could not geocode any addresses for route recalculation.",
+      );
+    }
+
+    // 3. Get distance matrix for the new order
+    const matrix = await getDistanceMatrix(locations);
+
+    // 4. Calculate travel information for the new sequence
+    const timeSlots: DeliveryTimeSlot[] = [];
+    let totalDistance = 0;
+    let totalDuration = 0;
+
+    for (let i = 0; i < contactsWithCoords.length; i++) {
+      const contact = contactsWithCoords[i];
+      const currentLocationIndex = i + 1; // +1 because index 0 is start
+      const previousLocationIndex = i; // Previous location (start or previous contact)
+
+      // Calculate travel time and distance from previous location
+      const travelDuration =
+        matrix.durations[previousLocationIndex][currentLocationIndex];
+      const travelDistance =
+        matrix.distances[previousLocationIndex][currentLocationIndex];
+
+      // Calculate delivery time slot (1 hour blocks)
+      const deliveryStartTime = new Date(
+        startTime.getTime() + i * 60 * 60 * 1000,
+      );
+      const deliveryEndTime = new Date(
+        deliveryStartTime.getTime() + 60 * 60 * 1000,
+      );
+
+      timeSlots.push({
+        contact,
+        timeBlock: {
+          start: deliveryStartTime,
+          end: deliveryEndTime,
+        },
+        travelInfo: {
+          duration: travelDuration,
+          distance: travelDistance,
+        },
+      });
+
+      totalDistance += travelDistance;
+      totalDuration += travelDuration + 60 * 60; // Travel + 1 hour delivery
+    }
+
+    // 5. Calculate return trip if needed
+    let endTime =
+      timeSlots.length > 0
+        ? new Date(timeSlots[timeSlots.length - 1].timeBlock.end.getTime())
+        : new Date(startTime.getTime());
+
+    if (returnToStart && contactsWithCoords.length > 0) {
+      const lastLocationIndex = contactsWithCoords.length; // Last contact index
+      const returnDistance = matrix.distances[lastLocationIndex][0];
+      const returnDuration = matrix.durations[lastLocationIndex][0];
+
+      totalDistance += returnDistance;
+      totalDuration += returnDuration;
+      endTime = new Date(endTime.getTime() + returnDuration * 1000);
+    }
+
+    // 6. Generate new route geometry
+    const routeCoordinates = returnToStart
+      ? [
+          startCoordinates,
+          ...contactsWithCoords.map((c) => c.coordinates),
+          startCoordinates,
+        ]
+      : [startCoordinates, ...contactsWithCoords.map((c) => c.coordinates)];
+
+    const routeGeometry = await getRouteGeometry(routeCoordinates);
+
+    return {
+      deliveryOrder: contactsWithCoords,
+      orders: [], // Empty for contact-based recalculation
+      timeSlots,
+      totalDistance,
+      totalDuration,
+      routeGeometry,
+      startCoordinates,
+      returnToStart,
+      startTime,
+      endTime,
+    };
+  } catch (error) {
+    throw new Error(
+      `Route recalculation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }

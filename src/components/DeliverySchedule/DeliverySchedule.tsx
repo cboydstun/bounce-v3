@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import {
   OptimizedRoute,
   DeliveryTimeSlot as DeliveryTimeSlotType,
@@ -9,6 +9,7 @@ import DeliveryTimeSlot from "./DeliveryTimeSlot";
 import PrintableTable from "./PrintableTable";
 import styles from "./DeliverySchedule.module.css";
 import { useReactToPrint } from "react-to-print";
+import { DistanceUnit, formatDistance } from "../../utils/unitConversions";
 import {
   DndContext,
   closestCenter,
@@ -30,6 +31,7 @@ interface DeliveryScheduleProps {
   startAddress: string;
   onScheduleChange?: (updatedRoute: OptimizedRoute) => void;
   editable?: boolean;
+  units?: DistanceUnit;
 }
 
 const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
@@ -37,6 +39,7 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
   startAddress,
   onScheduleChange,
   editable = false,
+  units = "miles",
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const scheduleRef = useRef<HTMLDivElement>(null);
@@ -45,9 +48,13 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
     optimizedRoute.timeSlots,
   );
 
-  // Set up sensors for drag and drop
+  // Set up sensors for drag and drop with better configuration
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px of movement before activating
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -72,24 +79,15 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
           (item) => item.contact._id === over.id,
         );
 
-        const newItems = arrayMove(items, oldIndex, newIndex);
-
-        // Update the optimized route with the new order
-        const updatedRoute = {
-          ...optimizedRoute,
-          timeSlots: newItems,
-          deliveryOrder: newItems.map((slot) => slot.contact),
-        };
-
-        // Call the onScheduleChange callback if provided
-        if (onScheduleChange) {
-          onScheduleChange(updatedRoute);
-        }
-
-        return newItems;
+        return arrayMove(items, oldIndex, newIndex);
       });
     }
   };
+
+  // Update timeSlots when optimizedRoute changes (e.g., when parent updates the route)
+  useEffect(() => {
+    setTimeSlots(optimizedRoute.timeSlots);
+  }, [optimizedRoute.timeSlots]);
 
   // Format time for display
   const formatTime = (date: Date) => {
@@ -107,21 +105,40 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
   });
 
   // Handle save functionality
-  const handleSave = () => {
-    // In a real implementation, this would save to a database or file
-    // For now, we'll just log to console and toggle edit mode
-    setIsEditing(false);
-
-    // Store in localStorage for persistence
+  const handleSave = async () => {
     try {
+      setIsEditing(false);
+
+      // Import the recalculation function
+      const { recalculateRouteForReorderedDeliveries } = await import(
+        "../../utils/routeOptimization"
+      );
+
+      // Recalculate the route with the new order (pass timeSlots to preserve order data)
+      const updatedRoute = await recalculateRouteForReorderedDeliveries(
+        timeSlots,
+        startAddress,
+        optimizedRoute.startCoordinates,
+        optimizedRoute.startTime,
+        optimizedRoute.returnToStart,
+      );
+
+      // Update the parent component with the recalculated route
+      if (onScheduleChange) {
+        onScheduleChange(updatedRoute);
+      }
+
+      // Store in localStorage for persistence
       localStorage.setItem(
         `schedule_${optimizedRoute.startTime.toISOString().split("T")[0]}`,
-        JSON.stringify(optimizedRoute),
+        JSON.stringify(updatedRoute),
       );
-      alert("Schedule saved successfully!");
+
+      alert("Schedule saved and route updated successfully!");
     } catch (error) {
       console.error("Error saving schedule:", error);
-      alert("Failed to save schedule. Please try again.");
+      alert("Failed to save schedule and update route. Please try again.");
+      setIsEditing(true); // Re-enable editing on error
     }
   };
 
@@ -239,6 +256,7 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
                     slot={slot}
                     index={index}
                     isEditable={isEditing}
+                    units={units}
                     onSlotChange={(updatedSlot, idx) => {
                       // Handle slot changes when implemented
                       console.log("Slot changed:", updatedSlot, idx);
@@ -383,6 +401,7 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
                 slot={slot}
                 index={index}
                 isEditable={false}
+                units={units}
                 onSlotChange={(updatedSlot, idx) => {
                   // Handle slot changes when implemented
                   console.log("Slot changed:", updatedSlot, idx);
