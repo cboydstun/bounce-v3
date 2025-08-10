@@ -28,6 +28,16 @@ interface RouteMapProps {
   routeGeometry: any;
   startAddress: string;
   startCoordinates: [number, number];
+  // Multi-route support
+  multipleRoutes?: {
+    routes: Array<{
+      contacts: Contact[];
+      routeGeometry: any;
+      color: string;
+      driverIndex: number;
+      visible?: boolean;
+    }>;
+  };
 }
 
 export default function RouteMap({
@@ -36,6 +46,7 @@ export default function RouteMap({
   routeGeometry,
   startAddress,
   startCoordinates,
+  multipleRoutes,
 }: RouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
 
@@ -58,33 +69,118 @@ export default function RouteMap({
     }).addTo(map);
 
     // Add start marker
-    L.marker([startCoordinates[1], startCoordinates[0]])
+    const startIcon = L.divIcon({
+      html: `<div style="background-color: #10B981; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">S</div>`,
+      className: "custom-div-icon",
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    });
+
+    L.marker([startCoordinates[1], startCoordinates[0]], { icon: startIcon })
       .addTo(map)
       .bindPopup(`<b>Start:</b> ${startAddress}`)
       .openPopup();
 
-    // Add markers for each contact in the optimized order
-    optimizedOrder.forEach((contact: any, index: number) => {
-      if (contact.coordinates) {
-        const [lng, lat] = contact.coordinates;
-        L.marker([lat, lng])
-          .addTo(map)
-          .bindPopup(
-            `<b>${index + 1}. ${contact.bouncer}</b><br>
-                        ${contact.streetAddress || ""}<br>
-                        ${contact.city || ""}, ${contact.state || ""} ${contact.partyZipCode || ""}<br>
-                        Phone: ${contact.phone || "N/A"}`,
-          );
-      }
-    });
+    // Handle multi-route or single route rendering
+    if (multipleRoutes && multipleRoutes.routes.length > 0) {
+      // Multi-route rendering
+      multipleRoutes.routes.forEach((route, routeIndex) => {
+        if (route.visible === false) return; // Skip hidden routes
 
-    // Draw route line if geometry is available
-    if (routeGeometry) {
-      try {
-        const routeLayer = L.geoJSON(routeGeometry).addTo(map);
-        map.fitBounds(routeLayer.getBounds());
-      } catch (error) {
-        console.error("Error drawing route:", error);
+        // Add markers for this route
+        route.contacts.forEach((contact: any, contactIndex: number) => {
+          if (contact.coordinates) {
+            const [lng, lat] = contact.coordinates;
+
+            // Create custom colored marker
+            const markerIcon = L.divIcon({
+              html: `<div style="background-color: ${route.color}; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${route.driverIndex + 1}-${contactIndex + 1}</div>`,
+              className: "custom-div-icon",
+              iconSize: [24, 24],
+              iconAnchor: [12, 12],
+            });
+
+            L.marker([lat, lng], { icon: markerIcon })
+              .addTo(map)
+              .bindPopup(
+                `<b>Driver ${route.driverIndex + 1} - Stop ${contactIndex + 1}</b><br>
+                <b>${contact.bouncer}</b><br>
+                ${contact.streetAddress || ""}<br>
+                ${contact.city || ""}, ${contact.state || ""} ${contact.partyZipCode || ""}<br>
+                Phone: ${contact.phone || "N/A"}`,
+              );
+          }
+        });
+
+        // Draw route line if geometry is available
+        if (route.routeGeometry) {
+          try {
+            const routeLayer = L.geoJSON(route.routeGeometry, {
+              style: {
+                color: route.color,
+                weight: 4,
+                opacity: 0.8,
+              },
+            }).addTo(map);
+          } catch (error) {
+            console.error("Error drawing multi-route:", error);
+          }
+        }
+      });
+
+      // Fit map to show all markers
+      const group = new L.FeatureGroup();
+      multipleRoutes.routes.forEach((route) => {
+        if (route.visible === false) return;
+        route.contacts.forEach((contact: any) => {
+          if (contact.coordinates) {
+            const [lng, lat] = contact.coordinates;
+            group.addLayer(L.marker([lat, lng]));
+          }
+        });
+      });
+
+      if (group.getLayers().length > 0) {
+        map.fitBounds(group.getBounds().pad(0.1));
+      }
+    } else {
+      // Single route rendering (original logic)
+      optimizedOrder.forEach((contact: any, index: number) => {
+        if (contact.coordinates) {
+          const [lng, lat] = contact.coordinates;
+
+          const markerIcon = L.divIcon({
+            html: `<div style="background-color: #3B82F6; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${index + 1}</div>`,
+            className: "custom-div-icon",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+          });
+
+          L.marker([lat, lng], { icon: markerIcon })
+            .addTo(map)
+            .bindPopup(
+              `<b>${index + 1}. ${contact.bouncer}</b><br>
+              ${contact.streetAddress || ""}<br>
+              ${contact.city || ""}, ${contact.state || ""} ${contact.partyZipCode || ""}<br>
+              Phone: ${contact.phone || "N/A"}`,
+            );
+        }
+      });
+
+      // Draw single route line if geometry is available
+      if (routeGeometry) {
+        try {
+          const routeLayer = L.geoJSON(routeGeometry, {
+            style: {
+              color: "#3B82F6",
+              weight: 4,
+              opacity: 1.0,
+            },
+          }).addTo(map);
+          map.fitBounds(routeLayer.getBounds());
+        } catch (error) {
+          console.error("Error drawing route:", error);
+        }
       }
     }
 

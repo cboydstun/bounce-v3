@@ -19,6 +19,11 @@ export interface DeliveryTimeSlot {
     duration: number; // in seconds
     distance: number; // in meters
   };
+  // Hide functionality fields
+  isHidden?: boolean;
+  hideReason?: string;
+  hiddenAt?: Date;
+  hiddenBy?: string;
 }
 
 /**
@@ -35,6 +40,17 @@ export interface OptimizedRoute {
   returnToStart: boolean; // Whether the route returns to the starting point
   startTime: Date; // The starting time for the first delivery
   endTime: Date; // The estimated end time (return to start)
+  // Hide functionality fields
+  hiddenDeliveries?: DeliveryTimeSlot[];
+  activeDeliveries?: DeliveryTimeSlot[];
+  routeStats?: {
+    totalDeliveries: number;
+    activeDeliveries: number;
+    hiddenDeliveries: number;
+  };
+  // Multi-driver fields
+  driverIndex?: number;
+  routeColor?: string;
 }
 
 /**
@@ -319,11 +335,12 @@ export async function optimizeRoute(
 }
 
 /**
- * Optimizes a delivery route for a set of orders
+ * Optimizes a delivery route for a set of orders with optional exclusions
  * @param orders Array of orders to deliver
  * @param startAddress Starting address for the route
  * @param startTime The time to start the first delivery (default: 8:00 AM today)
  * @param returnToStart Whether to return to the starting point (default: true)
+ * @param excludedOrderIds Array of order IDs to exclude from route optimization
  * @returns Promise resolving to optimized route
  */
 export async function optimizeRouteForOrders(
@@ -331,20 +348,26 @@ export async function optimizeRouteForOrders(
   startAddress: string,
   startTime: Date = new Date(new Date().setHours(8, 0, 0, 0)),
   returnToStart: boolean = true,
+  excludedOrderIds: string[] = [],
 ): Promise<OptimizedRoute> {
   try {
-    // 1. Transform orders to contacts for route optimization
-    const contacts = orders.map(transformOrderToContact);
+    // 1. Filter out excluded orders
+    const filteredOrders = orders.filter(
+      (order) => !excludedOrderIds.includes(order._id),
+    );
 
-    // 2. Geocode the start address
+    // 2. Transform orders to contacts for route optimization
+    const contacts = filteredOrders.map(transformOrderToContact);
+
+    // 3. Geocode the start address
     const startCoords = await geocodeAddress(startAddress);
 
-    // 3. Geocode all order addresses
+    // 4. Geocode all order addresses
     const ordersWithCoords: OrderWithCoordinates[] = [];
     const failedAddresses: { order: Order; error: string }[] = [];
 
     // Process each order sequentially to better handle errors
-    for (const order of orders) {
+    for (const order of filteredOrders) {
       try {
         const address = `${order.customerAddress || ""}, ${order.customerCity || ""}, ${order.customerState || ""} ${order.customerZipCode || ""}`;
 

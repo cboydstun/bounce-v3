@@ -7,9 +7,14 @@ import {
   optimizeRouteForOrders,
   OptimizedRoute,
 } from "../../../utils/routeOptimization";
+import {
+  optimizeMultiDriverRoutes,
+  MultiRouteResult,
+} from "../../../utils/multiDriverOptimization";
 import RouteMap from "../../../components/RouteMap";
 import GoogleRouteMap from "../../../components/GoogleRouteMap";
 import { DeliverySchedule } from "../../../components/DeliverySchedule";
+import MultiDriverResults from "../../../components/MultiDriverResults";
 import { Order } from "../../../types/order";
 import { Contact } from "../../../types/contact";
 import DatePicker from "react-datepicker";
@@ -33,6 +38,8 @@ export default function RoutePlannerPage() {
   const [optimizedRoute, setOptimizedRoute] = useState<OptimizedRoute | null>(
     null,
   );
+  const [multiRouteResult, setMultiRouteResult] =
+    useState<MultiRouteResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [startAddress, setStartAddress] = useState<string>(
     "20711 Liatris Lane, San Antonio, TX 78259",
@@ -47,6 +54,7 @@ export default function RoutePlannerPage() {
   const [error, setError] = useState<string | null>(null);
   const [useGoogleMaps, setUseGoogleMaps] = useState<boolean>(true);
   const [units, setUnits] = useState<DistanceUnit>("miles");
+  const [driverCount, setDriverCount] = useState<number>(1);
 
   // Load user's preferred units on component mount
   useEffect(() => {
@@ -137,19 +145,37 @@ export default function RoutePlannerPage() {
     setLoading(true);
     setError(null);
     setOptimizedRoute(null);
+    setMultiRouteResult(null);
 
     try {
-      // Pass the start time and return to start preference
-      const result = await optimizeRouteForOrders(
-        orders,
-        startAddress,
-        startTime,
-        returnToStart,
-      );
+      if (driverCount === 1) {
+        // Single driver optimization
+        const result = await optimizeRouteForOrders(
+          orders,
+          startAddress,
+          startTime,
+          returnToStart,
+        );
 
-      // Update the start coordinates with the geocoded coordinates
-      setStartCoordinates(result.startCoordinates);
-      setOptimizedRoute(result);
+        // Update the start coordinates with the geocoded coordinates
+        setStartCoordinates(result.startCoordinates);
+        setOptimizedRoute(result);
+      } else {
+        // Multi-driver optimization
+        const result = await optimizeMultiDriverRoutes(
+          orders,
+          driverCount,
+          startAddress,
+          startTime,
+          returnToStart,
+        );
+
+        // Update start coordinates from the first route
+        if (result.routes.length > 0) {
+          setStartCoordinates(result.routes[0].startCoordinates);
+        }
+        setMultiRouteResult(result);
+      }
     } catch (error) {
       console.error("Error optimizing route:", error);
 
@@ -235,6 +261,29 @@ export default function RoutePlannerPage() {
           />
         </div>
 
+        <div>
+          <label className="block mb-2">Number of Drivers:</label>
+          <input
+            type="number"
+            min="1"
+            max="10"
+            value={driverCount}
+            onChange={(e) => {
+              const value = parseInt(e.target.value);
+              if (value >= 1 && value <= 10) {
+                setDriverCount(value);
+              }
+            }}
+            className="border p-2 rounded w-full"
+            placeholder="Enter number of drivers (1-10)"
+          />
+          <p className="text-sm text-gray-600 mt-1">
+            {driverCount === 1
+              ? "Single driver route optimization"
+              : `Multi-driver optimization for ${driverCount} drivers`}
+          </p>
+        </div>
+
         <div className="flex items-center mt-6">
           <input
             type="checkbox"
@@ -267,6 +316,7 @@ export default function RoutePlannerPage() {
         )}
       </div>
 
+      {/* Single Driver Results */}
       {optimizedRoute && (
         <div className="mt-6">
           <div className="bg-gray-100 p-4 rounded mb-4">
@@ -396,6 +446,19 @@ export default function RoutePlannerPage() {
             </ol>
           </div>
         </div>
+      )}
+
+      {/* Multi-Driver Results */}
+      {multiRouteResult && (
+        <MultiDriverResults
+          multiRouteResult={multiRouteResult}
+          startAddress={startAddress}
+          startCoordinates={startCoordinates}
+          units={units}
+          useGoogleMaps={useGoogleMaps}
+          onUnitsChange={handleUnitsChange}
+          onMapTypeChange={setUseGoogleMaps}
+        />
       )}
     </div>
   );

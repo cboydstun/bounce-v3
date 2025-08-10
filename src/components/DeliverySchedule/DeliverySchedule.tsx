@@ -25,6 +25,15 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import {
+  hideDelivery,
+  showDelivery,
+  hideDeliveries,
+  showDeliveries,
+  showAllDeliveries,
+  applyHidePreferences,
+  HideReason,
+} from "../../utils/hideDeliveries";
 
 interface DeliveryScheduleProps {
   optimizedRoute: OptimizedRoute;
@@ -47,6 +56,10 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
   const [timeSlots, setTimeSlots] = useState<DeliveryTimeSlotType[]>(
     optimizedRoute.timeSlots,
   );
+  const [selectedForBulk, setSelectedForBulk] = useState<Set<string>>(
+    new Set(),
+  );
+  const [showHiddenSection, setShowHiddenSection] = useState(false);
 
   // Set up sensors for drag and drop with better configuration
   const sensors = useSensors(
@@ -147,6 +160,162 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
     setIsEditing(!isEditing);
   };
 
+  // Hide/Show delivery handlers
+  const handleHideDelivery = (deliveryId: string, reason: HideReason) => {
+    const currentDate = optimizedRoute.startTime;
+    hideDelivery(deliveryId, reason, currentDate);
+
+    // Update the time slots to reflect the hidden state
+    setTimeSlots((prevSlots) =>
+      prevSlots.map((slot) =>
+        slot.contact._id === deliveryId
+          ? {
+              ...slot,
+              isHidden: true,
+              hideReason: reason,
+              hiddenAt: new Date(),
+            }
+          : slot,
+      ),
+    );
+
+    // Trigger route recalculation if needed
+    if (onScheduleChange) {
+      const updatedRoute = applyHidePreferences(optimizedRoute, currentDate);
+      onScheduleChange(updatedRoute);
+    }
+  };
+
+  const handleShowDelivery = (deliveryId: string) => {
+    const currentDate = optimizedRoute.startTime;
+    showDelivery(deliveryId, currentDate);
+
+    // Update the time slots to reflect the shown state
+    setTimeSlots((prevSlots) =>
+      prevSlots.map((slot) =>
+        slot.contact._id === deliveryId
+          ? {
+              ...slot,
+              isHidden: false,
+              hideReason: undefined,
+              hiddenAt: undefined,
+            }
+          : slot,
+      ),
+    );
+
+    // Trigger route recalculation if needed
+    if (onScheduleChange) {
+      const updatedRoute = applyHidePreferences(optimizedRoute, currentDate);
+      onScheduleChange(updatedRoute);
+    }
+  };
+
+  // Bulk selection handlers
+  const handleBulkSelect = (deliveryId: string, selected: boolean) => {
+    setSelectedForBulk((prev) => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(deliveryId);
+      } else {
+        newSet.delete(deliveryId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleBulkHide = (reason: HideReason) => {
+    const currentDate = optimizedRoute.startTime;
+    const selectedIds = Array.from(selectedForBulk);
+
+    if (selectedIds.length > 0) {
+      hideDeliveries(selectedIds, reason, currentDate);
+
+      // Update the time slots to reflect the hidden state
+      setTimeSlots((prevSlots) =>
+        prevSlots.map((slot) =>
+          selectedIds.includes(slot.contact._id)
+            ? {
+                ...slot,
+                isHidden: true,
+                hideReason: reason,
+                hiddenAt: new Date(),
+              }
+            : slot,
+        ),
+      );
+
+      // Clear selection
+      setSelectedForBulk(new Set());
+
+      // Trigger route recalculation if needed
+      if (onScheduleChange) {
+        const updatedRoute = applyHidePreferences(optimizedRoute, currentDate);
+        onScheduleChange(updatedRoute);
+      }
+    }
+  };
+
+  const handleBulkShow = () => {
+    const currentDate = optimizedRoute.startTime;
+    const selectedIds = Array.from(selectedForBulk);
+
+    if (selectedIds.length > 0) {
+      showDeliveries(selectedIds, currentDate);
+
+      // Update the time slots to reflect the shown state
+      setTimeSlots((prevSlots) =>
+        prevSlots.map((slot) =>
+          selectedIds.includes(slot.contact._id)
+            ? {
+                ...slot,
+                isHidden: false,
+                hideReason: undefined,
+                hiddenAt: undefined,
+              }
+            : slot,
+        ),
+      );
+
+      // Clear selection
+      setSelectedForBulk(new Set());
+
+      // Trigger route recalculation if needed
+      if (onScheduleChange) {
+        const updatedRoute = applyHidePreferences(optimizedRoute, currentDate);
+        onScheduleChange(updatedRoute);
+      }
+    }
+  };
+
+  const handleShowAll = () => {
+    const currentDate = optimizedRoute.startTime;
+    showAllDeliveries(currentDate);
+
+    // Update all time slots to be shown
+    setTimeSlots((prevSlots) =>
+      prevSlots.map((slot) => ({
+        ...slot,
+        isHidden: false,
+        hideReason: undefined,
+        hiddenAt: undefined,
+      })),
+    );
+
+    // Clear selection
+    setSelectedForBulk(new Set());
+
+    // Trigger route recalculation if needed
+    if (onScheduleChange) {
+      const updatedRoute = applyHidePreferences(optimizedRoute, currentDate);
+      onScheduleChange(updatedRoute);
+    }
+  };
+
+  // Get active and hidden deliveries
+  const activeDeliveries = timeSlots.filter((slot) => !slot.isHidden);
+  const hiddenDeliveries = timeSlots.filter((slot) => slot.isHidden);
+
   return (
     <div className={styles.scheduleContainer} ref={scheduleRef}>
       <div className={styles.scheduleHeader}>
@@ -193,6 +362,7 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
                 <th>Location</th>
                 <th>Activity</th>
                 <th>Travel</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody className={styles.scheduleBody}>
@@ -243,6 +413,9 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   -
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  -
+                </td>
               </tr>
 
               {/* Delivery locations with drag and drop */}
@@ -261,6 +434,10 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
                       // Handle slot changes when implemented
                       console.log("Slot changed:", updatedSlot, idx);
                     }}
+                    onHideDelivery={handleHideDelivery}
+                    onShowDelivery={handleShowDelivery}
+                    selectedForBulk={selectedForBulk.has(slot.contact._id)}
+                    onBulkSelect={handleBulkSelect}
                   />
                 ))}
               </SortableContext>
@@ -320,6 +497,9 @@ const DeliverySchedule: React.FC<DeliveryScheduleProps> = ({
                             60,
                         )} min`
                       : "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    -
                   </td>
                 </tr>
               )}

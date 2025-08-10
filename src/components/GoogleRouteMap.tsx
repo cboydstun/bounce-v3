@@ -15,6 +15,16 @@ interface GoogleRouteMapProps {
   routeGeometry: any;
   startAddress: string;
   startCoordinates: [number, number];
+  // Multi-route support
+  multipleRoutes?: {
+    routes: Array<{
+      contacts: ContactWithCoordinates[];
+      routeGeometry: any;
+      color: string;
+      driverIndex: number;
+      visible?: boolean;
+    }>;
+  };
 }
 
 export default function GoogleRouteMap({
@@ -23,6 +33,7 @@ export default function GoogleRouteMap({
   routeGeometry,
   startAddress,
   startCoordinates,
+  multipleRoutes,
 }: GoogleRouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -120,81 +131,165 @@ export default function GoogleRouteMap({
 
       markersRef.current.push(startMarker);
 
-      // Add markers for each delivery location
-      optimizedOrder.forEach((contact, index) => {
-        if (contact.coordinates) {
-          const [lng, lat] = contact.coordinates;
+      // Handle multi-route or single route rendering
+      if (multipleRoutes && multipleRoutes.routes.length > 0) {
+        // Multi-route rendering
+        let globalIndex = 1;
 
-          const marker = new google.maps.Marker({
-            position: { lat, lng },
-            map,
-            title: `${index + 1}. ${contact.bouncer}`,
-            icon: {
-              url:
-                "data:image/svg+xml;charset=UTF-8," +
-                encodeURIComponent(`
-                <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="16" cy="16" r="12" fill="#3B82F6" stroke="#ffffff" stroke-width="3"/>
-                  <text x="16" y="20" text-anchor="middle" fill="white" font-size="10" font-weight="bold">${index + 1}</text>
-                </svg>
-              `),
-              scaledSize: new google.maps.Size(32, 32),
-              anchor: new google.maps.Point(16, 16),
-            },
-          });
+        multipleRoutes.routes.forEach((route, routeIndex) => {
+          if (route.visible === false) return; // Skip hidden routes
 
-          const infoWindow = new google.maps.InfoWindow({
-            content: `
-              <div>
-                <strong>${index + 1}. ${contact.bouncer}</strong><br>
-                ${contact.streetAddress || ""}<br>
-                ${contact.city || ""}, ${contact.state || ""} ${contact.partyZipCode || ""}<br>
-                Phone: ${contact.phone || "N/A"}
-              </div>
-            `,
-          });
+          // Add markers for this route
+          route.contacts.forEach((contact, contactIndex) => {
+            if (contact.coordinates) {
+              const [lng, lat] = contact.coordinates;
 
-          marker.addListener("click", () => {
-            infoWindow.open(map, marker);
-          });
-
-          markersRef.current.push(marker);
-        }
-      });
-
-      // Draw route if geometry is available
-      if (routeGeometry && optimizedOrder.length > 0) {
-        try {
-          // If we have GeoJSON route geometry, convert it to Google Maps format
-          if (
-            routeGeometry.type === "FeatureCollection" ||
-            routeGeometry.type === "Feature"
-          ) {
-            const coordinates = extractCoordinatesFromGeoJSON(routeGeometry);
-            if (coordinates.length > 0) {
-              const path = coordinates.map((coord) => ({
-                lat: coord[1],
-                lng: coord[0],
-              }));
-
-              const polyline = new google.maps.Polyline({
-                path,
-                geodesic: true,
-                strokeColor: "#3B82F6",
-                strokeOpacity: 1.0,
-                strokeWeight: 4,
+              const marker = new google.maps.Marker({
+                position: { lat, lng },
+                map,
+                title: `Driver ${route.driverIndex + 1} - Stop ${contactIndex + 1}: ${contact.bouncer}`,
+                icon: {
+                  url:
+                    "data:image/svg+xml;charset=UTF-8," +
+                    encodeURIComponent(`
+                    <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="16" cy="16" r="12" fill="${route.color}" stroke="#ffffff" stroke-width="3"/>
+                      <text x="16" y="20" text-anchor="middle" fill="white" font-size="9" font-weight="bold">${route.driverIndex + 1}-${contactIndex + 1}</text>
+                    </svg>
+                  `),
+                  scaledSize: new google.maps.Size(32, 32),
+                  anchor: new google.maps.Point(16, 16),
+                },
               });
 
-              polyline.setMap(map);
+              const infoWindow = new google.maps.InfoWindow({
+                content: `
+                  <div>
+                    <strong>Driver ${route.driverIndex + 1} - Stop ${contactIndex + 1}</strong><br>
+                    <strong>${contact.bouncer}</strong><br>
+                    ${contact.streetAddress || ""}<br>
+                    ${contact.city || ""}, ${contact.state || ""} ${contact.partyZipCode || ""}<br>
+                    Phone: ${contact.phone || "N/A"}
+                  </div>
+                `,
+              });
+
+              marker.addListener("click", () => {
+                infoWindow.open(map, marker);
+              });
+
+              markersRef.current.push(marker);
             }
-          } else {
-            // Use Google Directions Service for better route rendering
+          });
+
+          // Draw route polyline if geometry is available
+          if (route.routeGeometry && route.contacts.length > 0) {
+            try {
+              if (
+                route.routeGeometry.type === "FeatureCollection" ||
+                route.routeGeometry.type === "Feature"
+              ) {
+                const coordinates = extractCoordinatesFromGeoJSON(
+                  route.routeGeometry,
+                );
+                if (coordinates.length > 0) {
+                  const path = coordinates.map((coord) => ({
+                    lat: coord[1],
+                    lng: coord[0],
+                  }));
+
+                  const polyline = new google.maps.Polyline({
+                    path,
+                    geodesic: true,
+                    strokeColor: route.color,
+                    strokeOpacity: 0.8,
+                    strokeWeight: 4,
+                  });
+
+                  polyline.setMap(map);
+                }
+              }
+            } catch (error) {
+              console.error("Error drawing multi-route:", error);
+            }
+          }
+        });
+      } else {
+        // Single route rendering (original logic)
+        optimizedOrder.forEach((contact, index) => {
+          if (contact.coordinates) {
+            const [lng, lat] = contact.coordinates;
+
+            const marker = new google.maps.Marker({
+              position: { lat, lng },
+              map,
+              title: `${index + 1}. ${contact.bouncer}`,
+              icon: {
+                url:
+                  "data:image/svg+xml;charset=UTF-8," +
+                  encodeURIComponent(`
+                  <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="16" cy="16" r="12" fill="#3B82F6" stroke="#ffffff" stroke-width="3"/>
+                    <text x="16" y="20" text-anchor="middle" fill="white" font-size="10" font-weight="bold">${index + 1}</text>
+                  </svg>
+                `),
+                scaledSize: new google.maps.Size(32, 32),
+                anchor: new google.maps.Point(16, 16),
+              },
+            });
+
+            const infoWindow = new google.maps.InfoWindow({
+              content: `
+                <div>
+                  <strong>${index + 1}. ${contact.bouncer}</strong><br>
+                  ${contact.streetAddress || ""}<br>
+                  ${contact.city || ""}, ${contact.state || ""} ${contact.partyZipCode || ""}<br>
+                  Phone: ${contact.phone || "N/A"}
+                </div>
+              `,
+            });
+
+            marker.addListener("click", () => {
+              infoWindow.open(map, marker);
+            });
+
+            markersRef.current.push(marker);
+          }
+        });
+
+        // Draw single route if geometry is available
+        if (routeGeometry && optimizedOrder.length > 0) {
+          try {
+            if (
+              routeGeometry.type === "FeatureCollection" ||
+              routeGeometry.type === "Feature"
+            ) {
+              const coordinates = extractCoordinatesFromGeoJSON(routeGeometry);
+              if (coordinates.length > 0) {
+                const path = coordinates.map((coord) => ({
+                  lat: coord[1],
+                  lng: coord[0],
+                }));
+
+                const polyline = new google.maps.Polyline({
+                  path,
+                  geodesic: true,
+                  strokeColor: "#3B82F6",
+                  strokeOpacity: 1.0,
+                  strokeWeight: 4,
+                });
+
+                polyline.setMap(map);
+              }
+            } else {
+              // Use Google Directions Service for better route rendering
+              renderDirectionsRoute(map);
+            }
+          } catch (error) {
+            console.error("Error drawing route:", error);
+            // Fallback to directions service
             renderDirectionsRoute(map);
           }
-        } catch (error) {
-          console.error("Error drawing route:", error);
-          // Fallback to directions service
-          renderDirectionsRoute(map);
         }
       }
 
