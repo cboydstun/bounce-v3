@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { TaskType, TaskPriority, TaskFormData } from "@/types/task";
 import { Order } from "@/types/order";
+import { TaskTemplate } from "@/types/taskTemplate";
 import OrderSelector from "./OrderSelector";
 import ContractorSelector from "./ContractorSelector";
+import TaskTemplateSelector from "./TaskTemplateSelector";
+import { TemplateEngine } from "@/utils/templateEngine";
 import {
   generateTaskTitle,
   generateTaskDescription,
@@ -50,6 +53,9 @@ export default function TaskCreateModal({
     null,
   );
   const [fullOrderData, setFullOrderData] = useState<Order | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -78,7 +84,56 @@ export default function TaskCreateModal({
     }
   };
 
-  // Auto-populate form fields based on order data and task type
+  // Auto-populate form fields using template engine
+  const populateFormFromTemplate = async (
+    order: Order,
+    template: TaskTemplate,
+  ) => {
+    try {
+      console.log("🔄 populateFormFromTemplate called with:", {
+        templateName: template.name,
+        orderNumber: order.orderNumber,
+      });
+
+      // Convert order to the format expected by template engine
+      const orderData = {
+        ...order,
+        _id: order._id,
+      };
+
+      // Generate task preview using template engine
+      const preview = TemplateEngine.generateTaskPreview(
+        template.titlePattern,
+        template.descriptionPattern,
+        template.paymentRules,
+        template.schedulingRules,
+        orderData as any,
+        template.name,
+      );
+
+      // Update form data with template-generated values
+      setFormData((prev) => ({
+        ...prev,
+        templateId: template._id,
+        type: template.name as TaskType, // Use template name as task type
+        title: preview.title,
+        description: preview.description,
+        paymentAmount: preview.paymentAmount,
+        scheduledDateTime: preview.scheduledDateTime
+          ? formatDateTimeLocalCT(new Date(preview.scheduledDateTime))
+          : "",
+        priority: template.defaultPriority,
+      }));
+    } catch (error) {
+      console.error("Error generating template preview:", error);
+      setErrors((prev) => ({
+        ...prev,
+        submit: "Failed to generate template preview",
+      }));
+    }
+  };
+
+  // Auto-populate form fields based on order data and task type (fallback for manual creation)
   const populateFormFromOrder = (order: Order, taskType: TaskType) => {
     console.log("🔄 populateFormFromOrder called with:", {
       taskType,
@@ -172,12 +227,22 @@ export default function TaskCreateModal({
     }
   }, [isOpen, preSelectedOrderId, selectedOrder, formData.type]);
 
-  // Auto-populate when task type changes (if order is selected)
+  // Auto-populate when task type changes (if order is selected and no template)
   useEffect(() => {
-    if (fullOrderData && formData.type) {
+    if (fullOrderData && formData.type && !selectedTemplate) {
       populateFormFromOrder(fullOrderData, formData.type as TaskType);
     }
-  }, [formData.type, fullOrderData]);
+  }, [formData.type, fullOrderData, selectedTemplate]);
+
+  // Auto-populate when template is selected
+  useEffect(() => {
+    if (fullOrderData && selectedTemplate) {
+      populateFormFromTemplate(fullOrderData, selectedTemplate);
+    } else if (fullOrderData && !selectedTemplate && formData.type) {
+      // Fall back to manual auto-population when template is deselected
+      populateFormFromOrder(fullOrderData, formData.type as TaskType);
+    }
+  }, [selectedTemplate, fullOrderData]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -321,6 +386,7 @@ export default function TaskCreateModal({
         paymentAmount: formData.paymentAmount
           ? parseFloat(Number(formData.paymentAmount).toFixed(2))
           : undefined,
+        templateId: selectedTemplate?._id,
       };
 
       const response = await fetch("/api/v1/tasks", {
@@ -365,6 +431,7 @@ export default function TaskCreateModal({
     });
     setSelectedOrder(null);
     setFullOrderData(null);
+    setSelectedTemplate(null);
     setErrors({});
   };
 
@@ -449,6 +516,18 @@ export default function TaskCreateModal({
                 </div>
               </div>
             )}
+
+            {/* Template Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Task Template (Optional)
+              </label>
+              <TaskTemplateSelector
+                selectedTemplateId={selectedTemplate?._id}
+                onTemplateSelect={setSelectedTemplate}
+                disabled={loading}
+              />
+            </div>
 
             {/* Task Type and Priority */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

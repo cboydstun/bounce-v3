@@ -91,7 +91,8 @@ export interface ITaskPaymentHistoryModel
 export interface Task {
   _id: string; // MongoDB document ID
   orderId: string; // Reference to the Order
-  type: TaskType; // Type of task
+  templateId?: string; // Reference to the TaskTemplate (optional for backward compatibility)
+  type: TaskType; // Type of task (kept for backward compatibility)
   title?: string; // Optional task title
   description: string; // Task description/notes
   scheduledDateTime: Date; // When the task is scheduled
@@ -114,7 +115,8 @@ export interface Task {
  */
 export interface TaskFormData {
   orderId: string; // Reference to the Order (required for creation)
-  type: TaskType; // Type of task
+  templateId?: string; // Reference to the TaskTemplate (optional, for template-based creation)
+  type: TaskType; // Type of task (required for backward compatibility)
   title?: string; // Optional task title
   description: string; // Task description/notes
   scheduledDateTime: Date | string; // When the task is scheduled

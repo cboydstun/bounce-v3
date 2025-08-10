@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db/mongoose";
 import Task from "@/models/Task";
 import Order from "@/models/Order";
 import Contractor from "@/models/Contractor";
+import TaskTemplate from "@/models/TaskTemplate";
 import TaskStatusHistory from "@/models/TaskStatusHistory";
 import TaskPaymentHistory from "@/models/TaskPaymentHistory";
 import mongoose from "mongoose";
@@ -14,6 +15,7 @@ import { NotificationService } from "@/services/notificationService";
 import WebSocketBroadcastService, {
   TaskBroadcastData,
 } from "@/services/websocketBroadcastService";
+import { TemplateEngine } from "@/utils/templateEngine";
 
 // Helper function to map task priority to notification priority
 const getNotificationPriority = (
@@ -280,27 +282,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!taskData.type) {
-      return NextResponse.json(
-        { error: "Task type is required" },
-        { status: 400 },
-      );
-    }
-
-    if (!taskData.description || !taskData.description.trim()) {
-      return NextResponse.json(
-        { error: "Task description is required" },
-        { status: 400 },
-      );
-    }
-
-    if (!taskData.scheduledDateTime) {
-      return NextResponse.json(
-        { error: "Scheduled date/time is required" },
-        { status: 400 },
-      );
-    }
-
     // Validate order exists
     if (!mongoose.Types.ObjectId.isValid(taskData.orderId)) {
       return NextResponse.json(
@@ -314,20 +295,133 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
+    // Handle template-based task creation
+    let template = null;
+    let autoPopulatedData: any = {};
+
+    if (taskData.templateId) {
+      // Validate template ID
+      if (!mongoose.Types.ObjectId.isValid(taskData.templateId)) {
+        return NextResponse.json(
+          { error: "Invalid template ID format" },
+          { status: 400 },
+        );
+      }
+
+      // Find template
+      template = await TaskTemplate.findOne({
+        _id: taskData.templateId,
+        isActive: true,
+        deletedAt: null,
+      });
+
+      if (!template) {
+        return NextResponse.json(
+          { error: "Template not found or inactive" },
+          { status: 404 },
+        );
+      }
+
+      // Generate auto-populated data from template
+      try {
+        // Convert Mongoose document to plain object with proper typing
+        const orderObj = order.toObject();
+        const orderData = {
+          ...orderObj,
+          _id: (orderObj._id as mongoose.Types.ObjectId).toString(),
+        };
+
+        const preview = TemplateEngine.generateTaskPreview(
+          template.titlePattern,
+          template.descriptionPattern,
+          template.paymentRules,
+          template.schedulingRules,
+          orderData as any, // Type assertion since we're handling the conversion
+          template.name,
+        );
+
+        autoPopulatedData = {
+          title: preview.title,
+          description: preview.description,
+          paymentAmount: preview.paymentAmount,
+          scheduledDateTime: preview.scheduledDateTime,
+          priority: template.defaultPriority,
+          type: template.name, // Use template name as type for new templates
+        };
+
+        // For system templates, keep the original type mapping
+        if (template.isSystemTemplate) {
+          autoPopulatedData.type = template.name; // "Delivery", "Setup", etc.
+        }
+
+        console.log("Auto-populated data from template:", autoPopulatedData);
+      } catch (templateError) {
+        console.error("Error processing template:", templateError);
+        return NextResponse.json(
+          { error: "Failed to process template" },
+          { status: 500 },
+        );
+      }
+
+      // Increment template usage count
+      try {
+        await TaskTemplate.incrementUsage(taskData.templateId);
+      } catch (usageError) {
+        console.error("Error incrementing template usage:", usageError);
+        // Don't fail the request if usage tracking fails
+      }
+    }
+
+    // Merge auto-populated data with provided data (provided data takes precedence)
+    const finalTaskData = {
+      ...autoPopulatedData,
+      ...taskData,
+      // Ensure required fields are present
+      type: taskData.type || autoPopulatedData.type,
+      description: taskData.description || autoPopulatedData.description,
+      scheduledDateTime:
+        taskData.scheduledDateTime || autoPopulatedData.scheduledDateTime,
+    };
+
+    // Validate final task data
+    if (!finalTaskData.type) {
+      return NextResponse.json(
+        { error: "Task type is required" },
+        { status: 400 },
+      );
+    }
+
+    if (!finalTaskData.description || !finalTaskData.description.trim()) {
+      return NextResponse.json(
+        { error: "Task description is required" },
+        { status: 400 },
+      );
+    }
+
+    if (!finalTaskData.scheduledDateTime) {
+      return NextResponse.json(
+        { error: "Scheduled date/time is required" },
+        { status: 400 },
+      );
+    }
+
     // Validate task type
     const validTypes = ["Delivery", "Setup", "Pickup", "Maintenance"];
-    if (!validTypes.includes(taskData.type)) {
+    if (!validTypes.includes(finalTaskData.type)) {
       return NextResponse.json({ error: "Invalid task type" }, { status: 400 });
     }
 
     // Validate priority
     const validPriorities = ["High", "Medium", "Low"];
-    if (taskData.priority && !validPriorities.includes(taskData.priority)) {
+    if (
+      finalTaskData.priority &&
+      !validPriorities.includes(finalTaskData.priority)
+    ) {
       return NextResponse.json({ error: "Invalid priority" }, { status: 400 });
     }
 
     // Validate scheduled date/time
-    const scheduledDate = new Date(taskData.scheduledDateTime);
+    const scheduledDate = new Date(finalTaskData.scheduledDateTime);
     if (isNaN(scheduledDate.getTime())) {
       return NextResponse.json(
         { error: "Invalid scheduled date/time" },
@@ -345,19 +439,19 @@ export async function POST(request: NextRequest) {
 
     // Validate payment amount if provided
     if (
-      taskData.paymentAmount !== undefined &&
-      taskData.paymentAmount !== null
+      finalTaskData.paymentAmount !== undefined &&
+      finalTaskData.paymentAmount !== null
     ) {
       if (
-        typeof taskData.paymentAmount !== "number" ||
-        taskData.paymentAmount < 0
+        typeof finalTaskData.paymentAmount !== "number" ||
+        finalTaskData.paymentAmount < 0
       ) {
         return NextResponse.json(
           { error: "Payment amount must be a positive number" },
           { status: 400 },
         );
       }
-      if (taskData.paymentAmount > 999999.99) {
+      if (finalTaskData.paymentAmount > 999999.99) {
         return NextResponse.json(
           { error: "Payment amount cannot exceed $999,999.99" },
           { status: 400 },
@@ -365,8 +459,8 @@ export async function POST(request: NextRequest) {
       }
       // Check for valid monetary value (up to 2 decimal places)
       // Use a more robust check that accounts for floating-point precision issues
-      const roundedAmount = Math.round(taskData.paymentAmount * 100) / 100;
-      if (Math.abs(taskData.paymentAmount - roundedAmount) > 0.001) {
+      const roundedAmount = Math.round(finalTaskData.paymentAmount * 100) / 100;
+      if (Math.abs(finalTaskData.paymentAmount - roundedAmount) > 0.001) {
         return NextResponse.json(
           { error: "Payment amount must have at most 2 decimal places" },
           { status: 400 },
@@ -376,10 +470,10 @@ export async function POST(request: NextRequest) {
 
     // Validate assigned contractors if provided
     if (
-      taskData.assignedContractors &&
-      taskData.assignedContractors.length > 0
+      finalTaskData.assignedContractors &&
+      finalTaskData.assignedContractors.length > 0
     ) {
-      for (const contractorId of taskData.assignedContractors) {
+      for (const contractorId of finalTaskData.assignedContractors) {
         if (!mongoose.Types.ObjectId.isValid(contractorId)) {
           return NextResponse.json(
             { error: `Invalid contractor ID format: ${contractorId}` },
@@ -405,7 +499,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Derive address from order if not provided
-    let addressToUse = taskData.address;
+    let addressToUse = finalTaskData.address;
     if (!addressToUse) {
       const addressParts = [
         order.customerAddress,
@@ -420,7 +514,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Try to geocode the address
-    let locationToUse = taskData.location;
+    let locationToUse = finalTaskData.location;
     if (addressToUse && !locationToUse) {
       try {
         const geocodedLocation = await geocodeAddress(addressToUse);
@@ -446,20 +540,21 @@ export async function POST(request: NextRequest) {
 
     // Create task
     const newTask = new Task({
-      orderId: taskData.orderId,
-      type: taskData.type,
-      title: taskData.title?.trim() || undefined,
-      description: taskData.description.trim(),
+      orderId: finalTaskData.orderId,
+      templateId: finalTaskData.templateId || undefined,
+      type: finalTaskData.type,
+      title: finalTaskData.title?.trim() || undefined,
+      description: finalTaskData.description.trim(),
       scheduledDateTime: scheduledDate,
-      priority: taskData.priority || "Medium",
-      status: taskData.status || "Pending",
-      assignedContractors: taskData.assignedContractors || [],
-      assignedTo: taskData.assignedTo?.trim() || undefined,
+      priority: finalTaskData.priority || "Medium",
+      status: finalTaskData.status || "Pending",
+      assignedContractors: finalTaskData.assignedContractors || [],
+      assignedTo: finalTaskData.assignedTo?.trim() || undefined,
       address: addressToUse,
       location: locationToUse,
-      paymentAmount: taskData.paymentAmount || undefined,
-      completionPhotos: taskData.completionPhotos || [],
-      completionNotes: taskData.completionNotes?.trim() || undefined,
+      paymentAmount: finalTaskData.paymentAmount || undefined,
+      completionPhotos: finalTaskData.completionPhotos || [],
+      completionNotes: finalTaskData.completionNotes?.trim() || undefined,
     });
 
     const savedTask = await newTask.save();

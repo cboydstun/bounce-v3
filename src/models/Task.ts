@@ -15,6 +15,18 @@ const TaskSchema = new Schema<ITaskDocument, ITaskModel>(
         message: "Invalid ObjectId format for orderId",
       },
     },
+    templateId: {
+      type: String,
+      required: false,
+      index: true,
+      validate: {
+        validator: function (v: string) {
+          if (!v) return true; // Allow null/undefined for backward compatibility
+          return mongoose.Types.ObjectId.isValid(v);
+        },
+        message: "Invalid ObjectId format for templateId",
+      },
+    },
     type: {
       type: String,
       enum: ["Delivery", "Setup", "Pickup", "Maintenance"],
@@ -396,6 +408,7 @@ TaskSchema.statics.getPaymentStats = async function (filters = {}) {
 
 // Compound indexes for common queries
 TaskSchema.index({ orderId: 1, status: 1 });
+TaskSchema.index({ templateId: 1, status: 1 });
 TaskSchema.index({ scheduledDateTime: 1, status: 1 });
 TaskSchema.index({ assignedTo: 1, status: 1 });
 TaskSchema.index({ assignedContractors: 1, status: 1 });
