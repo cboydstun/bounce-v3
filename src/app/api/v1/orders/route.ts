@@ -626,15 +626,23 @@ export async function POST(request: NextRequest) {
           // since we need to check by product names, not IDs or slugs
 
           // Check if any of the bounce house items are already booked for this date
+          // Exclude the current contact being converted to avoid false conflicts
+          const contactQuery: any = {
+            bouncer: { $in: bouncerItems.map((item: any) => item.name) },
+            partyDate: {
+              $gte: new Date(eventDateStr + "T00:00:00.000Z"),
+              $lte: new Date(eventDateStr + "T23:59:59.999Z"),
+            },
+            confirmed: { $in: ["Confirmed", "Converted"] },
+          };
+
+          // If this order is being created from a contact, exclude that contact from the conflict check
+          if (orderData.contactId) {
+            contactQuery._id = { $ne: orderData.contactId };
+          }
+
           const [existingContacts, existingOrders] = await Promise.all([
-            Contact.find({
-              bouncer: { $in: bouncerItems.map((item: any) => item.name) },
-              partyDate: {
-                $gte: new Date(eventDateStr + "T00:00:00.000Z"),
-                $lte: new Date(eventDateStr + "T23:59:59.999Z"),
-              },
-              confirmed: { $in: ["Confirmed", "Converted"] },
-            }),
+            Contact.find(contactQuery),
             Order.find({
               $or: [
                 {
