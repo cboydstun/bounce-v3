@@ -742,12 +742,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Send notifications asynchronously to prevent blocking the response
+    console.log("🔍 Checking sourcePage condition:", {
+      sourcePage: orderData.sourcePage,
+      condition: orderData.sourcePage !== "admin",
+      willSendNotifications: orderData.sourcePage !== "admin",
+    });
+
     if (orderData.sourcePage !== "admin") {
+      console.log(
+        "� Starting notification process for order:",
+        order.orderNumber,
+      );
+      console.log("📧 Email recipients:", [
+        process.env.OTHER_EMAIL,
+        process.env.SECOND_EMAIL,
+        process.env.ADMIN_EMAIL,
+      ]);
+      console.log("�📱 SMS recipients:", [
+        process.env.USER_PHONE_NUMBER,
+        process.env.ADMIN_PHONE_NUMBER,
+      ]);
+
       // Don't await these operations - let them run in background
       setImmediate(async () => {
+        console.log(
+          "⚡ setImmediate callback executing for order:",
+          order.orderNumber,
+        );
+
         // Send email to admin
         try {
-          await sendEmail({
+          console.log("📧 Attempting to send admin notification email...");
+          const emailResult = await sendEmail({
             from: process.env.EMAIL as string,
             to: [
               process.env.OTHER_EMAIL as string,
@@ -758,34 +784,74 @@ export async function POST(request: NextRequest) {
             text: generateNewOrderEmailAdmin(order),
             html: generateNewOrderEmailAdmin(order),
           });
+          console.log(
+            "✅ Admin notification email sent successfully:",
+            emailResult,
+          );
         } catch (emailError) {
-          console.error("Error sending admin notification email:", emailError);
+          console.error("❌ Error sending admin notification email:", {
+            error: emailError,
+            message:
+              emailError instanceof Error
+                ? emailError.message
+                : String(emailError),
+            stack: emailError instanceof Error ? emailError.stack : undefined,
+            orderNumber: order.orderNumber,
+          });
         }
 
         // Send confirmation email to customer if email is provided
         if (order.customerEmail) {
           try {
-            await sendEmail({
+            console.log(
+              "📧 Attempting to send customer confirmation email to:",
+              order.customerEmail,
+            );
+            const customerEmailResult = await sendEmail({
               from: process.env.EMAIL as string,
               to: order.customerEmail,
               subject: `Your Order Confirmation: ${order.orderNumber}`,
               text: generateNewOrderEmailCustomer(order),
               html: generateNewOrderEmailCustomer(order),
             });
-          } catch (emailError) {
-            console.error(
-              "Error sending customer confirmation email:",
-              emailError,
+            console.log(
+              "✅ Customer confirmation email sent successfully:",
+              customerEmailResult,
             );
+          } catch (emailError) {
+            console.error("❌ Error sending customer confirmation email:", {
+              error: emailError,
+              message:
+                emailError instanceof Error
+                  ? emailError.message
+                  : String(emailError),
+              stack: emailError instanceof Error ? emailError.stack : undefined,
+              customerEmail: order.customerEmail,
+              orderNumber: order.orderNumber,
+            });
           }
+        } else {
+          console.log(
+            "⚠️ No customer email provided, skipping customer notification",
+          );
         }
 
         // Send SMS notification
         try {
+          console.log("📱 Attempting to send SMS notifications...");
           const accountSid = process.env.TWILIO_ACCOUNT_SID;
           const authToken = process.env.TWILIO_AUTH_TOKEN;
+          const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 
-          if (accountSid && authToken) {
+          console.log("📱 Twilio credentials check:", {
+            hasAccountSid: !!accountSid,
+            hasAuthToken: !!authToken,
+            hasFromNumber: !!fromNumber,
+            accountSidLength: accountSid?.length,
+            authTokenLength: authToken?.length,
+          });
+
+          if (accountSid && authToken && fromNumber) {
             const client = twilio(accountSid, authToken);
 
             // Format items for SMS
@@ -804,30 +870,63 @@ export async function POST(request: NextRequest) {
               Event Date: ${getEventDateDisplay(order)}
             `.trim();
 
+            console.log(
+              "📱 SMS body prepared:",
+              smsBody.substring(0, 100) + "...",
+            );
+
             // Create array of recipient phone numbers
             const recipients = [
               process.env.USER_PHONE_NUMBER,
               process.env.ADMIN_PHONE_NUMBER,
             ].filter(Boolean); // Remove any undefined/null values
 
+            console.log("📱 SMS recipients:", recipients);
+
             // Send SMS to each recipient
             for (const phoneNumber of recipients) {
               try {
-                await client.messages.create({
+                console.log(`📱 Sending SMS to ${phoneNumber}...`);
+                const smsResult = await client.messages.create({
                   body: smsBody,
-                  from: process.env.TWILIO_PHONE_NUMBER,
+                  from: fromNumber,
                   to: phoneNumber as string,
                 });
+                console.log(`✅ SMS sent successfully to ${phoneNumber}:`, {
+                  sid: smsResult.sid,
+                  status: smsResult.status,
+                });
               } catch (individualSmsError) {
-                console.error(
-                  `Error sending SMS to ${phoneNumber}:`,
-                  individualSmsError,
-                );
+                console.error(`❌ Error sending SMS to ${phoneNumber}:`, {
+                  error: individualSmsError,
+                  message:
+                    individualSmsError instanceof Error
+                      ? individualSmsError.message
+                      : String(individualSmsError),
+                  stack:
+                    individualSmsError instanceof Error
+                      ? individualSmsError.stack
+                      : undefined,
+                  phoneNumber,
+                  orderNumber: order.orderNumber,
+                });
               }
             }
+          } else {
+            console.error("❌ Missing Twilio credentials:", {
+              hasAccountSid: !!accountSid,
+              hasAuthToken: !!authToken,
+              hasFromNumber: !!fromNumber,
+            });
           }
         } catch (smsError) {
-          console.error("Error sending SMS notification:", smsError);
+          console.error("❌ Error in SMS notification setup:", {
+            error: smsError,
+            message:
+              smsError instanceof Error ? smsError.message : String(smsError),
+            stack: smsError instanceof Error ? smsError.stack : undefined,
+            orderNumber: order.orderNumber,
+          });
         }
       });
     }
