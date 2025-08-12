@@ -18,6 +18,14 @@ function Fingerprint() {
 
   useEffect(() => {
     const trackVisitor = async () => {
+      // Skip tracking on checkout pages to prevent timeout issues
+      if (pathname.startsWith("/order")) {
+        console.log(
+          "Skipping visitor tracking on checkout page to prevent timeouts",
+        );
+        return;
+      }
+
       // Prevent multiple concurrent tracking requests
       if (trackingInProgress.current) {
         return;

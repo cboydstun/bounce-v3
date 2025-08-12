@@ -14,7 +14,7 @@ import {
 } from "./utils/types";
 import { ProgressBar } from "./ProgressBar";
 import { NavigationButtons } from "./NavigationButtons";
-import OrderFormTracker from "./OrderFormTracker";
+// import OrderFormTracker from "./OrderFormTracker"; // Temporarily disabled due to timeout issues
 import StepSkeleton from "./StepSkeleton";
 import { postWithRetry } from "@/utils/apiClient";
 
@@ -116,12 +116,12 @@ const CheckoutWizard: React.FC = () => {
     // Mark payment as in progress
     localStorage.setItem("checkoutPaymentInProgress", "true");
 
-    // Track booking started conversion event
-    trackConversionEvent("booking_started", {
-      completed: false,
-      value: state.totalAmount,
-      product: state.bouncerName,
-    });
+    // Track booking started conversion event - Temporarily disabled due to timeout issues
+    // trackConversionEvent("booking_started", {
+    //   completed: false,
+    //   value: state.totalAmount,
+    //   product: state.bouncerName,
+    // });
 
     try {
       // Build items array with proper validation
@@ -246,12 +246,12 @@ const CheckoutWizard: React.FC = () => {
       dispatch({ type: "SET_ORDER_ID", payload: order._id });
       dispatch({ type: "SET_ORDER_NUMBER", payload: order.orderNumber });
 
-      // Track booking completed conversion event
-      trackConversionEvent("booking_completed", {
-        completed: true,
-        value: state.totalAmount,
-        product: state.bouncerName,
-      });
+      // Track booking completed conversion event - Temporarily disabled due to timeout issues
+      // trackConversionEvent("booking_completed", {
+      //   completed: true,
+      //   value: state.totalAmount,
+      //   product: state.bouncerName,
+      // });
 
       // Store order data for tracking
       const trackingData = {
@@ -336,12 +336,12 @@ const CheckoutWizard: React.FC = () => {
     };
     localStorage.setItem("checkoutOrderData", JSON.stringify(orderData));
 
-    // Track booking completed conversion event
-    trackConversionEvent("booking_completed", {
-      completed: true,
-      value: state.totalAmount,
-      product: state.bouncerName,
-    });
+    // Track booking completed conversion event - Temporarily disabled due to timeout issues
+    // trackConversionEvent("booking_completed", {
+    //   completed: true,
+    //   value: state.totalAmount,
+    //   product: state.bouncerName,
+    // });
 
     dispatch({ type: "PAYMENT_SUCCESS" });
   };
@@ -352,43 +352,43 @@ const CheckoutWizard: React.FC = () => {
     localStorage.setItem("checkoutPaymentInProgress", "true");
   };
 
-  // Helper function to track conversion events
-  const trackConversionEvent = async (type: string, data: any) => {
-    try {
-      // Get visitorId from localStorage (set by Fingerprint.tsx)
-      const visitorId = localStorage.getItem("visitorId");
+  // Helper function to track conversion events - Temporarily disabled due to timeout issues
+  // const trackConversionEvent = async (type: string, data: any) => {
+  //   try {
+  //     // Get visitorId from localStorage (set by Fingerprint.tsx)
+  //     const visitorId = localStorage.getItem("visitorId");
 
-      if (!visitorId) {
-        console.error("No visitorId found in localStorage");
-        return;
-      }
+  //     if (!visitorId) {
+  //       console.error("No visitorId found in localStorage");
+  //       return;
+  //     }
 
-      // Send conversion event to visitor API
-      await fetch("/api/v1/visitors", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          visitorId,
-          currentPage: window.location.pathname,
-          conversionEvent: {
-            type,
-            ...data,
-            timestamp: new Date(),
-          },
-        }),
-      });
+  //     // Send conversion event to visitor API
+  //     await fetch("/api/v1/visitors", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         visitorId,
+  //         currentPage: window.location.pathname,
+  //         conversionEvent: {
+  //           type,
+  //           ...data,
+  //           timestamp: new Date(),
+  //         },
+  //       }),
+  //     });
 
-      // Log to console in development
-      if (process.env.NODE_ENV === "development") {
-        console.log(`Tracked conversion event: ${type}`, data);
-      }
-    } catch (error) {
-      // Silently fail to avoid breaking the checkout flow
-      console.error("Error tracking conversion event:", error);
-    }
-  };
+  //     // Log to console in development
+  //     if (process.env.NODE_ENV === "development") {
+  //       console.log(`Tracked conversion event: ${type}`, data);
+  //     }
+  //   } catch (error) {
+  //     // Silently fail to avoid breaking the checkout flow
+  //     console.error("Error tracking conversion event:", error);
+  //   }
+  // };
 
   // Render the appropriate step content
   const renderStepContent = () => {
@@ -416,8 +416,8 @@ const CheckoutWizard: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Track form step changes */}
-      <OrderFormTracker currentStep={state.currentStep} formData={state} />
+      {/* Track form step changes - Temporarily disabled due to timeout issues */}
+      {/* <OrderFormTracker currentStep={state.currentStep} formData={state} /> */}
 
       {/* Progress Bar */}
       <ProgressBar currentStep={state.currentStep} />
