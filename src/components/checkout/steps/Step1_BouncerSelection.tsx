@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getProducts } from "@/utils/api";
+import { getWithRetry } from "@/utils/apiClient";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { CheckoutState } from "../utils/types";
 import ProductCard from "../ProductCard";
@@ -66,7 +66,19 @@ const Step1_BouncerSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
       setIsLoading(true);
       setLoadError(null);
       try {
-        const data = await getProducts();
+        // Use the new API client with retry logic
+        const result = await getWithRetry("/api/v1/products", {
+          maxRetries: 3,
+          baseDelay: 1000,
+          maxDelay: 5000,
+          timeoutMs: 20000,
+        });
+
+        if (!result.success) {
+          throw new Error(result.error || "Failed to load products");
+        }
+
+        const data = result.data;
         const productsArray = data.products || [];
 
         // Filter for bouncer products
@@ -94,7 +106,11 @@ const Step1_BouncerSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
         setBouncers(bouncersWithPrice);
       } catch (error) {
         console.error("Error fetching bouncers:", error);
-        setLoadError("Failed to load bounce houses. Please try again later.");
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Failed to load bounce houses. Please try again later.";
+        setLoadError(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -245,10 +261,73 @@ const Step1_BouncerSelection: React.FC<Step1Props> = ({ state, dispatch }) => {
         <div className="text-center py-8">
           <div className="text-red-500 mb-4">{loadError}</div>
           <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary-purple text-white rounded-lg hover:bg-primary-purple/90"
+            onClick={() => {
+              // Retry the fetch instead of reloading the entire page
+              setLoadError(null);
+              setIsLoading(true);
+              // Trigger the useEffect to refetch
+              const fetchBouncers = async () => {
+                try {
+                  const result = await getWithRetry("/api/v1/products", {
+                    maxRetries: 3,
+                    baseDelay: 1000,
+                    maxDelay: 5000,
+                    timeoutMs: 20000,
+                  });
+
+                  if (!result.success) {
+                    throw new Error(result.error || "Failed to load products");
+                  }
+
+                  const data = result.data;
+                  const productsArray = data.products || [];
+
+                  const filteredBouncers = productsArray.filter(
+                    (product: Bouncer) => {
+                      const typeSpec = product.specifications?.find(
+                        (spec) => spec.name === "Type",
+                      );
+                      if (!typeSpec) return false;
+
+                      if (Array.isArray(typeSpec.value)) {
+                        return typeSpec.value.some(
+                          (v) => v === "WET" || v === "DRY",
+                        );
+                      }
+                      return (
+                        typeSpec.value === "WET" || typeSpec.value === "DRY"
+                      );
+                    },
+                  );
+
+                  const bouncersWithPrice = filteredBouncers.map(
+                    (bouncer: Bouncer) => {
+                      let price = 0;
+                      if (bouncer.price && bouncer.price.base) {
+                        price = bouncer.price.base;
+                      }
+                      return { ...bouncer, extractedPrice: price };
+                    },
+                  );
+
+                  setBouncers(bouncersWithPrice);
+                } catch (error) {
+                  console.error("Error retrying bouncer fetch:", error);
+                  const errorMessage =
+                    error instanceof Error
+                      ? error.message
+                      : "Failed to load bounce houses. Please try again later.";
+                  setLoadError(errorMessage);
+                } finally {
+                  setIsLoading(false);
+                }
+              };
+              fetchBouncers();
+            }}
+            disabled={isLoading}
+            className="px-4 py-2 bg-primary-purple text-white rounded-lg hover:bg-primary-purple/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Try Again
+            {isLoading ? "Retrying..." : "Try Again"}
           </button>
         </div>
       </div>

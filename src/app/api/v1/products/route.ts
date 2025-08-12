@@ -16,70 +16,128 @@ interface ProductQuery {
  */
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
+    // Set up timeout for database operations
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Database query timeout")), 15000),
+    );
 
-    // Parse query parameters
-    const url = new URL(request.url);
-    const category = url.searchParams.get("category");
-    const search = url.searchParams.get("search");
-    const availability = url.searchParams.get("availability");
-    const includeRetired = url.searchParams.get("includeRetired") === "true";
+    const queryPromise = async () => {
+      await dbConnect();
 
-    // Build query - exclude retired products by default for public consumption
-    const query: ProductQuery = {};
+      // Parse query parameters
+      const url = new URL(request.url);
+      const category = url.searchParams.get("category");
+      const search = url.searchParams.get("search");
+      const availability = url.searchParams.get("availability");
+      const includeRetired = url.searchParams.get("includeRetired") === "true";
 
-    // Only exclude retired products if includeRetired is not true
-    if (!includeRetired) {
-      query.availability = { $ne: "retired" };
-    }
-
-    if (category) {
-      query.category = category;
-    }
-    if (availability) {
-      // If availability is specifically requested, override the default exclusion
-      query.availability = availability;
-    }
-
-    let products;
-    let total;
-
-    // If search query is provided, use text search
-    if (search) {
-      // Build search query
-      const searchQuery: any = {
-        $text: { $search: search },
-      };
+      // Build query - exclude retired products by default for public consumption
+      const query: ProductQuery = {};
 
       // Only exclude retired products if includeRetired is not true
       if (!includeRetired) {
-        searchQuery.availability = { $ne: "retired" };
+        query.availability = { $ne: "retired" };
       }
 
-      // If availability is specifically requested, override the default exclusion
+      if (category) {
+        query.category = category;
+      }
       if (availability) {
-        searchQuery.availability = availability;
+        // If availability is specifically requested, override the default exclusion
+        query.availability = availability;
       }
 
-      products = await Product.find(searchQuery, {
-        score: { $meta: "textScore" },
-      }).sort({ score: { $meta: "textScore" } });
-      total = await Product.countDocuments(searchQuery);
-    } else {
-      // Otherwise, use regular query
-      products = await Product.find(query).sort({ createdAt: -1 });
-      total = await Product.countDocuments(query);
-    }
+      let products;
+      let total;
 
-    return NextResponse.json({
-      products,
-      total,
+      // If search query is provided, use text search
+      if (search) {
+        // Build search query
+        const searchQuery: any = {
+          $text: { $search: search },
+        };
+
+        // Only exclude retired products if includeRetired is not true
+        if (!includeRetired) {
+          searchQuery.availability = { $ne: "retired" };
+        }
+
+        // If availability is specifically requested, override the default exclusion
+        if (availability) {
+          searchQuery.availability = availability;
+        }
+
+        // Optimize: Run queries in parallel and limit results
+        const [productsResult, totalResult] = await Promise.all([
+          Product.find(searchQuery, {
+            score: { $meta: "textScore" },
+          })
+            .sort({ score: { $meta: "textScore" } })
+            .limit(100) // Reasonable limit to prevent memory issues
+            .lean(), // Use lean() for better performance
+          Product.countDocuments(searchQuery),
+        ]);
+
+        products = productsResult;
+        total = totalResult;
+      } else {
+        // Optimize: Run queries in parallel and limit results
+        const [productsResult, totalResult] = await Promise.all([
+          Product.find(query)
+            .sort({ createdAt: -1 })
+            .limit(100) // Reasonable limit to prevent memory issues
+            .lean(), // Use lean() for better performance
+          Product.countDocuments(query),
+        ]);
+
+        products = productsResult;
+        total = totalResult;
+      }
+
+      return {
+        products,
+        total,
+      };
+    };
+
+    // Race between query and timeout
+    const result = await Promise.race([queryPromise(), timeoutPromise]);
+
+    return NextResponse.json(result, {
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600", // Cache for 5 minutes
+      },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching products:", error);
+
+    // Ensure we always return JSON, never HTML
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
+
+    // Log the full error for debugging
+    console.error("Full error details:", {
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+
     return NextResponse.json(
-      { error: "Failed to fetch products" },
-      { status: 500 },
+      {
+        error: errorMessage.includes("timeout")
+          ? "Request timed out. Please try again."
+          : "Failed to fetch products",
+        timestamp: new Date().toISOString(),
+        debug:
+          process.env.NODE_ENV === "development" ? errorMessage : undefined,
+      },
+      {
+        status: errorMessage.includes("timeout") ? 408 : 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
     );
   }
 }
