@@ -18,6 +18,17 @@ export const trackInteraction = async (
   data?: Record<string, any>,
 ): Promise<void> => {
   try {
+    // Get current page if not provided
+    const currentPage = page || window.location.pathname;
+
+    // Skip tracking on checkout pages to prevent timeout issues
+    if (currentPage.startsWith("/order")) {
+      console.log(
+        "Skipping interaction tracking on checkout page to prevent timeouts",
+      );
+      return;
+    }
+
     // Get visitor ID from localStorage if available
     const visitorId = localStorage.getItem("visitorId");
 
@@ -25,9 +36,6 @@ export const trackInteraction = async (
       console.warn("Cannot track interaction: No visitor ID found");
       return;
     }
-
-    // Get current page if not provided
-    const currentPage = page || window.location.pathname;
 
     // Create interaction data
     const interaction = {
@@ -172,6 +180,17 @@ export const trackClientError = async (
   url?: string,
 ): Promise<void> => {
   try {
+    // Get current page if not provided
+    const currentPage = url || window.location.href;
+
+    // Skip tracking on checkout pages to prevent timeout issues
+    if (currentPage.includes("/order")) {
+      console.log(
+        "Skipping error tracking on checkout page to prevent timeouts",
+      );
+      return;
+    }
+
     // Get visitor ID from localStorage if available
     const visitorId = localStorage.getItem("visitorId");
 
@@ -179,9 +198,6 @@ export const trackClientError = async (
       console.warn("Cannot track error: No visitor ID found");
       return;
     }
-
-    // Get current page if not provided
-    const currentPage = url || window.location.href;
 
     // Format error data
     const errorMessage = error instanceof Error ? error.message : error;

@@ -560,9 +560,9 @@ export async function POST(request: NextRequest) {
 
     // Additional duplicate prevention: Check for recent orders with same customer email and similar total
     if (orderData.customerEmail) {
-      // Use shorter window for development (30 seconds) vs production (5 minutes)
+      // Use shorter window for development (30 seconds) vs production (1 minute)
       const isDevelopment = process.env.NODE_ENV === "development";
-      const timeWindow = isDevelopment ? 30 * 1000 : 5 * 60 * 1000; // 30 seconds vs 5 minutes
+      const timeWindow = isDevelopment ? 30 * 1000 : 60 * 1000; // 30 seconds vs 1 minute
       const timeAgo = new Date(Date.now() - timeWindow);
       const recentOrder = await Order.findOne({
         customerEmail: orderData.customerEmail,
