@@ -16,6 +16,7 @@ import { ProgressBar } from "./ProgressBar";
 import { NavigationButtons } from "./NavigationButtons";
 import OrderFormTracker from "./OrderFormTracker";
 import StepSkeleton from "./StepSkeleton";
+import { postWithRetry } from "@/utils/apiClient";
 
 // Dynamically import step components with proper typing
 const Step1_BouncerSelection = dynamic<Step1Props>(
@@ -225,23 +226,21 @@ const CheckoutWizard: React.FC = () => {
         }`,
       };
 
-      // Create order
-      const response = await fetch("/api/v1/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(orderData),
+      // Create order using enhanced API client with retry logic
+      const result = await postWithRetry("/api/v1/orders", orderData, {
+        maxRetries: 2,
+        baseDelay: 2000,
+        maxDelay: 8000,
+        timeoutMs: 30000,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!result.success) {
         throw new Error(
-          errorData.error || "Failed to create order. Please try again.",
+          result.error || "Failed to create order. Please try again.",
         );
       }
 
-      const order = await response.json();
+      const order = result.data;
 
       // Store order ID and number in state
       dispatch({ type: "SET_ORDER_ID", payload: order._id });
