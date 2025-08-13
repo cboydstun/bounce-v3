@@ -7,6 +7,7 @@
     "dev": "vite --mode development",
     "dev:prod": "vite --mode production",
     "dev:prod:host": "vite --mode production --host 0.0.0.0",
+    "dev:mobile": "vite --mode mobile --host 0.0.0.0",
     "build": "tsc && vite build --mode production",
     "build:dev": "tsc && vite build --mode development",
     "build:prod": "tsc && vite build --mode production",
@@ -23,8 +24,11 @@
     "cap:build:android": "npm run build:prod && npx cap sync android && npx cap build android",
     "cap:build:ios": "npm run build:prod && npx cap sync ios && npx cap build ios",
     "cap:clean:android": "rm -rf dist/ && rm -rf android/app/src/main/assets/public/ && npm run build:prod && npx cap sync android && npx cap run android",
+    "cap:clean:ios": "rm -rf dist/ && rm -rf ios/App/App/public/ && npm run build:prod && npx cap sync ios && npx cap run ios",
     "build:alpha": "./scripts/build-alpha.sh",
-    "build:firebase": "./scripts/build-firebase-alpha.sh"
+    "build:firebase": "./scripts/build-firebase-alpha.sh",
+    "build:ios-dev": "./scripts/build-ios-dev.sh",
+    "build:firebase-ios": "./scripts/build-firebase-ios.sh"
   },
   "dependencies": {
     "@capacitor/android": "^7.3.0",
