@@ -4,9 +4,9 @@ import {
   SecureStorageItem,
   SecureStorageOptions,
   BiometricCredentials,
+  BiometricSettings,
 } from "../../types/biometric.types";
 import { APP_CONFIG } from "../../config/app.config";
-import { biometricDebugLogger } from "../../utils/biometricDebugLogger";
 
 class SecureStorageService {
   private isNative: boolean;
@@ -26,6 +26,8 @@ class SecureStorageService {
     options: SecureStorageOptions = {},
   ): Promise<void> {
     try {
+      console.log(`💾 Storing secure item: ${key}`);
+
       const item: SecureStorageItem = {
         key,
         value,
@@ -43,12 +45,14 @@ class SecureStorageService {
           value: serializedItem,
         });
       } else {
-        // Web fallback - use encrypted localStorage
+        // Web fallback
         this.fallbackStorage.set(key, serializedItem);
         localStorage.setItem(`secure_${key}`, serializedItem);
       }
+
+      console.log(`✅ Successfully stored: ${key}`);
     } catch (error) {
-      console.error("SecureStorage setItem error:", error);
+      console.error(`❌ Failed to store secure item ${key}:`, error);
       throw new Error(`Failed to store secure item: ${error}`);
     }
   }
@@ -58,6 +62,7 @@ class SecureStorageService {
    */
   async getItem(key: string): Promise<string | null> {
     try {
+      console.log(`🔍 Retrieving secure item: ${key}`);
       let serializedItem: string | null = null;
 
       if (this.isNative) {
@@ -71,6 +76,7 @@ class SecureStorageService {
       }
 
       if (!serializedItem) {
+        console.log(`⚠️ No data found for key: ${key}`);
         return null;
       }
 
@@ -78,13 +84,15 @@ class SecureStorageService {
 
       // Check if item has expired
       if (item.expiresAt && new Date(item.expiresAt) <= new Date()) {
+        console.log(`⏰ Item expired, removing: ${key}`);
         await this.removeItem(key);
         return null;
       }
 
+      console.log(`✅ Successfully retrieved: ${key}`);
       return item.value;
     } catch (error) {
-      console.error("SecureStorage getItem error:", error);
+      console.error(`❌ Failed to retrieve secure item ${key}:`, error);
       return null;
     }
   }
@@ -94,6 +102,8 @@ class SecureStorageService {
    */
   async removeItem(key: string): Promise<void> {
     try {
+      console.log(`🗑️ Removing secure item: ${key}`);
+
       if (this.isNative) {
         await SecureStoragePlugin.remove({ key });
       } else {
@@ -101,8 +111,10 @@ class SecureStorageService {
         this.fallbackStorage.delete(key);
         localStorage.removeItem(`secure_${key}`);
       }
+
+      console.log(`✅ Successfully removed: ${key}`);
     } catch (error) {
-      console.error("SecureStorage removeItem error:", error);
+      console.error(`❌ Failed to remove secure item ${key}:`, error);
       throw new Error(`Failed to remove secure item: ${error}`);
     }
   }
@@ -112,17 +124,25 @@ class SecureStorageService {
    */
   async hasItem(key: string): Promise<boolean> {
     try {
+      console.log(`🔍 Checking if key exists: ${key}`);
+
       if (this.isNative) {
         const result = await SecureStoragePlugin.get({ key });
-        return !!result.value;
+        const exists = !!result.value;
+        console.log(`📱 Native storage check for ${key}: ${exists}`);
+        return exists;
       } else {
         // Web fallback
-        return (
-          this.fallbackStorage.has(key) ||
-          localStorage.getItem(`secure_${key}`) !== null
+        const inMemory = this.fallbackStorage.has(key);
+        const inLocalStorage = localStorage.getItem(`secure_${key}`) !== null;
+        const exists = inMemory || inLocalStorage;
+        console.log(
+          `🌐 Web storage check for ${key}: ${exists} (memory: ${inMemory}, localStorage: ${inLocalStorage})`,
         );
+        return exists;
       }
     } catch (error) {
+      console.error(`❌ Failed to check if key exists ${key}:`, error);
       return false;
     }
   }
@@ -132,6 +152,8 @@ class SecureStorageService {
    */
   async clear(): Promise<void> {
     try {
+      console.log("🧹 Clearing all secure storage");
+
       if (this.isNative) {
         await SecureStoragePlugin.clear();
       } else {
@@ -144,8 +166,10 @@ class SecureStorageService {
           }
         });
       }
+
+      console.log("✅ Successfully cleared all secure storage");
     } catch (error) {
-      console.error("SecureStorage clear error:", error);
+      console.error("❌ Failed to clear secure storage:", error);
       throw new Error(`Failed to clear secure storage: ${error}`);
     }
   }
@@ -156,135 +180,71 @@ class SecureStorageService {
   async storeBiometricCredentials(
     credentials: BiometricCredentials,
   ): Promise<void> {
-    const operation = "storeBiometricCredentials";
+    console.log("💾 Storing biometric credentials");
 
-    try {
-      biometricDebugLogger.log(operation, "start", true, {
-        hasCredentials: !!credentials,
-      });
-
-      // Validate credentials before storing
-      const validation = biometricDebugLogger.validateCredentials(credentials);
-      if (!validation.valid) {
-        biometricDebugLogger.log(operation, "validation_failed", false, {
-          issues: validation.issues,
-        });
-        throw new Error(`Invalid credentials: ${validation.issues.join(", ")}`);
-      }
-
-      biometricDebugLogger.log(operation, "validation_passed", true);
-
-      const key =
-        APP_CONFIG.STORAGE_KEYS.BIOMETRIC_CREDENTIALS ||
-        "biometric_credentials";
-      biometricDebugLogger.log(operation, "using_key", true, { key });
-
-      const credentialsJson = JSON.stringify(credentials);
-      biometricDebugLogger.log(operation, "serialized", true, {
-        length: credentialsJson.length,
-      });
-
-      await this.setItem(key, credentialsJson, {
-        encrypt: true,
-        requireBiometric: true,
-        expirationTime: APP_CONFIG.JWT_REFRESH_TOKEN_EXPIRY,
-      });
-
-      biometricDebugLogger.log(operation, "stored", true);
-
-      // Verify storage by immediately reading back
-      const verification = await this.getItem(key);
-      if (!verification) {
-        biometricDebugLogger.log(operation, "verification_failed", false, {
-          error: "Could not read back stored credentials",
-        });
-        throw new Error("Failed to verify credential storage");
-      }
-
-      biometricDebugLogger.log(operation, "verified", true, {
-        length: verification.length,
-      });
-    } catch (error) {
-      biometricDebugLogger.log(operation, "error", false, undefined, error);
-      throw error;
+    // Basic validation
+    if (!credentials || !credentials.username || !credentials.password) {
+      throw new Error(
+        "Invalid credentials: username and password are required",
+      );
     }
+
+    const key =
+      APP_CONFIG.STORAGE_KEYS.BIOMETRIC_CREDENTIALS || "biometric_credentials";
+    const credentialsJson = JSON.stringify(credentials);
+
+    await this.setItem(key, credentialsJson, {
+      encrypt: true,
+      requireBiometric: true,
+      expirationTime: APP_CONFIG.JWT_REFRESH_TOKEN_EXPIRY,
+    });
+
+    // Verify storage by immediately reading back
+    const verification = await this.getItem(key);
+    if (!verification) {
+      throw new Error("Failed to verify credential storage");
+    }
+
+    console.log("✅ Biometric credentials stored and verified");
   }
 
   /**
    * Retrieve biometric credentials
    */
   async getBiometricCredentials(): Promise<BiometricCredentials | null> {
-    const operation = "getBiometricCredentials";
+    console.log("🔍 Retrieving biometric credentials");
+
+    const key =
+      APP_CONFIG.STORAGE_KEYS.BIOMETRIC_CREDENTIALS || "biometric_credentials";
+
+    // Check if key exists first
+    const hasKey = await this.hasItem(key);
+    if (!hasKey) {
+      console.log("⚠️ No biometric credentials key found in storage");
+      return null;
+    }
+
+    const credentialsJson = await this.getItem(key);
+    if (!credentialsJson) {
+      console.log("⚠️ Key exists but no data retrieved");
+      return null;
+    }
 
     try {
-      biometricDebugLogger.log(operation, "start", true);
+      const credentials = JSON.parse(credentialsJson) as BiometricCredentials;
 
-      const key =
-        APP_CONFIG.STORAGE_KEYS.BIOMETRIC_CREDENTIALS ||
-        "biometric_credentials";
-      biometricDebugLogger.log(operation, "using_key", true, { key });
-
-      // Check if key exists first
-      const hasKey = await this.hasItem(key);
-      biometricDebugLogger.log(operation, "key_exists", hasKey, { hasKey });
-
-      if (!hasKey) {
-        biometricDebugLogger.log(operation, "no_key_found", false, {
-          message: "No biometric credentials key found in storage",
-        });
-        return null;
-      }
-
-      const credentialsJson = await this.getItem(key);
-      biometricDebugLogger.log(operation, "retrieved_raw", !!credentialsJson, {
-        hasData: !!credentialsJson,
-        length: credentialsJson?.length || 0,
-      });
-
-      if (!credentialsJson) {
-        biometricDebugLogger.log(operation, "no_data", false, {
-          message: "Key exists but no data retrieved",
-        });
-        return null;
-      }
-
-      let credentials: BiometricCredentials;
-      try {
-        credentials = JSON.parse(credentialsJson) as BiometricCredentials;
-        biometricDebugLogger.log(operation, "parsed", true, {
-          hasUsername: !!credentials.username,
-        });
-      } catch (parseError) {
-        biometricDebugLogger.log(
-          operation,
-          "parse_error",
-          false,
-          undefined,
-          parseError,
+      // Basic validation
+      if (!credentials.username || !credentials.password) {
+        console.error(
+          "❌ Invalid stored credentials: missing username or password",
         );
-        throw new Error(`Failed to parse stored credentials: ${parseError}`);
-      }
-
-      // Validate the retrieved credentials
-      const validation = biometricDebugLogger.validateCredentials(credentials);
-      if (!validation.valid) {
-        biometricDebugLogger.log(
-          operation,
-          "invalid_stored_credentials",
-          false,
-          { issues: validation.issues },
-        );
-        // Don't throw here, but log the issue and return null
         return null;
       }
 
-      biometricDebugLogger.log(operation, "success", true, {
-        hasCredentials: true,
-      });
+      console.log("✅ Successfully retrieved biometric credentials");
       return credentials;
-    } catch (error) {
-      biometricDebugLogger.log(operation, "error", false, undefined, error);
-      console.error("Failed to retrieve biometric credentials:", error);
+    } catch (parseError) {
+      console.error("❌ Failed to parse stored credentials:", parseError);
       return null;
     }
   }
@@ -293,6 +253,7 @@ class SecureStorageService {
    * Remove biometric credentials
    */
   async removeBiometricCredentials(): Promise<void> {
+    console.log("🗑️ Removing biometric credentials");
     const key =
       APP_CONFIG.STORAGE_KEYS.BIOMETRIC_CREDENTIALS || "biometric_credentials";
     await this.removeItem(key);
@@ -301,7 +262,8 @@ class SecureStorageService {
   /**
    * Store biometric settings
    */
-  async storeBiometricSettings(settings: any): Promise<void> {
+  async storeBiometricSettings(settings: BiometricSettings): Promise<void> {
+    console.log("💾 Storing biometric settings", { enabled: settings.enabled });
     const key =
       APP_CONFIG.STORAGE_KEYS.BIOMETRIC_ENABLED || "biometric_settings";
     await this.setItem(key, JSON.stringify(settings));
@@ -310,20 +272,26 @@ class SecureStorageService {
   /**
    * Get biometric settings
    */
-  async getBiometricSettings(): Promise<any> {
+  async getBiometricSettings(): Promise<BiometricSettings> {
     try {
+      console.log("🔍 Retrieving biometric settings");
       const key =
         APP_CONFIG.STORAGE_KEYS.BIOMETRIC_ENABLED || "biometric_settings";
       const settingsJson = await this.getItem(key);
 
       if (!settingsJson) {
-        return { enabled: false };
+        console.log("⚠️ No biometric settings found, returning defaults");
+        return { enabled: false, failureCount: 0, maxFailures: 5 };
       }
 
-      return JSON.parse(settingsJson);
+      const settings = JSON.parse(settingsJson);
+      console.log("✅ Retrieved biometric settings", {
+        enabled: settings.enabled,
+      });
+      return settings;
     } catch (error) {
-      console.error("Failed to retrieve biometric settings:", error);
-      return { enabled: false };
+      console.error("❌ Failed to retrieve biometric settings:", error);
+      return { enabled: false, failureCount: 0, maxFailures: 5 };
     }
   }
 
@@ -347,7 +315,7 @@ class SecureStorageService {
         return true;
       }
     } catch (error) {
-      console.error("SecureStorage availability check failed:", error);
+      console.error("❌ SecureStorage availability check failed:", error);
       return false;
     }
   }

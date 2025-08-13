@@ -15,7 +15,9 @@ import { biometricService } from "../services/auth/biometricService";
 
 interface AuthActions {
   // Authentication actions
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (
+    credentials: LoginCredentials & { _isBiometricLogin?: boolean },
+  ) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
@@ -30,12 +32,11 @@ interface AuthActions {
   clearAuth: () => void;
 
   // Biometric authentication
-  enableBiometric: (credentials?: {
+  enableBiometric: (credentials: {
     email: string;
     password: string;
   }) => Promise<void>;
   disableBiometric: () => Promise<void>;
-  authenticateWithBiometric: () => Promise<void>;
   loginWithBiometric: () => Promise<void>;
 
   // Session management
@@ -66,17 +67,24 @@ export const useAuthStore = create<AuthStore>()(
       sessionExpiry: null,
 
       // Authentication actions
-      login: async (credentials: LoginCredentials) => {
+      login: async (
+        credentials: LoginCredentials & { _isBiometricLogin?: boolean },
+      ) => {
         set({ isLoading: true, error: null });
 
         try {
-          console.log("🔐 Attempting login with:", {
+          const isBiometricLogin = credentials._isBiometricLogin || false;
+          console.log("🔐 Attempting login:", {
             email: credentials.email,
+            isBiometricLogin,
           });
+
+          // Remove internal flag before API call
+          const { _isBiometricLogin, ...apiCredentials } = credentials;
 
           const response = await apiClient.post(
             "/auth/contractor/login",
-            credentials,
+            apiCredentials,
           );
 
           console.log("📡 Login API Response:", response);
@@ -140,6 +148,21 @@ export const useAuthStore = create<AuthStore>()(
             stack: (error as any)?.stack,
             name: (error as any)?.name,
           });
+
+          // Enhanced error handling for biometric context
+          if (
+            credentials._isBiometricLogin &&
+            (error as any)?.message?.includes("No refresh token")
+          ) {
+            console.warn(
+              "🔄 Ignoring refresh token error during biometric login",
+            );
+            // Don't set error state for this specific case - let the retry logic handle it
+            set({ isLoading: false });
+            throw new Error(
+              "Authentication temporarily unavailable. Please try again.",
+            );
+          }
 
           const apiError = error as ApiError;
           const errorMessage = apiError.message || "Login failed";
@@ -205,13 +228,23 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       refreshToken: async () => {
-        const { tokens } = get();
+        const { tokens, isLoading } = get();
+
+        // Don't attempt refresh if we're in the middle of a login process
+        if (isLoading) {
+          console.log(
+            "🔄 [AuthStore] Skipping token refresh during login process",
+          );
+          return;
+        }
 
         if (!tokens?.refreshToken) {
+          console.warn("🔄 [AuthStore] No refresh token available for refresh");
           throw new Error("No refresh token available");
         }
 
         try {
+          console.log("🔄 [AuthStore] Attempting token refresh");
           const response = await apiClient.post("/auth/contractor/refresh", {
             refreshToken: tokens.refreshToken,
           });
@@ -228,12 +261,16 @@ export const useAuthStore = create<AuthStore>()(
               tokens: newTokens,
               sessionExpiry,
             });
+            console.log("✅ [AuthStore] Token refresh successful");
           } else {
             throw new Error("Token refresh failed");
           }
         } catch (error) {
-          // Refresh failed, logout user
-          get().clearAuth();
+          console.error("❌ [AuthStore] Token refresh failed:", error);
+          // Only clear auth if we're not in a login process
+          if (!isLoading) {
+            get().clearAuth();
+          }
           throw error;
         }
       },
@@ -348,7 +385,7 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       // Biometric authentication
-      enableBiometric: async (credentials?: {
+      enableBiometric: async (credentials: {
         email: string;
         password: string;
       }) => {
@@ -361,10 +398,16 @@ export const useAuthStore = create<AuthStore>()(
             );
           }
 
-          // Use provided credentials or current user data
+          if (!credentials || !credentials.email || !credentials.password) {
+            throw new Error(
+              "Email and password are required to enable biometric authentication",
+            );
+          }
+
+          // Use provided credentials
           const biometricCredentials = {
-            username: credentials?.email || user.email,
-            password: credentials?.password || "", // Password should be provided for security
+            username: credentials.email,
+            password: credentials.password,
             accessToken: get().tokens?.accessToken,
             refreshToken: get().tokens?.refreshToken,
             expiresAt: get().tokens?.expiresAt,
@@ -437,6 +480,8 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
 
         try {
+          console.log("🔐 Starting biometric login flow");
+
           const result = await biometricService.authenticateAndGetCredentials({
             reason: "Sign in to your account",
             title: "Biometric Login",
@@ -444,30 +489,73 @@ export const useAuthStore = create<AuthStore>()(
           });
 
           if (result.success && result.credentials) {
-            // Perform login with stored credentials
-            await get().login({
+            console.log(
+              "✅ Biometric authentication successful, proceeding with login",
+            );
+
+            // Use a flag to indicate this is a biometric login
+            const loginCredentials = {
               email: result.credentials.username,
               password: result.credentials.password,
               rememberMe: true,
-            });
+              _isBiometricLogin: true, // Internal flag
+            };
+
+            // Call login with enhanced error handling
+            try {
+              await get().login(loginCredentials);
+            } catch (loginError: any) {
+              // Handle specific "No refresh token available" error
+              if (loginError.message?.includes("No refresh token available")) {
+                console.warn(
+                  "🔄 Token refresh attempted during biometric login - this is expected, retrying...",
+                );
+
+                // Clear any stale auth state and retry
+                get().clearAuth();
+                await get().login({
+                  email: result.credentials.username,
+                  password: result.credentials.password,
+                  rememberMe: true,
+                });
+              } else {
+                throw loginError;
+              }
+            }
           } else {
             throw new Error(result.error || "Biometric login failed");
           }
         } catch (error) {
-          console.error("Biometric login error:", error);
+          console.error("❌ Biometric login error:", error);
           const errorMessage =
             (error as any)?.message || "Biometric login failed";
-          set({ error: errorMessage, isLoading: false });
+
+          // Provide more specific error messages
+          let userFriendlyMessage = errorMessage;
+          if (errorMessage.includes("No refresh token available")) {
+            userFriendlyMessage =
+              "Authentication failed. Please try again or use password login.";
+          }
+
+          set({ error: userFriendlyMessage, isLoading: false });
           throw error;
         }
       },
 
       // Session management
       checkAuthStatus: async (): Promise<boolean> => {
-        const { tokens, sessionExpiry } = get();
+        const { tokens, sessionExpiry, isLoading } = get();
 
         if (!tokens) {
           return false;
+        }
+
+        // Don't check auth status during login process
+        if (isLoading) {
+          console.log(
+            "🔍 [AuthStore] Skipping auth status check during login process",
+          );
+          return true; // Assume valid during login
         }
 
         // Check if session is expired
@@ -476,6 +564,9 @@ export const useAuthStore = create<AuthStore>()(
             await get().refreshToken();
             return true;
           } catch (error) {
+            console.warn(
+              "🔍 [AuthStore] Auth status check failed, clearing auth",
+            );
             get().clearAuth();
             return false;
           }
@@ -492,6 +583,7 @@ export const useAuthStore = create<AuthStore>()(
             return false;
           }
         } catch (error) {
+          console.warn("🔍 [AuthStore] Token verification failed:", error);
           get().clearAuth();
           return false;
         }
@@ -568,10 +660,18 @@ if (typeof window !== "undefined") {
         }
 
         lastRefreshCheck = now;
-        const { tokens, sessionExpiry, isAuthenticated } =
+        const { tokens, sessionExpiry, isAuthenticated, isLoading } =
           useAuthStore.getState();
 
-        if (isAuthenticated && tokens && sessionExpiry) {
+        // Don't attempt refresh during login processes
+        if (isLoading) {
+          console.log(
+            "🔄 [AuthStore] Skipping auto-refresh during login process",
+          );
+          return;
+        }
+
+        if (isAuthenticated && tokens && sessionExpiry && tokens.refreshToken) {
           const expiryTime = new Date(sessionExpiry).getTime();
           const currentTime = Date.now();
           const timeUntilExpiry = expiryTime - currentTime;

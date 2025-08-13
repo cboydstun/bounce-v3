@@ -32,9 +32,6 @@ interface UseBiometricReturn {
   }>;
   enableBiometric: (credentials: BiometricCredentials) => Promise<boolean>;
   disableBiometric: () => Promise<boolean>;
-  updateCredentials: (
-    credentials: Partial<BiometricCredentials>,
-  ) => Promise<boolean>;
   shouldOfferSetup: () => Promise<boolean>;
 
   // Utilities
@@ -221,29 +218,6 @@ export const useBiometric = (): UseBiometricReturn => {
   }, [checkEnabled]);
 
   /**
-   * Update stored biometric credentials
-   */
-  const updateCredentials = useCallback(
-    async (credentials: Partial<BiometricCredentials>): Promise<boolean> => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        await biometricService.updateCredentials(credentials);
-        return true;
-      } catch (err: any) {
-        const errorMessage =
-          err.message || "Failed to update biometric credentials";
-        setError(errorMessage);
-        return false;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [],
-  );
-
-  /**
    * Check if biometric setup should be offered to user
    */
   const shouldOfferSetup = useCallback(async (): Promise<boolean> => {
@@ -290,7 +264,6 @@ export const useBiometric = (): UseBiometricReturn => {
     authenticateAndGetCredentials,
     enableBiometric,
     disableBiometric,
-    updateCredentials,
     shouldOfferSetup,
 
     // Utilities

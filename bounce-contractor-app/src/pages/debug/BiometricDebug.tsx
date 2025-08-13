@@ -22,7 +22,7 @@ const BiometricDebug: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <BiometricDebugPanel />
+        <BiometricDebugPanel isOpen={true} onDidDismiss={() => {}} />
       </IonContent>
     </IonPage>
   );

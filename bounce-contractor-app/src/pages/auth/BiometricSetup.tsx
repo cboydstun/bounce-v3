@@ -13,6 +13,9 @@ import {
   IonTitle,
   IonButtons,
   IonBackButton,
+  IonItem,
+  IonLabel,
+  IonInput,
 } from "@ionic/react";
 import {
   fingerPrint,
@@ -49,11 +52,12 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
     useBiometric();
 
   const [setupState, setSetupState] = useState<
-    "intro" | "setup" | "success" | "error"
+    "intro" | "password" | "setup" | "success" | "error"
   >("intro");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     refresh();
@@ -104,9 +108,20 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
     }
   };
 
-  const handleSetup = async () => {
+  const handleStartSetup = () => {
+    setSetupState("password");
+  };
+
+  const handlePasswordSubmit = async () => {
     if (!user) {
-      setError(t("biometric.setup.userRequired"));
+      setError("User must be logged in to enable biometric authentication");
+      setShowToast(true);
+      return;
+    }
+
+    if (!password) {
+      setError("Please enter your password to continue");
+      setShowToast(true);
       return;
     }
 
@@ -115,15 +130,13 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
     setError(null);
 
     try {
-      // Note: In a real implementation, you would need the user's password
-      // This is a security requirement for biometric setup
-      // For now, we'll use empty password and let the biometric service handle it
       await enableBiometric({
         email: user.email,
-        password: "", // This should be collected from user input in production
+        password: password,
       });
 
       setSetupState("success");
+      setPassword(""); // Clear password from memory
 
       setTimeout(() => {
         handleComplete();
@@ -131,7 +144,8 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
     } catch (err: any) {
       console.error("Biometric setup failed:", err);
       setSetupState("error");
-      setError(err.message || t("biometric.setup.failed"));
+      setError(err.message || "Failed to set up biometric authentication");
+      setPassword(""); // Clear password from memory
     } finally {
       setIsLoading(false);
     }
@@ -223,6 +237,35 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
             {t("biometric.setup.privacy.description")}
           </p>
         </IonText>
+      </div>
+    </div>
+  );
+
+  const renderPasswordContent = () => (
+    <div className="text-center">
+      <div className="w-24 h-24 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center">
+        <IonIcon icon={lockClosed} className="w-12 h-12 text-primary" />
+      </div>
+
+      <IonText>
+        <h2 className="text-xl font-medium mb-4">Confirm Your Password</h2>
+        <p className="text-gray-600 mb-8">
+          For security, please enter your password to enable{" "}
+          {getBiometricTypeText()} login.
+        </p>
+      </IonText>
+
+      <div className="space-y-4 mb-8">
+        <IonItem className="rounded-lg">
+          <IonLabel position="stacked">Password</IonLabel>
+          <IonInput
+            type="password"
+            value={password}
+            onIonInput={(e) => setPassword(e.detail.value!)}
+            placeholder="Enter your password"
+            className="input-field"
+          />
+        </IonItem>
       </div>
     </div>
   );
@@ -331,6 +374,7 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
       <IonContent className="ion-padding">
         <div className="flex flex-col justify-center min-h-full py-8">
           {setupState === "intro" && renderIntroContent()}
+          {setupState === "password" && renderPasswordContent()}
           {setupState === "setup" && renderSetupContent()}
           {setupState === "success" && renderSuccessContent()}
           {setupState === "error" && renderErrorContent()}
@@ -341,7 +385,7 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
               <>
                 <IonButton
                   expand="block"
-                  onClick={handleSetup}
+                  onClick={handleStartSetup}
                   disabled={isLoading}
                   className="btn-primary"
                 >
@@ -363,11 +407,33 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
               </>
             )}
 
+            {setupState === "password" && (
+              <>
+                <IonButton
+                  expand="block"
+                  onClick={handlePasswordSubmit}
+                  disabled={isLoading || !password}
+                  className="btn-primary"
+                >
+                  {isLoading ? "Setting up..." : "Continue"}
+                </IonButton>
+
+                <IonButton
+                  expand="block"
+                  fill="clear"
+                  onClick={() => setSetupState("intro")}
+                  disabled={isLoading}
+                >
+                  Back
+                </IonButton>
+              </>
+            )}
+
             {setupState === "error" && (
               <>
                 <IonButton
                   expand="block"
-                  onClick={handleSetup}
+                  onClick={handleStartSetup}
                   disabled={isLoading}
                   className="btn-primary"
                 >

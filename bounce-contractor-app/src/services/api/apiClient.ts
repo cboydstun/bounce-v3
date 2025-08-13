@@ -70,6 +70,25 @@ class ApiClient {
 
         // Handle token refresh for 401 errors
         if (error.response?.status === 401 && !originalRequest._retry) {
+          // Skip token refresh for authentication endpoints
+          const authEndpoints = [
+            "/auth/contractor/login",
+            "/auth/contractor/register",
+            "/auth/contractor/refresh",
+          ];
+
+          const isAuthEndpoint = authEndpoints.some((endpoint) =>
+            originalRequest.url?.includes(endpoint),
+          );
+
+          if (isAuthEndpoint) {
+            console.log(
+              "🔐 Skipping token refresh for auth endpoint:",
+              originalRequest.url,
+            );
+            return Promise.reject(this.handleError(error));
+          }
+
           originalRequest._retry = true;
 
           try {

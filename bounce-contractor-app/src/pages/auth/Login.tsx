@@ -12,6 +12,7 @@ import {
   IonSpinner,
   IonToast,
   IonIcon,
+  IonAlert,
 } from "@ionic/react";
 import { fingerPrint, eye, lockClosed, bug } from "ionicons/icons";
 import { useAuthStore, authSelectors } from "../../store/authStore";
@@ -24,6 +25,7 @@ import { BiometryType } from "../../types/biometric.types";
 import BiometricPrompt from "../../components/auth/BiometricPrompt";
 import { useLoginNotifications } from "../../hooks/auth/useLoginNotifications";
 import BiometricDebugPanel from "../../components/debug/BiometricDebugPanel";
+import { biometricService } from "../../services/auth/biometricService";
 
 type AutoPromptState =
   | "checking"
@@ -44,12 +46,11 @@ const Login: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
+  const [biometricPromptMode, setBiometricPromptMode] = useState<
+    "setup" | "login"
+  >("login");
 
-  // Auto-biometric prompt state
-  const [autoPromptState, setAutoPromptState] =
-    useState<AutoPromptState>("checking");
-  const [showLoginForm, setShowLoginForm] = useState(false);
-  const [autoPromptAttempted, setAutoPromptAttempted] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(true);
 
   const login = useAuthStore((state) => state.login);
   const loginWithBiometric = useAuthStore((state) => state.loginWithBiometric);
@@ -70,121 +71,26 @@ const Login: React.FC = () => {
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
 
+  // Post-login biometric setup state
+  const [pendingCredentials, setPendingCredentials] =
+    useState<LoginCredentials | null>(null);
+
   // Notification permission hook
   const { requestNotificationPermission } = useLoginNotifications();
 
-  // Auto-biometric prompt logic
+  // Check if biometric setup should be offered on component mount
   useEffect(() => {
-    const handleAutoPrompt = async () => {
-      // Skip if already attempted in this session
-      if (autoPromptAttempted) {
-        setAutoPromptState("disabled");
-        setShowLoginForm(true);
-        return;
-      }
-
-      // Skip if biometric feature is disabled
-      if (!APP_CONFIG.FEATURES.BIOMETRIC_AUTH) {
-        setAutoPromptState("disabled");
-        setShowLoginForm(true);
-        return;
-      }
-
-      try {
-        setAutoPromptState("checking");
-
-        // Check if biometric is available AND enabled
-        if (isAvailable && isEnabled) {
-          setAutoPromptState("prompting");
-
-          // Automatically trigger biometric authentication
-          const result = await authenticateAndGetCredentials({
-            reason: "Authenticate to access your account",
-            title: "Welcome Back",
-            subtitle: `Use your ${getBiometricTypeText()} to sign in`,
-            fallbackTitle: "Use Password Instead",
-            negativeButtonText: "Cancel",
-          });
-
-          if (result.success && result.credentials) {
-            setAutoPromptState("completed");
-
-            // Use the retrieved credentials to log in
-            await login({
-              email: result.credentials.username,
-              password: result.credentials.password,
-              rememberMe: false,
-            });
-
-            // Request notification permission after successful login (non-blocking)
-            requestNotificationPermission()
-              .then((permissionResult) => {
-                if (permissionResult.success) {
-                  console.log("Notification permission granted");
-                }
-              })
-              .catch((error) => {
-                console.log("Notification permission request failed:", error);
-              });
-
-            // Redirect to intended page or default
-            const from = location.state?.from?.pathname || "/tasks/available";
-            history.replace(from);
-            return;
-          } else {
-            // Biometric failed or was cancelled - show login form
-            setAutoPromptState("failed");
-            setAutoPromptAttempted(true);
-            setShowLoginForm(true);
-
-            if (result.error) {
-              setToastMessage(result.error);
-              setShowToast(true);
-            }
-          }
-        } else {
-          // Biometric not available or not enabled - show login form
-          setAutoPromptState("disabled");
-          setShowLoginForm(true);
-
-          // Check if biometric setup should be offered
-          if (isAvailable && !isEnabled) {
-            const shouldOffer = await shouldOfferSetup();
-            setShouldShowBiometricSetup(shouldOffer);
-          }
-        }
-      } catch (error: any) {
-        console.error("Auto-biometric prompt error:", error);
-        setAutoPromptState("failed");
-        setAutoPromptAttempted(true);
-        setShowLoginForm(true);
-        setToastMessage(error.message || "Biometric authentication failed");
-        setShowToast(true);
+    const checkBiometricSetup = async () => {
+      if (APP_CONFIG.FEATURES.BIOMETRIC_AUTH && isAvailable && !isEnabled) {
+        const shouldOffer = await shouldOfferSetup();
+        setShouldShowBiometricSetup(shouldOffer);
       }
     };
 
-    // Only run auto-prompt if biometric hook has loaded
     if (isAvailable !== undefined && isEnabled !== undefined) {
-      handleAutoPrompt();
+      checkBiometricSetup();
     }
-  }, [
-    isAvailable,
-    isEnabled,
-    autoPromptAttempted,
-    authenticateAndGetCredentials,
-    login,
-    requestNotificationPermission,
-    history,
-    location.state,
-    shouldOfferSetup,
-  ]);
-
-  // Handle fallback to password login
-  const handleUsePasswordInstead = () => {
-    setAutoPromptAttempted(true);
-    setAutoPromptState("failed");
-    setShowLoginForm(true);
-  };
+  }, [isAvailable, isEnabled, shouldOfferSetup]);
 
   const getBiometricIcon = () => {
     if (!availability) return fingerPrint;
@@ -219,53 +125,43 @@ const Login: React.FC = () => {
   };
 
   const handleBiometricLogin = async () => {
-    setBiometricLoading(true);
-
-    try {
-      // Check if biometric is enabled first
-      if (!isEnabled) {
-        // Biometric is available but not set up - set it up now
-        if (!credentials.email || !credentials.password) {
-          setToastMessage(
-            "Please enter your email and password to set up biometric login.",
-          );
-          setShowToast(true);
-          setBiometricLoading(false);
-          return;
-        }
-
-        // First, authenticate with password to verify identity
-        await login(credentials);
-
-        // Now set up biometric authentication with the verified credentials
-        try {
-          const setupResult = await setupBiometric({
-            username: credentials.email,
-            password: credentials.password,
-          });
-
-          if (setupResult.success) {
-            setToastMessage(
-              "Login successful! Biometric authentication has been set up.",
-            );
-          } else {
-            setToastMessage(
-              "Login successful! Biometric setup failed, but you can try again later.",
-            );
-          }
-        } catch (setupError) {
-          console.error("Biometric setup failed:", setupError);
-          setToastMessage(
-            "Login successful! Biometric setup failed, but you can try again later.",
-          );
-        }
+    // Check if biometric is enabled first
+    if (!isEnabled) {
+      // Biometric is available but not set up - require credentials first
+      if (!credentials.email || !credentials.password) {
+        setToastMessage(
+          "Please enter your email and password to set up biometric login.",
+        );
         setShowToast(true);
+        return;
+      }
 
-        // Request notification permission after successful login (non-blocking)
+      // Store credentials and show setup prompt
+      setPendingCredentials(credentials);
+      setBiometricPromptMode("setup");
+      setShowBiometricPrompt(true);
+      return;
+    }
+
+    // Biometric is already enabled, show login prompt
+    setBiometricPromptMode("login");
+    setShowBiometricPrompt(true);
+  };
+
+  const handleBiometricPromptSuccess = async () => {
+    setShowBiometricPrompt(false);
+
+    if (biometricPromptMode === "login") {
+      // For login mode, we need to actually perform the login with stored credentials
+      try {
+        await loginWithBiometric();
+
+        // Request notification permission after successful biometric login (non-blocking)
         requestNotificationPermission()
           .then((result) => {
             if (result.success) {
-              console.log("Notification permission granted");
+              setToastMessage(result.message);
+              setShowToast(true);
             }
           })
           .catch((error) => {
@@ -275,40 +171,12 @@ const Login: React.FC = () => {
         // Redirect to intended page or default
         const from = location.state?.from?.pathname || "/tasks/available";
         history.replace(from);
-        return;
+      } catch (error: any) {
+        setToastMessage(error.message || "Biometric login failed");
+        setShowToast(true);
       }
-
-      // Biometric is already enabled, use it for login
-      await loginWithBiometric();
-
-      // Request notification permission after successful biometric login (non-blocking)
-      requestNotificationPermission()
-        .then((result) => {
-          if (result.success) {
-            setToastMessage(result.message);
-            setShowToast(true);
-          }
-        })
-        .catch((error) => {
-          console.log("Notification permission request failed:", error);
-        });
-
-      // Redirect to intended page or default
-      const from = location.state?.from?.pathname || "/tasks/available";
-      history.replace(from);
-    } catch (error: any) {
-      setToastMessage(error.message || t("biometric.failed"));
-      setShowToast(true);
-    } finally {
-      setBiometricLoading(false);
     }
-  };
-
-  const handleBiometricPromptSuccess = () => {
-    setShowBiometricPrompt(false);
-    // Redirect after successful biometric authentication
-    const from = location.state?.from?.pathname || "/tasks/available";
-    history.replace(from);
+    // For setup mode, handleBiometricSetup is called directly, so we don't need to do anything here
   };
 
   const handleBiometricPromptError = (error: string) => {
@@ -322,6 +190,57 @@ const Login: React.FC = () => {
     // User chose to use password instead
   };
 
+  // Helper function for successful login redirect
+  const handleSuccessfulLogin = () => {
+    // Request notification permission (non-blocking)
+    requestNotificationPermission()
+      .then((result) => {
+        if (result.success) {
+          setToastMessage(result.message);
+          setShowToast(true);
+        }
+      })
+      .catch((error) => {
+        console.log("Notification permission request failed:", error);
+      });
+
+    // Redirect to intended page
+    const from = location.state?.from?.pathname || "/tasks/available";
+    history.replace(from);
+  };
+
+  // Handle biometric setup with BiometricPrompt
+  const handleBiometricSetup = async () => {
+    if (!pendingCredentials) return;
+
+    try {
+      const setupResult = await setupBiometric({
+        username: pendingCredentials.email,
+        password: pendingCredentials.password,
+      });
+
+      if (setupResult.success) {
+        setToastMessage(
+          `${getBiometricTypeText()} login has been set up successfully!`,
+        );
+        setShowToast(true);
+        setPendingCredentials(null);
+        handleSuccessfulLogin();
+      } else {
+        throw new Error(setupResult.error || "Biometric setup failed");
+      }
+    } catch (error: any) {
+      console.error("Biometric setup failed:", error);
+      setToastMessage(
+        error.message ||
+          `${getBiometricTypeText()} setup failed, but you can try again later.`,
+      );
+      setShowToast(true);
+      setPendingCredentials(null);
+      handleSuccessfulLogin();
+    }
+  };
+
   const handleLogin = async () => {
     if (!credentials.email || !credentials.password) {
       setToastMessage("Please enter both email and password");
@@ -330,25 +249,22 @@ const Login: React.FC = () => {
     }
 
     try {
+      // Step 1: Perform login
       await login(credentials);
 
-      // Request notification permission after successful login (non-blocking)
-      requestNotificationPermission()
-        .then((result) => {
-          if (result.success) {
-            setToastMessage(result.message);
-            setShowToast(true);
-          }
-          // Don't show error messages for notification failures - just log them
-        })
-        .catch((error) => {
-          console.log("Notification permission request failed:", error);
-          // Silently fail - don't interrupt the login flow
-        });
+      // Step 2: Check if we should offer biometric setup
+      if (APP_CONFIG.FEATURES.BIOMETRIC_AUTH && isAvailable && !isEnabled) {
+        // Store credentials for potential biometric setup
+        setPendingCredentials(credentials);
 
-      // Redirect to intended page or default
-      const from = location.state?.from?.pathname || "/tasks/available";
-      history.replace(from);
+        // Show BiometricPrompt for setup
+        setBiometricPromptMode("setup");
+        setShowBiometricPrompt(true);
+        return; // Don't redirect yet
+      }
+
+      // Step 3: Normal redirect (if biometric not available or already set up)
+      handleSuccessfulLogin();
     } catch (error) {
       setToastMessage("Login failed. Please check your credentials.");
       setShowToast(true);
@@ -359,77 +275,7 @@ const Login: React.FC = () => {
     history.push("/register");
   };
 
-  // Render loading state during auto-prompt checking
-  if (autoPromptState === "checking") {
-    return (
-      <IonPage>
-        <IonContent className="ion-padding">
-          <div className="flex flex-col justify-center items-center min-h-full px-4 py-8">
-            {/* Language Toggle */}
-            <div className="absolute top-4 right-4">
-              <LanguageToggle />
-            </div>
-
-            {/* Loading State */}
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-primary rounded-full flex items-center justify-center mb-4">
-                <span className="text-2xl font-bold text-white">BC</span>
-              </div>
-              <IonSpinner name="crescent" className="mb-4" />
-              <h2 className="text-lg font-medium mb-2">
-                Checking biometric...
-              </h2>
-              <p className="text-gray-600">Please wait</p>
-            </div>
-          </div>
-        </IonContent>
-      </IonPage>
-    );
-  }
-
-  // Render biometric prompt state
-  if (autoPromptState === "prompting") {
-    return (
-      <IonPage>
-        <IonContent className="ion-padding">
-          <div className="flex flex-col justify-center items-center min-h-full px-4 py-8">
-            {/* Language Toggle */}
-            <div className="absolute top-4 right-4">
-              <LanguageToggle />
-            </div>
-
-            {/* Biometric Prompt State */}
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-primary rounded-full flex items-center justify-center mb-4">
-                <span className="text-2xl font-bold text-white">BC</span>
-              </div>
-              <IonIcon
-                icon={getBiometricIcon()}
-                className="w-16 h-16 text-primary mb-4"
-              />
-              <h2 className="text-lg font-medium mb-2">Welcome Back!</h2>
-              <p className="text-gray-600 mb-6">
-                Use your {getBiometricTypeText()} to sign in
-              </p>
-              <IonSpinner name="crescent" className="mb-4" />
-              <p className="text-sm text-gray-500 mb-6">Authenticating...</p>
-
-              {/* Fallback Button */}
-              <IonButton
-                fill="clear"
-                onClick={handleUsePasswordInstead}
-                className="text-primary"
-              >
-                Use Password Instead
-              </IonButton>
-            </div>
-          </div>
-        </IonContent>
-      </IonPage>
-    );
-  }
-
-  // Show login form for failed, disabled, or when showLoginForm is true
+  // Always show the login form (simplified approach)
   return (
     <IonPage>
       <IonContent className="ion-padding">
@@ -625,6 +471,33 @@ const Login: React.FC = () => {
         <BiometricDebugPanel
           isOpen={showDebugPanel}
           onDidDismiss={() => setShowDebugPanel(false)}
+        />
+
+        {/* Biometric Prompt */}
+        <BiometricPrompt
+          isOpen={showBiometricPrompt}
+          onDidDismiss={() => setShowBiometricPrompt(false)}
+          onSuccess={
+            biometricPromptMode === "setup"
+              ? handleBiometricSetup
+              : handleBiometricPromptSuccess
+          }
+          onError={handleBiometricPromptError}
+          onFallback={handleBiometricPromptFallback}
+          options={{
+            reason:
+              biometricPromptMode === "setup"
+                ? `Set up ${getBiometricTypeText()} login for faster access`
+                : "Authenticate to access your account",
+            title:
+              biometricPromptMode === "setup"
+                ? "Set up Quick Login"
+                : "Welcome Back",
+            subtitle: `Use your ${getBiometricTypeText()} to ${biometricPromptMode === "setup" ? "enable quick login" : "sign in"}`,
+            fallbackTitle: "Use Password Instead",
+            negativeButtonText: "Cancel",
+            maxAttempts: 3,
+          }}
         />
 
         <IonToast
