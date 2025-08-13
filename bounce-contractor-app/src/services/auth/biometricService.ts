@@ -18,6 +18,7 @@ import {
   biometricLogger,
   logBiometricOperation,
 } from "../../utils/biometricLogger";
+import { biometricDebugLogger } from "../../utils/biometricDebugLogger";
 
 class BiometricService {
   private isNative: boolean;
@@ -317,40 +318,94 @@ class BiometricService {
   async setupBiometric(
     credentials: BiometricCredentials,
   ): Promise<BiometricAuthResult> {
+    const operation = "setupBiometric";
+
     try {
+      biometricDebugLogger.log(operation, "start", true, {
+        hasCredentials: !!credentials,
+      });
+
       if (!this.isNative) {
+        const error = "Biometric setup is only available on native platforms";
+        biometricDebugLogger.log(operation, "not_native", false, { error });
         return {
           success: false,
-          error: "Biometric setup is only available on native platforms",
+          error,
           errorCode: BiometricErrorCode.BIOMETRY_NOT_AVAILABLE,
         };
       }
 
-      await this.initialize();
-
-      const availability = await this.isAvailable();
-      if (!availability.isAvailable) {
+      // Validate credentials before proceeding
+      const validation = biometricDebugLogger.validateCredentials(credentials);
+      if (!validation.valid) {
+        const error = `Invalid credentials for setup: ${validation.issues.join(", ")}`;
+        biometricDebugLogger.log(operation, "invalid_credentials", false, {
+          error,
+          issues: validation.issues,
+        });
         return {
           success: false,
-          error:
-            availability.reason || "Biometric authentication not available",
+          error,
+          errorCode: BiometricErrorCode.AUTHENTICATION_FAILED,
+        };
+      }
+
+      biometricDebugLogger.log(operation, "initialize", true);
+      await this.initialize();
+
+      biometricDebugLogger.log(operation, "check_availability", true);
+      const availability = await this.isAvailable();
+      biometricDebugLogger.log(
+        operation,
+        "availability_result",
+        availability.isAvailable,
+        {
+          isAvailable: availability.isAvailable,
+          reason: availability.reason,
+        },
+      );
+
+      if (!availability.isAvailable) {
+        const error =
+          availability.reason || "Biometric authentication not available";
+        biometricDebugLogger.log(operation, "not_available", false, { error });
+        return {
+          success: false,
+          error,
           errorCode: BiometricErrorCode.BIOMETRY_NOT_AVAILABLE,
         };
       }
 
       // First, authenticate to ensure user can use biometric
+      biometricDebugLogger.log(operation, "start_auth_test", true);
       const authResult = await this.authenticate({
         reason: "Set up biometric authentication for quick login",
         title: "Enable Biometric Login",
         subtitle: "Authenticate to enable biometric login",
       });
 
+      biometricDebugLogger.log(
+        operation,
+        "auth_test_result",
+        authResult.success,
+        {
+          success: authResult.success,
+          error: authResult.error,
+        },
+      );
+
       if (!authResult.success) {
+        biometricDebugLogger.log(operation, "auth_test_failed", false, {
+          error: authResult.error,
+          errorCode: authResult.errorCode,
+        });
         return authResult;
       }
 
       // Store credentials securely
+      biometricDebugLogger.log(operation, "store_credentials", true);
       await secureStorage.storeBiometricCredentials(credentials);
+      biometricDebugLogger.log(operation, "credentials_stored", true);
 
       // Update settings
       const settings: BiometricSettings = {
@@ -361,12 +416,44 @@ class BiometricService {
         maxFailures: 5,
       };
 
+      biometricDebugLogger.log(operation, "store_settings", true, { settings });
       await secureStorage.storeBiometricSettings(settings);
+      biometricDebugLogger.log(operation, "settings_stored", true);
 
+      // Verify the setup by trying to retrieve credentials
+      biometricDebugLogger.log(operation, "verify_setup", true);
+      const verifyCredentials = await secureStorage.getBiometricCredentials();
+      const verifySettings = await secureStorage.getBiometricSettings();
+
+      biometricDebugLogger.log(
+        operation,
+        "verification_result",
+        !!(verifyCredentials && verifySettings.enabled),
+        {
+          hasCredentials: !!verifyCredentials,
+          settingsEnabled: verifySettings.enabled,
+        },
+      );
+
+      if (!verifyCredentials || !verifySettings.enabled) {
+        const error =
+          "Setup verification failed - credentials or settings not properly stored";
+        biometricDebugLogger.log(operation, "verification_failed", false, {
+          error,
+        });
+        return {
+          success: false,
+          error,
+          errorCode: BiometricErrorCode.AUTHENTICATION_FAILED,
+        };
+      }
+
+      biometricDebugLogger.log(operation, "success", true);
       return {
         success: true,
       };
     } catch (error: any) {
+      biometricDebugLogger.log(operation, "error", false, undefined, error);
       console.error("Biometric setup failed:", error);
       return {
         success: false,
@@ -387,11 +474,71 @@ class BiometricService {
     error?: string;
     errorCode?: BiometricErrorCode;
   }> {
+    const operation = "authenticateAndGetCredentials";
+
     try {
-      // First authenticate with biometric
+      biometricDebugLogger.log(operation, "start", true, {
+        hasOptions: !!options,
+        reason: options?.reason,
+      });
+
+      // Check if biometric is enabled first
+      const isEnabled = await this.isEnabled();
+      biometricDebugLogger.log(operation, "check_enabled", true, { isEnabled });
+
+      if (!isEnabled) {
+        const error = "Biometric authentication is not enabled for this user";
+        biometricDebugLogger.log(operation, "not_enabled", false, { error });
+        return {
+          success: false,
+          error,
+          errorCode: BiometricErrorCode.BIOMETRY_NOT_AVAILABLE,
+        };
+      }
+
+      // Check if credentials exist before attempting authentication
+      biometricDebugLogger.log(operation, "pre_check_credentials", true);
+      const preCheckCredentials = await secureStorage.getBiometricCredentials();
+      biometricDebugLogger.log(
+        operation,
+        "pre_check_result",
+        !!preCheckCredentials,
+        {
+          hasCredentials: !!preCheckCredentials,
+        },
+      );
+
+      if (!preCheckCredentials) {
+        const error = "No biometric credentials found in storage";
+        biometricDebugLogger.log(operation, "no_stored_credentials", false, {
+          error,
+        });
+        return {
+          success: false,
+          error,
+          errorCode: BiometricErrorCode.AUTHENTICATION_FAILED,
+        };
+      }
+
+      // Now authenticate with biometric
+      biometricDebugLogger.log(operation, "start_authentication", true);
       const authResult = await this.authenticate(options);
+      biometricDebugLogger.log(
+        operation,
+        "authentication_result",
+        authResult.success,
+        {
+          success: authResult.success,
+          error: authResult.error,
+          errorCode: authResult.errorCode,
+        },
+      );
 
       if (!authResult.success) {
+        biometricDebugLogger.log(operation, "authentication_failed", false, {
+          error: authResult.error,
+          errorCode: authResult.errorCode,
+        });
         return {
           success: false,
           error: authResult.error,
@@ -399,22 +546,58 @@ class BiometricService {
         };
       }
 
-      // Retrieve stored credentials
+      // Retrieve stored credentials again (post-authentication)
+      biometricDebugLogger.log(operation, "retrieve_credentials", true);
       const credentials = await secureStorage.getBiometricCredentials();
+      biometricDebugLogger.log(
+        operation,
+        "credentials_retrieved",
+        !!credentials,
+        {
+          hasCredentials: !!credentials,
+          hasUsername: !!credentials?.username,
+        },
+      );
 
       if (!credentials) {
+        const error =
+          "No biometric credentials found after successful authentication";
+        biometricDebugLogger.log(operation, "post_auth_no_credentials", false, {
+          error,
+        });
         return {
           success: false,
-          error: "No biometric credentials found",
+          error,
           errorCode: BiometricErrorCode.AUTHENTICATION_FAILED,
         };
       }
+
+      // Validate retrieved credentials
+      const validation = biometricDebugLogger.validateCredentials(credentials);
+      if (!validation.valid) {
+        const error = `Retrieved credentials are invalid: ${validation.issues.join(", ")}`;
+        biometricDebugLogger.log(operation, "invalid_credentials", false, {
+          error,
+          issues: validation.issues,
+        });
+        return {
+          success: false,
+          error,
+          errorCode: BiometricErrorCode.AUTHENTICATION_FAILED,
+        };
+      }
+
+      biometricDebugLogger.log(operation, "success", true, {
+        hasCredentials: true,
+        hasUsername: !!credentials.username,
+      });
 
       return {
         success: true,
         credentials,
       };
     } catch (error: any) {
+      biometricDebugLogger.log(operation, "error", false, undefined, error);
       console.error(
         "Biometric authentication and credential retrieval failed:",
         error,

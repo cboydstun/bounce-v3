@@ -38,6 +38,24 @@ export async function geocodeAddressToTaskLocation(
 }
 
 /**
+ * Get the base URL for API calls
+ * @returns Base URL for the current environment
+ */
+function getBaseUrl(): string {
+  // Check if we're running on the server side
+  if (typeof window === "undefined") {
+    // Server-side: use environment variable or default
+    return (
+      process.env.NEXTAUTH_URL ||
+      process.env.VERCEL_URL ||
+      "http://localhost:3000"
+    );
+  }
+  // Client-side: use current origin
+  return window.location.origin;
+}
+
+/**
  * Geocode an address using OpenRoute Service
  * @param address The address to geocode
  * @returns Promise resolving to [longitude, latitude] coordinates
@@ -46,8 +64,12 @@ export async function geocodeAddress(
   address: string,
 ): Promise<[number, number]> {
   try {
+    // Get the appropriate base URL for the current environment
+    const baseUrl = getBaseUrl();
+    const url = `${baseUrl}/api/v1/geocode`;
+
     // Use our API route instead of calling OpenRouteService directly
-    const response = await fetch("/api/v1/geocode", {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -101,8 +123,12 @@ export async function reverseGeocode(
   latitude: number,
 ): Promise<string | null> {
   try {
+    // Get the appropriate base URL for the current environment
+    const baseUrl = getBaseUrl();
+    const url = `${baseUrl}/api/v1/reverse-geocode`;
+
     // Use our API route instead of calling OpenRouteService directly
-    const response = await fetch("/api/v1/reverse-geocode", {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

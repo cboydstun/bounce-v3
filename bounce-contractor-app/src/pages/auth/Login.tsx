@@ -13,7 +13,7 @@ import {
   IonToast,
   IonIcon,
 } from "@ionic/react";
-import { fingerPrint, eye, lockClosed } from "ionicons/icons";
+import { fingerPrint, eye, lockClosed, bug } from "ionicons/icons";
 import { useAuthStore, authSelectors } from "../../store/authStore";
 import { LoginCredentials } from "../../types/auth.types";
 import { APP_CONFIG } from "../../config/app.config";
@@ -23,6 +23,7 @@ import { useBiometric } from "../../hooks/auth/useBiometric";
 import { BiometryType } from "../../types/biometric.types";
 import BiometricPrompt from "../../components/auth/BiometricPrompt";
 import { useLoginNotifications } from "../../hooks/auth/useLoginNotifications";
+import BiometricDebugPanel from "../../components/debug/BiometricDebugPanel";
 
 type AutoPromptState =
   | "checking"
@@ -67,6 +68,7 @@ const Login: React.FC = () => {
   const [shouldShowBiometricSetup, setShouldShowBiometricSetup] =
     useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   // Notification permission hook
   const { requestNotificationPermission } = useLoginNotifications();
@@ -601,7 +603,29 @@ const Login: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Debug Panel Button (Development Only) */}
+          {APP_CONFIG.IS_DEVELOPMENT && APP_CONFIG.FEATURES.BIOMETRIC_AUTH && (
+            <div className="mt-8 pt-4 border-t border-gray-200">
+              <IonButton
+                expand="block"
+                fill="clear"
+                size="small"
+                onClick={() => setShowDebugPanel(true)}
+                className="text-gray-500"
+              >
+                <IonIcon icon={bug} className="mr-2" />
+                Biometric Debug Panel
+              </IonButton>
+            </div>
+          )}
         </div>
+
+        {/* Debug Panel */}
+        <BiometricDebugPanel
+          isOpen={showDebugPanel}
+          onDidDismiss={() => setShowDebugPanel(false)}
+        />
 
         <IonToast
           isOpen={showToast}

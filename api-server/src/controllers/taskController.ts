@@ -84,6 +84,14 @@ export class TaskController {
       const transformedTasks = result.tasks.map((task) => {
         const taskObj = task.toObject();
 
+        // Check if this is a route task and apply mobile transformation
+        const isRouteTask = TaskService.isRouteTask(task);
+        let routeTransformation = {};
+
+        if (isRouteTask) {
+          routeTransformation = TaskService.transformRouteTaskForMobile(task);
+        }
+
         // Map CRM status to mobile app status
         const statusMap: Record<string, string> = {
           Pending: "published",
@@ -113,7 +121,8 @@ export class TaskController {
           };
         }
 
-        return {
+        // Base task transformation
+        const baseTask = {
           id: taskObj._id.toString(),
           orderId: taskObj.orderId,
           title: taskObj.title || `${taskObj.type} Task`,
@@ -175,6 +184,16 @@ export class TaskController {
           updatedAt: taskObj.updatedAt,
           completedAt: taskObj.completedAt,
         };
+
+        // Apply route-specific transformations if this is a route task
+        if (isRouteTask && routeTransformation) {
+          return {
+            ...baseTask,
+            ...routeTransformation, // Override with mobile-friendly route data
+          };
+        }
+
+        return baseTask;
       });
 
       return res.json({
@@ -240,6 +259,14 @@ export class TaskController {
       const transformedTasks = result.tasks.map((task) => {
         const taskObj = task.toObject();
 
+        // Check if this is a route task and apply mobile transformation
+        const isRouteTask = TaskService.isRouteTask(task);
+        let routeTransformation = {};
+
+        if (isRouteTask) {
+          routeTransformation = TaskService.transformRouteTaskForMobile(task);
+        }
+
         // Map CRM status to mobile app status
         const statusMap: Record<string, string> = {
           Pending: "published",
@@ -269,7 +296,8 @@ export class TaskController {
           };
         }
 
-        return {
+        // Base task transformation
+        const baseTask = {
           id: taskObj._id.toString(),
           orderId: taskObj.orderId,
           title: taskObj.title || `${taskObj.type} Task`,
@@ -331,6 +359,16 @@ export class TaskController {
           updatedAt: taskObj.updatedAt,
           completedAt: taskObj.completedAt,
         };
+
+        // Apply route-specific transformations if this is a route task
+        if (isRouteTask && routeTransformation) {
+          return {
+            ...baseTask,
+            ...routeTransformation, // Override with mobile-friendly route data
+          };
+        }
+
+        return baseTask;
       });
 
       return res.json({
@@ -672,6 +710,16 @@ export class TaskController {
         title: taskObj.title,
       });
 
+      // Check if this is a route task and apply mobile transformation
+      const isRouteTask = TaskService.isRouteTask(result.task);
+      let routeTransformation = {};
+
+      if (isRouteTask) {
+        routeTransformation = TaskService.transformRouteTaskForMobile(
+          result.task,
+        );
+      }
+
       // Map CRM status to mobile app status
       const statusMap: Record<string, string> = {
         Pending: "published",
@@ -701,7 +749,8 @@ export class TaskController {
         };
       }
 
-      const transformedTask = {
+      // Base task transformation
+      const baseTask = {
         id: taskObj._id.toString(),
         orderId: taskObj.orderId,
         title: taskObj.title || `${taskObj.type} Task`,
@@ -762,6 +811,19 @@ export class TaskController {
         updatedAt: taskObj.updatedAt,
         completedAt: taskObj.completedAt,
       };
+
+      // Apply route-specific transformations if this is a route task
+      let transformedTask = baseTask;
+
+      if (isRouteTask && routeTransformation) {
+        transformedTask = {
+          ...baseTask,
+          // CRITICAL: Preserve original description for parsing
+          description: taskObj.description,
+          // Add mobile enhancements alongside original data
+          ...routeTransformation,
+        };
+      }
 
       return res.json({
         success: true,

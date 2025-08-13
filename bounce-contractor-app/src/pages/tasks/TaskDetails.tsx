@@ -55,6 +55,22 @@ import {
   useCompleteTask,
 } from "../../hooks/tasks/useTaskActions";
 import { useTaskTranslation } from "../../hooks/common/useI18n";
+import {
+  isConsolidatedTask,
+  parseConsolidatedTask,
+  getNextStop,
+  getRouteProgress,
+  ParsedConsolidatedTask,
+} from "../../utils/consolidatedTaskParser";
+import {
+  RouteOverviewCard,
+  ItemsListCard,
+  DeliveryScheduleCard,
+  NextStopCard,
+  RouteStatsCard,
+  RouteTimeline,
+  DetailedItemsCard,
+} from "../../components/tasks/ConsolidatedTaskComponents";
 
 interface TaskDetailsParams {
   id: string;
@@ -281,17 +297,92 @@ const TaskDetails: React.FC = () => {
   // Create formatDateTime function with translations
   const formatDateTime = useMemo(() => createFormatDateTime(t), [t]);
 
-  console.log("TaskDetails render:", {
+  // NEW: Parse consolidated task data
+  const consolidatedTaskData = useMemo(() => {
+    if (!displayTask) return null;
+    return parseConsolidatedTask(displayTask);
+  }, [displayTask]);
+
+  // NEW: State for consolidated task progress tracking
+  const [completedStops, setCompletedStops] = useState<number[]>([]);
+  const [completedItems, setCompletedItems] = useState<string[]>([]);
+  const [currentStop, setCurrentStop] = useState<number | undefined>();
+
+  // NEW: Calculate route progress
+  const routeProgress = useMemo(() => {
+    if (!consolidatedTaskData?.isConsolidated) return null;
+    return getRouteProgress(
+      consolidatedTaskData.routeMetadata.totalStops,
+      completedStops,
+    );
+  }, [consolidatedTaskData, completedStops]);
+
+  // NEW: Get next stop
+  const nextStop = useMemo(() => {
+    if (!consolidatedTaskData?.isConsolidated) return null;
+    return getNextStop(consolidatedTaskData.deliverySchedule, completedStops);
+  }, [consolidatedTaskData, completedStops]);
+
+  console.log("🔍 TaskDetails render:", {
     id: taskId,
     hasTask: !!task,
     hasDisplayTask: !!displayTask,
     isLoading,
     isError,
     queryEnabled: !!taskId && taskId.trim() !== "",
-    taskData: task,
-    displayTaskData: displayTask,
     localOverride: localTaskOverride,
+    isConsolidated: consolidatedTaskData?.isConsolidated,
   });
+
+  // DETAILED DEBUGGING: Log full task data
+  if (displayTask) {
+    console.log("📋 Full Task Data:", {
+      id: displayTask.id,
+      title: displayTask.title,
+      type: displayTask.type,
+      status: displayTask.status,
+      description: displayTask.description,
+      descriptionLength: displayTask.description?.length,
+      compensation: displayTask.compensation,
+      location: displayTask.location,
+      scheduledDate: displayTask.scheduledDate,
+      createdAt: displayTask.createdAt,
+      updatedAt: displayTask.updatedAt,
+    });
+
+    console.log("🔍 Description Analysis:", {
+      hasCompleteRoute: displayTask.description?.includes(
+        "Complete delivery route with",
+      ),
+      hasItemsSection: displayTask.description?.includes(
+        "📦 Items to Deliver:",
+      ),
+      hasScheduleSection: displayTask.description?.includes(
+        "📍 Delivery Schedule:",
+      ),
+      hasSummarySection: displayTask.description?.includes("📊 Route Summary:"),
+      hasRouteMetadata: displayTask.description?.includes(
+        "--- Route Metadata ---",
+      ),
+      descriptionStart: displayTask.description?.substring(0, 100),
+      descriptionEnd: displayTask.description?.substring(
+        displayTask.description.length - 100,
+      ),
+    });
+  }
+
+  // DETAILED DEBUGGING: Log consolidated task parsing results
+  if (consolidatedTaskData) {
+    console.log("📊 Consolidated Task Data:", {
+      isConsolidated: consolidatedTaskData.isConsolidated,
+      itemsCount: consolidatedTaskData.items.length,
+      stopsCount: consolidatedTaskData.deliverySchedule.length,
+      routeMetadata: consolidatedTaskData.routeMetadata,
+      rawSections: Object.keys(consolidatedTaskData.rawSections),
+      items: consolidatedTaskData.items,
+      deliverySchedule: consolidatedTaskData.deliverySchedule,
+    });
+  }
 
   // Button click handlers with optimistic updates
   const handleClaimTask = () => {
@@ -522,270 +613,427 @@ const TaskDetails: React.FC = () => {
 
       <IonContent>
         <div className="p-4 space-y-4">
-          {/* Task Header */}
-          <IonCard>
-            <IonCardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+          {/* Consolidated Task UI */}
+          {consolidatedTaskData?.isConsolidated ? (
+            <>
+              {/* Task Header with Route Badge */}
+              <IonCard>
+                <IonCardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <IonIcon
+                          icon={getTaskTypeIcon(displayTask.type)}
+                          className={`text-${getTaskTypeColor(displayTask.type)}`}
+                        />
+                        <IonBadge color={getTaskTypeColor(displayTask.type)}>
+                          {displayTask.type || "Task"}
+                        </IonBadge>
+                        <IonBadge color="secondary">Route Task</IonBadge>
+                        <IonBadge
+                          color={getPriorityColor(displayTask.priority)}
+                        >
+                          {displayTask.priority || "Medium"} Priority
+                        </IonBadge>
+                        <IonBadge color={getStatusColor(displayTask.status)}>
+                          {displayTask.status || "Unknown"}
+                          {displayTask._isOptimistic && " (syncing...)"}
+                        </IonBadge>
+                      </div>
+                      <IonCardTitle className="text-lg font-semibold">
+                        {(displayTask as any).mobileTitle ||
+                          displayTask.title ||
+                          "Task Details"}
+                      </IonCardTitle>
+                    </div>
+                  </div>
+                </IonCardHeader>
+              </IonCard>
+
+              {/* Route Overview */}
+              <RouteOverviewCard
+                metadata={consolidatedTaskData.routeMetadata}
+                paymentAmount={displayTask.compensation?.totalAmount}
+                progress={routeProgress || undefined}
+              />
+
+              {/* Next Stop (if route is in progress) */}
+              {displayTask.status === "in_progress" && nextStop && (
+                <NextStopCard
+                  nextStop={nextStop}
+                  onNavigate={() => {
+                    const mapsUrl = `https://maps.google.com/maps?q=${encodeURIComponent(nextStop.address)}`;
+                    window.open(mapsUrl, "_system");
+                  }}
+                  onMarkComplete={() => {
+                    setCompletedStops((prev) => [...prev, nextStop.stopNumber]);
+                    setCurrentStop(nextStop.stopNumber + 1);
+                    presentToast({
+                      message: `Stop ${nextStop.stopNumber} marked as complete!`,
+                      duration: 2000,
+                      position: "top",
+                      color: "success",
+                    });
+                  }}
+                />
+              )}
+
+              {/* Enhanced Items Breakdown - Shows detailed items grouped by order/stop */}
+              <DetailedItemsCard
+                items={consolidatedTaskData.items}
+                deliverySchedule={consolidatedTaskData.deliverySchedule}
+                completedItems={completedItems}
+                onItemToggle={(itemKey, completed) => {
+                  if (completed) {
+                    setCompletedItems((prev) => [...prev, itemKey]);
+                  } else {
+                    setCompletedItems((prev) =>
+                      prev.filter((key) => key !== itemKey),
+                    );
+                  }
+                }}
+                readonly={displayTask.status === "completed"}
+              />
+
+              {/* Detailed Route Timeline - Shows comprehensive stop details */}
+              <RouteTimeline
+                deliverySchedule={consolidatedTaskData.deliverySchedule}
+                completedStops={completedStops}
+                currentStop={currentStop}
+                onNavigateToStop={(stop) => {
+                  const mapsUrl = `https://maps.google.com/maps?q=${encodeURIComponent(stop.address)}`;
+                  window.open(mapsUrl, "_system");
+                }}
+                onMarkStopComplete={(stopNumber) => {
+                  setCompletedStops((prev) => [...prev, stopNumber]);
+                  presentToast({
+                    message: `Stop ${stopNumber} marked as complete!`,
+                    duration: 2000,
+                    position: "top",
+                    color: "success",
+                  });
+                }}
+                onCallCustomer={(stop) => {
+                  // TODO: Implement customer calling functionality
+                  presentToast({
+                    message: `Calling ${stop.customerName}...`,
+                    duration: 2000,
+                    position: "top",
+                    color: "primary",
+                  });
+                }}
+                readonly={displayTask.status === "completed"}
+              />
+
+              {/* Route Statistics */}
+              {routeProgress && (
+                <RouteStatsCard
+                  metadata={consolidatedTaskData.routeMetadata}
+                  progress={routeProgress}
+                  startTime={
+                    displayTask.status !== "published"
+                      ? formatDateTime(
+                          displayTask.updatedAt || displayTask.createdAt,
+                        )
+                      : undefined
+                  }
+                />
+              )}
+            </>
+          ) : (
+            <>
+              {/* Standard Task UI */}
+              {/* Task Header */}
+              <IonCard>
+                <IonCardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <IonIcon
+                          icon={getTaskTypeIcon(displayTask.type)}
+                          className={`text-${getTaskTypeColor(displayTask.type)}`}
+                        />
+                        <IonBadge color={getTaskTypeColor(displayTask.type)}>
+                          {displayTask.type || "Task"}
+                        </IonBadge>
+                        <IonBadge
+                          color={getPriorityColor(displayTask.priority)}
+                        >
+                          {displayTask.priority || "Medium"} Priority
+                        </IonBadge>
+                        <IonBadge color={getStatusColor(displayTask.status)}>
+                          {displayTask.status || "Unknown"}
+                          {displayTask._isOptimistic && " (syncing...)"}
+                        </IonBadge>
+                      </div>
+                      <IonCardTitle className="text-lg font-semibold">
+                        {displayTask.title || "Task Details"}
+                      </IonCardTitle>
+                    </div>
+                  </div>
+                </IonCardHeader>
+                <IonCardContent>
+                  <IonText className="text-gray-700">
+                    {(displayTask as any).mobileSummary ||
+                      displayTask.description ||
+                      "No description available"}
+                  </IonText>
+                </IonCardContent>
+              </IonCard>
+
+              {/* Scheduling Information */}
+              <IonCard>
+                <IonCardHeader>
+                  <IonCardTitle className="flex items-center gap-2">
                     <IonIcon
-                      icon={getTaskTypeIcon(displayTask.type)}
-                      className={`text-${getTaskTypeColor(displayTask.type)}`}
+                      icon={calendarOutline}
+                      className="text-purple-500"
                     />
-                    <IonBadge color={getTaskTypeColor(displayTask.type)}>
-                      {displayTask.type || "Task"}
-                    </IonBadge>
-                    <IonBadge color={getPriorityColor(displayTask.priority)}>
-                      {displayTask.priority || "Medium"} Priority
-                    </IonBadge>
-                    <IonBadge color={getStatusColor(displayTask.status)}>
-                      {displayTask.status || "Unknown"}
-                      {displayTask._isOptimistic && " (syncing...)"}
-                    </IonBadge>
-                  </div>
-                  <IonCardTitle className="text-lg font-semibold">
-                    {displayTask.title || "Task Details"}
+                    {t("details.schedule")}
                   </IonCardTitle>
-                </div>
-              </div>
-            </IonCardHeader>
-            <IonCardContent>
-              <IonText className="text-gray-700">
-                {displayTask.description || "No description available"}
-              </IonText>
-            </IonCardContent>
-          </IonCard>
-
-          {/* Scheduling Information */}
-          <IonCard>
-            <IonCardHeader>
-              <IonCardTitle className="flex items-center gap-2">
-                <IonIcon icon={calendarOutline} className="text-purple-500" />
-                {t("details.schedule")}
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <IonIcon icon={timeOutline} className="text-orange-500" />
-                  <div>
-                    <div className="font-medium">
-                      {t("details.scheduledTime")}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {displayTask.scheduledDate
-                        ? formatDateTime(displayTask.scheduledDate)
-                        : t("details.notScheduled")}
-                    </div>
-                  </div>
-                </div>
-
-                {displayTask.estimatedDuration && (
-                  <div className="flex items-center gap-3">
-                    <IonIcon icon={timeOutline} className="text-blue-500" />
-                    <div>
-                      <div className="font-medium">
-                        {t("details.estimatedDuration")}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {Math.floor(displayTask.estimatedDuration / 60)}h{" "}
-                        {displayTask.estimatedDuration % 60}m
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </IonCardContent>
-          </IonCard>
-
-          {/* Location Information */}
-          {(displayTask.location?.address?.formattedAddress ||
-            displayTask.location?.coordinates) && (
-            <IonCard>
-              <IonCardHeader>
-                <IonCardTitle className="flex items-center gap-2">
-                  <IonIcon icon={locationOutline} className="text-blue-500" />
-                  {t("details.location")}
-                </IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <div className="space-y-3">
-                  {displayTask.location?.address?.formattedAddress && (
-                    <div className="flex items-start gap-3">
-                      <IonIcon
-                        icon={homeOutline}
-                        className="text-green-500 mt-1"
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium">
-                          {t("details.address")}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {displayTask.location.address.formattedAddress}
-                        </div>
-                      </div>
-                      <IonButton fill="clear" size="small">
-                        <IonIcon icon={navigateOutline} />
-                      </IonButton>
-                    </div>
-                  )}
-
-                  {displayTask.location?.coordinates && (
+                </IonCardHeader>
+                <IonCardContent>
+                  <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <IonIcon
-                        icon={locationOutline}
-                        className="text-red-500"
-                      />
+                      <IonIcon icon={timeOutline} className="text-orange-500" />
                       <div>
                         <div className="font-medium">
-                          {t("details.coordinates")}
+                          {t("details.scheduledTime")}
                         </div>
-                        <div className="text-xs text-gray-500 font-mono">
-                          {displayTask.location.coordinates.latitude},{" "}
-                          {displayTask.location.coordinates.longitude}
+                        <div className="text-sm text-gray-600">
+                          {displayTask.scheduledDate
+                            ? formatDateTime(displayTask.scheduledDate)
+                            : t("details.notScheduled")}
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              </IonCardContent>
-            </IonCard>
-          )}
 
-          {/* Payment Information */}
-          {displayTask.compensation?.totalAmount && (
-            <IonCard>
-              <IonCardHeader>
-                <IonCardTitle className="flex items-center gap-2">
-                  <IonIcon icon={cashOutline} className="text-green-500" />
-                  {t("details.payment")}
-                </IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl font-bold text-green-600">
-                    ${displayTask.compensation.totalAmount.toFixed(2)}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {displayTask.compensation.currency || "USD"}
-                  </div>
-                </div>
-                {displayTask.compensation.baseAmount !==
-                  displayTask.compensation.totalAmount && (
-                  <div className="text-sm text-gray-600 mt-1">
-                    {t("details.base")}: $
-                    {displayTask.compensation.baseAmount.toFixed(2)}
-                    {displayTask.compensation.bonuses?.length > 0 && (
-                      <span>
-                        {" "}
-                        + {displayTask.compensation.bonuses.length}{" "}
-                        {t("details.bonus")}
-                      </span>
+                    {displayTask.estimatedDuration && (
+                      <div className="flex items-center gap-3">
+                        <IonIcon icon={timeOutline} className="text-blue-500" />
+                        <div>
+                          <div className="font-medium">
+                            {t("details.estimatedDuration")}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {Math.floor(displayTask.estimatedDuration / 60)}h{" "}
+                            {displayTask.estimatedDuration % 60}m
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
-                )}
-              </IonCardContent>
-            </IonCard>
-          )}
+                </IonCardContent>
+              </IonCard>
 
-          {/* Assignment Information */}
-          {displayTask.contractor && (
-            <IonCard>
-              <IonCardHeader>
-                <IonCardTitle className="flex items-center gap-2">
-                  <IonIcon icon={personOutline} className="text-indigo-500" />
-                  {t("details.assignment")}
-                </IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <IonIcon icon={personOutline} className="text-blue-500" />
-                    <div>
-                      <div className="font-medium">
-                        {t("details.assignedContractor")}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {displayTask.contractor.contractorId}
-                      </div>
-                      {displayTask.contractor.assignedAt && (
-                        <div className="text-xs text-gray-500">
-                          {t("details.assigned")}:{" "}
-                          {formatDateTime(displayTask.contractor.assignedAt)}
+              {/* Location Information */}
+              {(displayTask.location?.address?.formattedAddress ||
+                displayTask.location?.coordinates) && (
+                <IonCard>
+                  <IonCardHeader>
+                    <IonCardTitle className="flex items-center gap-2">
+                      <IonIcon
+                        icon={locationOutline}
+                        className="text-blue-500"
+                      />
+                      {t("details.location")}
+                    </IonCardTitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    <div className="space-y-3">
+                      {displayTask.location?.address?.formattedAddress && (
+                        <div className="flex items-start gap-3">
+                          <IonIcon
+                            icon={homeOutline}
+                            className="text-green-500 mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium">
+                              {t("details.address")}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {displayTask.location.address.formattedAddress}
+                            </div>
+                          </div>
+                          <IonButton fill="clear" size="small">
+                            <IonIcon icon={navigateOutline} />
+                          </IonButton>
+                        </div>
+                      )}
+
+                      {displayTask.location?.coordinates && (
+                        <div className="flex items-center gap-3">
+                          <IonIcon
+                            icon={locationOutline}
+                            className="text-red-500"
+                          />
+                          <div>
+                            <div className="font-medium">
+                              {t("details.coordinates")}
+                            </div>
+                            <div className="text-xs text-gray-500 font-mono">
+                              {displayTask.location.coordinates.latitude},{" "}
+                              {displayTask.location.coordinates.longitude}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
+                  </IonCardContent>
+                </IonCard>
+              )}
+
+              {/* Payment Information */}
+              {displayTask.compensation?.totalAmount && (
+                <IonCard>
+                  <IonCardHeader>
+                    <IonCardTitle className="flex items-center gap-2">
+                      <IonIcon icon={cashOutline} className="text-green-500" />
+                      {t("details.payment")}
+                    </IonCardTitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl font-bold text-green-600">
+                        ${displayTask.compensation.totalAmount.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {displayTask.compensation.currency || "USD"}
+                      </div>
+                    </div>
+                    {displayTask.compensation.baseAmount !==
+                      displayTask.compensation.totalAmount && (
+                      <div className="text-sm text-gray-600 mt-1">
+                        {t("details.base")}: $
+                        {displayTask.compensation.baseAmount.toFixed(2)}
+                        {displayTask.compensation.bonuses?.length > 0 && (
+                          <span>
+                            {" "}
+                            + {displayTask.compensation.bonuses.length}{" "}
+                            {t("details.bonus")}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </IonCardContent>
+                </IonCard>
+              )}
+
+              {/* Assignment Information */}
+              {displayTask.contractor && (
+                <IonCard>
+                  <IonCardHeader>
+                    <IonCardTitle className="flex items-center gap-2">
+                      <IonIcon
+                        icon={personOutline}
+                        className="text-indigo-500"
+                      />
+                      {t("details.assignment")}
+                    </IonCardTitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <IonIcon
+                          icon={personOutline}
+                          className="text-blue-500"
+                        />
+                        <div>
+                          <div className="font-medium">
+                            {t("details.assignedContractor")}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {displayTask.contractor.contractorId}
+                          </div>
+                          {displayTask.contractor.assignedAt && (
+                            <div className="text-xs text-gray-500">
+                              {t("details.assigned")}:{" "}
+                              {formatDateTime(
+                                displayTask.contractor.assignedAt,
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </IonCardContent>
+                </IonCard>
+              )}
+
+              {/* Task Metadata */}
+              <IonCard>
+                <IonCardHeader>
+                  <IonCardTitle className="flex items-center gap-2">
+                    <IonIcon icon={businessOutline} className="text-gray-500" />
+                    {t("details.taskInformation")}
+                  </IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <IonIcon
+                        icon={businessOutline}
+                        className="text-blue-500"
+                      />
+                      <div>
+                        <div className="font-medium">Task ID</div>
+                        <div className="text-xs text-gray-500 font-mono">
+                          {displayTask.id}
+                        </div>
+                      </div>
+                    </div>
+
+                    {displayTask.orderId && (
+                      <div className="flex items-center gap-3">
+                        <IonIcon
+                          icon={businessOutline}
+                          className="text-purple-500"
+                        />
+                        <div>
+                          <div className="font-medium">
+                            {t("details.orderId")}
+                          </div>
+                          <div className="text-xs text-gray-500 font-mono">
+                            {displayTask.orderId}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {displayTask.createdAt && (
+                      <div className="flex items-center gap-3">
+                        <IonIcon icon={timeOutline} className="text-gray-500" />
+                        <div>
+                          <div className="font-medium">
+                            {t("details.created")}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {formatDateTime(displayTask.createdAt)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {displayTask.updatedAt && (
+                      <div className="flex items-center gap-3">
+                        <IonIcon icon={timeOutline} className="text-gray-500" />
+                        <div>
+                          <div className="font-medium">
+                            {t("details.lastUpdated")}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {formatDateTime(displayTask.updatedAt)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </IonCardContent>
-            </IonCard>
+                </IonCardContent>
+              </IonCard>
+            </>
           )}
 
-          {/* Task Metadata */}
-          <IonCard>
-            <IonCardHeader>
-              <IonCardTitle className="flex items-center gap-2">
-                <IonIcon icon={businessOutline} className="text-gray-500" />
-                {t("details.taskInformation")}
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <IonIcon icon={businessOutline} className="text-blue-500" />
-                  <div>
-                    <div className="font-medium">Task ID</div>
-                    <div className="text-xs text-gray-500 font-mono">
-                      {displayTask.id}
-                    </div>
-                  </div>
-                </div>
-
-                {displayTask.orderId && (
-                  <div className="flex items-center gap-3">
-                    <IonIcon
-                      icon={businessOutline}
-                      className="text-purple-500"
-                    />
-                    <div>
-                      <div className="font-medium">{t("details.orderId")}</div>
-                      <div className="text-xs text-gray-500 font-mono">
-                        {displayTask.orderId}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {displayTask.createdAt && (
-                  <div className="flex items-center gap-3">
-                    <IonIcon icon={timeOutline} className="text-gray-500" />
-                    <div>
-                      <div className="font-medium">{t("details.created")}</div>
-                      <div className="text-sm text-gray-600">
-                        {formatDateTime(displayTask.createdAt)}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {displayTask.updatedAt && (
-                  <div className="flex items-center gap-3">
-                    <IonIcon icon={timeOutline} className="text-gray-500" />
-                    <div>
-                      <div className="font-medium">
-                        {t("details.lastUpdated")}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {formatDateTime(displayTask.updatedAt)}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </IonCardContent>
-          </IonCard>
-
-          {/* Action Buttons */}
+          {/* Action Buttons - Common for both consolidated and standard tasks */}
           <div className="space-y-3 pb-8">
             {displayTask.status === "published" && (
               <IonButton

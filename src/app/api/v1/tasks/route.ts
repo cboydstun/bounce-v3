@@ -16,6 +16,7 @@ import WebSocketBroadcastService, {
   TaskBroadcastData,
 } from "@/services/websocketBroadcastService";
 import { TemplateEngine } from "@/utils/templateEngine";
+import { getCurrentDateCT } from "@/utils/dateUtils";
 
 // Helper function to map task priority to notification priority
 const getNotificationPriority = (
@@ -429,8 +430,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if scheduled date is in the past
-    if (scheduledDate < new Date()) {
+    // Check if scheduled date is in the past using Central Time comparison
+    const currentTime = new Date();
+    if (scheduledDate < currentTime) {
+      console.log("Date validation failed:", {
+        scheduledDate: scheduledDate.toISOString(),
+        currentTime: currentTime.toISOString(),
+        scheduledDateLocal: scheduledDate.toString(),
+        currentTimeLocal: currentTime.toString(),
+        autoPopulatedData: autoPopulatedData.scheduledDateTime,
+        finalTaskData: finalTaskData.scheduledDateTime,
+      });
       return NextResponse.json(
         { error: "Scheduled date/time cannot be in the past" },
         { status: 400 },

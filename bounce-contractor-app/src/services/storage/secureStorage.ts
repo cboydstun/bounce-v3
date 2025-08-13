@@ -6,6 +6,7 @@ import {
   BiometricCredentials,
 } from "../../types/biometric.types";
 import { APP_CONFIG } from "../../config/app.config";
+import { biometricDebugLogger } from "../../utils/biometricDebugLogger";
 
 class SecureStorageService {
   private isNative: boolean;
@@ -155,31 +156,134 @@ class SecureStorageService {
   async storeBiometricCredentials(
     credentials: BiometricCredentials,
   ): Promise<void> {
-    const key =
-      APP_CONFIG.STORAGE_KEYS.BIOMETRIC_CREDENTIALS || "biometric_credentials";
-    await this.setItem(key, JSON.stringify(credentials), {
-      encrypt: true,
-      requireBiometric: true,
-      expirationTime: APP_CONFIG.JWT_REFRESH_TOKEN_EXPIRY,
-    });
+    const operation = "storeBiometricCredentials";
+
+    try {
+      biometricDebugLogger.log(operation, "start", true, {
+        hasCredentials: !!credentials,
+      });
+
+      // Validate credentials before storing
+      const validation = biometricDebugLogger.validateCredentials(credentials);
+      if (!validation.valid) {
+        biometricDebugLogger.log(operation, "validation_failed", false, {
+          issues: validation.issues,
+        });
+        throw new Error(`Invalid credentials: ${validation.issues.join(", ")}`);
+      }
+
+      biometricDebugLogger.log(operation, "validation_passed", true);
+
+      const key =
+        APP_CONFIG.STORAGE_KEYS.BIOMETRIC_CREDENTIALS ||
+        "biometric_credentials";
+      biometricDebugLogger.log(operation, "using_key", true, { key });
+
+      const credentialsJson = JSON.stringify(credentials);
+      biometricDebugLogger.log(operation, "serialized", true, {
+        length: credentialsJson.length,
+      });
+
+      await this.setItem(key, credentialsJson, {
+        encrypt: true,
+        requireBiometric: true,
+        expirationTime: APP_CONFIG.JWT_REFRESH_TOKEN_EXPIRY,
+      });
+
+      biometricDebugLogger.log(operation, "stored", true);
+
+      // Verify storage by immediately reading back
+      const verification = await this.getItem(key);
+      if (!verification) {
+        biometricDebugLogger.log(operation, "verification_failed", false, {
+          error: "Could not read back stored credentials",
+        });
+        throw new Error("Failed to verify credential storage");
+      }
+
+      biometricDebugLogger.log(operation, "verified", true, {
+        length: verification.length,
+      });
+    } catch (error) {
+      biometricDebugLogger.log(operation, "error", false, undefined, error);
+      throw error;
+    }
   }
 
   /**
    * Retrieve biometric credentials
    */
   async getBiometricCredentials(): Promise<BiometricCredentials | null> {
+    const operation = "getBiometricCredentials";
+
     try {
+      biometricDebugLogger.log(operation, "start", true);
+
       const key =
         APP_CONFIG.STORAGE_KEYS.BIOMETRIC_CREDENTIALS ||
         "biometric_credentials";
-      const credentialsJson = await this.getItem(key);
+      biometricDebugLogger.log(operation, "using_key", true, { key });
 
-      if (!credentialsJson) {
+      // Check if key exists first
+      const hasKey = await this.hasItem(key);
+      biometricDebugLogger.log(operation, "key_exists", hasKey, { hasKey });
+
+      if (!hasKey) {
+        biometricDebugLogger.log(operation, "no_key_found", false, {
+          message: "No biometric credentials key found in storage",
+        });
         return null;
       }
 
-      return JSON.parse(credentialsJson) as BiometricCredentials;
+      const credentialsJson = await this.getItem(key);
+      biometricDebugLogger.log(operation, "retrieved_raw", !!credentialsJson, {
+        hasData: !!credentialsJson,
+        length: credentialsJson?.length || 0,
+      });
+
+      if (!credentialsJson) {
+        biometricDebugLogger.log(operation, "no_data", false, {
+          message: "Key exists but no data retrieved",
+        });
+        return null;
+      }
+
+      let credentials: BiometricCredentials;
+      try {
+        credentials = JSON.parse(credentialsJson) as BiometricCredentials;
+        biometricDebugLogger.log(operation, "parsed", true, {
+          hasUsername: !!credentials.username,
+        });
+      } catch (parseError) {
+        biometricDebugLogger.log(
+          operation,
+          "parse_error",
+          false,
+          undefined,
+          parseError,
+        );
+        throw new Error(`Failed to parse stored credentials: ${parseError}`);
+      }
+
+      // Validate the retrieved credentials
+      const validation = biometricDebugLogger.validateCredentials(credentials);
+      if (!validation.valid) {
+        biometricDebugLogger.log(
+          operation,
+          "invalid_stored_credentials",
+          false,
+          { issues: validation.issues },
+        );
+        // Don't throw here, but log the issue and return null
+        return null;
+      }
+
+      biometricDebugLogger.log(operation, "success", true, {
+        hasCredentials: true,
+      });
+      return credentials;
     } catch (error) {
+      biometricDebugLogger.log(operation, "error", false, undefined, error);
       console.error("Failed to retrieve biometric credentials:", error);
       return null;
     }

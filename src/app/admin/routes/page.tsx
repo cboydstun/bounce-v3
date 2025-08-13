@@ -28,6 +28,8 @@ import {
   loadUnitsPreference,
   saveUnitsPreference,
 } from "../../../utils/unitConversions";
+import RouteConversionModal from "../../../components/admin/RouteConversionModal";
+import { BatchTaskCreationResult } from "../../../utils/batchTaskCreator";
 
 export default function RoutePlannerPage() {
   const router = useRouter();
@@ -55,6 +57,14 @@ export default function RoutePlannerPage() {
   const [useGoogleMaps, setUseGoogleMaps] = useState<boolean>(true);
   const [units, setUnits] = useState<DistanceUnit>("miles");
   const [driverCount, setDriverCount] = useState<number>(1);
+
+  // Route conversion modal state
+  const [showConversionModal, setShowConversionModal] = useState(false);
+  const [conversionRoute, setConversionRoute] = useState<OptimizedRoute | null>(
+    null,
+  );
+  const [conversionMultiRoute, setConversionMultiRoute] =
+    useState<MultiRouteResult | null>(null);
 
   // Load user's preferred units on component mount
   useEffect(() => {
@@ -134,6 +144,35 @@ export default function RoutePlannerPage() {
 
     fetchOrders();
   }, [selectedDate, isLoading, router]);
+
+  // Handle route conversion
+  const handleConvertSingleRoute = () => {
+    if (optimizedRoute) {
+      setConversionRoute(optimizedRoute);
+      setConversionMultiRoute(null);
+      setShowConversionModal(true);
+    }
+  };
+
+  const handleConvertMultiRoute = () => {
+    if (multiRouteResult) {
+      setConversionRoute(null);
+      setConversionMultiRoute(multiRouteResult);
+      setShowConversionModal(true);
+    }
+  };
+
+  const handleTasksCreated = (result: BatchTaskCreationResult) => {
+    console.log("Tasks created:", result);
+    // Show success message or redirect to tasks page
+    if (result.success || result.totalCreated > 0) {
+      alert(
+        `Successfully created ${result.totalCreated} tasks! Contractors have been notified.`,
+      );
+      // Optionally redirect to tasks page
+      // router.push('/admin/tasks');
+    }
+  };
 
   // Optimize route
   async function handleOptimizeRoute() {
@@ -369,6 +408,33 @@ export default function RoutePlannerPage() {
               })}
               {optimizedRoute.returnToStart ? " (return to start)" : ""}
             </p>
+
+            {/* Convert to Tasks Button */}
+            <div className="mt-4 pt-4 border-t border-gray-300">
+              <button
+                onClick={handleConvertSingleRoute}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                  />
+                </svg>
+                Convert Route to Tasks
+              </button>
+              <p className="text-sm text-gray-600 mt-2">
+                Transform this optimized route into executable tasks for
+                contractors
+              </p>
+            </div>
           </div>
 
           <DeliverySchedule
@@ -450,16 +516,65 @@ export default function RoutePlannerPage() {
 
       {/* Multi-Driver Results */}
       {multiRouteResult && (
-        <MultiDriverResults
-          multiRouteResult={multiRouteResult}
-          startAddress={startAddress}
-          startCoordinates={startCoordinates}
-          units={units}
-          useGoogleMaps={useGoogleMaps}
-          onUnitsChange={handleUnitsChange}
-          onMapTypeChange={setUseGoogleMaps}
-        />
+        <div className="mt-6">
+          {/* Convert All Routes Button */}
+          <div className="bg-gray-100 p-4 rounded mb-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold mb-2">Multi-Driver Routes</h2>
+                <p className="text-sm text-gray-600">
+                  {multiRouteResult.routes.length} driver routes optimized with{" "}
+                  {multiRouteResult.routeStats.totalStops} total stops
+                </p>
+              </div>
+              <button
+                onClick={handleConvertMultiRoute}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                  />
+                </svg>
+                Convert All Routes to Tasks
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mt-2">
+              Transform all optimized routes into executable tasks for
+              contractors
+            </p>
+          </div>
+
+          <MultiDriverResults
+            multiRouteResult={multiRouteResult}
+            startAddress={startAddress}
+            startCoordinates={startCoordinates}
+            units={units}
+            useGoogleMaps={useGoogleMaps}
+            onUnitsChange={handleUnitsChange}
+            onMapTypeChange={setUseGoogleMaps}
+          />
+        </div>
       )}
+
+      {/* Route Conversion Modal */}
+      <RouteConversionModal
+        isOpen={showConversionModal}
+        onClose={() => setShowConversionModal(false)}
+        onTasksCreated={handleTasksCreated}
+        singleRoute={conversionRoute || undefined}
+        multiRouteResult={conversionMultiRoute || undefined}
+        routeDate={selectedDate}
+        startAddress={startAddress}
+      />
     </div>
   );
 }

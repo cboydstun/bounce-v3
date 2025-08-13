@@ -9,7 +9,9 @@ import {
   parsePartyDateCT,
   formatDateCT,
   parseDateFromNotes,
-  CENTRAL_TIMEZONE,
+  formatDateTimeLocalCT,
+  createDateTimeCT,
+  getCurrentDateCT,
 } from "./dateUtils";
 
 /**
@@ -232,19 +234,17 @@ export class TemplateEngine {
         return null;
       }
 
-      // Apply default time
+      // Apply default time using Central Time utilities
       const [hours, minutes] = rules.defaultTime.split(":").map(Number);
 
-      // Create date with specific time in Central Time
-      const year = scheduledDate.getFullYear();
-      const month = String(scheduledDate.getMonth() + 1).padStart(2, "0");
-      const day = String(scheduledDate.getDate()).padStart(2, "0");
-      const hoursStr = String(hours).padStart(2, "0");
-      const minutesStr = String(minutes).padStart(2, "0");
-
-      // Create date string in Central Time (using -06:00 for CST)
-      const centralTimeStr = `${year}-${month}-${day}T${hoursStr}:${minutesStr}:00-06:00`;
-      const finalDate = new Date(centralTimeStr);
+      // Use the Central Time utility to create the date with proper timezone handling
+      const finalDate = createDateTimeCT(
+        scheduledDate.getFullYear(),
+        scheduledDate.getMonth() + 1,
+        scheduledDate.getDate(),
+        hours,
+        minutes,
+      );
 
       // Business hours validation (if enabled)
       if (rules.businessHoursOnly) {
@@ -271,28 +271,6 @@ export class TemplateEngine {
       console.error("Error calculating scheduled date/time:", error);
       return null;
     }
-  }
-
-  /**
-   * Format date for datetime-local input in Central Time
-   * @param date Date object
-   * @returns Formatted string for datetime-local input in Central Time
-   */
-  static formatDateTimeLocalCT(date: Date): string {
-    // Convert to Central Time using toLocaleString
-    const centralTimeStr = date.toLocaleString("en-CA", {
-      timeZone: CENTRAL_TIMEZONE,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-
-    // Format: "2025-01-08, 21:30" -> "2025-01-08T21:30"
-    const [datePart, timePart] = centralTimeStr.split(", ");
-    return `${datePart}T${timePart}`;
   }
 
   /**
@@ -329,7 +307,7 @@ export class TemplateEngine {
     // Calculate scheduling
     const scheduledDate = this.calculateScheduling(schedulingRules, order);
     const scheduledDateTime = scheduledDate
-      ? this.formatDateTimeLocalCT(scheduledDate)
+      ? formatDateTimeLocalCT(scheduledDate)
       : null;
 
     return {

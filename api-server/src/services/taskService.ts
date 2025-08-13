@@ -806,6 +806,238 @@ export class TaskService {
       throw new Error("Failed to retrieve debug tasks");
     }
   }
+  /**
+   * Check if a task is a consolidated route task
+   */
+  static isRouteTask(task: ITaskDocument): boolean {
+    // Check title patterns
+    const titlePatterns = [
+      /Delivery Route - Driver \d+ - \d+ Stops?/i,
+      /Route - Driver \d+/i,
+      /Multi-stop/i,
+      /\d+ Stops?/i,
+    ];
+
+    const hasRouteTitle = titlePatterns.some(
+      (pattern) => task.title && pattern.test(task.title),
+    );
+
+    // Check description for route metadata markers
+    const hasRouteMetadata =
+      task.description &&
+      (task.description.includes("--- Route Metadata ---") ||
+        task.description.includes("Route Session:") ||
+        task.description.includes("Customers:") ||
+        task.description.includes("Route Summary:"));
+
+    // Check for multiple customer pattern
+    const hasMultipleCustomers = task.description
+      ? /\d+\.\s+.+\(BB-\d{4}-\d{4}\)/g.test(task.description)
+      : false;
+
+    return hasRouteTitle || hasRouteMetadata || hasMultipleCustomers;
+  }
+
+  /**
+   * Parse route metadata from task description
+   */
+  static parseRouteMetadata(description: string): {
+    routeSessionId?: string;
+    totalStops?: number;
+    totalDistance?: string;
+    estimatedDuration?: string;
+    driverNumber?: number;
+    startTime?: string;
+    endTime?: string;
+    customers: Array<{
+      name: string;
+      orderNumber: string;
+      stopNumber?: number;
+    }>;
+  } {
+    const result: {
+      routeSessionId?: string;
+      totalStops?: number;
+      totalDistance?: string;
+      estimatedDuration?: string;
+      driverNumber?: number;
+      startTime?: string;
+      endTime?: string;
+      customers: Array<{
+        name: string;
+        orderNumber: string;
+        stopNumber?: number;
+      }>;
+    } = {
+      customers: [],
+    };
+
+    // Extract route session ID
+    const sessionMatch = description.match(/Route Session:\s*([^\n\r]+)/i);
+    if (sessionMatch && sessionMatch[1]) {
+      result.routeSessionId = sessionMatch[1].trim();
+    }
+
+    // Extract stops count
+    const stopsMatch = description.match(/Stops?:\s*(\d+)/i);
+    if (stopsMatch && stopsMatch[1]) {
+      result.totalStops = parseInt(stopsMatch[1], 10);
+    }
+
+    // Extract distance
+    const distanceMatch = description.match(/Distance:\s*([0-9.]+\s*km)/i);
+    if (distanceMatch && distanceMatch[1]) {
+      result.totalDistance = distanceMatch[1];
+    }
+
+    // Extract duration
+    const durationMatch = description.match(
+      /Duration:\s*([0-9h\s]+[0-9m\s]*)/i,
+    );
+    if (durationMatch && durationMatch[1]) {
+      result.estimatedDuration = durationMatch[1].trim();
+    }
+
+    // Extract driver number
+    const driverMatch = description.match(/Driver\s+(\d+)/i);
+    if (driverMatch && driverMatch[1]) {
+      result.driverNumber = parseInt(driverMatch[1], 10);
+    }
+
+    // Extract start/end times
+    const startTimeMatch = description.match(/Start Time:\s*([0-9:]+)/i);
+    if (startTimeMatch && startTimeMatch[1]) {
+      result.startTime = startTimeMatch[1];
+    }
+
+    const endTimeMatch = description.match(/End Time:\s*([0-9:]+)/i);
+    if (endTimeMatch && endTimeMatch[1]) {
+      result.endTime = endTimeMatch[1];
+    }
+
+    // Extract customers list
+    const customerMatches = description.matchAll(
+      /(\d+)\.\s*([^(]+)\s*\(([^)]+)\)/g,
+    );
+    for (const match of customerMatches) {
+      if (match[1] && match[2] && match[3]) {
+        const stopNumber = parseInt(match[1], 10);
+        const customerName = match[2].trim();
+        const orderNumber = match[3].trim();
+
+        result.customers.push({
+          stopNumber,
+          name: customerName,
+          orderNumber,
+        });
+      }
+    }
+
+    // If no numbered customers found, try alternative pattern
+    if (result.customers.length === 0) {
+      const altCustomerMatches = description.matchAll(
+        /([^,\n]+)\s*\(([^)]+)\)/g,
+      );
+      for (const match of altCustomerMatches) {
+        if (match[1] && match[2]) {
+          const customerName = match[1].trim();
+          const orderNumber = match[2].trim();
+
+          // Only include if it looks like an order number
+          if (/BB-\d{4}-\d{4}/.test(orderNumber)) {
+            result.customers.push({
+              name: customerName,
+              orderNumber,
+            });
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Transform a route task for mobile-friendly display
+   * PRESERVES original description for parsing while adding mobile enhancements
+   */
+  static transformRouteTaskForMobile(task: ITaskDocument): any {
+    const routeData = this.parseRouteMetadata(task.description);
+    const customerCount = routeData.customers.length;
+
+    // Create mobile-friendly title
+    let mobileTitle = task.title || `${task.type} Task`;
+    if (customerCount > 1) {
+      mobileTitle = `Multi-Stop Route (${customerCount} customers)`;
+    } else if (routeData.driverNumber) {
+      mobileTitle = `Route - Driver ${routeData.driverNumber}`;
+    }
+
+    // Create concise mobile summary (NOT replacing description)
+    let mobileSummary = task.description;
+    if (customerCount > 1) {
+      mobileSummary = `Delivery route covering ${customerCount} locations in San Antonio area`;
+
+      if (routeData.totalDistance && routeData.estimatedDuration) {
+        mobileSummary += ` • ${routeData.totalDistance} • ${routeData.estimatedDuration}`;
+      }
+    }
+
+    // Create mobile-friendly instructions
+    const instructions = [];
+    if (customerCount > 1) {
+      instructions.push(`Visit ${customerCount} customers in order`);
+    }
+    if (routeData.estimatedDuration) {
+      instructions.push(`Total route: ~${routeData.estimatedDuration}`);
+    }
+    if (routeData.startTime && routeData.endTime) {
+      instructions.push(
+        `Schedule: ${routeData.startTime} - ${routeData.endTime}`,
+      );
+    }
+    instructions.push("Return to depot after completion");
+
+    // Create route-specific equipment list
+    const equipment = [
+      { name: "Route manifest", required: true },
+      { name: "GPS device", required: true },
+    ];
+
+    if (customerCount > 2) {
+      equipment.push({ name: "Customer contact list", required: true });
+    }
+
+    return {
+      // CRITICAL: Keep original description intact for parsing
+      // description: task.description, // DON'T override - let controller handle this
+
+      // Add mobile-friendly fields alongside original data
+      mobileTitle,
+      mobileSummary,
+
+      // Add route-specific data
+      isRouteTask: true,
+      routeDetails: {
+        totalStops: routeData.totalStops || customerCount,
+        estimatedDistance: routeData.totalDistance,
+        estimatedDuration: routeData.estimatedDuration,
+        driverNumber: routeData.driverNumber,
+        routeSessionId: routeData.routeSessionId,
+        startTime: routeData.startTime,
+        endTime: routeData.endTime,
+      },
+
+      // Enhanced customer list for mobile
+      customers: routeData.customers,
+
+      // Mobile-optimized instructions
+      instructions,
+
+      // Route-specific equipment
+      equipment,
+    };
+  }
 }
 
 export default TaskService;

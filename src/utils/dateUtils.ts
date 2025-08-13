@@ -337,6 +337,63 @@ export function getEventDateDisplay(order: {
 }
 
 /**
+ * Format a date for datetime-local input in Central Time
+ * @param date The date to format
+ * @returns A string in YYYY-MM-DDTHH:MM format for datetime-local inputs
+ */
+export function formatDateTimeLocalCT(date: Date): string {
+  // Convert to Central Time using toLocaleString
+  const centralTimeStr = date.toLocaleString("en-CA", {
+    timeZone: CENTRAL_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  // Format: "2025-01-08, 21:30" -> "2025-01-08T21:30"
+  const [datePart, timePart] = centralTimeStr.split(", ");
+  return `${datePart}T${timePart}`;
+}
+
+/**
+ * Create a Date object with specific date and time in Central Time
+ * @param year The year
+ * @param month The month (1-12)
+ * @param day The day of the month
+ * @param hour The hour (0-23)
+ * @param minute The minute (0-59)
+ * @returns A Date object representing the specified time in Central Time
+ */
+export function createDateTimeCT(
+  year: number,
+  month: number,
+  day: number,
+  hour: number = 12,
+  minute: number = 0,
+): Date {
+  // Create date string with timezone offset for Central Time
+  // Using -06:00 for CST (will automatically adjust for DST)
+  const centralTimeStr = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}T${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}:00-06:00`;
+  return new Date(centralTimeStr);
+}
+
+/**
+ * Parse a datetime-local string (YYYY-MM-DDTHH:MM) as Central Time
+ * @param dateTimeStr A string in YYYY-MM-DDTHH:MM format
+ * @returns A Date object representing the datetime in Central Time
+ */
+export function parseDateTimeLocalCT(dateTimeStr: string): Date {
+  const [datePart, timePart] = dateTimeStr.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+
+  return createDateTimeCT(year, month, day, hour, minute);
+}
+
+/**
  * Debug function to log date information in multiple formats
  * @param label A label for the log
  * @param date The date to log
