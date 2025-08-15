@@ -1,0 +1,11 @@
+{
+  "release": "debug",
+  "verbose": true,
+  "iosDevP12": "",
+  "iosDevP12Password": "",
+  "iosDevelopment": "",
+  "iosDistP12": "",
+  "iosDistP12Password": "",
+  "iosDistribution": "",
+  "iosPackageType": "ad-hoc"
+}

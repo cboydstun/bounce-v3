@@ -1,0 +1,92 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.bouncecontractor.app" xmlns="http://www.w3.org/ns/widgets" version="1.0.0-alpha.2">
+    <name>Bounce Contractor (Alpha)</name>
+    <description>PartyPad - The ultimate mobile app for bounce house contractors to discover, claim, and manage party setup tasks</description>
+    <author email="support@bouncecontractor.app" href="https://bouncecontractor.app">
+        Bounce Contractor Team
+    </author>
+    
+    <content src="index.html" />
+    
+    <!-- Allow all navigation -->
+    <access origin="*" />
+    <allow-navigation href="https://api.slowbill.xyz/*" />
+    <allow-navigation href="https://slowbill.xyz/*" />
+    <allow-navigation href="https://*.cloudinary.com/*" />
+    <allow-navigation href="https://*.sendgrid.net/*" />
+    <allow-navigation href="https://*.intuit.com/*" />
+    
+    <!-- Core Cordova plugins -->
+    <plugin name="cordova-plugin-device" />
+    <plugin name="cordova-plugin-network-information" />
+    <plugin name="cordova-plugin-statusbar" />
+    <plugin name="cordova-plugin-splashscreen" />
+    
+    <!-- Capacitor to Cordova plugin mappings -->
+    <plugin name="cordova-plugin-camera" />
+    <plugin name="cordova-plugin-geolocation" />
+    <plugin name="cordova-plugin-vibration" />
+    <plugin name="cordova-plugin-keyboard" />
+    <plugin name="cordova-plugin-local-notification" />
+    <plugin name="phonegap-plugin-push" />
+    <plugin name="cordova-plugin-file" />
+    <plugin name="cordova-plugin-secure-storage" />
+    <plugin name="cordova-plugin-fingerprint-aio" />
+    
+    <!-- Platform-specific configurations -->
+    <platform name="android">
+        <preference name="android-minSdkVersion" value="22" />
+        <preference name="android-targetSdkVersion" value="34" />
+        <preference name="android-compileSdkVersion" value="34" />
+        <preference name="Scheme" value="https" />
+        <preference name="AllowMixedContent" value="false" />
+        <preference name="CaptureInput" value="true" />
+        <preference name="WebContentsDebuggingEnabled" value="false" />
+    </platform>
+    
+    <platform name="ios">
+        <preference name="WKWebViewOnly" value="true" />
+        <preference name="ContentInset" value="automatic" />
+        <preference name="ScrollEnabled" value="true" />
+        <preference name="Scheme" value="https" />
+        
+        <feature name="CDVWKWebViewEngine">
+            <param name="ios-package" value="CDVWKWebViewEngine" />
+        </feature>
+        <preference name="CordovaWebViewEngine" value="CDVWKWebViewEngine" />
+        
+        <!-- iOS permissions -->
+        <edit-config target="NSLocationWhenInUseUsageDescription" file="*-Info.plist" mode="overwrite">
+            <string>This app needs location access to provide location-based services for task management.</string>
+        </edit-config>
+        <edit-config target="NSCameraUsageDescription" file="*-Info.plist" mode="overwrite">
+            <string>This app needs camera access to take photos for task documentation.</string>
+        </edit-config>
+        <edit-config target="NSPhotoLibraryUsageDescription" file="*-Info.plist" mode="overwrite">
+            <string>This app needs photo library access to select images for task documentation.</string>
+        </edit-config>
+        <edit-config target="NSFaceIDUsageDescription" file="*-Info.plist" mode="overwrite">
+            <string>This app uses Face ID for secure authentication.</string>
+        </edit-config>
+    </platform>
+    
+    <!-- Splash screen preferences -->
+    <preference name="SplashScreenDelay" value="2000" />
+    <preference name="SplashMaintainAspectRatio" value="true" />
+    <preference name="SplashShowOnlyFirstTime" value="false" />
+    <preference name="SplashScreen" value="screen" />
+    <preference name="SplashScreenSpinnerColor" value="#1976d2" />
+    <preference name="ShowSplashScreenSpinner" value="false" />
+    
+    <!-- Status bar preferences -->
+    <preference name="StatusBarOverlaysWebView" value="false" />
+    <preference name="StatusBarBackgroundColor" value="#1976d2" />
+    <preference name="StatusBarStyle" value="lightcontent" />
+    
+    <!-- Security preferences -->
+    <preference name="DisallowOverscroll" value="true" />
+    <preference name="BackupWebStorage" value="none" />
+    
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src *; img-src 'self' data: content: https:; connect-src 'self' https://api.slowbill.xyz https://slowbill.xyz https://*.cloudinary.com https://*.sendgrid.net https://*.intuit.com wss:;" />
+</widget>

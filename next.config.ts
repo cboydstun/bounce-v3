@@ -49,6 +49,8 @@ const nextConfig = {
       "media2.giphy.com",
       "media3.giphy.com",
       "res.cloudinary.com",
+      "m.media-amazon.com",
+      "assets-v2.lottiefiles.com",
     ],
     unoptimized: true, // disable Next.js image optimization
   },

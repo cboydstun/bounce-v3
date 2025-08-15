@@ -1,0 +1,12 @@
+{
+  "projectName": "Bounce Contractor App",
+  "appId": "com.bouncecontractor.app",
+  "appName": "Bounce Contractor (Alpha)",
+  "platform": "ios",
+  "framework": "capacitor",
+  "buildType": "production",
+  "preparationDate": "2025-08-13T23:40:56Z",
+  "nodeVersion": "v24.4.1",
+  "npmVersion": "11.3.0",
+  "capacitorVersion": "7.3.0"
+}

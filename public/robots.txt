@@ -6,5 +6,9 @@ Disallow: /admin/
 Disallow: /login/
 Disallow: /dashboard/
 
+# Contractor Mobile App - Private Access Only
+Disallow: /mobile-app
+Disallow: /mobile-app/
+
 # Sitemap location
 Sitemap: https://www.satxbounce.com/sitemap.xml
